@@ -1,32 +1,32 @@
+import Link from "next/link";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { formatarMoeda } from "@/lib/formatacao";
 import { ROTULO_STATUS_PARCELA, COR_STATUS_PARCELA } from "@/lib/status-parcela";
 import { cn } from "@/lib/utils";
-import { AcoesParcela } from "./acoes-parcela";
-import type { BaixaHistorico } from "./historico-baixas-sheet";
+
+type BaixaResumo = { valor_pago: number; estornado_em: string | null };
 
 type ParcelaAberta = {
   id: string;
   valor: number;
   data_vencimento: string;
   status: string;
-  baixas: BaixaHistorico[] | null;
+  baixas: BaixaResumo[] | null;
   eventos_financeiros: { descricao: string | null; pessoas: { nome: string } | null } | null;
 };
 
-type ContaFinanceira = { id: string; nome: string };
-
+// Cada linha navega pra página cheia de detalhe da parcela (ações de dar
+// baixa, renegociar, histórico e cancelar vivem lá, não mais num dropdown
+// aqui na tabela — ver docs/mapeamento-conta-azul-produto-ui.md §2.1).
 export function TabelaParcelasAbertas({
   parcelas,
-  contasFinanceiras,
   textoVazio,
-  rotuloAcaoBaixa,
+  caminhoBase,
 }: {
   parcelas: ParcelaAberta[];
-  contasFinanceiras: ContaFinanceira[];
   textoVazio: string;
-  rotuloAcaoBaixa: string;
+  caminhoBase: "contas-a-pagar" | "contas-a-receber";
 }) {
   if (parcelas.length === 0) {
     return (
@@ -48,7 +48,6 @@ export function TabelaParcelasAbertas({
             <TableHead>Vencimento</TableHead>
             <TableHead>Situação</TableHead>
             <TableHead className="text-right">Em aberto</TableHead>
-            <TableHead className="text-right">Ação</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -68,35 +67,37 @@ export function TabelaParcelasAbertas({
             const descricao = parcela.eventos_financeiros?.descricao ?? "Sem descrição";
 
             return (
-              <TableRow key={parcela.id}>
-                <TableCell className="font-medium text-foreground">{descricao}</TableCell>
-                <TableCell className="text-muted-foreground">
-                  {parcela.eventos_financeiros?.pessoas?.nome ?? "—"}
+              <TableRow key={parcela.id} className="cursor-pointer">
+                <TableCell className="p-0">
+                  <Link href={`/${caminhoBase}/${parcela.id}`} className="block px-4 py-3 font-medium text-foreground">
+                    {descricao}
+                  </Link>
                 </TableCell>
-                <TableCell className="text-muted-foreground">
-                  {new Date(parcela.data_vencimento + "T00:00:00").toLocaleDateString("pt-BR")}
+                <TableCell className="p-0">
+                  <Link href={`/${caminhoBase}/${parcela.id}`} className="block px-4 py-3 text-muted-foreground">
+                    {parcela.eventos_financeiros?.pessoas?.nome ?? "—"}
+                  </Link>
                 </TableCell>
-                <TableCell>
-                  <Badge className={cn("border-none font-semibold", COR_STATUS_PARCELA[chaveStatus])}>
-                    {ROTULO_STATUS_PARCELA[chaveStatus] ?? chaveStatus}
-                    {atrasada && ` · ${diasEmAtraso}d`}
-                  </Badge>
+                <TableCell className="p-0">
+                  <Link href={`/${caminhoBase}/${parcela.id}`} className="block px-4 py-3 text-muted-foreground">
+                    {new Date(parcela.data_vencimento + "T00:00:00").toLocaleDateString("pt-BR")}
+                  </Link>
                 </TableCell>
-                <TableCell className="text-right font-semibold tabular-nums text-foreground">
-                  {formatarMoeda(saldoResidual)}
+                <TableCell className="p-0">
+                  <Link href={`/${caminhoBase}/${parcela.id}`} className="block px-4 py-3">
+                    <Badge className={cn("border-none font-semibold", COR_STATUS_PARCELA[chaveStatus])}>
+                      {ROTULO_STATUS_PARCELA[chaveStatus] ?? chaveStatus}
+                      {atrasada && ` · ${diasEmAtraso}d`}
+                    </Badge>
+                  </Link>
                 </TableCell>
-                <TableCell className="text-right">
-                  <AcoesParcela
-                    parcelaId={parcela.id}
-                    descricao={descricao}
-                    valor={Number(parcela.valor)}
-                    dataVencimento={parcela.data_vencimento}
-                    saldoResidual={saldoResidual}
-                    status={parcela.status}
-                    baixas={baixas}
-                    contasFinanceiras={contasFinanceiras}
-                    rotuloAcaoBaixa={rotuloAcaoBaixa}
-                  />
+                <TableCell className="p-0 text-right">
+                  <Link
+                    href={`/${caminhoBase}/${parcela.id}`}
+                    className="block px-4 py-3 font-semibold tabular-nums text-foreground"
+                  >
+                    {formatarMoeda(saldoResidual)}
+                  </Link>
                 </TableCell>
               </TableRow>
             );

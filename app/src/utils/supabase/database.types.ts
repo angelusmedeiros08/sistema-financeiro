@@ -14,6 +14,96 @@ export type Database = {
   }
   public: {
     Tables: {
+      anexos: {
+        Row: {
+          baixa_id: string | null
+          criado_em: string
+          criado_por: string | null
+          descricao: string | null
+          evento_financeiro_id: string | null
+          forma: Database["public"]["Enums"]["forma_anexo"]
+          id: string
+          mime_type: string | null
+          nome_arquivo: string | null
+          regra_recorrencia_id: string | null
+          storage_path: string | null
+          tamanho_bytes: number | null
+          tenant_id: string
+          tipo: Database["public"]["Enums"]["tipo_anexo"]
+          url: string | null
+        }
+        Insert: {
+          baixa_id?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          descricao?: string | null
+          evento_financeiro_id?: string | null
+          forma: Database["public"]["Enums"]["forma_anexo"]
+          id?: string
+          mime_type?: string | null
+          nome_arquivo?: string | null
+          regra_recorrencia_id?: string | null
+          storage_path?: string | null
+          tamanho_bytes?: number | null
+          tenant_id: string
+          tipo?: Database["public"]["Enums"]["tipo_anexo"]
+          url?: string | null
+        }
+        Update: {
+          baixa_id?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          descricao?: string | null
+          evento_financeiro_id?: string | null
+          forma?: Database["public"]["Enums"]["forma_anexo"]
+          id?: string
+          mime_type?: string | null
+          nome_arquivo?: string | null
+          regra_recorrencia_id?: string | null
+          storage_path?: string | null
+          tamanho_bytes?: number | null
+          tenant_id?: string
+          tipo?: Database["public"]["Enums"]["tipo_anexo"]
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "anexos_baixa_id_fkey"
+            columns: ["baixa_id"]
+            isOneToOne: false
+            referencedRelation: "baixas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "anexos_criado_por_fkey"
+            columns: ["criado_por"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "anexos_evento_financeiro_id_fkey"
+            columns: ["evento_financeiro_id"]
+            isOneToOne: false
+            referencedRelation: "eventos_financeiros"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "anexos_regra_recorrencia_id_fkey"
+            columns: ["regra_recorrencia_id"]
+            isOneToOne: false
+            referencedRelation: "regras_recorrencia"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "anexos_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       baixas: {
         Row: {
           conta_financeira_id: string | null
@@ -292,6 +382,7 @@ export type Database = {
           documento_fiscal_id: string | null
           id: string
           pessoa_id: string | null
+          regra_recorrencia_id: string | null
           tenant_id: string
           tipo: Database["public"]["Enums"]["tipo_categoria"]
           valor_total: number
@@ -304,6 +395,7 @@ export type Database = {
           documento_fiscal_id?: string | null
           id?: string
           pessoa_id?: string | null
+          regra_recorrencia_id?: string | null
           tenant_id: string
           tipo: Database["public"]["Enums"]["tipo_categoria"]
           valor_total: number
@@ -316,6 +408,7 @@ export type Database = {
           documento_fiscal_id?: string | null
           id?: string
           pessoa_id?: string | null
+          regra_recorrencia_id?: string | null
           tenant_id?: string
           tipo?: Database["public"]["Enums"]["tipo_categoria"]
           valor_total?: number
@@ -333,6 +426,13 @@ export type Database = {
             columns: ["pessoa_id"]
             isOneToOne: false
             referencedRelation: "pessoas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "eventos_financeiros_regra_recorrencia_id_fkey"
+            columns: ["regra_recorrencia_id"]
+            isOneToOne: false
+            referencedRelation: "regras_recorrencia"
             referencedColumns: ["id"]
           },
           {
@@ -651,6 +751,91 @@ export type Database = {
           },
         ]
       }
+      regras_recorrencia: {
+        Row: {
+          ativa: boolean
+          categorias_json: Json
+          criado_em: string
+          criado_por: string | null
+          data_fim: string | null
+          data_inicio: string
+          descricao: string
+          id: string
+          intervalo: number
+          numero_ocorrencias: number | null
+          numero_parcelas: number
+          ocorrencias_geradas: number
+          pessoa_id: string | null
+          tenant_id: string
+          tipo: Database["public"]["Enums"]["tipo_categoria"]
+          ultima_geracao_em: string | null
+          unidade_intervalo: Database["public"]["Enums"]["unidade_intervalo"]
+          valor_total: number
+        }
+        Insert: {
+          ativa?: boolean
+          categorias_json: Json
+          criado_em?: string
+          criado_por?: string | null
+          data_fim?: string | null
+          data_inicio: string
+          descricao: string
+          id?: string
+          intervalo: number
+          numero_ocorrencias?: number | null
+          numero_parcelas?: number
+          ocorrencias_geradas?: number
+          pessoa_id?: string | null
+          tenant_id: string
+          tipo: Database["public"]["Enums"]["tipo_categoria"]
+          ultima_geracao_em?: string | null
+          unidade_intervalo: Database["public"]["Enums"]["unidade_intervalo"]
+          valor_total: number
+        }
+        Update: {
+          ativa?: boolean
+          categorias_json?: Json
+          criado_em?: string
+          criado_por?: string | null
+          data_fim?: string | null
+          data_inicio?: string
+          descricao?: string
+          id?: string
+          intervalo?: number
+          numero_ocorrencias?: number | null
+          numero_parcelas?: number
+          ocorrencias_geradas?: number
+          pessoa_id?: string | null
+          tenant_id?: string
+          tipo?: Database["public"]["Enums"]["tipo_categoria"]
+          ultima_geracao_em?: string | null
+          unidade_intervalo?: Database["public"]["Enums"]["unidade_intervalo"]
+          valor_total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "regras_recorrencia_criado_por_fkey"
+            columns: ["criado_por"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "regras_recorrencia_pessoa_id_fkey"
+            columns: ["pessoa_id"]
+            isOneToOne: false
+            referencedRelation: "pessoas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "regras_recorrencia_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       renegociacoes: {
         Row: {
           criado_em: string
@@ -798,6 +983,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      forma_anexo: "ARQUIVO" | "LINK"
       natureza_conta: "DEVEDORA" | "CREDORA"
       natureza_pessoa: "FISICA" | "JURIDICA"
       origem_lancamento:
@@ -824,6 +1010,11 @@ export type Database = {
         | "RECEBIDO_PARCIAL"
         | "ATRASADO"
         | "PERDIDO"
+      tipo_anexo:
+        | "CONTRATO"
+        | "DOCUMENTO_FISCAL"
+        | "DOCUMENTO_COBRANCA"
+        | "OUTROS"
       tipo_categoria: "RECEITA" | "DESPESA"
       tipo_conta_contabil:
         | "ATIVO"
@@ -832,6 +1023,7 @@ export type Database = {
         | "RECEITA"
         | "DESPESA"
       tipo_partida: "DEBITO" | "CREDITO"
+      unidade_intervalo: "DIA" | "SEMANA" | "MES"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -959,6 +1151,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      forma_anexo: ["ARQUIVO", "LINK"],
       natureza_conta: ["DEVEDORA", "CREDORA"],
       natureza_pessoa: ["FISICA", "JURIDICA"],
       origem_lancamento: [
@@ -988,6 +1181,12 @@ export const Constants = {
         "ATRASADO",
         "PERDIDO",
       ],
+      tipo_anexo: [
+        "CONTRATO",
+        "DOCUMENTO_FISCAL",
+        "DOCUMENTO_COBRANCA",
+        "OUTROS",
+      ],
       tipo_categoria: ["RECEITA", "DESPESA"],
       tipo_conta_contabil: [
         "ATIVO",
@@ -997,6 +1196,7 @@ export const Constants = {
         "DESPESA",
       ],
       tipo_partida: ["DEBITO", "CREDITO"],
+      unidade_intervalo: ["DIA", "SEMANA", "MES"],
     },
   },
 } as const

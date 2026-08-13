@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PessoaCombobox } from "./pessoa-combobox";
 import { RateioCategorias } from "./rateio-categorias";
+import { RecorrenciaCampos } from "./recorrencia-campos";
+import { AnexoCampos } from "./anexo-campos";
 
 type Categoria = { id: string; nome: string };
 type Pessoa = { id: string; nome: string };
@@ -159,6 +161,13 @@ export function EventoFinanceiroForm({
       <div className="space-y-1.5">
         <Label>{ehReceita ? "Cliente" : "Fornecedor"} (opcional)</Label>
         <PessoaCombobox pessoas={pessoas} perfil={ehReceita ? "CLIENTE" : "FORNECEDOR"} label={`Selecionar ${ehReceita ? "cliente" : "fornecedor"}...`} />
+      </div>
+
+      <RecorrenciaCampos />
+
+      <div className="space-y-1.5 sm:col-span-2">
+        <Label>Anexo (opcional)</Label>
+        <AnexoCampos />
       </div>
 
       {estado.erro && <p className="text-sm text-destructive sm:col-span-2">{estado.erro}</p>}

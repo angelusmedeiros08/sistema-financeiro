@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/utils/supabase/server";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
 import { registrarBaixa } from "./baixa";
+import { extrairAnexosDraftDoFormData, anexarDraftsAoDono } from "./anexos";
 
 type ResultadoAcao = { erro: string } | { sucesso: true };
 
@@ -44,6 +45,15 @@ export async function darBaixa(formData: FormData): Promise<ResultadoAcao> {
   });
 
   if ("erro" in resultado) return { erro: resultado.erro };
+
+  const anexosDraft = extrairAnexosDraftDoFormData(formData);
+  if (anexosDraft.length > 0) {
+    await anexarDraftsAoDono(supabase, anexosDraft, {
+      tenant_id: contexto.tenantId,
+      baixa_id: resultado.baixa_id,
+      criado_por: contexto.user.id,
+    });
+  }
 
   revalidatePath("/contas-a-receber");
   revalidatePath("/contas-a-pagar");

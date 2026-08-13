@@ -7,6 +7,7 @@ import { ToggleAtivoButton } from "./toggle-ativo-button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { ConfiguracoesSubNav } from "../sub-nav";
 
 const FILTROS = [
   { valor: "ativos", rotulo: "Ativos" },
@@ -39,6 +40,7 @@ export default async function PaginaCentrosCusto({
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-6">
       <h1 className="text-xl font-bold tracking-tight text-foreground">Centros de custo</h1>
+      <ConfiguracoesSubNav />
 
       <section>
         <h2 className="mb-3 text-xs font-bold uppercase tracking-wide text-muted-foreground">Novo centro de custo</h2>

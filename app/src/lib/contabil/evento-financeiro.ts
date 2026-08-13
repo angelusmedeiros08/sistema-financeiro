@@ -160,6 +160,9 @@ export type ParametrosEventoFinanceiro = {
   numero_parcelas: number;
   primeiro_vencimento: string;
   criado_por?: string;
+  // preenchido só quando o evento é gerado pelo job de recorrência —
+  // rastreabilidade pura, nenhum comportamento depende disso depois de criado.
+  regra_recorrencia_id?: string;
 };
 
 // Cria um evento financeiro (receita ou despesa) com seu rateio (1 ou mais
@@ -220,6 +223,7 @@ export async function criarEventoFinanceiro(
       descricao: params.descricao,
       pessoa_id: params.pessoa_id ?? null,
       criado_por: params.criado_por,
+      regra_recorrencia_id: params.regra_recorrencia_id,
     })
     .select("id")
     .single();

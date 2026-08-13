@@ -39,10 +39,7 @@ export default async function PaginaContasAReceber({
 
   if (filtro.status) query = query.in("status", filtro.status);
 
-  const [{ data: parcelas }, { data: contasFinanceiras }] = await Promise.all([
-    query,
-    supabase.from("contas_financeiras").select("id, nome").eq("tenant_id", tenantId).eq("ativo", true).order("nome"),
-  ]);
+  const { data: parcelas } = await query;
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-6">
@@ -65,9 +62,8 @@ export default async function PaginaContasAReceber({
       </div>
       <TabelaParcelasAbertas
         parcelas={parcelas ?? []}
-        contasFinanceiras={contasFinanceiras ?? []}
         textoVazio="Nenhuma conta a receber nessa situação."
-        rotuloAcaoBaixa="Dar baixa"
+        caminhoBase="contas-a-receber"
       />
     </div>
   );

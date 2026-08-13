@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -21,12 +22,14 @@ export function CancelarDialog({
   descricao: string;
 }) {
   const [chaveFormulario, setChaveFormulario] = useState(0);
+  const router = useRouter();
 
   const [estado, formAction, pendente] = useActionState(async (_: typeof estadoInicial, formData: FormData) => {
     const resultado = await cancelarParcelaAction(formData);
     if ("erro" in resultado) return { erro: resultado.erro };
     setChaveFormulario((k) => k + 1);
     onAbertoChange(false);
+    router.refresh();
     return { erro: "" };
   }, estadoInicial);
 
