@@ -65,15 +65,41 @@ export async function resolverPessoaId(
   return data?.id ?? null;
 }
 
-export type LinhaCategoria = { categoria_id: string; valor: number };
+export type LinhaCentroCusto = { centro_custo_id: string; valor: number };
+
+export type LinhaCategoria = {
+  categoria_id: string;
+  valor: number;
+  // no máximo um dos dois: centro de custo único pra linha inteira, ou
+  // dividida em N — nunca os dois ao mesmo tempo (a UI garante isso).
+  centro_custo_id?: string;
+  centros_custo?: LinhaCentroCusto[];
+};
+
+function parseLinhaCentroCusto(bruto: unknown): LinhaCentroCusto | { erro: string } {
+  if (typeof bruto !== "object" || bruto === null) return { erro: "Rateio de centro de custo inválido." };
+  const { centro_custo_id, valor } = bruto as Record<string, unknown>;
+  const valorNumero = Number(valor);
+  if (typeof centro_custo_id !== "string" || !centro_custo_id || !Number.isFinite(valorNumero) || valorNumero <= 0) {
+    return { erro: "Rateio de centro de custo inválido." };
+  }
+  return { centro_custo_id, valor: valorNumero };
+}
 
 // Lê o rateio do FormData: se veio rateio_json (toggle "Dividir entre
 // categorias" ligado no formulário), usa as N linhas de lá; senão, cai no
-// caminho simples de sempre — 1 linha com a categoria única escolhida.
-export function extrairLinhasCategoria(formData: FormData, categoriaIdSimples: string, valorTotal: number): LinhaCategoria[] | { erro: string } {
+// caminho simples de sempre — 1 linha com a categoria única escolhida. Cada
+// linha (nos dois modos) pode trazer opcionalmente um centro de custo único
+// ou dividido — mesmo formato nos dois casos.
+export function extrairLinhasCategoria(
+  formData: FormData,
+  categoriaIdSimples: string,
+  valorTotal: number,
+): LinhaCategoria[] | { erro: string } {
   const rateioJson = formData.get("rateio_json");
   if (!rateioJson) {
-    return [{ categoria_id: categoriaIdSimples, valor: valorTotal }];
+    const centroCustoId = String(formData.get("centro_custo_id") ?? "") || undefined;
+    return [{ categoria_id: categoriaIdSimples, valor: valorTotal, centro_custo_id: centroCustoId }];
   }
 
   let bruto: unknown;
@@ -90,12 +116,31 @@ export function extrairLinhasCategoria(formData: FormData, categoriaIdSimples: s
   const linhas: LinhaCategoria[] = [];
   for (const linha of bruto) {
     if (typeof linha !== "object" || linha === null) return { erro: "Rateio inválido." };
-    const { categoria_id, valor } = linha as Record<string, unknown>;
+    const { categoria_id, valor, centro_custo_id, centros_custo } = linha as Record<string, unknown>;
     const valorNumero = Number(valor);
     if (typeof categoria_id !== "string" || !categoria_id || !Number.isFinite(valorNumero) || valorNumero <= 0) {
       return { erro: "Rateio inválido." };
     }
-    linhas.push({ categoria_id, valor: valorNumero });
+
+    const linhaCategoria: LinhaCategoria = { categoria_id, valor: valorNumero };
+
+    if (Array.isArray(centros_custo) && centros_custo.length > 0) {
+      const linhasCentroCusto: LinhaCentroCusto[] = [];
+      for (const cc of centros_custo) {
+        const resultado = parseLinhaCentroCusto(cc);
+        if ("erro" in resultado) return resultado;
+        linhasCentroCusto.push(resultado);
+      }
+      const somaCentroCusto = linhasCentroCusto.reduce((acc, l) => acc + l.valor, 0);
+      if (Math.round((somaCentroCusto - valorNumero) * 100) !== 0) {
+        return { erro: "A soma dos centros de custo não bate com o valor da categoria." };
+      }
+      linhaCategoria.centros_custo = linhasCentroCusto;
+    } else if (typeof centro_custo_id === "string" && centro_custo_id) {
+      linhaCategoria.centro_custo_id = centro_custo_id;
+    }
+
+    linhas.push(linhaCategoria);
   }
 
   return linhas;
@@ -183,16 +228,52 @@ export async function criarEventoFinanceiro(
     return { erro: erroEvento?.message ?? "Falha ao criar evento financeiro." };
   }
 
-  const { error: erroRateio } = await supabase.from("rateio_categoria").insert(
-    params.categorias.map((c) => ({
-      tenant_id: params.tenant_id,
-      evento_financeiro_id: evento.id,
-      categoria_id: c.categoria_id,
-      valor: c.valor,
-    })),
-  );
+  const { data: rateiosCriados, error: erroRateio } = await supabase
+    .from("rateio_categoria")
+    .insert(
+      params.categorias.map((c) => ({
+        tenant_id: params.tenant_id,
+        evento_financeiro_id: evento.id,
+        categoria_id: c.categoria_id,
+        valor: c.valor,
+      })),
+    )
+    // uma única instrução INSERT preserva a ordem das linhas no retorno —
+    // por isso dá pra casar rateiosCriados[i] com params.categorias[i].
+    .select("id");
 
-  if (erroRateio) return { erro: erroRateio.message };
+  if (erroRateio || !rateiosCriados) return { erro: erroRateio?.message ?? "Falha ao gravar rateio de categorias." };
+
+  // centro de custo é sempre opcional, por linha — nenhuma partida do
+  // ledger depende dele, é só uma dimensão de relatório.
+  const linhasCentroCusto: { tenant_id: string; rateio_categoria_id: string; centro_custo_id: string; valor: number }[] = [];
+  params.categorias.forEach((c, indice) => {
+    const rateioCategoriaId = rateiosCriados[indice].id;
+    if (c.centro_custo_id) {
+      linhasCentroCusto.push({ tenant_id: params.tenant_id, rateio_categoria_id: rateioCategoriaId, centro_custo_id: c.centro_custo_id, valor: c.valor });
+    } else if (c.centros_custo) {
+      for (const cc of c.centros_custo) {
+        linhasCentroCusto.push({ tenant_id: params.tenant_id, rateio_categoria_id: rateioCategoriaId, centro_custo_id: cc.centro_custo_id, valor: cc.valor });
+      }
+    }
+  });
+
+  if (linhasCentroCusto.length > 0) {
+    // nunca confiamos nos centro_custo_id vindos do formulário sem revalidar.
+    const centroCustoIds = [...new Set(linhasCentroCusto.map((l) => l.centro_custo_id))];
+    const { data: centrosEncontrados, error: erroCentros } = await supabase
+      .from("centros_custo")
+      .select("id")
+      .eq("tenant_id", params.tenant_id)
+      .in("id", centroCustoIds);
+
+    if (erroCentros || !centrosEncontrados || centrosEncontrados.length !== centroCustoIds.length) {
+      return { erro: "Um ou mais centros de custo são inválidos." };
+    }
+
+    const { error: erroRateioCentroCusto } = await supabase.from("rateio_centro_custo").insert(linhasCentroCusto);
+    if (erroRateioCentroCusto) return { erro: erroRateioCentroCusto.message };
+  }
 
   const parcelas = calcularParcelas(params.valor_total, params.numero_parcelas, params.primeiro_vencimento);
 

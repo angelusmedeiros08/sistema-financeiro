@@ -27,7 +27,7 @@ const ITENS_NAV: ItemNav[] = [
   { href: "/contas-a-receber", label: "Contas a receber", icon: HandCoins, disponivel: true },
   { href: "/contas-a-pagar", label: "Contas a pagar", icon: CreditCard, disponivel: true },
   { href: "/relatorios", label: "Relatórios", icon: ChartLineUp, disponivel: false },
-  { href: "/configuracoes", label: "Configurações", icon: GearSix, disponivel: false },
+  { href: "/configuracoes", label: "Configurações", icon: GearSix, disponivel: true },
 ];
 
 export function SidebarConteudo() {

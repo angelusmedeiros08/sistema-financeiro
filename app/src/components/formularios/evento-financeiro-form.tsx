@@ -11,6 +11,7 @@ import { RateioCategorias } from "./rateio-categorias";
 
 type Categoria = { id: string; nome: string };
 type Pessoa = { id: string; nome: string };
+type CentroCusto = { id: string; nome: string };
 type ResultadoAcao = { erro: string } | { sucesso: true };
 
 const estadoInicial = { erro: "" };
@@ -21,11 +22,13 @@ export function EventoFinanceiroForm({
   tipo,
   categorias,
   pessoas,
+  centrosCusto,
   acao,
 }: {
   tipo: "RECEITA" | "DESPESA";
   categorias: Categoria[];
   pessoas: Pessoa[];
+  centrosCusto: CentroCusto[];
   acao: (formData: FormData) => Promise<ResultadoAcao>;
 }) {
   const ehReceita = tipo === "RECEITA";
@@ -99,20 +102,41 @@ export function EventoFinanceiroForm({
         </div>
 
         {rateioAtivo ? (
-          <RateioCategorias categorias={categorias} valorTotal={valorNumerico} onValidacaoChange={setRateioValido} />
+          <RateioCategorias
+            categorias={categorias}
+            centrosCusto={centrosCusto}
+            valorTotal={valorNumerico}
+            onValidacaoChange={setRateioValido}
+          />
         ) : (
-          <Select name="categoria_id" required>
-            <SelectTrigger id="categoria_id" className="w-full">
-              <SelectValue placeholder="Selecione..." />
-            </SelectTrigger>
-            <SelectContent>
-              {categorias.map((c) => (
-                <SelectItem key={c.id} value={c.id}>
-                  {c.nome}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className={centrosCusto.length > 0 ? "grid grid-cols-2 gap-3" : undefined}>
+            <Select name="categoria_id" required>
+              <SelectTrigger id="categoria_id" className="w-full">
+                <SelectValue placeholder="Selecione a categoria..." />
+              </SelectTrigger>
+              <SelectContent>
+                {categorias.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.nome}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {centrosCusto.length > 0 && (
+              <Select name="centro_custo_id">
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Centro de custo (opcional)..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {centrosCusto.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
         )}
       </div>
 

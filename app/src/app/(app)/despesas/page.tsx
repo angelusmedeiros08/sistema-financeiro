@@ -14,7 +14,7 @@ export default async function PaginaDespesas() {
 
   const supabase = await createClient();
 
-  const [{ data: categorias }, { data: pessoas }, { data: eventos }] = await Promise.all([
+  const [{ data: categorias }, { data: pessoas }, { data: centrosCusto }, { data: eventos }] = await Promise.all([
     supabase
       .from("categorias_financeiras")
       .select("id, nome")
@@ -27,6 +27,7 @@ export default async function PaginaDespesas() {
       .eq("tenant_id", tenantId)
       .contains("perfis", ["FORNECEDOR"])
       .order("nome"),
+    supabase.from("centros_custo").select("id, nome").eq("tenant_id", tenantId).eq("ativo", true).order("nome"),
     supabase
       .from("eventos_financeiros")
       .select(
@@ -43,7 +44,13 @@ export default async function PaginaDespesas() {
 
       <section>
         <h2 className="mb-3 text-xs font-bold uppercase tracking-wide text-muted-foreground">Nova despesa</h2>
-        <EventoFinanceiroForm tipo="DESPESA" categorias={categorias ?? []} pessoas={pessoas ?? []} acao={criarDespesa} />
+        <EventoFinanceiroForm
+          tipo="DESPESA"
+          categorias={categorias ?? []}
+          pessoas={pessoas ?? []}
+          centrosCusto={centrosCusto ?? []}
+          acao={criarDespesa}
+        />
       </section>
 
       <section>
