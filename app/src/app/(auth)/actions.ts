@@ -118,7 +118,7 @@ export async function entrar(formData: FormData): Promise<ResultadoAcao | never>
     return { erro: error.message };
   }
 
-  redirect("/despesas");
+  redirect("/painel");
 }
 
 export async function sair() {

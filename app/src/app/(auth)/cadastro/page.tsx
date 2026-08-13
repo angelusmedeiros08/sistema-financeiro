@@ -3,6 +3,10 @@
 import { useActionState } from "react";
 import Link from "next/link";
 import { cadastrar } from "../actions";
+import { AuthShell } from "@/components/layout/auth-shell";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 
 const estadoInicial = { erro: "" };
 
@@ -14,40 +18,33 @@ export default function PaginaCadastro() {
   }, estadoInicial as { erro: string; sucesso?: string });
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-neutral-50 px-4">
-      <div className="w-full max-w-sm rounded-lg border border-neutral-200 bg-white p-8 shadow-sm">
-        <h1 className="mb-1 text-xl font-semibold text-neutral-900">Criar conta</h1>
-        <p className="mb-6 text-sm text-neutral-500">Cadastre sua empresa para começar.</p>
-
-        {estado.sucesso ? (
-          <p className="rounded-md bg-green-50 p-3 text-sm text-green-800">{estado.sucesso}</p>
-        ) : (
-          <form action={formAction} className="space-y-4">
-            <Campo label="Nome da empresa" name="nome_empresa" type="text" required />
-            <Campo label="Seu nome" name="nome_usuario" type="text" required />
-            <Campo label="E-mail" name="email" type="email" required />
-            <Campo label="Senha" name="senha" type="password" required minLength={8} />
-
-            {estado.erro && <p className="text-sm text-red-600">{estado.erro}</p>}
-
-            <button
-              type="submit"
-              disabled={pendente}
-              className="w-full rounded-md bg-neutral-900 py-2 text-sm font-medium text-white hover:bg-neutral-800 disabled:opacity-50"
-            >
-              {pendente ? "Criando..." : "Criar conta"}
-            </button>
-          </form>
-        )}
-
-        <p className="mt-6 text-center text-sm text-neutral-500">
-          Já tem conta?{" "}
-          <Link href="/entrar" className="font-medium text-neutral-900 underline">
-            Entrar
-          </Link>
+    <AuthShell titulo="Criar conta" subtitulo="Cadastre sua empresa para começar.">
+      {estado.sucesso ? (
+        <p className="rounded-xl border border-[#157F6B]/25 bg-[#157F6B]/10 p-4 text-sm text-[#0F5F50]">
+          {estado.sucesso}
         </p>
-      </div>
-    </main>
+      ) : (
+        <form action={formAction} className="space-y-4">
+          <Campo label="Nome da empresa" name="nome_empresa" type="text" required />
+          <Campo label="Seu nome" name="nome_usuario" type="text" required />
+          <Campo label="E-mail" name="email" type="email" required />
+          <Campo label="Senha" name="senha" type="password" required minLength={8} />
+
+          {estado.erro && <p className="text-sm text-destructive">{estado.erro}</p>}
+
+          <Button type="submit" disabled={pendente} className="w-full">
+            {pendente ? "Criando..." : "Criar conta"}
+          </Button>
+        </form>
+      )}
+
+      <p className="mt-6 text-center text-sm text-muted-foreground">
+        Já tem conta?{" "}
+        <Link href="/entrar" className="font-semibold text-foreground underline underline-offset-4">
+          Entrar
+        </Link>
+      </p>
+    </AuthShell>
   );
 }
 
@@ -59,17 +56,14 @@ function Campo(props: {
   minLength?: number;
 }) {
   return (
-    <div>
-      <label htmlFor={props.name} className="mb-1 block text-sm font-medium text-neutral-700">
-        {props.label}
-      </label>
-      <input
+    <div className="space-y-1.5">
+      <Label htmlFor={props.name}>{props.label}</Label>
+      <Input
         id={props.name}
         name={props.name}
         type={props.type}
         required={props.required}
         minLength={props.minLength}
-        className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-500 focus:outline-none"
       />
     </div>
   );

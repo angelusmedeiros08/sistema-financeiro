@@ -3,6 +3,10 @@
 import { useActionState } from "react";
 import Link from "next/link";
 import { entrar } from "../actions";
+import { AuthShell } from "@/components/layout/auth-shell";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 
 const estadoInicial = { erro: "" };
 
@@ -15,55 +19,30 @@ export default function PaginaEntrar() {
   }, estadoInicial);
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-neutral-50 px-4">
-      <div className="w-full max-w-sm rounded-lg border border-neutral-200 bg-white p-8 shadow-sm">
-        <h1 className="mb-1 text-xl font-semibold text-neutral-900">Entrar</h1>
-        <p className="mb-6 text-sm text-neutral-500">Acesse sua conta.</p>
+    <AuthShell titulo="Entrar" subtitulo="Acesse sua conta.">
+      <form action={formAction} className="space-y-4">
+        <div className="space-y-1.5">
+          <Label htmlFor="email">E-mail</Label>
+          <Input id="email" name="email" type="email" required />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="senha">Senha</Label>
+          <Input id="senha" name="senha" type="password" required />
+        </div>
 
-        <form action={formAction} className="space-y-4">
-          <div>
-            <label htmlFor="email" className="mb-1 block text-sm font-medium text-neutral-700">
-              E-mail
-            </label>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              required
-              className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-500 focus:outline-none"
-            />
-          </div>
-          <div>
-            <label htmlFor="senha" className="mb-1 block text-sm font-medium text-neutral-700">
-              Senha
-            </label>
-            <input
-              id="senha"
-              name="senha"
-              type="password"
-              required
-              className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-500 focus:outline-none"
-            />
-          </div>
+        {estado.erro && <p className="text-sm text-destructive">{estado.erro}</p>}
 
-          {estado.erro && <p className="text-sm text-red-600">{estado.erro}</p>}
+        <Button type="submit" disabled={pendente} className="w-full">
+          {pendente ? "Entrando..." : "Entrar"}
+        </Button>
+      </form>
 
-          <button
-            type="submit"
-            disabled={pendente}
-            className="w-full rounded-md bg-neutral-900 py-2 text-sm font-medium text-white hover:bg-neutral-800 disabled:opacity-50"
-          >
-            {pendente ? "Entrando..." : "Entrar"}
-          </button>
-        </form>
-
-        <p className="mt-6 text-center text-sm text-neutral-500">
-          Ainda não tem conta?{" "}
-          <Link href="/cadastro" className="font-medium text-neutral-900 underline">
-            Criar conta
-          </Link>
-        </p>
-      </div>
-    </main>
+      <p className="mt-6 text-center text-sm text-muted-foreground">
+        Ainda não tem conta?{" "}
+        <Link href="/cadastro" className="font-semibold text-foreground underline underline-offset-4">
+          Criar conta
+        </Link>
+      </p>
+    </AuthShell>
   );
 }
