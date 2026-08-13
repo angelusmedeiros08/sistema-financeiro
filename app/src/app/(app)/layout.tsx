@@ -9,6 +9,12 @@ export default async function LayoutApp({ children }: { children: React.ReactNod
     redirect("/entrar");
   }
 
+  // dupla proteção (UX — a garantia real é a RLS por papel): cliente_portal
+  // não tem motivo pra ver a sidebar cheia de formulários que vão falhar.
+  if (contexto.papel === "cliente_portal") {
+    redirect("/portal");
+  }
+
   return (
     <div className="flex min-h-screen">
       <Sidebar />

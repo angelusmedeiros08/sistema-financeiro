@@ -121,6 +121,45 @@ export async function entrar(formData: FormData): Promise<ResultadoAcao | never>
   redirect("/painel");
 }
 
+// Chamada pela tela que o link de convite leva depois do /auth/confirm já
+// ter trocado o code por uma sessão de verdade — o usuário já está
+// autenticado nesse ponto, só falta escolher a senha (equivalente ao
+// cadastro() normal, mas sem criar tenant novo, porque usuario_tenant já
+// foi criado quando o admin convidou).
+export async function definirSenhaConvite(formData: FormData): Promise<ResultadoAcao | never> {
+  const nome = String(formData.get("nome") ?? "").trim();
+  const senha = String(formData.get("senha") ?? "");
+
+  if (!nome || senha.length < 8) {
+    return { erro: "Informe seu nome e uma senha com pelo menos 8 caracteres." };
+  }
+
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { erro: "Link de convite expirado ou inválido — peça um novo convite." };
+  }
+
+  const { error } = await supabase.auth.updateUser({ password: senha, data: { nome } });
+  if (error) return { erro: error.message };
+
+  await supabase.from("usuarios").update({ nome }).eq("id", user.id);
+
+  const { data: vinculo } = await supabase
+    .from("usuario_tenant")
+    .select("papel")
+    .eq("usuario_id", user.id)
+    .eq("ativo", true)
+    .limit(1)
+    .maybeSingle();
+
+  redirect(vinculo?.papel === "cliente_portal" ? "/portal" : "/painel");
+}
+
 export async function sair() {
   const supabase = await createClient();
   await supabase.auth.signOut();
