@@ -37,11 +37,16 @@ export function TabelaEventos({ eventos, textoVazio }: { eventos: EventoLinha[];
           {eventos.map((evento) => {
             const parcelas = evento.parcelas ?? [];
             const primeiraParcela = parcelas[0];
-            const categoriaNome = evento.rateio_categoria?.[0]?.categorias_financeiras?.nome;
+            const linhasRateio = evento.rateio_categoria ?? [];
+            const categoriaNome = linhasRateio[0]?.categorias_financeiras?.nome;
+            const outrasCategorias = linhasRateio.length - 1;
             return (
               <TableRow key={evento.id}>
                 <TableCell className="font-medium text-foreground">{evento.descricao ?? "Sem descrição"}</TableCell>
-                <TableCell className="text-muted-foreground">{categoriaNome ?? "—"}</TableCell>
+                <TableCell className="text-muted-foreground">
+                  {categoriaNome ?? "—"}
+                  {outrasCategorias > 0 && <span className="ml-1 text-xs">+{outrasCategorias}</span>}
+                </TableCell>
                 <TableCell className="text-muted-foreground">
                   {primeiraParcela
                     ? new Date(primeiraParcela.data_vencimento + "T00:00:00").toLocaleDateString("pt-BR")

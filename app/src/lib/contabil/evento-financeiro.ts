@@ -65,28 +65,76 @@ export async function resolverPessoaId(
   return data?.id ?? null;
 }
 
+export type LinhaCategoria = { categoria_id: string; valor: number };
+
+// Lê o rateio do FormData: se veio rateio_json (toggle "Dividir entre
+// categorias" ligado no formulário), usa as N linhas de lá; senão, cai no
+// caminho simples de sempre — 1 linha com a categoria única escolhida.
+export function extrairLinhasCategoria(formData: FormData, categoriaIdSimples: string, valorTotal: number): LinhaCategoria[] | { erro: string } {
+  const rateioJson = formData.get("rateio_json");
+  if (!rateioJson) {
+    return [{ categoria_id: categoriaIdSimples, valor: valorTotal }];
+  }
+
+  let bruto: unknown;
+  try {
+    bruto = JSON.parse(String(rateioJson));
+  } catch {
+    return { erro: "Rateio inválido." };
+  }
+
+  if (!Array.isArray(bruto) || bruto.length < 2) {
+    return { erro: "O rateio precisa de pelo menos 2 categorias." };
+  }
+
+  const linhas: LinhaCategoria[] = [];
+  for (const linha of bruto) {
+    if (typeof linha !== "object" || linha === null) return { erro: "Rateio inválido." };
+    const { categoria_id, valor } = linha as Record<string, unknown>;
+    const valorNumero = Number(valor);
+    if (typeof categoria_id !== "string" || !categoria_id || !Number.isFinite(valorNumero) || valorNumero <= 0) {
+      return { erro: "Rateio inválido." };
+    }
+    linhas.push({ categoria_id, valor: valorNumero });
+  }
+
+  return linhas;
+}
+
 export type ParametrosEventoFinanceiro = {
   tenant_id: string;
   tipo: TipoCategoria;
   descricao: string;
   valor_total: number;
   data_competencia: string;
-  categoria_id: string;
-  conta_contabil_categoria_id: string;
+  // 1 linha = caso simples de sempre; 2+ linhas = rateio entre categorias.
+  // O mesmo caminho de código serve os dois — não há um "modo rateio"
+  // separado, só um array de tamanho diferente.
+  categorias: LinhaCategoria[];
   pessoa_id?: string | null;
   numero_parcelas: number;
   primeiro_vencimento: string;
   criado_por?: string;
 };
 
-// Cria um evento financeiro (receita ou despesa) com seu rateio, parcelas e
-// o lançamento contábil de reconhecimento — usado como núcleo comum tanto
-// por "nova despesa" quanto por "nova receita", que só invertem qual lado
-// (débito/crédito) recebe a conta da categoria vs. Contas a Receber/Pagar.
+// Cria um evento financeiro (receita ou despesa) com seu rateio (1 ou mais
+// categorias), parcelas e o lançamento contábil de reconhecimento — usado
+// como núcleo comum tanto por "nova despesa" quanto por "nova receita", que
+// só invertem qual lado (débito/crédito) recebe a conta da categoria vs.
+// Contas a Receber/Pagar.
 export async function criarEventoFinanceiro(
   supabase: Cliente,
   params: ParametrosEventoFinanceiro,
 ): Promise<{ evento_id: string } | { erro: string }> {
+  if (params.categorias.length === 0) {
+    return { erro: "Informe ao menos uma categoria." };
+  }
+
+  const somaCategorias = params.categorias.reduce((acc, c) => acc + c.valor, 0);
+  if (Math.round((somaCategorias - params.valor_total) * 100) !== 0) {
+    return { erro: "A soma das categorias não bate com o valor total." };
+  }
+
   const { data: contaContrapartida, error: erroContaContrapartida } = await supabase
     .from("contas_contabeis")
     .select("id")
@@ -96,6 +144,25 @@ export async function criarEventoFinanceiro(
 
   if (erroContaContrapartida || !contaContrapartida) {
     return { erro: "Conta contábil de Contas a Receber/Pagar não encontrada para este tenant." };
+  }
+
+  // nunca confiamos nas categorias vindas do formulário sem revalidar —
+  // buscamos de novo no servidor, escopadas ao tenant e ao tipo do evento.
+  const categoriaIds = params.categorias.map((c) => c.categoria_id);
+  const { data: categoriasEncontradas, error: erroCategorias } = await supabase
+    .from("categorias_financeiras")
+    .select("id, conta_contabil_id")
+    .eq("tenant_id", params.tenant_id)
+    .eq("tipo", params.tipo)
+    .in("id", categoriaIds);
+
+  if (erroCategorias || !categoriasEncontradas || categoriasEncontradas.length !== new Set(categoriaIds).size) {
+    return { erro: "Uma ou mais categorias são inválidas." };
+  }
+
+  const contaContabilPorCategoria = new Map(categoriasEncontradas.map((c) => [c.id, c.conta_contabil_id]));
+  if (categoriasEncontradas.some((c) => !c.conta_contabil_id)) {
+    return { erro: "Categoria sem conta contábil vinculada." };
   }
 
   const { data: evento, error: erroEvento } = await supabase
@@ -116,12 +183,14 @@ export async function criarEventoFinanceiro(
     return { erro: erroEvento?.message ?? "Falha ao criar evento financeiro." };
   }
 
-  const { error: erroRateio } = await supabase.from("rateio_categoria").insert({
-    tenant_id: params.tenant_id,
-    evento_financeiro_id: evento.id,
-    categoria_id: params.categoria_id,
-    valor: params.valor_total,
-  });
+  const { error: erroRateio } = await supabase.from("rateio_categoria").insert(
+    params.categorias.map((c) => ({
+      tenant_id: params.tenant_id,
+      evento_financeiro_id: evento.id,
+      categoria_id: c.categoria_id,
+      valor: c.valor,
+    })),
+  );
 
   if (erroRateio) return { erro: erroRateio.message };
 
@@ -142,16 +211,20 @@ export async function criarEventoFinanceiro(
 
   // reconhecimento contábil no regime de competência — a saída/entrada de
   // caixa de verdade só vira lançamento quando a parcela for baixada.
-  const partidas =
-    params.tipo === "RECEITA"
-      ? [
-          { conta_contabil_id: contaContrapartida.id, tipo: "DEBITO" as const, valor: params.valor_total },
-          { conta_contabil_id: params.conta_contabil_categoria_id, tipo: "CREDITO" as const, valor: params.valor_total },
-        ]
-      : [
-          { conta_contabil_id: params.conta_contabil_categoria_id, tipo: "DEBITO" as const, valor: params.valor_total },
-          { conta_contabil_id: contaContrapartida.id, tipo: "CREDITO" as const, valor: params.valor_total },
-        ];
+  // 1 partida de contrapartida (valor total) + 1 partida por categoria do
+  // rateio (seu próprio valor) — com 1 categoria só, é a mesma coisa de
+  // sempre (2 partidas); com N, o lado da categoria só se multiplica.
+  const tipoLadoCategoria = params.tipo === "RECEITA" ? ("CREDITO" as const) : ("DEBITO" as const);
+  const tipoContrapartida = params.tipo === "RECEITA" ? ("DEBITO" as const) : ("CREDITO" as const);
+
+  const partidas = [
+    { conta_contabil_id: contaContrapartida.id, tipo: tipoContrapartida, valor: params.valor_total },
+    ...params.categorias.map((c) => ({
+      conta_contabil_id: contaContabilPorCategoria.get(c.categoria_id)!,
+      tipo: tipoLadoCategoria,
+      valor: c.valor,
+    })),
+  ];
 
   const resultadoLancamento = await registrarLancamento(supabase, {
     tenant_id: params.tenant_id,

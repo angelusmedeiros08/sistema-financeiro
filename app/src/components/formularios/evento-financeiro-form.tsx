@@ -1,11 +1,13 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { CaretDown } from "@phosphor-icons/react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PessoaCombobox } from "./pessoa-combobox";
+import { RateioCategorias } from "./rateio-categorias";
 
 type Categoria = { id: string; nome: string };
 type Pessoa = { id: string; nome: string };
@@ -32,11 +34,18 @@ export function EventoFinanceiroForm({
   // um envio bem-sucedido, inclusive esses dois, sem precisar de reset
   // imperativo em cada componente filho.
   const [chaveFormulario, setChaveFormulario] = useState(0);
+  const [valorTexto, setValorTexto] = useState("");
+  const [rateioAtivo, setRateioAtivo] = useState(false);
+  const [rateioValido, setRateioValido] = useState(false);
+
+  const valorNumerico = Number(valorTexto.replace(",", ".")) || 0;
 
   const [estado, formAction, pendente] = useActionState(async (_: typeof estadoInicial, formData: FormData) => {
     const resultado = await acao(formData);
     if ("erro" in resultado) return { erro: resultado.erro };
     setChaveFormulario((k) => k + 1);
+    setValorTexto("");
+    setRateioAtivo(false);
     return { erro: "" };
   }, estadoInicial);
 
@@ -59,7 +68,16 @@ export function EventoFinanceiroForm({
 
       <div className="space-y-1.5">
         <Label htmlFor="valor">Valor total (R$)</Label>
-        <Input id="valor" name="valor" type="text" inputMode="decimal" required placeholder="0,00" />
+        <Input
+          id="valor"
+          name="valor"
+          type="text"
+          inputMode="decimal"
+          required
+          placeholder="0,00"
+          value={valorTexto}
+          onChange={(e) => setValorTexto(e.target.value)}
+        />
       </div>
 
       <div className="space-y-1.5">
@@ -67,20 +85,35 @@ export function EventoFinanceiroForm({
         <Input id="data_vencimento" name="data_vencimento" type="date" required />
       </div>
 
-      <div className="space-y-1.5">
-        <Label htmlFor="categoria_id">Categoria</Label>
-        <Select name="categoria_id" required>
-          <SelectTrigger id="categoria_id" className="w-full">
-            <SelectValue placeholder="Selecione..." />
-          </SelectTrigger>
-          <SelectContent>
-            {categorias.map((c) => (
-              <SelectItem key={c.id} value={c.id}>
-                {c.nome}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      <div className="space-y-1.5 sm:col-span-2">
+        <div className="flex items-center justify-between">
+          <Label htmlFor={rateioAtivo ? undefined : "categoria_id"}>Categoria</Label>
+          <button
+            type="button"
+            onClick={() => setRateioAtivo((v) => !v)}
+            className="flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground"
+          >
+            {rateioAtivo ? "Usar categoria única" : "Dividir entre categorias"}
+            <CaretDown size={12} className={rateioAtivo ? "rotate-180 transition-transform" : "transition-transform"} />
+          </button>
+        </div>
+
+        {rateioAtivo ? (
+          <RateioCategorias categorias={categorias} valorTotal={valorNumerico} onValidacaoChange={setRateioValido} />
+        ) : (
+          <Select name="categoria_id" required>
+            <SelectTrigger id="categoria_id" className="w-full">
+              <SelectValue placeholder="Selecione..." />
+            </SelectTrigger>
+            <SelectContent>
+              {categorias.map((c) => (
+                <SelectItem key={c.id} value={c.id}>
+                  {c.nome}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
       </div>
 
       <div className="space-y-1.5">
@@ -99,7 +132,7 @@ export function EventoFinanceiroForm({
         </Select>
       </div>
 
-      <div className="space-y-1.5 sm:col-span-2">
+      <div className="space-y-1.5">
         <Label>{ehReceita ? "Cliente" : "Fornecedor"} (opcional)</Label>
         <PessoaCombobox pessoas={pessoas} perfil={ehReceita ? "CLIENTE" : "FORNECEDOR"} label={`Selecionar ${ehReceita ? "cliente" : "fornecedor"}...`} />
       </div>
@@ -107,7 +140,7 @@ export function EventoFinanceiroForm({
       {estado.erro && <p className="text-sm text-destructive sm:col-span-2">{estado.erro}</p>}
 
       <div className="sm:col-span-2">
-        <Button type="submit" disabled={pendente}>
+        <Button type="submit" disabled={pendente || (rateioAtivo && !rateioValido)}>
           {pendente ? "Salvando..." : ehReceita ? "Registrar receita" : "Registrar despesa"}
         </Button>
       </div>

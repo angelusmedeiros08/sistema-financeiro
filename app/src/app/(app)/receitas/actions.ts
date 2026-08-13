@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/utils/supabase/server";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
-import { criarEventoFinanceiro, resolverPessoaId } from "@/lib/contabil/evento-financeiro";
+import { criarEventoFinanceiro, resolverPessoaId, extrairLinhasCategoria } from "@/lib/contabil/evento-financeiro";
 
 type ResultadoAcao = { erro: string } | { sucesso: true };
 
@@ -17,8 +17,14 @@ export async function criarReceita(formData: FormData): Promise<ResultadoAcao> {
   const pessoaNomeNovo = String(formData.get("pessoa_nome_novo") ?? "") || undefined;
 
   const valor = Number(valorTexto);
-  if (!descricao || !dataVencimento || !categoriaId || !Number.isFinite(valor) || valor <= 0) {
-    return { erro: "Preencha descrição, valor (maior que zero), vencimento e categoria." };
+  if (!descricao || !dataVencimento || !Number.isFinite(valor) || valor <= 0) {
+    return { erro: "Preencha descrição, valor (maior que zero) e vencimento." };
+  }
+
+  const categorias = extrairLinhasCategoria(formData, categoriaId, valor);
+  if ("erro" in categorias) return categorias;
+  if (!categoriaId && categorias.length === 1) {
+    return { erro: "Selecione uma categoria." };
   }
 
   const contexto = await obterUsuarioETenantAtual();
@@ -26,17 +32,6 @@ export async function criarReceita(formData: FormData): Promise<ResultadoAcao> {
   const { user, tenantId } = contexto;
 
   const supabase = await createClient();
-
-  const { data: categoria, error: erroCategoria } = await supabase
-    .from("categorias_financeiras")
-    .select("id, conta_contabil_id")
-    .eq("id", categoriaId)
-    .eq("tenant_id", tenantId)
-    .single();
-
-  if (erroCategoria || !categoria?.conta_contabil_id) {
-    return { erro: "Categoria inválida." };
-  }
 
   const pessoaResolvidaId = await resolverPessoaId(supabase, tenantId, {
     pessoaId,
@@ -50,8 +45,7 @@ export async function criarReceita(formData: FormData): Promise<ResultadoAcao> {
     descricao,
     valor_total: valor,
     data_competencia: dataVencimento,
-    categoria_id: categoriaId,
-    conta_contabil_categoria_id: categoria.conta_contabil_id,
+    categorias,
     pessoa_id: pessoaResolvidaId,
     numero_parcelas: numeroParcelas,
     primeiro_vencimento: dataVencimento,
