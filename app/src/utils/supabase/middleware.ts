@@ -1,0 +1,49 @@
+import { createServerClient } from "@supabase/ssr";
+import { NextResponse, type NextRequest } from "next/server";
+
+// Renova o token de sessão a cada requisição e mantém os cookies em dia.
+// Sem isso, sessão expira de forma inconsistente entre client/server components.
+export async function updateSession(request: NextRequest) {
+  let supabaseResponse = NextResponse.next({ request });
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) =>
+            request.cookies.set(name, value),
+          );
+          supabaseResponse = NextResponse.next({ request });
+          cookiesToSet.forEach(({ name, value, options }) =>
+            supabaseResponse.cookies.set(name, value, options),
+          );
+        },
+      },
+    },
+  );
+
+  // IMPORTANTE: não remover — getUser() valida o token contra o servidor
+  // Supabase (não confia só no que está no cookie). getSession() sozinho
+  // não é suficiente para decidir autorização em middleware.
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const isAuthRoute =
+    request.nextUrl.pathname.startsWith("/entrar") ||
+    request.nextUrl.pathname.startsWith("/cadastro");
+  const isPublicRoute = isAuthRoute || request.nextUrl.pathname === "/";
+
+  if (!user && !isPublicRoute) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/entrar";
+    return NextResponse.redirect(url);
+  }
+
+  return supabaseResponse;
+}

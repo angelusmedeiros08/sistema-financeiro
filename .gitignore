@@ -1,0 +1,8 @@
+# Conteúdo de terceiro (planilha comercial de referência, extraída só para
+# pesquisa) — não é nosso pra versionar/redistribuir, e é grande (20MB+).
+_planilha_extraida/
+
+# Lixo comum de SO/editor
+.DS_Store
+Thumbs.db
+desktop.ini
