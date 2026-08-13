@@ -36,8 +36,41 @@ function revalidarPaginasPessoa(pessoaId?: string) {
   }
 }
 
-// Redireciona pra página de detalhe da pessoa recém-criada — mesma rota de
-// edição, já em modo "cadastro cheio" pronta pra receber endereço/contato.
+type EnderecoJson = {
+  tipo: TipoEndereco;
+  cep?: string;
+  logradouro?: string;
+  numero?: string;
+  complemento?: string;
+  bairro?: string;
+  cidade?: string;
+  uf?: string;
+  principal: boolean;
+};
+
+type ContatoJson = {
+  nome: string;
+  cargo?: string;
+  email?: string;
+  telefone?: string;
+  principal: boolean;
+};
+
+function lerJsonArray<T>(formData: FormData, campo: string): T[] {
+  const bruto = String(formData.get(campo) ?? "");
+  if (!bruto) return [];
+  try {
+    const parsed = JSON.parse(bruto);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+// Redireciona pra página de detalhe da pessoa recém-criada assim que os
+// dados básicos + endereços/contatos coletados no formulário de criação
+// são persistidos — endereço/contato só podem ser INSERTs de verdade
+// depois que a pessoa (e o pessoa_id de FK) existe.
 export async function criarPessoaAction(formData: FormData): Promise<ResultadoAcao> {
   const contexto = await obterUsuarioETenantAtual();
   if ("erro" in contexto) return { erro: contexto.erro };
@@ -55,6 +88,37 @@ export async function criarPessoaAction(formData: FormData): Promise<ResultadoAc
   });
 
   if ("erro" in resultado) return resultado;
+
+  const enderecos = lerJsonArray<EnderecoJson>(formData, "enderecos_json");
+  for (const e of enderecos) {
+    await adicionarEndereco(supabase, {
+      tenant_id: contexto.tenantId,
+      pessoa_id: resultado.id,
+      tipo: e.tipo,
+      cep: e.cep || null,
+      logradouro: e.logradouro || null,
+      numero: e.numero || null,
+      complemento: e.complemento || null,
+      bairro: e.bairro || null,
+      cidade: e.cidade || null,
+      uf: e.uf || null,
+      principal: e.principal,
+    });
+  }
+
+  const contatos = lerJsonArray<ContatoJson>(formData, "contatos_json");
+  for (const c of contatos) {
+    if (!c.nome?.trim()) continue;
+    await adicionarContato(supabase, {
+      tenant_id: contexto.tenantId,
+      pessoa_id: resultado.id,
+      nome: c.nome,
+      cargo: c.cargo || null,
+      email: c.email || null,
+      telefone: c.telefone || null,
+      principal: c.principal,
+    });
+  }
 
   revalidarPaginasPessoa(resultado.id);
   const destino = perfis.includes("CLIENTE") ? "clientes" : "fornecedores";

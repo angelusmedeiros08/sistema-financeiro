@@ -5,11 +5,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { Database } from "@/utils/supabase/database.types";
 import type { DadosPessoa, CampoPersonalizadoDefinicao } from "@/lib/pessoas/buscar-pessoa";
 
 type PerfilPessoa = Database["public"]["Enums"]["perfil_pessoa"];
+type TipoEndereco = Database["public"]["Enums"]["tipo_endereco"];
 type ResultadoAcao = { erro: string } | { sucesso: true };
 
 const PERFIS: { valor: PerfilPessoa; rotulo: string }[] = [
@@ -17,6 +19,272 @@ const PERFIS: { valor: PerfilPessoa; rotulo: string }[] = [
   { valor: "FORNECEDOR", rotulo: "Fornecedor" },
   { valor: "TRANSPORTADORA", rotulo: "Transportadora" },
 ];
+
+const ROTULO_TIPO_ENDERECO: Record<string, string> = {
+  COMERCIAL: "Comercial",
+  COBRANCA: "Cobrança",
+  ENTREGA: "Entrega",
+  OUTRO: "Outro",
+};
+
+type EnderecoPendente = {
+  tempId: string;
+  tipo: TipoEndereco;
+  cep: string;
+  logradouro: string;
+  numero: string;
+  complemento: string;
+  bairro: string;
+  cidade: string;
+  uf: string;
+  principal: boolean;
+};
+
+type ContatoPendente = {
+  tempId: string;
+  nome: string;
+  cargo: string;
+  email: string;
+  telefone: string;
+  principal: boolean;
+};
+
+const ENDERECO_VAZIO: Omit<EnderecoPendente, "tempId"> = {
+  tipo: "COMERCIAL",
+  cep: "",
+  logradouro: "",
+  numero: "",
+  complemento: "",
+  bairro: "",
+  cidade: "",
+  uf: "",
+  principal: false,
+};
+
+const CONTATO_VAZIO: Omit<ContatoPendente, "tempId"> = {
+  nome: "",
+  cargo: "",
+  email: "",
+  telefone: "",
+  principal: false,
+};
+
+function formatarLinhaEnderecoPendente(e: EnderecoPendente) {
+  const partes = [
+    e.logradouro && e.numero ? `${e.logradouro}, ${e.numero}` : e.logradouro,
+    e.bairro,
+    e.cidade && e.uf ? `${e.cidade}/${e.uf}` : e.cidade,
+  ].filter(Boolean);
+  return partes.length > 0 ? partes.join(" — ") : "Endereço incompleto";
+}
+
+// Endereços/contatos ainda não têm pessoa_id na criação — ficam só em
+// estado local até o submit, e só viram INSERT de verdade depois que
+// criarPessoaAction cria a pessoa e resolve o id real.
+function EnderecoPendenteEditor({
+  enderecos,
+  onChange,
+}: {
+  enderecos: EnderecoPendente[];
+  onChange: (proximos: EnderecoPendente[]) => void;
+}) {
+  const [aberto, setAberto] = useState(false);
+  const [rascunho, setRascunho] = useState(ENDERECO_VAZIO);
+
+  function adicionar() {
+    const novo: EnderecoPendente = { ...rascunho, tempId: crypto.randomUUID() };
+    onChange(rascunho.principal ? [...enderecos.map((e) => ({ ...e, principal: false })), novo] : [...enderecos, novo]);
+    setRascunho(ENDERECO_VAZIO);
+    setAberto(false);
+  }
+
+  return (
+    <div>
+      <div className="mb-2 flex items-center justify-between">
+        <Label>Endereços</Label>
+        <button
+          type="button"
+          onClick={() => setAberto((v) => !v)}
+          className="text-xs font-medium text-muted-foreground hover:text-foreground"
+        >
+          {aberto ? "Fechar" : "Adicionar endereço"}
+        </button>
+      </div>
+
+      {enderecos.length === 0 && !aberto && <p className="text-sm text-muted-foreground">Nenhum endereço adicionado ainda.</p>}
+
+      {enderecos.length > 0 && (
+        <ul className="mb-2 flex flex-col gap-2">
+          {enderecos.map((e) => (
+            <li key={e.tempId} className="flex items-center justify-between gap-3 rounded-xl border border-border p-3">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-foreground">{ROTULO_TIPO_ENDERECO[e.tipo]}</span>
+                  {e.principal && <Badge className="border-none bg-[#157F6B]/12 font-semibold text-[#0F5F50]">Principal</Badge>}
+                </div>
+                <p className="truncate text-sm text-muted-foreground">{formatarLinhaEnderecoPendente(e)}</p>
+              </div>
+              <Button type="button" size="sm" variant="ghost" onClick={() => onChange(enderecos.filter((x) => x.tempId !== e.tempId))}>
+                Remover
+              </Button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {aberto && (
+        <div className="grid gap-3 rounded-xl border border-border bg-muted/30 p-4 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <Label>Tipo</Label>
+            <Select value={rascunho.tipo} onValueChange={(v) => setRascunho((r) => ({ ...r, tipo: v as TipoEndereco }))}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(ROTULO_TIPO_ENDERECO).map(([valor, rotulo]) => (
+                  <SelectItem key={valor} value={valor}>
+                    {rotulo}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label>CEP</Label>
+            <Input value={rascunho.cep} onChange={(e) => setRascunho((r) => ({ ...r, cep: e.target.value }))} />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Logradouro</Label>
+            <Input value={rascunho.logradouro} onChange={(e) => setRascunho((r) => ({ ...r, logradouro: e.target.value }))} />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Número</Label>
+            <Input value={rascunho.numero} onChange={(e) => setRascunho((r) => ({ ...r, numero: e.target.value }))} />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Complemento</Label>
+            <Input value={rascunho.complemento} onChange={(e) => setRascunho((r) => ({ ...r, complemento: e.target.value }))} />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Bairro</Label>
+            <Input value={rascunho.bairro} onChange={(e) => setRascunho((r) => ({ ...r, bairro: e.target.value }))} />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Cidade</Label>
+            <Input value={rascunho.cidade} onChange={(e) => setRascunho((r) => ({ ...r, cidade: e.target.value }))} />
+          </div>
+          <div className="space-y-1.5">
+            <Label>UF</Label>
+            <Input maxLength={2} value={rascunho.uf} onChange={(e) => setRascunho((r) => ({ ...r, uf: e.target.value }))} />
+          </div>
+          <label className="flex items-center gap-2 text-sm text-foreground sm:col-span-2">
+            <Checkbox checked={rascunho.principal} onCheckedChange={(v) => setRascunho((r) => ({ ...r, principal: v === true }))} />
+            Definir como endereço principal
+          </label>
+          <div className="sm:col-span-2">
+            <Button type="button" size="sm" onClick={adicionar}>
+              Adicionar à lista
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ContatoPendenteEditor({
+  contatos,
+  onChange,
+}: {
+  contatos: ContatoPendente[];
+  onChange: (proximos: ContatoPendente[]) => void;
+}) {
+  const [aberto, setAberto] = useState(false);
+  const [rascunho, setRascunho] = useState(CONTATO_VAZIO);
+  const [erro, setErro] = useState("");
+
+  function adicionar() {
+    if (!rascunho.nome.trim()) {
+      setErro("Informe o nome do contato.");
+      return;
+    }
+    const novo: ContatoPendente = { ...rascunho, tempId: crypto.randomUUID() };
+    onChange(rascunho.principal ? [...contatos.map((c) => ({ ...c, principal: false })), novo] : [...contatos, novo]);
+    setRascunho(CONTATO_VAZIO);
+    setErro("");
+    setAberto(false);
+  }
+
+  return (
+    <div>
+      <div className="mb-2 flex items-center justify-between">
+        <Label>Contatos</Label>
+        <button
+          type="button"
+          onClick={() => setAberto((v) => !v)}
+          className="text-xs font-medium text-muted-foreground hover:text-foreground"
+        >
+          {aberto ? "Fechar" : "Adicionar contato"}
+        </button>
+      </div>
+
+      {contatos.length === 0 && !aberto && <p className="text-sm text-muted-foreground">Nenhum contato adicionado ainda.</p>}
+
+      {contatos.length > 0 && (
+        <ul className="mb-2 flex flex-col gap-2">
+          {contatos.map((c) => (
+            <li key={c.tempId} className="flex items-center justify-between gap-3 rounded-xl border border-border p-3">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-foreground">{c.nome}</span>
+                  {c.cargo && <span className="text-xs text-muted-foreground">{c.cargo}</span>}
+                  {c.principal && <Badge className="border-none bg-[#157F6B]/12 font-semibold text-[#0F5F50]">Principal</Badge>}
+                </div>
+                <p className="truncate text-sm text-muted-foreground">
+                  {[c.email, c.telefone].filter(Boolean).join(" · ") || "Sem e-mail/telefone"}
+                </p>
+              </div>
+              <Button type="button" size="sm" variant="ghost" onClick={() => onChange(contatos.filter((x) => x.tempId !== c.tempId))}>
+                Remover
+              </Button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {aberto && (
+        <div className="grid gap-3 rounded-xl border border-border bg-muted/30 p-4 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <Label>Nome</Label>
+            <Input value={rascunho.nome} onChange={(e) => setRascunho((r) => ({ ...r, nome: e.target.value }))} />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Cargo</Label>
+            <Input value={rascunho.cargo} onChange={(e) => setRascunho((r) => ({ ...r, cargo: e.target.value }))} />
+          </div>
+          <div className="space-y-1.5">
+            <Label>E-mail</Label>
+            <Input type="email" value={rascunho.email} onChange={(e) => setRascunho((r) => ({ ...r, email: e.target.value }))} />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Telefone</Label>
+            <Input value={rascunho.telefone} onChange={(e) => setRascunho((r) => ({ ...r, telefone: e.target.value }))} />
+          </div>
+          <label className="flex items-center gap-2 text-sm text-foreground sm:col-span-2">
+            <Checkbox checked={rascunho.principal} onCheckedChange={(v) => setRascunho((r) => ({ ...r, principal: v === true }))} />
+            Definir como contato principal
+          </label>
+          {erro && <p className="text-sm text-destructive sm:col-span-2">{erro}</p>}
+          <div className="sm:col-span-2">
+            <Button type="button" size="sm" onClick={adicionar}>
+              Adicionar à lista
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 const estadoInicial = { erro: "" };
 
@@ -39,6 +307,8 @@ export function PessoaForm({
   const [valoresCampos, setValoresCampos] = useState<Record<string, unknown>>(
     pessoa?.campos_personalizados ?? {},
   );
+  const [enderecosPendentes, setEnderecosPendentes] = useState<EnderecoPendente[]>([]);
+  const [contatosPendentes, setContatosPendentes] = useState<ContatoPendente[]>([]);
 
   const [estado, formAction, pendente] = useActionState(async (_: typeof estadoInicial, formData: FormData) => {
     const resultado = await acao(formData);
@@ -58,6 +328,12 @@ export function PessoaForm({
     <form action={formAction} className="flex flex-col gap-5">
       {pessoa && <input type="hidden" name="pessoa_id" value={pessoa.id} />}
       <input type="hidden" name="campos_personalizados" value={JSON.stringify(valoresCampos)} />
+      {modo === "criar" && (
+        <>
+          <input type="hidden" name="enderecos_json" value={JSON.stringify(enderecosPendentes)} />
+          <input type="hidden" name="contatos_json" value={JSON.stringify(contatosPendentes)} />
+        </>
+      )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="space-y-1.5 sm:col-span-2">
@@ -110,6 +386,17 @@ export function PessoaForm({
           ))}
         </div>
       </div>
+
+      {modo === "criar" && (
+        <>
+          <div className="border-t border-border pt-4">
+            <EnderecoPendenteEditor enderecos={enderecosPendentes} onChange={setEnderecosPendentes} />
+          </div>
+          <div className="border-t border-border pt-4">
+            <ContatoPendenteEditor contatos={contatosPendentes} onChange={setContatosPendentes} />
+          </div>
+        </>
+      )}
 
       {camposVisiveis.length > 0 && (
         <div className="space-y-3 border-t border-border pt-4">
