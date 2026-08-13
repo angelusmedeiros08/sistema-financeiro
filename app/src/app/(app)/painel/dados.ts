@@ -52,15 +52,20 @@ async function obterPendentesPorTipo(
   supabase: Cliente,
   tenantId: string,
   tipo: "RECEITA" | "DESPESA",
+  pessoaId?: string,
 ): Promise<{ total: number; quantidade: number }> {
-  const { data } = await supabase
+  let query = supabase
     .from("parcelas")
-    .select("valor, eventos_financeiros!inner(tipo)")
+    .select("valor, eventos_financeiros!inner(tipo, pessoa_id)")
     .eq("tenant_id", tenantId)
     .eq("status", "PENDENTE")
     .eq("eventos_financeiros.tipo", tipo)
     .gte("data_vencimento", isoHoje())
     .lte("data_vencimento", isoDaquiA(30));
+
+  if (pessoaId) query = query.eq("eventos_financeiros.pessoa_id", pessoaId);
+
+  const { data } = await query;
 
   if (!data) return { total: 0, quantidade: 0 };
 
@@ -70,13 +75,17 @@ async function obterPendentesPorTipo(
   };
 }
 
-async function obterResultadoDoMes(supabase: Cliente, tenantId: string): Promise<number> {
-  const { data } = await supabase
+async function obterResultadoDoMes(supabase: Cliente, tenantId: string, pessoaId?: string): Promise<number> {
+  let query = supabase
     .from("eventos_financeiros")
     .select("tipo, valor_total")
     .eq("tenant_id", tenantId)
     .gte("data_competencia", inicioDoMes())
     .lt("data_competencia", inicioDoMes(1));
+
+  if (pessoaId) query = query.eq("pessoa_id", pessoaId);
+
+  const { data } = await query;
 
   if (!data) return 0;
 
@@ -92,12 +101,17 @@ async function obterFluxoUltimosMeses(
   supabase: Cliente,
   tenantId: string,
   quantidadeMeses: number,
+  pessoaId?: string,
 ): Promise<PontoFluxo[]> {
-  const { data } = await supabase
+  let query = supabase
     .from("eventos_financeiros")
     .select("tipo, valor_total, data_competencia")
     .eq("tenant_id", tenantId)
     .gte("data_competencia", inicioDoMes(-(quantidadeMeses - 1)));
+
+  if (pessoaId) query = query.eq("pessoa_id", pessoaId);
+
+  const { data } = await query;
 
   const porMes = new Map<string, number>();
   for (let i = quantidadeMeses - 1; i >= 0; i--) {
@@ -126,13 +140,17 @@ export type EventoRecente = {
   status: string | null;
 };
 
-async function obterEventosRecentes(supabase: Cliente, tenantId: string): Promise<EventoRecente[]> {
-  const { data } = await supabase
+async function obterEventosRecentes(supabase: Cliente, tenantId: string, pessoaId?: string): Promise<EventoRecente[]> {
+  let query = supabase
     .from("eventos_financeiros")
     .select("id, descricao, tipo, valor_total, parcelas(status)")
     .eq("tenant_id", tenantId)
     .order("data_competencia", { ascending: false })
     .limit(5);
+
+  if (pessoaId) query = query.eq("pessoa_id", pessoaId);
+
+  const { data } = await query;
 
   return (data ?? []).map((e) => ({
     id: e.id,
@@ -143,14 +161,18 @@ async function obterEventosRecentes(supabase: Cliente, tenantId: string): Promis
   }));
 }
 
-export async function obterDadosPainel(supabase: Cliente, tenantId: string) {
+// pessoaId filtra tudo que passa por eventos_financeiros/parcelas — usado
+// pelo portal do cliente pra mostrar só os próprios lançamentos. Saldo em
+// caixa fica de fora do filtro de propósito: é uma dimensão do caixa da
+// empresa inteira, não tem "saldo em caixa de uma pessoa".
+export async function obterDadosPainel(supabase: Cliente, tenantId: string, pessoaId?: string) {
   const [saldoEmCaixa, aReceber, aPagar, resultadoDoMes, fluxo, eventosRecentes] = await Promise.all([
     obterSaldoEmCaixa(supabase, tenantId),
-    obterPendentesPorTipo(supabase, tenantId, "RECEITA"),
-    obterPendentesPorTipo(supabase, tenantId, "DESPESA"),
-    obterResultadoDoMes(supabase, tenantId),
-    obterFluxoUltimosMeses(supabase, tenantId, 6),
-    obterEventosRecentes(supabase, tenantId),
+    obterPendentesPorTipo(supabase, tenantId, "RECEITA", pessoaId),
+    obterPendentesPorTipo(supabase, tenantId, "DESPESA", pessoaId),
+    obterResultadoDoMes(supabase, tenantId, pessoaId),
+    obterFluxoUltimosMeses(supabase, tenantId, 6, pessoaId),
+    obterEventosRecentes(supabase, tenantId, pessoaId),
   ]);
 
   return { saldoEmCaixa, aReceber, aPagar, resultadoDoMes, fluxo, eventosRecentes };

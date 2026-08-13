@@ -8,6 +8,8 @@ import {
   Coins,
   HandCoins,
   CreditCard,
+  Users,
+  Truck,
   ChartLineUp,
   GearSix,
 } from "@phosphor-icons/react";
@@ -26,6 +28,8 @@ const ITENS_NAV: ItemNav[] = [
   { href: "/despesas", label: "Despesas", icon: Receipt, disponivel: true },
   { href: "/contas-a-receber", label: "Contas a receber", icon: HandCoins, disponivel: true },
   { href: "/contas-a-pagar", label: "Contas a pagar", icon: CreditCard, disponivel: true },
+  { href: "/clientes", label: "Clientes", icon: Users, disponivel: true },
+  { href: "/fornecedores", label: "Fornecedores", icon: Truck, disponivel: true },
   { href: "/relatorios", label: "Relatórios", icon: ChartLineUp, disponivel: false },
   { href: "/configuracoes", label: "Configurações", icon: GearSix, disponivel: true },
 ];

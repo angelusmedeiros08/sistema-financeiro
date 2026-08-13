@@ -14,10 +14,19 @@ type PapelUsuario = Database["public"]["Enums"]["papel_usuario"];
 // e-mail de verdade numa tentativa que ia falhar de qualquer jeito).
 export async function convidarUsuario(
   supabase: Cliente,
-  params: { tenant_id: string; email: string; papel: PapelUsuario; papelChamador: PapelUsuario },
+  params: {
+    tenant_id: string;
+    email: string;
+    papel: PapelUsuario;
+    papelChamador: PapelUsuario;
+    pessoa_id?: string;
+  },
 ): Promise<{ sucesso: true } | { erro: string }> {
   if (params.papelChamador !== "admin") {
     return { erro: "Só administradores podem convidar." };
+  }
+  if (params.papel === "cliente_portal" && !params.pessoa_id) {
+    return { erro: "Selecione a pessoa vinculada a este acesso de portal." };
   }
 
   const admin = createAdminClient();
@@ -43,7 +52,7 @@ export async function convidarUsuario(
   if (vinculoExistente) {
     const { error: erroUpdate } = await supabase
       .from("usuario_tenant")
-      .update({ papel: params.papel, ativo: true })
+      .update({ papel: params.papel, ativo: true, pessoa_id: params.pessoa_id ?? null })
       .eq("usuario_id", convite.user.id)
       .eq("tenant_id", params.tenant_id);
 
@@ -55,6 +64,7 @@ export async function convidarUsuario(
     usuario_id: convite.user.id,
     tenant_id: params.tenant_id,
     papel: params.papel,
+    pessoa_id: params.pessoa_id ?? null,
   });
 
   if (erroVinculo) return { erro: erroVinculo.message };

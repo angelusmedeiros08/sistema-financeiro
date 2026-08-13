@@ -181,6 +181,44 @@ export type Database = {
           },
         ]
       }
+      campos_personalizados_definicao: {
+        Row: {
+          aplica_a: Database["public"]["Enums"]["escopo_campo_personalizado"]
+          criado_em: string
+          disponivel: boolean
+          id: string
+          rotulo: string
+          tenant_id: string
+          tipo: Database["public"]["Enums"]["tipo_campo_personalizado"]
+        }
+        Insert: {
+          aplica_a?: Database["public"]["Enums"]["escopo_campo_personalizado"]
+          criado_em?: string
+          disponivel?: boolean
+          id?: string
+          rotulo: string
+          tenant_id: string
+          tipo: Database["public"]["Enums"]["tipo_campo_personalizado"]
+        }
+        Update: {
+          aplica_a?: Database["public"]["Enums"]["escopo_campo_personalizado"]
+          criado_em?: string
+          disponivel?: boolean
+          id?: string
+          rotulo?: string
+          tenant_id?: string
+          tipo?: Database["public"]["Enums"]["tipo_campo_personalizado"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campos_personalizados_definicao_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       categorias_financeiras: {
         Row: {
           categoria_pai_id: string | null
@@ -621,32 +659,161 @@ export type Database = {
           },
         ]
       }
+      pessoa_contatos: {
+        Row: {
+          cargo: string | null
+          criado_em: string
+          email: string | null
+          id: string
+          nome: string
+          pessoa_id: string
+          principal: boolean
+          substituido_em: string | null
+          telefone: string | null
+          tenant_id: string
+        }
+        Insert: {
+          cargo?: string | null
+          criado_em?: string
+          email?: string | null
+          id?: string
+          nome: string
+          pessoa_id: string
+          principal?: boolean
+          substituido_em?: string | null
+          telefone?: string | null
+          tenant_id: string
+        }
+        Update: {
+          cargo?: string | null
+          criado_em?: string
+          email?: string | null
+          id?: string
+          nome?: string
+          pessoa_id?: string
+          principal?: boolean
+          substituido_em?: string | null
+          telefone?: string | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pessoa_contatos_pessoa_id_fkey"
+            columns: ["pessoa_id"]
+            isOneToOne: false
+            referencedRelation: "pessoas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pessoa_contatos_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pessoa_enderecos: {
+        Row: {
+          bairro: string | null
+          cep: string | null
+          cidade: string | null
+          complemento: string | null
+          criado_em: string
+          id: string
+          logradouro: string | null
+          numero: string | null
+          pessoa_id: string
+          principal: boolean
+          substituido_em: string | null
+          tenant_id: string
+          tipo: Database["public"]["Enums"]["tipo_endereco"]
+          uf: string | null
+        }
+        Insert: {
+          bairro?: string | null
+          cep?: string | null
+          cidade?: string | null
+          complemento?: string | null
+          criado_em?: string
+          id?: string
+          logradouro?: string | null
+          numero?: string | null
+          pessoa_id: string
+          principal?: boolean
+          substituido_em?: string | null
+          tenant_id: string
+          tipo?: Database["public"]["Enums"]["tipo_endereco"]
+          uf?: string | null
+        }
+        Update: {
+          bairro?: string | null
+          cep?: string | null
+          cidade?: string | null
+          complemento?: string | null
+          criado_em?: string
+          id?: string
+          logradouro?: string | null
+          numero?: string | null
+          pessoa_id?: string
+          principal?: boolean
+          substituido_em?: string | null
+          tenant_id?: string
+          tipo?: Database["public"]["Enums"]["tipo_endereco"]
+          uf?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pessoa_enderecos_pessoa_id_fkey"
+            columns: ["pessoa_id"]
+            isOneToOne: false
+            referencedRelation: "pessoas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pessoa_enderecos_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pessoas: {
         Row: {
+          campos_personalizados: Json
           criado_em: string
           documento: string | null
+          email: string | null
           id: string
           natureza: Database["public"]["Enums"]["natureza_pessoa"] | null
           nome: string
           perfis: Database["public"]["Enums"]["perfil_pessoa"][]
+          telefone: string | null
           tenant_id: string
         }
         Insert: {
+          campos_personalizados?: Json
           criado_em?: string
           documento?: string | null
+          email?: string | null
           id?: string
           natureza?: Database["public"]["Enums"]["natureza_pessoa"] | null
           nome: string
           perfis?: Database["public"]["Enums"]["perfil_pessoa"][]
+          telefone?: string | null
           tenant_id: string
         }
         Update: {
+          campos_personalizados?: Json
           criado_em?: string
           documento?: string | null
+          email?: string | null
           id?: string
           natureza?: Database["public"]["Enums"]["natureza_pessoa"] | null
           nome?: string
           perfis?: Database["public"]["Enums"]["perfil_pessoa"][]
+          telefone?: string | null
           tenant_id?: string
         }
         Relationships: [
@@ -920,6 +1087,7 @@ export type Database = {
           ativo: boolean
           convidado_em: string
           papel: Database["public"]["Enums"]["papel_usuario"]
+          pessoa_id: string | null
           tenant_id: string
           usuario_id: string
         }
@@ -927,6 +1095,7 @@ export type Database = {
           ativo?: boolean
           convidado_em?: string
           papel: Database["public"]["Enums"]["papel_usuario"]
+          pessoa_id?: string | null
           tenant_id: string
           usuario_id: string
         }
@@ -934,10 +1103,18 @@ export type Database = {
           ativo?: boolean
           convidado_em?: string
           papel?: Database["public"]["Enums"]["papel_usuario"]
+          pessoa_id?: string | null
           tenant_id?: string
           usuario_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "usuario_tenant_pessoa_id_fkey"
+            columns: ["pessoa_id"]
+            isOneToOne: false
+            referencedRelation: "pessoas"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "usuario_tenant_tenant_id_fkey"
             columns: ["tenant_id"]
@@ -983,6 +1160,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      escopo_campo_personalizado: "CLIENTE" | "FORNECEDOR" | "AMBOS"
       forma_anexo: "ARQUIVO" | "LINK"
       natureza_conta: "DEVEDORA" | "CREDORA"
       natureza_pessoa: "FISICA" | "JURIDICA"
@@ -1015,6 +1193,7 @@ export type Database = {
         | "DOCUMENTO_FISCAL"
         | "DOCUMENTO_COBRANCA"
         | "OUTROS"
+      tipo_campo_personalizado: "TEXTO" | "NUMERO" | "DATA" | "BOOLEANO"
       tipo_categoria: "RECEITA" | "DESPESA"
       tipo_conta_contabil:
         | "ATIVO"
@@ -1022,6 +1201,7 @@ export type Database = {
         | "PATRIMONIO_LIQUIDO"
         | "RECEITA"
         | "DESPESA"
+      tipo_endereco: "COMERCIAL" | "COBRANCA" | "ENTREGA" | "OUTRO"
       tipo_partida: "DEBITO" | "CREDITO"
       unidade_intervalo: "DIA" | "SEMANA" | "MES"
     }
@@ -1151,6 +1331,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      escopo_campo_personalizado: ["CLIENTE", "FORNECEDOR", "AMBOS"],
       forma_anexo: ["ARQUIVO", "LINK"],
       natureza_conta: ["DEVEDORA", "CREDORA"],
       natureza_pessoa: ["FISICA", "JURIDICA"],
@@ -1187,6 +1368,7 @@ export const Constants = {
         "DOCUMENTO_COBRANCA",
         "OUTROS",
       ],
+      tipo_campo_personalizado: ["TEXTO", "NUMERO", "DATA", "BOOLEANO"],
       tipo_categoria: ["RECEITA", "DESPESA"],
       tipo_conta_contabil: [
         "ATIVO",
@@ -1195,6 +1377,7 @@ export const Constants = {
         "RECEITA",
         "DESPESA",
       ],
+      tipo_endereco: ["COMERCIAL", "COBRANCA", "ENTREGA", "OUTRO"],
       tipo_partida: ["DEBITO", "CREDITO"],
       unidade_intervalo: ["DIA", "SEMANA", "MES"],
     },

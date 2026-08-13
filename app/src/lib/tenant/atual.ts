@@ -10,6 +10,7 @@ type ResultadoTenant =
       tenantId: string;
       tenantNome: string;
       papel: Database["public"]["Enums"]["papel_usuario"];
+      pessoaId: string | null;
     };
 
 // Fase 0+1 ainda não tem seletor de tenant na UI — um usuário recém-cadastrado
@@ -32,7 +33,7 @@ export const obterUsuarioETenantAtual = cache(async (): Promise<ResultadoTenant>
 
   const { data: vinculo, error } = await supabase
     .from("usuario_tenant")
-    .select("tenant_id, papel, tenants(nome)")
+    .select("tenant_id, papel, pessoa_id, tenants(nome)")
     .eq("usuario_id", user.id)
     .eq("ativo", true)
     .limit(1)
@@ -47,5 +48,6 @@ export const obterUsuarioETenantAtual = cache(async (): Promise<ResultadoTenant>
     tenantId: vinculo.tenant_id,
     tenantNome: vinculo.tenants?.nome ?? "",
     papel: vinculo.papel,
+    pessoaId: vinculo.pessoa_id,
   };
 });

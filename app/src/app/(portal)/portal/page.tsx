@@ -19,7 +19,7 @@ export default async function PaginaPortal() {
   if ("erro" in contexto) redirect("/entrar");
 
   const supabase = await createClient();
-  const dados = await obterDadosPainel(supabase, contexto.tenantId);
+  const dados = await obterDadosPainel(supabase, contexto.tenantId, contexto.pessoaId ?? undefined);
 
   const hoje = new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" });
 

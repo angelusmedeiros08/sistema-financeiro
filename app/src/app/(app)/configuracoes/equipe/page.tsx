@@ -21,11 +21,19 @@ export default async function PaginaEquipe() {
   if ("erro" in contexto) redirect("/entrar");
 
   const supabase = await createClient();
-  const { data: membros } = await supabase
-    .from("usuario_tenant")
-    .select("usuario_id, papel, ativo, convidado_em, usuarios(nome, email)")
-    .eq("tenant_id", contexto.tenantId)
-    .order("convidado_em");
+  const [{ data: membros }, { data: clientes }] = await Promise.all([
+    supabase
+      .from("usuario_tenant")
+      .select("usuario_id, papel, ativo, convidado_em, usuarios(nome, email)")
+      .eq("tenant_id", contexto.tenantId)
+      .order("convidado_em"),
+    supabase
+      .from("pessoas")
+      .select("id, nome")
+      .eq("tenant_id", contexto.tenantId)
+      .contains("perfis", ["CLIENTE"])
+      .order("nome"),
+  ]);
 
   const souAdmin = contexto.papel === "admin";
 
@@ -37,7 +45,7 @@ export default async function PaginaEquipe() {
       {souAdmin && (
         <section>
           <h2 className="mb-3 text-xs font-bold uppercase tracking-wide text-muted-foreground">Convidar</h2>
-          <ConvidarForm />
+          <ConvidarForm clientes={clientes ?? []} />
         </section>
       )}
 

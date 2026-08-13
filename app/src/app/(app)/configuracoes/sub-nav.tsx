@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 const ITENS = [
   { href: "/configuracoes/centros-custo", rotulo: "Centros de custo" },
   { href: "/configuracoes/recorrencias", rotulo: "Recorrências" },
+  { href: "/configuracoes/campos-personalizados", rotulo: "Campos personalizados" },
   { href: "/configuracoes/equipe", rotulo: "Equipe" },
 ] as const;
 

@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { PessoaCombobox } from "@/components/formularios/pessoa-combobox";
 import { convidarUsuarioAction } from "@/lib/tenant/equipe-actions";
 
 const PAPEIS = [
@@ -17,8 +18,9 @@ const PAPEIS = [
 
 const estadoInicial = { erro: "" };
 
-export function ConvidarForm() {
+export function ConvidarForm({ clientes }: { clientes: { id: string; nome: string }[] }) {
   const [chaveFormulario, setChaveFormulario] = useState(0);
+  const [papel, setPapel] = useState<(typeof PAPEIS)[number]["valor"]>("financeiro_junior");
 
   const [estado, formAction, pendente] = useActionState(async (_: typeof estadoInicial, formData: FormData) => {
     const resultado = await convidarUsuarioAction(formData);
@@ -40,7 +42,7 @@ export function ConvidarForm() {
 
       <div className="space-y-1.5">
         <Label htmlFor="papel">Papel</Label>
-        <Select name="papel" defaultValue="financeiro_junior">
+        <Select name="papel" value={papel} onValueChange={(v) => setPapel(v as typeof papel)}>
           <SelectTrigger id="papel" className="w-full">
             <SelectValue />
           </SelectTrigger>
@@ -59,6 +61,13 @@ export function ConvidarForm() {
           {pendente ? "Convidando..." : "Convidar"}
         </Button>
       </div>
+
+      {papel === "cliente_portal" && (
+        <div className="space-y-1.5 sm:col-span-3">
+          <Label>Pessoa vinculada ao acesso</Label>
+          <PessoaCombobox pessoas={clientes} perfil="CLIENTE" label="Selecione ou crie o cliente" />
+        </div>
+      )}
 
       {estado.erro && <p className="text-sm text-destructive sm:col-span-3">{estado.erro}</p>}
     </form>
