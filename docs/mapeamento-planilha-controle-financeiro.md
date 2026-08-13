@@ -166,3 +166,249 @@ Independente da tecnologia, o modelo de dados deste produto já resolve, de form
 - **Orçamento em dois grãos** (macro por categoria/mês vs granular linha-a-linha) como necessidades distintas de usuário, não um único modelo forçado.
 
 E as lacunas acima (multi-tenant real, integridade referencial, sinal explícito, pagamento parcial/parcelamento, plano de contas centralizado) são exatamente os pontos onde o sistema próprio deve superar o produto de referência.
+
+---
+
+## 6. Segunda extração (13/08/2026) — DAX literal do binário do Data Model
+
+Reextração dirigida ao `xl/model/item.data` (blob Power Pivot/VertiPaq, formato de contêiner OLE composto — assinatura `STREAM_STORAGE_SIGNATURE`). A camada colunar em si é compactada e opaca, mas os **metadados de definição de medida** (`CREATE MEASURE ...` e o texto original da fórmula, guardado em nós `<Text>...</Text>` do XML de schema do Analysis Services embutido) sobrevivem como texto legível em trechos — 25 ocorrências de `CREATE MEASURE` foram localizadas e lidas com uma janela de contexto ao redor de cada uma. O texto vem parcialmente corrompido (o compressor intercala substituições binárias dentro do próprio literal), mas a estrutura DAX, os nomes de medida/tabela e a lógica são reconhecíveis com alta confiança — reconstrução abaixo, não transcrição perfeita.
+
+Esta seção **substitui a descrição em prosa da Seção 3 por fórmula real** onde foi possível recuperar; onde não foi possível (medida cortada demais pra reconstruir com segurança), a descrição em prosa da Seção 3 continua sendo a referência.
+
+### 6.1 O mecanismo de Regime — confirmado literalmente
+
+```dax
+fLctos[SOMA_PREVISTO] =
+CALCULATE([SOMA_X], USERELATIONSHIP(tbData[Data], fLctos[Data_Vencimento]))
+
+fLctos[SOMA_COMPETENCIA] =
+CALCULATE([SOMA_X], USERELATIONSHIP(tbData[Data], fLctos[Data_Competência]))
+
+-- SOMA_REALIZADO existe por simetria (relacionamento ativo por padrão, sem USERELATIONSHIP explícito)
+
+fLctos[SOMA_DF] =
+VAR SelectDF = MIN(tbSituacao[ID])
+RETURN
+SWITCH(
+    SelectDF,
+    1, [SOMA_PREVISTO],
+    2, [SOMA_REALIZADO],
+    3, [SOMA_COMPETENCIA]
+)
+```
+
+Confirma exatamente o que a Seção 3.1 já inferia por comportamento — mas agora sabemos que existe uma tabela `tbSituacao` (1/2/3) por trás do slicer "Regime", e que **toda medida de valor do sistema inteiro é construída em cima de `[SOMA_DF]`**, nunca direto na coluna `Valor` — é o único ponto de entrada de dado, o resto é derivado.
+
+### 6.2 Cascata do DRE — a árvore de totalizadores é literalmente recursiva
+
+```dax
+fLctos[SOMA_COMBINADA] =
+VAR TpCalc = MIN(tbTotalizadoresDRE[Tipo_Calculo])
+RETURN
+IF(
+    AND(TpCalc = 0, ISFILTERED(tbPlanoContasGeral[Classificação_Usuário])),
+    BLANK(),
+    SWITCH(
+        TpCalc,
+        1, [SOMA_DF],                    -- linha "folha" (soma direta do ledger)
+        2, [ACUMULADA],                  -- linha "subtotal" (soma de linhas anteriores)
+        4, [RESULTADO_N_OPERACIONAL]     -- linha especial (ex.: resultado não operacional)
+    )
+)
+
+tbTotalizadoresDRE[ACUMULADA] =
+IF(
+    HASONEFILTER(tbTotalizadoresDRE[Totalizador]),
+    CALCULATE([SOMA_DF], ALL(tbTotalizadoresDRE), tbTotalizadoresDRE[Ordem(ID)] <= VALUES(tbTotalizadoresDRE[ID])),
+    ...
+)
+```
+
+**Achado importante**: `Tipo_Calculo` classifica CADA linha do DRE em um de 4 papéis (folha / subtotal acumulado / [não identificado] / resultado não operacional), e o "acumulado" é literalmente `SOMA de todas as linhas com Ordem <= a linha atual` — ou seja, o totalizador "Receita Líquida" não é uma fórmula manual (`Receita – Devoluções – Tributos`), é **a soma de tudo que vem antes dele na tabela `tbTotalizadoresDRE` ordenada**. Isso é uma decisão de design forte: a estrutura do DRE é 100% dado (ordem + tipo de uma tabela), zero lógica hardcoded — exatamente o padrão que a Seção 5 já recomendava herdar, agora com a prova de como implementar.
+
+Medidas de linha específicas confirmadas: `MC` (Margem de Contribuição) = `CALCULATE([SOMA_COMBINADA], ALL(tbTotalizadoresDRE), [...] = "Margem de contribuição")`, `LUCRO_LIQ` igual padrão. `GASTOS_TOTAIS` (em `tbPlanoContasGeral`) = `CALCULATE([SOMA_DF], [Classificação] IN {"Despesas variáveis", "Custo...", ...})`.
+
+### 6.3 Waterfall do DRE — subtotal em cascata é a MESMA lógica de `ACUMULADA`, com sinal
+
+```dax
+fLctos[SUBTOTAL_WTFALL] =
+IF(
+    HASONEFILTER(tbTotalizadoresDRE[Waterfall]),
+    CALCULATE([SOMA_DF] * <sinal>, FILTER(ALL(...), tbTotalizadoresDRE[Ordem(ID)] <= VALUES(tbTotalizadoresDRE[ID]))),
+    ...
+)
+```
+
+O gráfico cascata (`DRE_Gráfica`) não tem lógica própria — reusa o mesmo padrão "soma até a ordem atual" de `ACUMULADA`, só que multiplicado pelo sinal da linha (a coluna `Waterfall` da Seção 3.2 controla isso). **Para o sistema próprio**: um único componente de "totalizador em cascata" (dado: lista ordenada de {label, tipo, sinal}) resolve DRE tabular, DRE waterfall e Orçado×Realizado ao mesmo tempo — são a mesma árvore renderizada 3 formas diferentes.
+
+### 6.4 Ponto de Equilíbrio e Análise Vertical — base configurável confirmada
+
+```dax
+tbDF_PE[PE_CONTABIL] = DIVIDE([GASTOS_FIXOS], [MC%])
+
+fLctos[MC%] =
+VAR BASEAV = MIN(tbReceitaBaseAV[ID])
+RETURN
+SWITCH(
+    BASEAV,
+    1, DIVIDE([MC], [RECEITA_LIQUIDA], 0),
+    2, DIVIDE([MC], [RECEITAS_OPERACIONAIS], 0)
+)
+
+tbDF_PE[AV] =    -- Gastos Variáveis (base pro cálculo de MC)
+VAR BASEAV = MIN(tbReceitaBaseAV[ID])
+RETURN
+ABS(CALCULATE([SOMA_DF], ALL(tbTotalizadoresDRE), tbTotalizadoresDRE[Classificação] IN {"Despesas variáveis", "Custos variáveis"}))
+```
+
+Confirma com fórmula real o que a Seção 3.5 já documentava por comportamento: o usuário escolhe via slicer se MC% é calculado sobre Receita Líquida ou sobre Receita Operacional, e isso propaga pro Ponto de Equilíbrio automaticamente (PE depende de MC%, que depende do slicer).
+
+### 6.5 Contas em aberto / aging — filtro dinâmico de faixa, não `IF` em cadeia
+
+```dax
+fLctos[CONTAS_EM_ABERTO] =
+VAR TIPO_OPERACAO = MIN(tbTipoOperacao[ID])
+RETURN
+SWITCH(
+    TIPO_OPERACAO,
+    1, CALCULATE([CAR], fLctos[Data_Pagamento] = BLANK()),   -- a receber em aberto
+    2, CALCULATE([CAP], fLctos[Data_Pagamento] = BLANK())    -- a pagar em aberto (inferido por simetria)
+)
+
+fLctos[CONTAS_EM_ABERTO_HJ] = CALCULATE([CONTAS_EM_ABERTO], fLctos[Data_Vencimento] = TODAY())
+
+tbAgeing[SOMA_AGE] =
+CALCULATE(
+    [CONTAS_EM_ABERTO],
+    FILTER(
+        DISTINCT(fLctos[Age]),
+        COUNTROWS(FILTER(tbAgeing, fLctos[Age] >= tbAgeing[Min] && fLctos[Age] <= tbAgeing[Max])) > 0
+    )
+)
+```
+
+A faixa de aging (`tbAgeing`, 10 faixas — Seção 3.4) filtra por uma comparação `Min`/`Max` dinâmica contra o `Age` calculado de cada lançamento, não por 10 `IF`s fixos — é literalmente uma **junção não-equivalente** (band join) entre o fato e a tabela de faixas. Padrão direto de portar pra SQL: `JOIN tb_ageing ON age BETWEEN min AND max`.
+
+### 6.6 Geração de Caixa (DFC) — exclusão explícita de linhas não-caixa
+
+```dax
+tbTotalizadoresDFC[GERACAO_CAIXA] =
+CALCULATE(
+    [SOMA_REALIZADO],
+    tbTotalizadoresDRE[Descrição] <> "Saldo Inicial"
+        && tbTotalizadoresDRE[Descrição] <> "Depreciação e amortização"
+        && tbTotalizadoresDRE[Descrição] <> "Transferências"
+        && tbTotalizadoresDRE[Descrição] <> "Retirada de Lucros"
+)
+```
+
+Confirma que "Geração de Caixa" no DFC é o resultado realizado **menos** as linhas que não são caixa de fato (saldo inicial, D&A, transferências entre contas, retirada de lucros) — uma exclusão explícita por nome, não uma classificação estrutural separada. Ponto de atenção para o sistema próprio: essa exclusão deveria ser uma **flag na estrutura do plano de contas** (`é_movimento_de_caixa: boolean`), não uma lista de nomes hardcoded, senão quebra silenciosamente se o usuário renomear a linha.
+
+Atividades do DFC (operacional/investimento/financiamento) são resolvidas via `ID_DFC IN {5, 6}` etc. (a FK que a Seção 3.2 já documentava) — `FC_ATIVIDADES_FINANCIAMENTO_R`/`_P` (Realizado/Previsto) seguem o mesmo padrão de `CALCULATE(..., ALL(tbTotalizadoresDRE), [ID_DFC] = <n>)`.
+
+### 6.7 Análise comparativa (AH/YoY/YTD) — troca de função de time intelligence, não de fórmula
+
+```dax
+tbTotalizadoresDRE[VAR_YOY_R$] =
+IFERROR(
+    VAR Atual = [SOMA_COMBINADA_ABS]
+    VAR Anterior = CALCULATE([SOMA_COMBINADA_ABS], SAMEPERIODLASTYEAR(tbData[Data]))
+    RETURN IF(NOT ISBLANK(Anterior), Atual - Anterior, BLANK()),
+    BLANK()
+)
+
+[TIPO_VARIACAO_SELECIONADO] =
+VAR Sel = MIN(tbTipoVariacao[ID])
+RETURN
+SWITCH(Sel, 1, [VAR_AH], 2, [VAR_YOY], 3, [SOMA_COMB_YTD])
+
+[SOMAYTDPVSELECTED] =
+SWITCH(
+    TRUE(),
+    ISFILTERED(tbData[(Mês)]), CALCULATE([SOMA_COMB_...], PREVIOUSMONTH... / PREVIOUSQUARTER... / PREVIOUSYEAR(tbData[Data]))
+)
+```
+
+AH usa `PREVIOUSMONTH`-família (mês anterior no mesmo agrupamento), YoY usa `SAMEPERIODLASTYEAR`, YTD usa `TOTALYTD`-família — as 3 são a MESMA medida base (`SOMA_COMBINADA`) passada por 3 funções de time intelligence diferentes, selecionadas por slicer. `SOMAYTDPVSELECTED` detecta a granularidade ativa (mês/trimestre/ano) via `ISFILTERED` pra escolher a função certa automaticamente.
+
+### 6.8 Sinal e valor combinado — confirma a mecânica de "valor sempre positivo + sinal derivado"
+
+```dax
+[??] = SUMX(tbPlanoContasGeral, tbPlanoContasGeral[Sinal_Calc])
+```
+
+Existe uma coluna `Sinal_Calc` em `tbPlanoContasGeral` (a tabela-sombra já documentada na Seção 2.4) que carrega +1/–1 por linha de classificação, aplicada via `SUMX` — é o mecanismo exato que resolve a limitação #3 da Seção 4 ("valor sem sinal, só por lookup indireto"): o sinal *é* dado tabular (coluna), só não está na linha do lançamento, está na dimensão de classificação. Reforça a recomendação de **não repetir esse desenho**: no sistema próprio, `tipo_categoria` (RECEITA/DESPESA) já cumpre esse papel, mas vale conferir se toda leitura de relatório realmente deriva o sinal daí de forma consistente (nunca assumir "toda despesa é negativa" direto na query).
+
+### 6.9 Toggle "expandir/colapsar" — um padrão de UX que vale replicar
+
+Duas medidas (`GASTOS_...` em `tbDF_PE`, e outra em `tbPlanoContasGeral`) usam o mesmo padrão:
+
+```dax
+VAR Expandir = MIN(tb...[ID])   -- vem de uma tabela-parâmetro de 1 coluna, ligada a um slicer/botão "Expandir"
+RETURN
+IF(
+    AND(Expandir = 0, ISFILTERED(tbPlanoContasGeral[Classificação_Usuário])),
+    BLANK(),
+    ...
+)
+```
+
+É como a planilha implementa "ver total agregado por padrão, clicar pra abrir o detalhe por sub-classificação" sem precisar de duas tabelas/relatórios separados — uma tabela-parâmetro liga um slicer de 2 valores (Fechado/Aberto) que muda o comportamento da mesma medida. Vale explicitamente como ideia de UX pro Fase 3: um toggle "ver resumido / ver detalhado" no mesmo relatório em vez de duas telas.
+
+---
+
+## 7. Catálogo completo — 35 abas e 40 pivôs (reconciliação exata)
+
+### 7.1 Todas as 35 abas, com visibilidade real (`xl/workbook.xml`)
+
+| Aba | Visibilidade | Papel |
+|---|---|---|
+| Home | visível | landing/menu |
+| Plan_Aux | oculta | staging |
+| TabelaVazia | muito oculta | placeholder de tabela vazia (provável fallback de referência quebrada) |
+| **Dashboard_Gerencial** | visível | relatório — Seção 3.8 |
+| **FluxoCaixa** | visível | relatório — Seção 3.3 |
+| FC_AUX | muito oculta | staging do Fluxo de Caixa |
+| **DRE_Gráfica** | visível | relatório — waterfall, Seção 6.3 |
+| **DRE_Tabular** | visível | relatório — DRE Analítico, Seção 3.2 |
+| **DFC_Direto** | visível | relatório — "DFC Analítico" no menu, Seção 3.3 |
+| **CAP_CAR** | visível | relatório — Contas a Pagar/Receber, Seção 3.4 |
+| Dados_CP_CR | muito oculta | central de cálculo de CAP/CAR — Seção 3.4 |
+| **Aging_Analitico** | visível | relatório — aging detalhado |
+| Dash_dados | muito oculta | staging do Dashboard Gerencial |
+| **Ponto_Equilibrio** | visível | relatório — Seção 3.5 / 6.4 |
+| **Analise_Despesas** | visível | relatório — curva ABC, Seção 3.6 |
+| **Centro_Custo** | visível | relatório — mini-P&L, Seção 3.6 |
+| **Análises_Comparativas** | visível | relatório — AH/YoY/YTD, Seção 3.7 / 6.7 |
+| Dados_YoY | muito oculta | staging da Análise Comparativa |
+| **RealXBGT** | visível | relatório — Orçado × Realizado, Seção 3.9 |
+| Dados_RealXBGT | muito oculta | staging de Orçado × Realizado |
+| **Relat_Contas_Bancarias** | visível | relatório — extrato gerencial, Seção 3.9 |
+| **Orcamento(BGT)_Simplificado** | visível | cadastro — `tbBGTSimples`, Seção 2.2 |
+| **Orcamento(BGT)_Completo** | visível | cadastro — `fLctosBGT`, Seção 2.2 |
+| Est_DRE | muito oculta | estrutura/staging do DRE (provável lar de `tbTotalizadoresDRE`) |
+| Dados_DRE | muito oculta | staging do DRE |
+| Tabela_Conversao | muito oculta | onboarding/importação, Seção 2.6 |
+| Aux | muito oculta | staging genérico |
+| Aux_PE | muito oculta | staging do Ponto de Equilíbrio |
+| **Fornecedores_Clientes** | visível | cadastro — Seção 2.5 |
+| **PlanoContas_Entradas** | visível | cadastro — Seção 2.4 |
+| **PlanoContas_Saídas** | visível | cadastro — Seção 2.4 |
+| **Cadastros_Gerais** | visível | cadastro — Seção 2.3 |
+| **Config_Impressão** | visível | utilitário — menu "Impressão" |
+| **Suporte** | visível | utilitário — FAQ |
+| **Lançamentos** | visível | ledger — `fLctos`, Seção 2.1 |
+
+18 visíveis / 17 ocultas ou muito ocultas (revisão do "~16 visíveis" da Seção 1 — a contagem exata é 18, incluindo Home/Config_Impressão/Suporte que são utilitárias, não "relatório" propriamente dito; 12 são relatório de fato).
+
+### 7.2 Os 40 pivôs, por nome técnico (`xl/pivotTables/*.xml`)
+
+Confirma a contagem da Seção 1 e dá o nome interno de cada um — útil porque os nomes técnicos revelam sub-relatórios que não aparecem como aba própria (ex.: `tbSomaEntreMesesMC` = evolução mensal de MC dentro do próprio Dashboard Gerencial, não uma aba separada):
+
+`tbFC_Gerencial` (×2), `tbSomaCarCap`, `tbSomaContasAberto`, `tbAgingAnalitico`, `SomaCapCarporFx`, `tbEntradasSaidasSaldo`, `tbEntradasSaidasSaldoMeses`, `tb%Realizado`, `tbSomaSubclassSaidas`, `tbSomaSubclassEntradas`, `tbSomaPExMC`, `tbAnaliseDespesas`, `tbAnalisesYoY` (×2), `tbOrcxReal`, `tbTotalizadoresOrçadoeVariacao`, `tbTotalizadoresORCxREAL`, `tbRelatorioContaBancaria`, `tbDRE_Analitico`, `tbTotalizadoresWaterfallDRE`, `tbReceitasMCdoDRE`, `tbReceitaLiquidaLOeLLdoDRE`, `tbMCeMC%DRE`, `tbSomaReceitasGastosPE`, `tbSomaPE`, `tbSomaGeralPE`, `tbSomaGastosFixos`, `tbSomaEntreMesesMC`, `tbCARCAP_HJ`, `tbContasAbertoParticipante`, `tbAgeing`, `tbAgingPorParticipante`, `tbAtravoPrevistoFx`, `tbDFC_Analitico`, mais 3 sem nome customizado (`PivotTable1` ×2, `PivotTable4`, `Tabela dinâmica5`).
+
+---
+
+## 8. VBA — confirmado como camada de UX, não de regra de negócio
+
+`xl/vbaProject.bin` usa compressão MS-OVBA própria (não é texto puro nem OOXML — precisaria de um decompressor dedicado tipo `oletools`/`olevba`, indisponível neste ambiente); a extração de strings ASCII cruas trouxe só fragmentos, mas os fragmentos legíveis (`Tbox_DataLcto`, `Tbox_DataPgto`, `TBox_DataVcto` recebendo auto-inserção de `-` ao digitar) confirmam que o VBA é **o UserForm de lançamento assistido e navegação de menu** (Seção 1), não motor de cálculo — o motor é 100% DAX/Power Pivot, já coberto nas Seções 3 e 6. Não há indício de regra de negócio (validação cruzada, cálculo condicional) escondida em VBA que não esteja também no Data Model.
