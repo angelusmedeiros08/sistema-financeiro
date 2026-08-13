@@ -13,13 +13,14 @@ Registro do que foi efetivamente implementado no banco (região São Paulo, `sa-
 7. `007_mover_funcoes_para_schema_privado` — as duas funções de autorização (`tenants_do_usuario_atual`, `usuario_tem_papel`) movidas do schema `public` para um schema `private` não exposto pelo PostgREST, fechando o alerta de "função SECURITY DEFINER alcançável via API" sem quebrar nenhuma política (Postgres resolve a referência por OID, não por texto).
 8. `009_corrigir_cascade_partidas_tenant` — corrigida inconsistência: `partidas.tenant_id` era a única referência a `tenants(id)` sem `ON DELETE CASCADE` no schema inteiro.
 9. `010_teste_de_invariantes_do_ledger` — teste funcional real (não apenas revisão de código): confirma que lançamento desbalanceado é rejeitado, lançamento balanceado funciona, alteração/exclusão de partida e lançamento são bloqueadas, e que a limpeza do dado de teste não deixa rastro.
+10. `011_ciclo_baixa_status_e_saldo_residual` — a partir da spec `docs/superpowers/specs/2026-08-13-fase1-ciclo-financeiro-completo-design.md` (Fase 1 completa: receita, contas a receber/pagar, baixa): `checar_saldo_residual_baixa()` (trigger `BEFORE INSERT` em `baixas`, rejeita `valor_pago` que ultrapasse o saldo em aberto da parcela) e `atualizar_status_parcela()` (trigger `AFTER INSERT` em `baixas`, recalcula `PENDENTE → RECEBIDO_PARCIAL → QUITADO` a partir da soma das baixas — nunca escrito manualmente pela aplicação). Testado via `DO` block real: baixa parcial, baixa complementar, e tentativa de baixa acima do saldo residual corretamente rejeitada.
 
 ## Verificação final
 
 - `get_advisors` (segurança): **0 alertas**.
 - `get_advisors` (performance): só `unused_index` (nível INFO, esperado — banco vazio, sem tráfego ainda; resolve sozinho quando o app começar a rodar).
 - 15 tabelas, **RLS ativa em 100%** delas.
-- 0 linhas em todas as tabelas — banco limpo, pronto para receber o primeiro tenant real.
+- Banco validado com tenants de teste reais (cadastro → despesa/receita → parcelamento → baixa parcial e total → saldo em caixa correto) — não é mais um banco vazio; dado de teste fica no ambiente até o produto ter usuários reais.
 
 ## Desvios deliberados em relação à spec original (e por quê)
 

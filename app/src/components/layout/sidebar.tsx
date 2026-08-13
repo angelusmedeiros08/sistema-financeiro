@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   SquaresFour,
   Receipt,
+  Coins,
   HandCoins,
   CreditCard,
   ChartLineUp,
@@ -21,9 +22,10 @@ type ItemNav = {
 
 const ITENS_NAV: ItemNav[] = [
   { href: "/painel", label: "Painel", icon: SquaresFour, disponivel: true },
+  { href: "/receitas", label: "Receitas", icon: Coins, disponivel: true },
   { href: "/despesas", label: "Despesas", icon: Receipt, disponivel: true },
-  { href: "/contas-a-receber", label: "Contas a receber", icon: HandCoins, disponivel: false },
-  { href: "/contas-a-pagar", label: "Contas a pagar", icon: CreditCard, disponivel: false },
+  { href: "/contas-a-receber", label: "Contas a receber", icon: HandCoins, disponivel: true },
+  { href: "/contas-a-pagar", label: "Contas a pagar", icon: CreditCard, disponivel: true },
   { href: "/relatorios", label: "Relatórios", icon: ChartLineUp, disponivel: false },
   { href: "/configuracoes", label: "Configurações", icon: GearSix, disponivel: false },
 ];

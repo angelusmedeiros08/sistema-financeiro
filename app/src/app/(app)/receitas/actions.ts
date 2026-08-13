@@ -7,7 +7,7 @@ import { criarEventoFinanceiro, resolverPessoaId } from "@/lib/contabil/evento-f
 
 type ResultadoAcao = { erro: string } | { sucesso: true };
 
-export async function criarDespesa(formData: FormData): Promise<ResultadoAcao> {
+export async function criarReceita(formData: FormData): Promise<ResultadoAcao> {
   const descricao = String(formData.get("descricao") ?? "").trim();
   const valorTexto = String(formData.get("valor") ?? "").replace(",", ".");
   const dataVencimento = String(formData.get("data_vencimento") ?? "");
@@ -27,8 +27,6 @@ export async function criarDespesa(formData: FormData): Promise<ResultadoAcao> {
 
   const supabase = await createClient();
 
-  // nunca confiamos no conta_contabil_id vindo do formulário — sempre
-  // buscamos de novo no servidor, escopado ao tenant do usuário autenticado.
   const { data: categoria, error: erroCategoria } = await supabase
     .from("categorias_financeiras")
     .select("id, conta_contabil_id")
@@ -43,12 +41,12 @@ export async function criarDespesa(formData: FormData): Promise<ResultadoAcao> {
   const pessoaResolvidaId = await resolverPessoaId(supabase, tenantId, {
     pessoaId,
     nomeNovaPessoa: pessoaNomeNovo,
-    perfil: "FORNECEDOR",
+    perfil: "CLIENTE",
   });
 
   const resultado = await criarEventoFinanceiro(supabase, {
     tenant_id: tenantId,
-    tipo: "DESPESA",
+    tipo: "RECEITA",
     descricao,
     valor_total: valor,
     data_competencia: dataVencimento,
@@ -64,8 +62,8 @@ export async function criarDespesa(formData: FormData): Promise<ResultadoAcao> {
     return { erro: resultado.erro };
   }
 
-  revalidatePath("/despesas");
-  revalidatePath("/contas-a-pagar");
+  revalidatePath("/receitas");
+  revalidatePath("/contas-a-receber");
   revalidatePath("/painel");
   return { sucesso: true };
 }
