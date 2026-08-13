@@ -8,10 +8,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CamposEndereco, ENDERECO_VAZIO, ROTULO_TIPO_ENDERECO, type ValoresEndereco } from "@/components/formularios/campos-endereco";
+import { buscarEmpresaPorCnpj } from "@/lib/cnpj";
 import type { Database } from "@/utils/supabase/database.types";
 import type { DadosPessoa, CampoPersonalizadoDefinicao } from "@/lib/pessoas/buscar-pessoa";
 
 type PerfilPessoa = Database["public"]["Enums"]["perfil_pessoa"];
+type NaturezaPessoa = Database["public"]["Enums"]["natureza_pessoa"];
 type ResultadoAcao = { erro: string } | { sucesso: true };
 
 const PERFIS: { valor: PerfilPessoa; rotulo: string }[] = [
@@ -241,6 +243,15 @@ export function PessoaForm({
   );
   const [enderecosPendentes, setEnderecosPendentes] = useState<EnderecoPendente[]>([]);
   const [contatosPendentes, setContatosPendentes] = useState<ContatoPendente[]>([]);
+  const [dadosBasicos, setDadosBasicos] = useState({
+    nome: pessoa?.nome ?? "",
+    documento: pessoa?.documento ?? "",
+    natureza: pessoa?.natureza ?? ("" as NaturezaPessoa | ""),
+    email: pessoa?.email ?? "",
+    telefone: pessoa?.telefone ?? "",
+  });
+  const [buscandoCnpj, setBuscandoCnpj] = useState(false);
+  const [avisoCnpj, setAvisoCnpj] = useState("");
 
   const [estado, formAction, pendente] = useActionState(async (_: typeof estadoInicial, formData: FormData) => {
     const resultado = await acao(formData);
@@ -250,6 +261,42 @@ export function PessoaForm({
 
   function alternarPerfil(perfil: PerfilPessoa, marcado: boolean) {
     setPerfisSelecionados((atual) => (marcado ? [...atual, perfil] : atual.filter((p) => p !== perfil)));
+  }
+
+  // Autopreenchimento só na criação — sobrescrever nome/endereço de um
+  // cadastro já existente (possivelmente já customizado à mão) por causa
+  // de uma edição em outro campo é mais risco que ajuda.
+  async function aoSairDoDocumento() {
+    if (modo !== "criar") return;
+    const digitos = dadosBasicos.documento.replace(/\D/g, "");
+    if (digitos.length !== 14) {
+      setAvisoCnpj("");
+      return;
+    }
+    setBuscandoCnpj(true);
+    setAvisoCnpj("");
+    const empresa = await buscarEmpresaPorCnpj(dadosBasicos.documento);
+    setBuscandoCnpj(false);
+    if (!empresa) {
+      setAvisoCnpj("CNPJ não encontrado.");
+      return;
+    }
+
+    setDadosBasicos((d) => ({
+      ...d,
+      nome: empresa.nome || d.nome,
+      email: empresa.email || d.email,
+      telefone: empresa.telefone || d.telefone,
+      natureza: "JURIDICA",
+    }));
+
+    setEnderecosPendentes((atual) =>
+      atual.length === 0 ? [{ ...empresa.endereco, tempId: crypto.randomUUID(), principal: true }] : atual,
+    );
+
+    if (empresa.situacaoCadastral && empresa.situacaoCadastral !== "ATIVA") {
+      setAvisoCnpj(`Atenção: situação cadastral "${empresa.situacaoCadastral}" na Receita.`);
+    }
   }
 
   const camposVisiveis = camposPersonalizados.filter(
@@ -270,12 +317,24 @@ export function PessoaForm({
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="space-y-1.5 sm:col-span-2">
           <Label htmlFor="nome">Nome / Razão social</Label>
-          <Input id="nome" name="nome" type="text" required defaultValue={pessoa?.nome} placeholder="Nome completo ou razão social" />
+          <Input
+            id="nome"
+            name="nome"
+            type="text"
+            required
+            value={dadosBasicos.nome}
+            onChange={(e) => setDadosBasicos((d) => ({ ...d, nome: e.target.value }))}
+            placeholder="Nome completo ou razão social"
+          />
         </div>
 
         <div className="space-y-1.5">
           <Label htmlFor="natureza">Tipo de pessoa</Label>
-          <Select name="natureza" defaultValue={pessoa?.natureza ?? ""}>
+          <Select
+            name="natureza"
+            value={dadosBasicos.natureza}
+            onValueChange={(v) => setDadosBasicos((d) => ({ ...d, natureza: v as NaturezaPessoa }))}
+          >
             <SelectTrigger id="natureza" className="w-full">
               <SelectValue placeholder="Selecione" />
             </SelectTrigger>
@@ -288,17 +347,41 @@ export function PessoaForm({
 
         <div className="space-y-1.5">
           <Label htmlFor="documento">CPF/CNPJ</Label>
-          <Input id="documento" name="documento" type="text" defaultValue={pessoa?.documento ?? ""} placeholder="Opcional" />
+          <Input
+            id="documento"
+            name="documento"
+            type="text"
+            value={dadosBasicos.documento}
+            onChange={(e) => setDadosBasicos((d) => ({ ...d, documento: e.target.value }))}
+            onBlur={aoSairDoDocumento}
+            placeholder={modo === "criar" ? "CNPJ busca os dados automaticamente" : "Opcional"}
+          />
+          {buscandoCnpj && <p className="text-xs text-muted-foreground">Buscando dados na Receita...</p>}
+          {avisoCnpj && <p className="text-xs text-destructive">{avisoCnpj}</p>}
         </div>
 
         <div className="space-y-1.5">
           <Label htmlFor="email">E-mail</Label>
-          <Input id="email" name="email" type="email" defaultValue={pessoa?.email ?? ""} placeholder="Opcional" />
+          <Input
+            id="email"
+            name="email"
+            type="email"
+            value={dadosBasicos.email}
+            onChange={(e) => setDadosBasicos((d) => ({ ...d, email: e.target.value }))}
+            placeholder="Opcional"
+          />
         </div>
 
         <div className="space-y-1.5">
           <Label htmlFor="telefone">Telefone</Label>
-          <Input id="telefone" name="telefone" type="text" defaultValue={pessoa?.telefone ?? ""} placeholder="Opcional" />
+          <Input
+            id="telefone"
+            name="telefone"
+            type="text"
+            value={dadosBasicos.telefone}
+            onChange={(e) => setDadosBasicos((d) => ({ ...d, telefone: e.target.value }))}
+            placeholder="Opcional"
+          />
         </div>
       </div>
 
