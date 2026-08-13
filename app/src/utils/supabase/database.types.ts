@@ -19,6 +19,7 @@ export type Database = {
           conta_financeira_id: string | null
           criado_em: string
           data_pagamento: string
+          estornado_em: string | null
           id: string
           lancamento_id: string | null
           parcela_id: string
@@ -33,6 +34,7 @@ export type Database = {
           conta_financeira_id?: string | null
           criado_em?: string
           data_pagamento: string
+          estornado_em?: string | null
           id?: string
           lancamento_id?: string | null
           parcela_id: string
@@ -47,6 +49,7 @@ export type Database = {
           conta_financeira_id?: string | null
           criado_em?: string
           data_pagamento?: string
+          estornado_em?: string | null
           id?: string
           lancamento_id?: string | null
           parcela_id?: string
@@ -407,6 +410,7 @@ export type Database = {
           evento_financeiro_id: string
           id: string
           metodo_pagamento: string | null
+          motivo_cancelamento: string | null
           numero: number
           status: Database["public"]["Enums"]["status_parcela"]
           tenant_id: string
@@ -419,6 +423,7 @@ export type Database = {
           evento_financeiro_id: string
           id?: string
           metodo_pagamento?: string | null
+          motivo_cancelamento?: string | null
           numero?: number
           status?: Database["public"]["Enums"]["status_parcela"]
           tenant_id: string
@@ -431,6 +436,7 @@ export type Database = {
           evento_financeiro_id?: string
           id?: string
           metodo_pagamento?: string | null
+          motivo_cancelamento?: string | null
           numero?: number
           status?: Database["public"]["Enums"]["status_parcela"]
           tenant_id?: string
@@ -638,6 +644,61 @@ export type Database = {
           },
           {
             foreignKeyName: "rateio_centro_custo_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      renegociacoes: {
+        Row: {
+          criado_em: string
+          criado_por: string | null
+          data_vencimento_anterior: string
+          data_vencimento_nova: string
+          id: string
+          motivo: string
+          parcela_id: string
+          tenant_id: string
+        }
+        Insert: {
+          criado_em?: string
+          criado_por?: string | null
+          data_vencimento_anterior: string
+          data_vencimento_nova: string
+          id?: string
+          motivo: string
+          parcela_id: string
+          tenant_id: string
+        }
+        Update: {
+          criado_em?: string
+          criado_por?: string | null
+          data_vencimento_anterior?: string
+          data_vencimento_nova?: string
+          id?: string
+          motivo?: string
+          parcela_id?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "renegociacoes_criado_por_fkey"
+            columns: ["criado_por"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "renegociacoes_parcela_id_fkey"
+            columns: ["parcela_id"]
+            isOneToOne: false
+            referencedRelation: "parcelas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "renegociacoes_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"

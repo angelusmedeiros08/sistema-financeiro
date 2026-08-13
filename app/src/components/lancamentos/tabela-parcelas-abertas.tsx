@@ -3,14 +3,15 @@ import { Badge } from "@/components/ui/badge";
 import { formatarMoeda } from "@/lib/formatacao";
 import { ROTULO_STATUS_PARCELA, COR_STATUS_PARCELA } from "@/lib/status-parcela";
 import { cn } from "@/lib/utils";
-import { BaixaSheet } from "./baixa-sheet";
+import { AcoesParcela } from "./acoes-parcela";
+import type { BaixaHistorico } from "./historico-baixas-sheet";
 
 type ParcelaAberta = {
   id: string;
   valor: number;
   data_vencimento: string;
   status: string;
-  baixas: { valor_pago: number }[] | null;
+  baixas: BaixaHistorico[] | null;
   eventos_financeiros: { descricao: string | null; pessoas: { nome: string } | null } | null;
 };
 
@@ -52,19 +53,23 @@ export function TabelaParcelasAbertas({
         </TableHeader>
         <TableBody>
           {parcelas.map((parcela) => {
-            const somaPaga = (parcela.baixas ?? []).reduce((acc, b) => acc + Number(b.valor_pago), 0);
+            const baixas = parcela.baixas ?? [];
+            const somaPaga = baixas
+              .filter((b) => !b.estornado_em)
+              .reduce((acc, b) => acc + Number(b.valor_pago), 0);
             const saldoResidual = Number(parcela.valor) - somaPaga;
-            const atrasada = parcela.status === "PENDENTE" && parcela.data_vencimento < hojeISO;
+            const atrasada =
+              (parcela.status === "PENDENTE" || parcela.status === "RENEGOCIADO") &&
+              parcela.data_vencimento < hojeISO;
             const chaveStatus = atrasada ? "ATRASADO" : parcela.status;
             const diasEmAtraso = atrasada
               ? Math.round((Date.parse(hojeISO) - Date.parse(parcela.data_vencimento)) / 86_400_000)
               : 0;
+            const descricao = parcela.eventos_financeiros?.descricao ?? "Sem descrição";
 
             return (
               <TableRow key={parcela.id}>
-                <TableCell className="font-medium text-foreground">
-                  {parcela.eventos_financeiros?.descricao ?? "Sem descrição"}
-                </TableCell>
+                <TableCell className="font-medium text-foreground">{descricao}</TableCell>
                 <TableCell className="text-muted-foreground">
                   {parcela.eventos_financeiros?.pessoas?.nome ?? "—"}
                 </TableCell>
@@ -81,12 +86,16 @@ export function TabelaParcelasAbertas({
                   {formatarMoeda(saldoResidual)}
                 </TableCell>
                 <TableCell className="text-right">
-                  <BaixaSheet
+                  <AcoesParcela
                     parcelaId={parcela.id}
-                    descricao={parcela.eventos_financeiros?.descricao ?? "Sem descrição"}
+                    descricao={descricao}
+                    valor={Number(parcela.valor)}
+                    dataVencimento={parcela.data_vencimento}
                     saldoResidual={saldoResidual}
+                    status={parcela.status}
+                    baixas={baixas}
                     contasFinanceiras={contasFinanceiras}
-                    rotuloAcao={rotuloAcaoBaixa}
+                    rotuloAcaoBaixa={rotuloAcaoBaixa}
                   />
                 </TableCell>
               </TableRow>

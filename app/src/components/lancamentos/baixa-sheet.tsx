@@ -1,8 +1,8 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { CaretDown, HandCoins } from "@phosphor-icons/react";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter, SheetTrigger } from "@/components/ui/sheet";
+import { CaretDown } from "@phosphor-icons/react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,19 +14,22 @@ type ContaFinanceira = { id: string; nome: string };
 const estadoInicial = { erro: "" };
 
 export function BaixaSheet({
+  aberto,
+  onAbertoChange,
   parcelaId,
   descricao,
   saldoResidual,
   contasFinanceiras,
   rotuloAcao,
 }: {
+  aberto: boolean;
+  onAbertoChange: (aberto: boolean) => void;
   parcelaId: string;
   descricao: string;
   saldoResidual: number;
   contasFinanceiras: ContaFinanceira[];
   rotuloAcao: string;
 }) {
-  const [aberto, setAberto] = useState(false);
   const [mostrarComposicao, setMostrarComposicao] = useState(false);
   // mesmo raciocínio do EventoFinanceiroForm: o Select de conta financeira
   // guarda estado próprio, então remontar via key é o jeito confiável de
@@ -37,19 +40,13 @@ export function BaixaSheet({
     const resultado = await darBaixa(formData);
     if ("erro" in resultado) return { erro: resultado.erro };
     setChaveFormulario((k) => k + 1);
-    setAberto(false);
+    onAbertoChange(false);
     setMostrarComposicao(false);
     return { erro: "" };
   }, estadoInicial);
 
   return (
-    <Sheet open={aberto} onOpenChange={setAberto}>
-      <SheetTrigger asChild>
-        <Button size="sm" variant="outline" className="gap-1.5">
-          <HandCoins size={14} />
-          {rotuloAcao}
-        </Button>
-      </SheetTrigger>
+    <Sheet open={aberto} onOpenChange={onAbertoChange}>
       <SheetContent className="flex flex-col gap-0">
         <SheetHeader>
           <SheetTitle>{rotuloAcao}</SheetTitle>

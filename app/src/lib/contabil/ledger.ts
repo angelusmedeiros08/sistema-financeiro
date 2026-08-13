@@ -25,6 +25,7 @@ export async function registrarLancamento(
     origem: OrigemLancamento;
     referencia_id?: string;
     criado_por?: string;
+    estornado_de_id?: string;
     partidas: PartidaEntrada[];
   },
 ): Promise<{ lancamento_id: string } | { erro: string }> {
@@ -50,6 +51,7 @@ export async function registrarLancamento(
       origem: params.origem,
       referencia_id: params.referencia_id,
       criado_por: params.criado_por,
+      estornado_de_id: params.estornado_de_id,
     })
     .select("id")
     .single();
