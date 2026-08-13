@@ -7,11 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CamposEndereco, ENDERECO_VAZIO, ROTULO_TIPO_ENDERECO, type ValoresEndereco } from "@/components/formularios/campos-endereco";
 import type { Database } from "@/utils/supabase/database.types";
 import type { DadosPessoa, CampoPersonalizadoDefinicao } from "@/lib/pessoas/buscar-pessoa";
 
 type PerfilPessoa = Database["public"]["Enums"]["perfil_pessoa"];
-type TipoEndereco = Database["public"]["Enums"]["tipo_endereco"];
 type ResultadoAcao = { erro: string } | { sucesso: true };
 
 const PERFIS: { valor: PerfilPessoa; rotulo: string }[] = [
@@ -20,25 +20,7 @@ const PERFIS: { valor: PerfilPessoa; rotulo: string }[] = [
   { valor: "TRANSPORTADORA", rotulo: "Transportadora" },
 ];
 
-const ROTULO_TIPO_ENDERECO: Record<string, string> = {
-  COMERCIAL: "Comercial",
-  COBRANCA: "Cobrança",
-  ENTREGA: "Entrega",
-  OUTRO: "Outro",
-};
-
-type EnderecoPendente = {
-  tempId: string;
-  tipo: TipoEndereco;
-  cep: string;
-  logradouro: string;
-  numero: string;
-  complemento: string;
-  bairro: string;
-  cidade: string;
-  uf: string;
-  principal: boolean;
-};
+type EnderecoPendente = ValoresEndereco & { tempId: string; principal: boolean };
 
 type ContatoPendente = {
   tempId: string;
@@ -47,18 +29,6 @@ type ContatoPendente = {
   email: string;
   telefone: string;
   principal: boolean;
-};
-
-const ENDERECO_VAZIO: Omit<EnderecoPendente, "tempId"> = {
-  tipo: "COMERCIAL",
-  cep: "",
-  logradouro: "",
-  numero: "",
-  complemento: "",
-  bairro: "",
-  cidade: "",
-  uf: "",
-  principal: false,
 };
 
 const CONTATO_VAZIO: Omit<ContatoPendente, "tempId"> = {
@@ -89,12 +59,12 @@ function EnderecoPendenteEditor({
   onChange: (proximos: EnderecoPendente[]) => void;
 }) {
   const [aberto, setAberto] = useState(false);
-  const [rascunho, setRascunho] = useState(ENDERECO_VAZIO);
+  const [rascunho, setRascunho] = useState<EnderecoPendente>({ ...ENDERECO_VAZIO, tempId: "", principal: false });
 
   function adicionar() {
     const novo: EnderecoPendente = { ...rascunho, tempId: crypto.randomUUID() };
     onChange(rascunho.principal ? [...enderecos.map((e) => ({ ...e, principal: false })), novo] : [...enderecos, novo]);
-    setRascunho(ENDERECO_VAZIO);
+    setRascunho({ ...ENDERECO_VAZIO, tempId: "", principal: false });
     setAberto(false);
   }
 
@@ -134,49 +104,11 @@ function EnderecoPendenteEditor({
 
       {aberto && (
         <div className="grid gap-3 rounded-xl border border-border bg-muted/30 p-4 sm:grid-cols-2">
-          <div className="space-y-1.5">
-            <Label>Tipo</Label>
-            <Select value={rascunho.tipo} onValueChange={(v) => setRascunho((r) => ({ ...r, tipo: v as TipoEndereco }))}>
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(ROTULO_TIPO_ENDERECO).map(([valor, rotulo]) => (
-                  <SelectItem key={valor} value={valor}>
-                    {rotulo}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1.5">
-            <Label>CEP</Label>
-            <Input value={rascunho.cep} onChange={(e) => setRascunho((r) => ({ ...r, cep: e.target.value }))} />
-          </div>
-          <div className="space-y-1.5">
-            <Label>Logradouro</Label>
-            <Input value={rascunho.logradouro} onChange={(e) => setRascunho((r) => ({ ...r, logradouro: e.target.value }))} />
-          </div>
-          <div className="space-y-1.5">
-            <Label>Número</Label>
-            <Input value={rascunho.numero} onChange={(e) => setRascunho((r) => ({ ...r, numero: e.target.value }))} />
-          </div>
-          <div className="space-y-1.5">
-            <Label>Complemento</Label>
-            <Input value={rascunho.complemento} onChange={(e) => setRascunho((r) => ({ ...r, complemento: e.target.value }))} />
-          </div>
-          <div className="space-y-1.5">
-            <Label>Bairro</Label>
-            <Input value={rascunho.bairro} onChange={(e) => setRascunho((r) => ({ ...r, bairro: e.target.value }))} />
-          </div>
-          <div className="space-y-1.5">
-            <Label>Cidade</Label>
-            <Input value={rascunho.cidade} onChange={(e) => setRascunho((r) => ({ ...r, cidade: e.target.value }))} />
-          </div>
-          <div className="space-y-1.5">
-            <Label>UF</Label>
-            <Input maxLength={2} value={rascunho.uf} onChange={(e) => setRascunho((r) => ({ ...r, uf: e.target.value }))} />
-          </div>
+          <CamposEndereco
+            valores={rascunho}
+            onChange={(proximo) => setRascunho((r) => ({ ...r, ...proximo }))}
+            names={null}
+          />
           <label className="flex items-center gap-2 text-sm text-foreground sm:col-span-2">
             <Checkbox checked={rascunho.principal} onCheckedChange={(v) => setRascunho((r) => ({ ...r, principal: v === true }))} />
             Definir como endereço principal

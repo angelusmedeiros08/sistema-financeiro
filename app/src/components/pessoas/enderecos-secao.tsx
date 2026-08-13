@@ -2,23 +2,15 @@
 
 import { useActionState, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CamposEndereco, ENDERECO_VAZIO, ROTULO_TIPO_ENDERECO, type ValoresEndereco } from "@/components/formularios/campos-endereco";
 import type { Database } from "@/utils/supabase/database.types";
 import { salvarEnderecoAction } from "@/lib/pessoas/pessoas-actions";
 
 type Endereco = Database["public"]["Tables"]["pessoa_enderecos"]["Row"];
-
-const ROTULO_TIPO: Record<string, string> = {
-  COMERCIAL: "Comercial",
-  COBRANCA: "Cobrança",
-  ENTREGA: "Entrega",
-  OUTRO: "Outro",
-};
 
 function formatarLinha(e: Endereco) {
   const partes = [
@@ -47,6 +39,20 @@ function EnderecoForm({
 }) {
   const router = useRouter();
   const [principal, setPrincipal] = useState(enderecoBase?.principal ?? false);
+  const [valores, setValores] = useState<ValoresEndereco>(
+    enderecoBase
+      ? {
+          tipo: enderecoBase.tipo,
+          cep: enderecoBase.cep ?? "",
+          logradouro: enderecoBase.logradouro ?? "",
+          numero: enderecoBase.numero ?? "",
+          complemento: enderecoBase.complemento ?? "",
+          bairro: enderecoBase.bairro ?? "",
+          cidade: enderecoBase.cidade ?? "",
+          uf: enderecoBase.uf ?? "",
+        }
+      : ENDERECO_VAZIO,
+  );
 
   const [estado, formAction, pendente] = useActionState(async (_: typeof estadoInicial, formData: FormData) => {
     const resultado = await salvarEnderecoAction(formData);
@@ -62,56 +68,7 @@ function EnderecoForm({
       {enderecoBase && <input type="hidden" name="endereco_id" value={enderecoBase.id} />}
       <input type="hidden" name="principal" value={principal ? "true" : "false"} />
 
-      <div className="space-y-1.5">
-        <Label>Tipo</Label>
-        <Select name="tipo" defaultValue={enderecoBase?.tipo ?? "COMERCIAL"}>
-          <SelectTrigger className="w-full">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {Object.entries(ROTULO_TIPO).map(([valor, rotulo]) => (
-              <SelectItem key={valor} value={valor}>
-                {rotulo}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="space-y-1.5">
-        <Label>CEP</Label>
-        <Input name="cep" defaultValue={enderecoBase?.cep ?? ""} />
-      </div>
-
-      <div className="space-y-1.5">
-        <Label>Logradouro</Label>
-        <Input name="logradouro" defaultValue={enderecoBase?.logradouro ?? ""} />
-      </div>
-
-      <div className="space-y-1.5">
-        <Label>Número</Label>
-        <Input name="numero" defaultValue={enderecoBase?.numero ?? ""} />
-      </div>
-
-      <div className="space-y-1.5">
-        <Label>Complemento</Label>
-        <Input name="complemento" defaultValue={enderecoBase?.complemento ?? ""} />
-      </div>
-
-      <div className="space-y-1.5">
-        <Label>Bairro</Label>
-        <Input name="bairro" defaultValue={enderecoBase?.bairro ?? ""} />
-      </div>
-
-      <div className="space-y-1.5">
-        <Label>Cidade</Label>
-        <Input name="cidade" defaultValue={enderecoBase?.cidade ?? ""} />
-      </div>
-
-      <div className="space-y-1.5">
-        <Label>UF</Label>
-        <Input name="uf" maxLength={2} defaultValue={enderecoBase?.uf ?? ""} />
-      </div>
+      <CamposEndereco valores={valores} onChange={setValores} />
 
       <label className="flex items-center gap-2 text-sm text-foreground sm:col-span-2">
         <Checkbox checked={principal} onCheckedChange={(v) => setPrincipal(v === true)} />
@@ -169,7 +126,7 @@ export function EnderecosSecao({ pessoaId, enderecos }: { pessoaId: string; ende
               <div className="flex items-center justify-between gap-3 rounded-xl border border-border p-3">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-foreground">{ROTULO_TIPO[e.tipo] ?? e.tipo}</span>
+                    <span className="text-sm font-medium text-foreground">{ROTULO_TIPO_ENDERECO[e.tipo] ?? e.tipo}</span>
                     {e.principal && <Badge className="border-none bg-[#157F6B]/12 font-semibold text-[#0F5F50]">Principal</Badge>}
                   </div>
                   <p className="truncate text-sm text-muted-foreground">{formatarLinha(e)}</p>
