@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PessoaCombobox } from "./pessoa-combobox";
 import { CentroCustoCombobox } from "./centro-custo-combobox";
+import { CategoriaCombobox } from "./categoria-combobox";
 import { RateioCategorias } from "./rateio-categorias";
 import { RecorrenciaCampos } from "./recorrencia-campos";
 import { AnexoCampos } from "./anexo-campos";
@@ -113,18 +114,7 @@ export function EventoFinanceiroForm({
           />
         ) : (
           <div className="grid grid-cols-2 gap-3">
-            <Select name="categoria_id" required>
-              <SelectTrigger id="categoria_id" className="w-full">
-                <SelectValue placeholder="Selecione a categoria..." />
-              </SelectTrigger>
-              <SelectContent>
-                {categorias.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.nome}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <CategoriaCombobox categorias={categorias} />
             <CentroCustoCombobox centrosCusto={centrosCusto} />
           </div>
         )}

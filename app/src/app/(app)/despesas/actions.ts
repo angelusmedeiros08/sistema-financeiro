@@ -3,7 +3,13 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/utils/supabase/server";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
-import { criarEventoFinanceiro, resolverPessoaId, resolverCentroCustoIdSimples, extrairLinhasCategoria } from "@/lib/contabil/evento-financeiro";
+import {
+  criarEventoFinanceiro,
+  resolverPessoaId,
+  resolverCentroCustoIdSimples,
+  resolverCategoriaIdSimples,
+  extrairLinhasCategoria,
+} from "@/lib/contabil/evento-financeiro";
 import { extrairAnexosDraftDoFormData, anexarDraftsAoDono } from "@/lib/contabil/anexos";
 import { criarRegraRecorrenciaAction } from "@/lib/contabil/recorrencia-actions";
 
@@ -20,7 +26,6 @@ export async function criarDespesa(formData: FormData): Promise<ResultadoAcao> {
   const descricao = String(formData.get("descricao") ?? "").trim();
   const valorTexto = String(formData.get("valor") ?? "").replace(",", ".");
   const dataVencimento = String(formData.get("data_vencimento") ?? "");
-  const categoriaId = String(formData.get("categoria_id") ?? "");
   const numeroParcelas = Number(formData.get("numero_parcelas") ?? "1") || 1;
   const pessoaId = String(formData.get("pessoa_id") ?? "") || undefined;
   const pessoaNomeNovo = String(formData.get("pessoa_nome_novo") ?? "") || undefined;
@@ -40,6 +45,10 @@ export async function criarDespesa(formData: FormData): Promise<ResultadoAcao> {
   const supabase = await createClient();
 
   await resolverCentroCustoIdSimples(supabase, tenantId, formData);
+  const erroCategoriaNova = await resolverCategoriaIdSimples(supabase, tenantId, "DESPESA", formData);
+  if (erroCategoriaNova) return erroCategoriaNova;
+
+  const categoriaId = String(formData.get("categoria_id") ?? "");
   const categorias = extrairLinhasCategoria(formData, categoriaId, valor);
   if ("erro" in categorias) return categorias;
   if (!categoriaId && categorias.length === 1) {

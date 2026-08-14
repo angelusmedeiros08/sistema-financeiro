@@ -347,6 +347,7 @@ export type Database = {
       contas_contabeis: {
         Row: {
           codigo: string
+          codigo_referencial_sped: string | null
           conta_pai_id: string | null
           criado_em: string
           id: string
@@ -358,6 +359,7 @@ export type Database = {
         }
         Insert: {
           codigo: string
+          codigo_referencial_sped?: string | null
           conta_pai_id?: string | null
           criado_em?: string
           id?: string
@@ -369,6 +371,7 @@ export type Database = {
         }
         Update: {
           codigo?: string
+          codigo_referencial_sped?: string | null
           conta_pai_id?: string | null
           criado_em?: string
           id?: string

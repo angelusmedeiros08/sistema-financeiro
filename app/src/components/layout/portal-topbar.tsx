@@ -9,7 +9,7 @@ import { sair } from "@/app/(auth)/actions";
 // cheia de Despesas/Receitas/Contas a pagar (spec Fase 2 §5).
 export function PortalTopbar({ tenantNome, email }: { tenantNome: string; email: string }) {
   return (
-    <header className="sticky top-0 z-10 flex h-16 items-center gap-6 border-b border-border bg-card/95 px-4 backdrop-blur supports-backdrop-filter:bg-card/80 lg:px-8">
+    <header className="sticky top-0 z-20 flex h-16 items-center gap-6 border-b border-border bg-card px-4 lg:px-8">
       <span className="font-heading text-[15px] font-bold tracking-tight text-foreground">{tenantNome}</span>
 
       <nav className="flex flex-1 gap-1">

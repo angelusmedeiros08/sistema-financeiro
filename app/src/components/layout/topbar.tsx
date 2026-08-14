@@ -6,7 +6,7 @@ import { sair } from "@/app/(auth)/actions";
 
 export function Topbar({ tenantNome, email }: { tenantNome: string; email: string }) {
   return (
-    <header className="sticky top-0 z-10 flex h-16 items-center gap-3 border-b border-border bg-card/95 px-4 backdrop-blur supports-backdrop-filter:bg-card/80 lg:px-8">
+    <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-border bg-card px-4 lg:px-8">
       <Sheet>
         <SheetTrigger asChild>
           <Button variant="ghost" size="icon" className="lg:hidden">

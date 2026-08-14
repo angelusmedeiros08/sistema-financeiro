@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/utils/supabase/server";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
-import { extrairLinhasCategoria, resolverPessoaId, resolverCentroCustoIdSimples } from "./evento-financeiro";
+import { extrairLinhasCategoria, resolverPessoaId, resolverCentroCustoIdSimples, resolverCategoriaIdSimples } from "./evento-financeiro";
 import { criarRegraRecorrencia, editarRegraRecorrencia, cancelarRegraRecorrencia } from "./recorrencia";
 import { extrairAnexosDraftDoFormData, anexarDraftsAoDono } from "./anexos";
 import type { Database } from "@/utils/supabase/database.types";
@@ -42,7 +42,6 @@ export async function criarRegraRecorrenciaAction(tipo: TipoCategoria, formData:
   // série reusa o formulário inteiro, só troca o que a data significa
   // ("1º vencimento" vira "data de início da série").
   const dataInicio = String(formData.get("data_vencimento") ?? formData.get("data_inicio") ?? "");
-  const categoriaId = String(formData.get("categoria_id") ?? "");
   const numeroParcelas = Number(formData.get("numero_parcelas") ?? "1") || 1;
   const unidadeIntervalo = String(formData.get("unidade_intervalo") ?? "MES") as UnidadeIntervalo;
   const intervalo = Number(formData.get("intervalo") ?? "1") || 1;
@@ -69,6 +68,10 @@ export async function criarRegraRecorrenciaAction(tipo: TipoCategoria, formData:
   const supabase = await createClient();
 
   await resolverCentroCustoIdSimples(supabase, tenantId, formData);
+  const erroCategoriaNova = await resolverCategoriaIdSimples(supabase, tenantId, tipo, formData);
+  if (erroCategoriaNova) return erroCategoriaNova;
+
+  const categoriaId = String(formData.get("categoria_id") ?? "");
   const categorias = extrairLinhasCategoria(formData, categoriaId, valor);
   if ("erro" in categorias) return categorias;
   if (!categoriaId && categorias.length === 1) {
@@ -136,13 +139,9 @@ export async function editarRegraRecorrenciaAction(formData: FormData): Promise<
   const descricao = String(formData.get("descricao") ?? "").trim();
   const valorTexto = String(formData.get("valor") ?? "").replace(",", ".");
   const valor = Number(valorTexto);
-  const categoriaId = String(formData.get("categoria_id") ?? "");
   const unidadeIntervalo = String(formData.get("unidade_intervalo") ?? "") as UnidadeIntervalo | "";
   const intervalo = Number(formData.get("intervalo") ?? "0");
   const numeroParcelas = Number(formData.get("numero_parcelas") ?? "0");
-
-  const categorias = Number.isFinite(valor) && valor > 0 ? extrairLinhasCategoria(formData, categoriaId, valor) : undefined;
-  if (categorias && "erro" in categorias) return categorias;
 
   const { numero_ocorrencias, data_fim } = extrairTermino(formData);
 
@@ -150,6 +149,24 @@ export async function editarRegraRecorrenciaAction(formData: FormData): Promise<
   if ("erro" in contexto) return { erro: contexto.erro };
 
   const supabase = await createClient();
+
+  if (Number.isFinite(valor) && valor > 0) {
+    const { data: regra } = await supabase
+      .from("regras_recorrencia")
+      .select("tipo")
+      .eq("id", regraId)
+      .eq("tenant_id", contexto.tenantId)
+      .maybeSingle();
+    if (regra) {
+      const erroCategoriaNova = await resolverCategoriaIdSimples(supabase, contexto.tenantId, regra.tipo, formData);
+      if (erroCategoriaNova) return erroCategoriaNova;
+    }
+  }
+  const categoriaId = String(formData.get("categoria_id") ?? "");
+
+  const categorias = Number.isFinite(valor) && valor > 0 ? extrairLinhasCategoria(formData, categoriaId, valor) : undefined;
+  if (categorias && "erro" in categorias) return categorias;
+
   const resultado = await editarRegraRecorrencia(supabase, {
     regra_id: regraId,
     tenant_id: contexto.tenantId,

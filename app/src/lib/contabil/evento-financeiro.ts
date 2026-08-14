@@ -2,6 +2,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/utils/supabase/database.types";
 import { registrarLancamento } from "./ledger";
 import { CODIGO_CONTAS_A_RECEBER, CODIGO_CONTAS_A_PAGAR } from "./plano-padrao";
+import { buscarContaGenericaPorTipo } from "./plano-contas";
+import { criarCategoria } from "./categorias";
 
 type Cliente = SupabaseClient<Database>;
 type TipoCategoria = Database["public"]["Enums"]["tipo_categoria"];
@@ -85,6 +87,29 @@ export async function resolverCentroCustoIdSimples(supabase: Cliente, tenantId: 
 
   const { data } = await supabase.from("centros_custo").insert({ tenant_id: tenantId, nome }).select("id").single();
   if (data?.id) formData.set("centro_custo_id", data.id);
+}
+
+// Mesmo fluxo de resolverCentroCustoIdSimples, aplicado à categoria do modo
+// simples do formulário — categoria nova nasce vinculada à conta contábil
+// genérica do tipo (Receitas/Despesas Operacionais), reclassificável depois
+// em Configurações → Categorias.
+export async function resolverCategoriaIdSimples(
+  supabase: Cliente,
+  tenantId: string,
+  tipo: TipoCategoria,
+  formData: FormData,
+): Promise<{ erro: string } | void> {
+  if (formData.get("categoria_id")) return;
+
+  const nome = String(formData.get("categoria_nome_novo") ?? "").trim();
+  if (!nome) return;
+
+  const contaContabilId = await buscarContaGenericaPorTipo(supabase, { tenantId, tipo });
+  if (!contaContabilId) return { erro: "Conta contábil genérica não encontrada para essa categoria." };
+
+  const resultado = await criarCategoria(supabase, { tenantId, nome, tipo, contaContabilId });
+  if ("erro" in resultado) return resultado;
+  formData.set("categoria_id", resultado.id);
 }
 
 export type LinhaCentroCusto = { centro_custo_id: string; valor: number };

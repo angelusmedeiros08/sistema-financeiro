@@ -42,6 +42,8 @@ const SUB_ITENS_RELATORIOS: SubItemNav[] = [
 ];
 
 const SUB_ITENS_CONFIGURACOES: SubItemNav[] = [
+  { href: "/configuracoes/categorias", label: "Categorias" },
+  { href: "/configuracoes/plano-de-contas", label: "Plano de contas" },
   { href: "/configuracoes/centros-custo", label: "Centros de custo" },
   { href: "/configuracoes/contas-financeiras", label: "Contas financeiras" },
   { href: "/configuracoes/recorrencias", label: "Recorrências" },

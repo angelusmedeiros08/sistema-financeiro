@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
-import { CONTAS_CONTABEIS_PADRAO, CODIGO_CAIXA_E_BANCOS, CODIGO_RECEITAS_GERAL, CODIGO_DESPESAS_GERAL } from "@/lib/contabil/plano-padrao";
+import { GRUPOS_CONTAS_PADRAO, CONTAS_CONTABEIS_PADRAO, CODIGO_CAIXA_E_BANCOS, CODIGO_RECEITAS_GERAL, CODIGO_DESPESAS_GERAL } from "@/lib/contabil/plano-padrao";
 import { MODELO_COMPLETO_DRE } from "@/lib/relatorios/dre";
 
 type ResultadoAcao = { erro: string } | { sucesso: true; mensagem: string };
@@ -58,7 +58,29 @@ export async function cadastrar(formData: FormData): Promise<ResultadoAcao> {
     return { erro: erroVinculo.message };
   }
 
-  // 3) provisiona o plano de contas mínimo do tenant novo
+  // 3) provisiona o plano de contas do tenant novo — grupo (nível 1,
+  // totalizador) primeiro, pra depois referenciar o id gerado como
+  // conta_pai_id de cada conta de nível 2.
+  const { data: gruposCriados, error: erroGrupos } = await admin
+    .from("contas_contabeis")
+    .insert(
+      GRUPOS_CONTAS_PADRAO.map((g) => ({
+        tenant_id: tenant.id,
+        codigo: g.codigo,
+        nome: g.nome,
+        tipo: g.tipo,
+        natureza: g.natureza,
+        sistema: false,
+      })),
+    )
+    .select("id, codigo");
+
+  if (erroGrupos || !gruposCriados) {
+    return { erro: erroGrupos?.message ?? "Falha ao provisionar plano de contas." };
+  }
+
+  const grupoPorCodigo = new Map(gruposCriados.map((g) => [g.codigo, g.id]));
+
   const { data: contasCriadas, error: erroContas } = await admin
     .from("contas_contabeis")
     .insert(
@@ -68,7 +90,8 @@ export async function cadastrar(formData: FormData): Promise<ResultadoAcao> {
         nome: c.nome,
         tipo: c.tipo,
         natureza: c.natureza,
-        sistema: true,
+        sistema: c.sistema,
+        conta_pai_id: grupoPorCodigo.get(c.grupoCodigo),
       })),
     )
     .select("id, codigo");

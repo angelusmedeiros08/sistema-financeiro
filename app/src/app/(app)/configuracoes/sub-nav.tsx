@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 const ITENS = [
+  { href: "/configuracoes/categorias", rotulo: "Categorias" },
+  { href: "/configuracoes/plano-de-contas", rotulo: "Plano de contas" },
   { href: "/configuracoes/centros-custo", rotulo: "Centros de custo" },
   { href: "/configuracoes/contas-financeiras", rotulo: "Contas financeiras" },
   { href: "/configuracoes/recorrencias", rotulo: "Recorrências" },
@@ -17,7 +19,7 @@ export function ConfiguracoesSubNav() {
   const pathname = usePathname();
 
   return (
-    <div className="flex gap-1 border-b border-border pb-3">
+    <div className="flex flex-wrap gap-1 border-b border-border pb-3">
       {ITENS.map((item) => (
         <Link
           key={item.href}
