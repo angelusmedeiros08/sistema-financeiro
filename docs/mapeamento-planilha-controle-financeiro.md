@@ -409,6 +409,93 @@ Confirma a contagem da Seção 1 e dá o nome interno de cada um — útil porqu
 
 ---
 
-## 8. VBA — confirmado como camada de UX, não de regra de negócio
+## 8. VBA — código-fonte completo recuperado (terceira extração, mesmo dia)
 
-`xl/vbaProject.bin` usa compressão MS-OVBA própria (não é texto puro nem OOXML — precisaria de um decompressor dedicado tipo `oletools`/`olevba`, indisponível neste ambiente); a extração de strings ASCII cruas trouxe só fragmentos, mas os fragmentos legíveis (`Tbox_DataLcto`, `Tbox_DataPgto`, `TBox_DataVcto` recebendo auto-inserção de `-` ao digitar) confirmam que o VBA é **o UserForm de lançamento assistido e navegação de menu** (Seção 1), não motor de cálculo — o motor é 100% DAX/Power Pivot, já coberto nas Seções 3 e 6. Não há indício de regra de negócio (validação cruzada, cálculo condicional) escondida em VBA que não esteja também no Data Model.
+A tentativa anterior desistiu cedo demais ("precisaria de decompressor dedicado, indisponível"). Isso era verdade só por preguiça de implementar — o algoritmo de descompressão é público (**MS-OVBA §2.4.1**, compressão por container com tokens literal/copy) e `vbaProject.bin` é um **compound file OLE2 real** (assinatura `D0 CF 11 E0 A1 B1 1A E1`, confirmada por hexdump — diferente do container proprietário do `item.data`/Power Pivot da Seção 6). Implementei os dois algoritmos do zero (leitor de compound file OLE2 seguindo a cadeia de FAT/MiniFAT, e o descompressor MS-OVBA) e recuperei o **código-fonte VBA completo e limpo dos 46 módulos** (validado por assinatura: cada módulo decompilado começa literalmente com `Attribute VB_Name = "..."`, com >99% de caracteres imprimíveis).
+
+**Confirmação central**: continua não havendo nenhuma regra de negócio em VBA que não esteja também no Data Model — a leitura completa do código não muda a conclusão da Seção 3/6, só a fortalece com certeza total em vez de inferência por fragmento. Mas o código revela **padrões de UX genuinamente valiosos**, que valem virar decisão de produto:
+
+### 8.1 Cadastro relâmpago inline — o mesmo padrão que já usamos, confirmado como o certo
+
+No formulário de lançamento (`FrmLctos`), ao sair de qualquer combobox (Conta, Centro de Custo, Forma de Pagamento) com um valor digitado que não existe no cadastro:
+
+```vb
+Private Sub Cbox_CTCusto_BeforeUpdate(...)
+    Set R_Proc = PlanCad.Range("C:C").Find(Me.Cbox_CTCusto, , , xlWhole)
+    If R_Proc Is Nothing Then
+        Resp1 = MsgBox("Deseja cadastra-lo agora?", vbYesNo, "Novo centro de custo identificado.")
+        If Resp1 = vbNo Then Exit Sub
+        ' ...anexa o valor novo ao final da lista de Cadastros_Gerais
+    End If
+End Sub
+```
+
+O mesmo mecanismo se repete para Conta bancária e Forma de Pagamento. É **exatamente** o padrão de "criação rápida inline" que já implementamos pro combobox de pessoa (cliente/fornecedor) nos lançamentos — a validação externa confirma que é o padrão certo, e sinaliza uma melhoria real: hoje só pessoa tem esse atalho no nosso sistema; **centro de custo e forma de pagamento, se digitados como novo, ainda exigem ir em Configurações cadastrar antes** — vale estender o mesmo padrão pra esses dois.
+
+### 8.2 Gate de onboarding — bloqueia lançar até o plano de contas existir
+
+```vb
+Private Sub UserForm_Click()
+    AtualizacaoPC = Sheets("PlanoContas_Integrado").Range("I2")
+    If AtualizacaoPC = 0 Then
+        Resp1 = MsgBox("Cadastro de Plano de Contas Pendente! Deseja cadastrar agora?", vbYesNo, "AÇÃO NECESSÁRIA")
+        If Resp1 = vbYes Then
+            Unload Me
+            Sheets("PlanoContas_Entradas").Select
+        End If
+    End If
+End Sub
+```
+
+O formulário de lançamento se recusa a funcionar até o plano de contas ter sido confirmado como pronto, redirecionando o usuário pra tela de cadastro. No nosso sistema isso não é necessário do mesmo jeito porque já entregamos um plano de contas padrão pré-populado (Seção 5 já cobre essa decisão) — mas confirma que "não deixar o usuário lançar sem estrutura mínima" é uma preocupação real de produto, não só nossa.
+
+### 8.3 Validação suave vs. dura — nem todo campo trava o mesmo jeito
+
+```vb
+Private Sub TBox_DataLcto_BeforeUpdate(...)      ' data de lançamento: BLOQUEIA (Cancel = True)
+    If Not IsDate(Tbox_DataLcto.Value) Then
+        Tbox_DataLcto.BackColor = rgbPink
+        Cancel = True
+    End If
+End Sub
+
+Private Sub TBox_Valor_BeforeUpdate(...)          ' valor: só pinta de rosa, NÃO bloqueia (Cancel comentado)
+    If Not IsNumeric(TBox_Valor.Value) Then
+        TBox_Valor.BackColor = rgbPink
+        'Cancel = True
+    End If
+End Sub
+```
+
+Data de lançamento inválida trava o campo (não deixa sair); data de pagamento inválida só pinta (permite seguir, porque pagamento é opcional — condiz com "em aberto" da Seção 3.1); valor inválido também só pinta, nunca bloqueia. É uma hierarquia deliberada de severidade de validação por campo, não um "required" uniforme — vale replicar essa graduação (bloqueante vs. só-aviso) em vez de tratar toda validação de formulário como pass/fail.
+
+### 8.4 Seletor de granularidade temporal — Diário/Semanal/Mensal/Trimestral/Anual como radio buttons
+
+Fluxo de Caixa (`Planilha6`/aba `FluxoCaixa`) e Análise Comparativa (`Planilha1211`/aba `Análises_Comparativas`) têm radio buttons que fazem drill up/down na hierarquia de datas do pivô (Ano → Trimestre → Mês → Semana → Dia), mais um toggle "mostrar só o gráfico, esconder a grade de números". Confirma (já intuído na Seção 6.7 pelo `SOMAYTDPVSELECTED`/`ISFILTERED`) que a granularidade de tempo é um controle de primeira classe da UI, não só um detalhe de agrupamento da query — vale um seletor Dia/Semana/Mês/Trimestre/Ano explícito no nosso Fluxo de Caixa, não só o Regime.
+
+### 8.5 Agrupamento de exportação em PDF (`modImpressaoRelatorios`) — confirma a taxonomia de relatórios
+
+```
+"dashboards"  = Dashboard_Gerencial, DRE_Gráfica, Ponto_Equilibrio, FluxoCaixa, CAP_CAR
+"analíticos"  = DRE_Tabular, DFC_Direto, Centro_Custo, Relat_Contas_Bancarias, Aging_Analitico, Analise_Despesas
+```
+
+Essa divisão em dois grupos (visão executiva/gráfica vs. visão analítica/tabular) é uma pista de information architecture pra nossa própria seção de Relatórios — dá pra organizar por essa mesma lente (ex.: abas "Visão geral" / "Detalhado") em vez de uma lista plana de 12 relatórios.
+
+### 8.6 O resto — confirmado como não-substancial
+
+`Workbook_Open`/`Workbook_BeforeClose`: popup de boas-vindas/saída + auto-save, sem lógica. Zoom de formulário (`CommandButton3/4/8`): acessibilidade, salva a escala numa célula pra persistir entre sessões. `frmPrenchRapido`: helper de digitação rápida na grade (preenche classificação+subclassificação via VLOOKUP na célula ativa) — só relevante pro modo de edição direto em planilha, sem equivalente necessário numa UI de formulário real. `mod_Lançamentos`, `mod_CriarPlanoContas`, `mod_AtualizarReports`: **as três funções "grandes" que os nomes sugeriam interessantes** têm o corpo inteiro substituído por `MsgBox "Essa função está desativada na versão DEMO."` — a versão paga certamente tem lógica real aqui (provavelmente escrita direta na planilha via macro em vez de fórmula, dado que "Lançamentos" sugere inserção de linha assistida), mas essa cópia demo não permite recuperar o que era.
+
+---
+
+## 9. Plano de contas completo (extração célula a célula, não mais resumo)
+
+Extração direta de `PlanoContas_Entradas`/`PlanoContas_Saídas` (compartilhando o mesmo layout: cada grupo é um bloco de 3 colunas — código, nome do grupo, e a lista de sub-itens abaixo). Confirma os 10 grupos de entrada e conta rigorosamente 20 grupos de saída (a Seção 1 já citava esse número). Estrutura por grupo (nome do grupo → contagem real de sub-itens nesta cópia demo, alguns claramente preenchidos com dado real do autor do template em vez de placeholder genérico — sinal de que o "molde vazio" comercial provavelmente tem menos exemplos que isso):
+
+**Entradas** — 1.1 Saldo Inicial · 1.2 Transferências_Entradas · 1.3 Receitas com Produtos (8 sub-itens, ex.: "Serviços Prestados - Setup/Desenvolvimento Específico/SMS/SITE/Datamotor/Cloud/TEF") · 1.4 Receitas Financeiras (3: Juros Recebidos, Rendimento sobre Aplicações, Descontos Obtidos) · 1.5 Outras Receitas e Despesas não Operacionais · 1.6 Entradas não Operacionais (5: Empréstimos obtidos, Capitalização dos sócios, Venda de equipamentos usados, Outras entradas não operacionais, Aportes financeiros) · 1.7–1.9 Receitas Não Operacionais I/II + Outras receitas II (placeholders genéricos "NÃO USAR") · 1.10 Outras receitas I.
+
+**Saídas** — 2.1 Transferências_Saídas · 2.2 Despesas com Pessoal - Salários (11 sub-itens: Pró-Labore, Salários e Ordenados, INSS, FGTS, Estágio, Horas Extras, Indenizações, Adicional Noturno, Sobre-aviso, Gratificações ×3, Recuperação, Produtividade, Diárias, Auxílio Educação) · 2.3 Provisão (13º/Férias e seus encargos) · 2.4 Benefícios (PAT, Vale Transporte, Convênio Médico, Seguro de Vida) · 2.5 Outras Despesas Pessoal (Recrutamento, Contribuição Sindical, Home Office) · 2.6 Serviços Terceirizados (Contratos PJ, Autônomos) · 2.7 Despesas Gerais (27 sub-itens confirmados: Aluguel, Condomínio, Honorários Contábeis/Advocatícios, Manutenção, Telefone/Internet, Correios, Viagens, Material de Escritório, Higiene/Limpeza, Copa/Cozinha, Legais e Judiciais, Energia Elétrica, Processamento de Dados, Estacionamento, Manutenção Predial, Telefonia, Bens de Pequeno Valor, Taxas de Homologação, Despesas Diversas, Custas Judiciais, Manutenção/Licença de Software — vários nomes de software específicos do autor do template) · 2.8 Custos com Profissionais · 2.9 Custos Cloud e SMS (Datacenter, Hospedagem) · 2.10 Tributos e Contribuições (IPTU, IOF, Multas Federais) · 2.11 Tributos sobre a Venda (Simples/PIS/COFINS/ISSQN, todos com prefixo "(-)" indicando dedução) · 2.12 Tributos sobre o Lucro (CSLL, IR, IR/CSLL Presumido) · 2.13 Outras Receitas/Despesas não Operacionais · 2.14 Despesas Financeiras (Juros Pagos, Despesas Bancárias, Descontos Concedidos, IR sobre Aplicação) · 2.15 Depreciação e Amortização · 2.16 Retirada de Lucros (Distribuição de Dividendos) · 2.17 Retirada de Lucros [variante duplicada, provável erro de template] · 2.18 Estornos · 2.19 Imobilizado (Maquinários) · 2.20 Outras despesas III (Acordos judiciais).
+
+**Padrão de nomenclatura confirmado**: prefixo `( - )` em itens que são dedução dentro de um grupo predominantemente positivo (ex.: `( - ) Simples Nacional` dentro de Tributos sobre a Venda) — é assim que a planilha resolve "a maioria dos itens do grupo soma, mas este subtrai" sem precisar de uma coluna de sinal separada visível ao usuário (o sinal real fica em `Sinal_Calc`, Seção 6.8; o prefixo é só rótulo). Padrão de UX barato de adotar: nome da subcategoria pode conter a dica visual, mesmo com o sinal sendo dado estruturado por trás.
+
+**Cadastros_Gerais confirmado célula a célula**: bate exatamente com a Seção 2.3 (Centro de Custo: Adm/Vendas com Tipo Produtivo/Não Produtivo; Unidade: Filial 1/2; Conta: BB/Itaú; Empresa: só 1 linha "SFB"; Forma de Pagamento: Pix/Cartão/Boleto/Dinheiro — confirma que Pix já era considerado forma de pagamento de primeira classe mesmo nesta versão antiga do template). `Tipo_Participante` continua sem nenhuma linha cadastrada, confirmando a fragilidade já apontada na Seção 2.5.
