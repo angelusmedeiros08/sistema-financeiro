@@ -40,7 +40,7 @@ export default async function PaginaRelatoriosVisaoGeral({
   const fluxoParaGrafico = fluxo.map((p) => ({ mes: p.chave, resultado: p.saldoPeriodo }));
 
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-6">
+    <div className="flex w-full flex-col gap-6">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h1 className="text-xl font-bold tracking-tight text-foreground">Relatórios</h1>
       </div>
@@ -74,16 +74,17 @@ export default async function PaginaRelatoriosVisaoGeral({
         />
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <div className="rounded-2xl border border-border bg-card p-5">
-          <h2 className="mb-4 font-heading text-sm font-bold text-foreground">Fluxo de caixa</h2>
-          <FluxoChart dados={fluxoParaGrafico} />
-        </div>
+      {/* Cada gráfico na sua própria linha, largura cheia — dividir a tela
+          em 2 colunas espremia a cascata (23 linhas reais) até virar
+          ilegível, mesmo motivo já corrigido no DRE dedicado. */}
+      <div className="rounded-2xl border border-border bg-card p-5">
+        <h2 className="mb-4 font-heading text-sm font-bold text-foreground">Fluxo de caixa</h2>
+        <FluxoChart dados={fluxoParaGrafico} />
+      </div>
 
-        <div className="rounded-2xl border border-border bg-card p-5">
-          <h2 className="mb-4 font-heading text-sm font-bold text-foreground">DRE em cascata</h2>
-          <WaterfallDre linhas={dre} />
-        </div>
+      <div className="rounded-2xl border border-border bg-card p-5">
+        <h2 className="mb-4 font-heading text-sm font-bold text-foreground">DRE em cascata</h2>
+        <WaterfallDre linhas={dre} altura={360} />
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
