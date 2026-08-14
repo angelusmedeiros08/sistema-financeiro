@@ -15,12 +15,12 @@ const SERIES = [
 // de linhas que já existem na matriz (nenhum cálculo novo). Mesma grade e
 // formatação de tooltip do resto de Relatórios, só que em linha (evolução
 // no tempo) em vez de barra.
-export function IndicadoresDreChart({ dados }: { dados: IndicadorMensal[] }) {
+export function IndicadoresDreChart({ dados, altura = 220 }: { dados: IndicadorMensal[]; altura?: number }) {
   const semDado = dados.every((d) => d.mc === 0 && d.margemBruta === 0 && d.ebitda === 0 && d.margemLiquida === 0);
 
   return (
     <div className="relative">
-      <ResponsiveContainer width="100%" height={220}>
+      <ResponsiveContainer width="100%" height={altura}>
         <LineChart data={dados} margin={{ top: 4, right: 4, left: 4, bottom: 0 }}>
           <CartesianGrid vertical={false} stroke="var(--border)" />
           <XAxis dataKey="chave" axisLine={false} tickLine={false} tick={{ fill: "var(--muted-foreground)", fontSize: 11 }} />

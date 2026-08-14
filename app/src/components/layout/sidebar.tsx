@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -12,15 +13,33 @@ import {
   Truck,
   ChartLineUp,
   GearSix,
+  CaretDown,
 } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
+
+type SubItemNav = { href: string; label: string };
 
 type ItemNav = {
   href: string;
   label: string;
   icon: React.ComponentType<{ size?: number; weight?: "regular" | "bold" | "fill"; className?: string }>;
   disponivel: boolean;
+  subItens?: SubItemNav[];
 };
+
+// Mesmo padrão do Conta Azul (grupo "Financeiro" na sidebar expande em
+// sub-itens em vez de navegar direto) — clicar em Relatórios abre a lista
+// dos 8 relatórios ali mesmo, sem precisar entrar na seção pra escolher.
+const SUB_ITENS_RELATORIOS: SubItemNav[] = [
+  { href: "/relatorios/visao-geral", label: "Visão geral" },
+  { href: "/relatorios/dre", label: "DRE" },
+  { href: "/relatorios/fluxo-caixa", label: "Fluxo de caixa" },
+  { href: "/relatorios/centro-custo", label: "Centro de custo" },
+  { href: "/relatorios/aging", label: "Aging" },
+  { href: "/relatorios/despesas", label: "Análise de despesas" },
+  { href: "/relatorios/comparativos", label: "Comparativos" },
+  { href: "/relatorios/contas-bancarias", label: "Contas bancárias" },
+];
 
 const ITENS_NAV: ItemNav[] = [
   { href: "/painel", label: "Painel", icon: SquaresFour, disponivel: true },
@@ -30,12 +49,13 @@ const ITENS_NAV: ItemNav[] = [
   { href: "/contas-a-pagar", label: "Contas a pagar", icon: CreditCard, disponivel: true },
   { href: "/clientes", label: "Clientes", icon: Users, disponivel: true },
   { href: "/fornecedores", label: "Fornecedores", icon: Truck, disponivel: true },
-  { href: "/relatorios", label: "Relatórios", icon: ChartLineUp, disponivel: true },
+  { href: "/relatorios", label: "Relatórios", icon: ChartLineUp, disponivel: true, subItens: SUB_ITENS_RELATORIOS },
   { href: "/configuracoes", label: "Configurações", icon: GearSix, disponivel: true },
 ];
 
 export function SidebarConteudo() {
   const pathname = usePathname();
+  const [expandidoManual, setExpandidoManual] = useState<Record<string, boolean>>({});
 
   return (
     <div className="flex h-full flex-col gap-8 bg-sidebar px-4 py-6 text-sidebar-foreground">
@@ -50,7 +70,7 @@ export function SidebarConteudo() {
 
       <nav className="flex flex-1 flex-col gap-0.5">
         {ITENS_NAV.map((item) => {
-          const ativo = pathname === item.href || pathname.startsWith(item.href + "/");
+          const dentroDaSecao = pathname === item.href || pathname.startsWith(item.href + "/");
           const Icon = item.icon;
 
           if (!item.disponivel) {
@@ -69,18 +89,62 @@ export function SidebarConteudo() {
             );
           }
 
+          if (item.subItens) {
+            const expandido = expandidoManual[item.href] ?? dentroDaSecao;
+            return (
+              <div key={item.href}>
+                <button
+                  type="button"
+                  onClick={() => setExpandidoManual((atual) => ({ ...atual, [item.href]: !expandido }))}
+                  className={cn(
+                    "flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-semibold transition-colors",
+                    dentroDaSecao
+                      ? "bg-sidebar-accent text-white"
+                      : "text-sidebar-foreground/70 hover:bg-sidebar-accent/60 hover:text-white",
+                  )}
+                >
+                  <Icon size={17} weight={dentroDaSecao ? "bold" : "regular"} />
+                  <span className="flex-1 text-left">{item.label}</span>
+                  <CaretDown size={13} className={cn("transition-transform", expandido && "rotate-180")} />
+                </button>
+
+                {expandido && (
+                  <div className="mt-0.5 mb-1 flex flex-col gap-0.5 border-l border-sidebar-foreground/15 pl-3.5 ml-4.5">
+                    {item.subItens.map((sub) => {
+                      const ativo = pathname === sub.href;
+                      return (
+                        <Link
+                          key={sub.href}
+                          href={sub.href}
+                          className={cn(
+                            "rounded-lg px-2.5 py-1.5 text-[13px] font-medium transition-colors",
+                            ativo
+                              ? "bg-sidebar-accent/70 text-white"
+                              : "text-sidebar-foreground/60 hover:bg-sidebar-accent/40 hover:text-white",
+                          )}
+                        >
+                          {sub.label}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          }
+
           return (
             <Link
               key={item.href}
               href={item.href}
               className={cn(
                 "flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-semibold transition-colors",
-                ativo
+                dentroDaSecao
                   ? "bg-sidebar-accent text-white"
                   : "text-sidebar-foreground/70 hover:bg-sidebar-accent/60 hover:text-white",
               )}
             >
-              <Icon size={17} weight={ativo ? "bold" : "regular"} />
+              <Icon size={17} weight={dentroDaSecao ? "bold" : "regular"} />
               {item.label}
             </Link>
           );
