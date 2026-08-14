@@ -33,56 +33,49 @@ function montarBarras(linhas: LinhaWaterfall[]): BarraWaterfall[] {
   });
 }
 
-// Cada barra recebe uma faixa fixa de largura (não divide o espaço
-// disponível igualmente entre N categorias) — com 23 linhas reais de DRE,
-// um container 100% responsivo teria comprimido tudo até virar ilegível.
-// Em vez disso, a área do gráfico cresce com o número de linhas e rola na
-// horizontal, mesmo padrão da matriz mensal.
-const LARGURA_POR_BARRA = 64;
-const LARGURA_MINIMA = 640;
-
+// A área do gráfico é sempre 100% responsiva à largura do card — nunca
+// depende de scroll horizontal do mouse pra revelar barra cortada. Com 23
+// linhas reais de DRE, a legibilidade vem do rótulo rotacionado + fonte
+// menor, não de expandir o canvas além do container.
 export function WaterfallDre({ linhas, altura = 420 }: { linhas: LinhaWaterfall[]; altura?: number }) {
   const dados = montarBarras(linhas);
   const semDado = linhas.length === 0 || linhas.every((l) => l.valorDireto === 0);
-  const largura = Math.max(LARGURA_MINIMA, dados.length * LARGURA_POR_BARRA);
 
   return (
-    <div className="relative overflow-x-auto">
-      <div style={{ width: largura, height: altura }}>
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={dados} margin={{ top: 8, right: 8, left: 8, bottom: 8 }}>
-            <CartesianGrid vertical={false} stroke="var(--border)" />
-            <XAxis
-              dataKey="rotulo"
-              axisLine={false}
-              tickLine={false}
-              interval={0}
-              angle={-40}
-              textAnchor="end"
-              height={110}
-              tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}
-            />
-            <YAxis hide />
-            <Tooltip
-              cursor={{ fill: "var(--muted)" }}
-              contentStyle={{
-                background: "var(--popover)",
-                border: "1px solid var(--border)",
-                borderRadius: "0.625rem",
-                fontSize: 12,
-              }}
-              formatter={(_value, _nome, item) => formatarMoeda(Number(item?.payload?.valorReal ?? 0))}
-              labelFormatter={(rotulo) => rotulo}
-            />
-            <Bar dataKey="base" stackId="cascata" fill="transparent" isAnimationActive={false} />
-            <Bar dataKey="altura" stackId="cascata" radius={[4, 4, 4, 4]} maxBarSize={48}>
-              {dados.map((d, i) => (
-                <Cell key={i} fill={d.cor} />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
+    <div className="relative" style={{ height: altura }}>
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={dados} margin={{ top: 8, right: 8, left: 8, bottom: 8 }}>
+          <CartesianGrid vertical={false} stroke="var(--border)" />
+          <XAxis
+            dataKey="rotulo"
+            axisLine={false}
+            tickLine={false}
+            interval={0}
+            angle={-40}
+            textAnchor="end"
+            height={110}
+            tick={{ fill: "var(--muted-foreground)", fontSize: 10.5 }}
+          />
+          <YAxis hide />
+          <Tooltip
+            cursor={{ fill: "var(--muted)" }}
+            contentStyle={{
+              background: "var(--popover)",
+              border: "1px solid var(--border)",
+              borderRadius: "0.625rem",
+              fontSize: 12,
+            }}
+            formatter={(_value, _nome, item) => formatarMoeda(Number(item?.payload?.valorReal ?? 0))}
+            labelFormatter={(rotulo) => rotulo}
+          />
+          <Bar dataKey="base" stackId="cascata" fill="transparent" isAnimationActive={false} />
+          <Bar dataKey="altura" stackId="cascata" radius={[4, 4, 4, 4]} maxBarSize={48}>
+            {dados.map((d, i) => (
+              <Cell key={i} fill={d.cor} />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
       {semDado && (
         <p className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">
           Sem movimentação no período selecionado.
