@@ -85,8 +85,11 @@ export async function desvincularCategoriaDreAction(formData: FormData): Promise
   const categoriaId = String(formData.get("categoria_id") ?? "");
   if (!linhaId || !categoriaId) return { erro: "Vínculo inválido." };
 
+  const contexto = await obterUsuarioETenantAtual();
+  if ("erro" in contexto) return { erro: contexto.erro };
+
   const supabase = await createClient();
-  const resultado = await desvincularCategoriaDre(supabase, { linhaId, categoriaId });
+  const resultado = await desvincularCategoriaDre(supabase, { tenantId: contexto.tenantId, linhaId, categoriaId });
 
   if ("erro" in resultado) return resultado;
   revalidarDre();

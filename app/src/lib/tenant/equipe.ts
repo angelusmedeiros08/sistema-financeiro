@@ -37,7 +37,10 @@ export async function convidarUsuario(
   });
 
   if (erroConvite || !convite.user) {
-    return { erro: erroConvite?.message ?? "Falha ao enviar convite." };
+    // mensagem genérica de propósito — o texto nativo do Supabase Auth
+    // pode revelar se esse e-mail já tem conta em OUTRO tenant da mesma
+    // plataforma, vazando informação entre clientes da SaaS.
+    return { erro: "Não foi possível enviar o convite. Confirme o e-mail e tente novamente." };
   }
 
   // já era membro (convite repetido, ou reingresso): reativa e atualiza o
@@ -73,8 +76,12 @@ export async function convidarUsuario(
 
 export async function definirAcessoUsuario(
   supabase: Cliente,
-  params: { tenant_id: string; usuario_id: string; ativo: boolean },
+  params: { tenant_id: string; usuario_id: string; ativo: boolean; papelChamador: PapelUsuario },
 ): Promise<{ sucesso: true } | { erro: string }> {
+  if (params.papelChamador !== "admin") {
+    return { erro: "Só administradores podem revogar ou reativar acesso." };
+  }
+
   const { error } = await supabase
     .from("usuario_tenant")
     .update({ ativo: params.ativo })

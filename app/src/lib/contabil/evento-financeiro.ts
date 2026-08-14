@@ -46,7 +46,14 @@ export async function resolverPessoaId(
   tenantId: string,
   params: { pessoaId?: string; nomeNovaPessoa?: string; documentoNovaPessoa?: string; perfil: "CLIENTE" | "FORNECEDOR" },
 ): Promise<string | null> {
-  if (params.pessoaId) return params.pessoaId;
+  if (params.pessoaId) {
+    // confirma posse antes de aceitar o ID vindo do formulário — sem isso,
+    // um pessoa_id de outro tenant passaria batido até virar um vínculo
+    // quebrado (ex.: convite de portal apontando pra pessoa inexistente no
+    // tenant do convite).
+    const { data } = await supabase.from("pessoas").select("id").eq("id", params.pessoaId).eq("tenant_id", tenantId).maybeSingle();
+    return data?.id ?? null;
+  }
 
   const nome = params.nomeNovaPessoa?.trim();
   if (!nome) return null;

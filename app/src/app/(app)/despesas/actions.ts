@@ -29,6 +29,9 @@ export async function criarDespesa(formData: FormData): Promise<ResultadoAcao> {
   if (!descricao || !dataVencimento || !Number.isFinite(valor) || valor <= 0) {
     return { erro: "Preencha descrição, valor (maior que zero) e vencimento." };
   }
+  if (numeroParcelas < 1 || numeroParcelas > 360) {
+    return { erro: "Número de parcelas precisa estar entre 1 e 360." };
+  }
 
   const contexto = await obterUsuarioETenantAtual();
   if ("erro" in contexto) return { erro: contexto.erro };

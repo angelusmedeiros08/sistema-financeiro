@@ -66,6 +66,7 @@ export async function definirAcessoUsuarioAction(formData: FormData): Promise<Re
     tenant_id: contexto.tenantId,
     usuario_id: usuarioId,
     ativo,
+    papelChamador: contexto.papel,
   });
 
   if ("erro" in resultado) return resultado;

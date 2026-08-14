@@ -294,8 +294,18 @@ export async function vincularCategoriaDre(
 
 export async function desvincularCategoriaDre(
   supabase: Cliente,
-  params: { linhaId: string; categoriaId: string },
+  params: { tenantId: string; linhaId: string; categoriaId: string },
 ): Promise<Resultado> {
+  // mesma defesa em profundidade de vincularCategoriaDre — confirma posse
+  // da linha antes de apagar, não confia só na policy RLS.
+  const { data: linha } = await supabase
+    .from("linhas_dre")
+    .select("id")
+    .eq("id", params.linhaId)
+    .eq("tenant_id", params.tenantId)
+    .maybeSingle();
+  if (!linha) return { erro: "Linha de DRE não encontrada." };
+
   const { error } = await supabase
     .from("linha_dre_categorias")
     .delete()

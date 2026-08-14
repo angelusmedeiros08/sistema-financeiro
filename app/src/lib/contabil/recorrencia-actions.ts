@@ -53,8 +53,14 @@ export async function criarRegraRecorrenciaAction(tipo: TipoCategoria, formData:
   if (!descricao || !dataInicio || !Number.isFinite(valor) || valor <= 0) {
     return { erro: "Preencha descrição, valor (maior que zero) e data de início." };
   }
+  if (numeroParcelas < 1 || numeroParcelas > 360) {
+    return { erro: "Número de parcelas precisa estar entre 1 e 360." };
+  }
 
   const { numero_ocorrencias, data_fim } = extrairTermino(formData);
+  if (numero_ocorrencias !== null && numero_ocorrencias > 1200) {
+    return { erro: "Número de ocorrências não pode passar de 1200." };
+  }
 
   const contexto = await obterUsuarioETenantAtual();
   if ("erro" in contexto) return { erro: contexto.erro };

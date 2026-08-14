@@ -34,10 +34,18 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  // /auth/* (confirmação de convite/cadastro, e futuro reset de senha) e
+  // /api/cron/* (autenticado por segredo compartilhado, não sessão) são
+  // acessados por quem ainda não tem sessão — sem essas duas entradas o
+  // gate abaixo intercepta a requisição antes do route handler rodar.
   const isAuthRoute =
     request.nextUrl.pathname.startsWith("/entrar") ||
-    request.nextUrl.pathname.startsWith("/cadastro");
-  const isPublicRoute = isAuthRoute || request.nextUrl.pathname === "/";
+    request.nextUrl.pathname.startsWith("/cadastro") ||
+    request.nextUrl.pathname.startsWith("/auth");
+  const isPublicRoute =
+    isAuthRoute ||
+    request.nextUrl.pathname === "/" ||
+    request.nextUrl.pathname.startsWith("/api/cron");
 
   if (!user && !isPublicRoute) {
     const url = request.nextUrl.clone();

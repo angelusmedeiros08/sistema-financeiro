@@ -15,6 +15,9 @@ export async function criarContaFinanceira(formData: FormData): Promise<Resultad
   if (!nome) {
     return { erro: "Informe o nome da conta." };
   }
+  if (!Number.isFinite(saldoInicial)) {
+    return { erro: "Saldo inicial inválido." };
+  }
 
   const contexto = await obterUsuarioETenantAtual();
   if ("erro" in contexto) return { erro: contexto.erro };
