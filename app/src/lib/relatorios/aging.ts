@@ -95,12 +95,16 @@ export type ResumoVencimentos = {
   vencidoQuantidade: number;
   venceHojeTotal: number;
   venceHojeQuantidade: number;
+  venceEsteMesTotal: number;
+  venceEsteMesQuantidade: number;
 };
 
 // Quebra vencidos × vencendo hoje — pedido explícito do sócio do usuário
 // pro Painel e reaproveitado aqui na Visão geral de Relatórios e na aba
 // Visão geral de Configurações → Contas Financeiras (mesma pergunta, três
-// telas diferentes).
+// telas diferentes). `venceEsteMesTotal` soma o que vence depois de hoje
+// mas ainda dentro do mês corrente — mesmo dataset já buscado (a query não
+// tinha teto de data), só um balde novo na mesma varredura.
 export async function buscarResumoVencimentos(
   supabase: Cliente,
   params: { tenantId: string; tipo: "RECEITA" | "DESPESA"; pessoaId?: string },
@@ -116,8 +120,17 @@ export async function buscarResumoVencimentos(
 
   const { data } = await query;
 
-  const hojeIso = new Date().toISOString().slice(0, 10);
-  const resumo: ResumoVencimentos = { vencidoTotal: 0, vencidoQuantidade: 0, venceHojeTotal: 0, venceHojeQuantidade: 0 };
+  const hoje = new Date();
+  const hojeIso = hoje.toISOString().slice(0, 10);
+  const fimDoMesIso = new Date(Date.UTC(hoje.getUTCFullYear(), hoje.getUTCMonth() + 1, 0)).toISOString().slice(0, 10);
+  const resumo: ResumoVencimentos = {
+    vencidoTotal: 0,
+    vencidoQuantidade: 0,
+    venceHojeTotal: 0,
+    venceHojeQuantidade: 0,
+    venceEsteMesTotal: 0,
+    venceEsteMesQuantidade: 0,
+  };
 
   for (const p of data ?? []) {
     const pago = (p.baixas ?? []).filter((b) => !b.estornado_em).reduce((s, b) => s + Number(b.valor_pago), 0);
@@ -128,6 +141,9 @@ export async function buscarResumoVencimentos(
     } else if (p.data_vencimento === hojeIso) {
       resumo.venceHojeTotal += saldo;
       resumo.venceHojeQuantidade += 1;
+    } else if (p.data_vencimento <= fimDoMesIso) {
+      resumo.venceEsteMesTotal += saldo;
+      resumo.venceEsteMesQuantidade += 1;
     }
   }
 

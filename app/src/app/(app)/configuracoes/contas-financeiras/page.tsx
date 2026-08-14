@@ -151,7 +151,7 @@ async function VisaoGeralContasFinanceiras({ tenantId, supabase }: { tenantId: s
           variant="teal"
           label="A receber vencido"
           valor={formatarMoeda(resumoReceber.vencidoTotal)}
-          detalhe={`Vence hoje: ${formatarMoeda(resumoReceber.venceHojeTotal)}`}
+          detalhe={`Vence hoje: ${formatarMoeda(resumoReceber.venceHojeTotal)} · Este mês: ${formatarMoeda(resumoReceber.venceEsteMesTotal)}`}
         />
         <StatCard
           variant="ambar"

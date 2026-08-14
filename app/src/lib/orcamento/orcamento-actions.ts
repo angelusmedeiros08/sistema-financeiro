@@ -27,8 +27,7 @@ export async function definirValorOrcamentoAction(params: {
   });
 
   if ("erro" in resultado) return resultado;
-  revalidatePath("/configuracoes/orcamento");
-  revalidatePath("/relatorios/orcado-realizado");
+  revalidatePath("/orcamento");
   return { sucesso: true };
 }
 
@@ -52,7 +51,6 @@ export async function copiarValorParaRestoDoAnoAction(params: {
   });
 
   if ("erro" in resultado) return resultado;
-  revalidatePath("/configuracoes/orcamento");
-  revalidatePath("/relatorios/orcado-realizado");
+  revalidatePath("/orcamento");
   return { sucesso: true };
 }

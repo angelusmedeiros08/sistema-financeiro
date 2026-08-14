@@ -11,7 +11,9 @@ import {
   CreditCard,
   Users,
   Truck,
+  ChartLine,
   ChartLineUp,
+  PiggyBank,
   GearSix,
   CaretRight,
   CaretLeft,
@@ -31,10 +33,10 @@ type ItemNav = {
 const SUB_ITENS_RELATORIOS: SubItemNav[] = [
   { href: "/relatorios/visao-geral", label: "Visão geral" },
   { href: "/relatorios/dre", label: "DRE" },
-  { href: "/relatorios/fluxo-caixa", label: "Fluxo de caixa" },
   { href: "/relatorios/centro-custo", label: "Centro de custo" },
   { href: "/relatorios/aging", label: "Aging" },
   { href: "/relatorios/despesas", label: "Análise de despesas" },
+  { href: "/relatorios/ponto-equilibrio", label: "Ponto de equilíbrio" },
   { href: "/relatorios/comparativos", label: "Comparativos" },
   { href: "/relatorios/contas-bancarias", label: "Contas bancárias" },
 ];
@@ -56,6 +58,8 @@ const ITENS_NAV: ItemNav[] = [
   { href: "/contas-a-pagar", label: "Contas a pagar", icon: CreditCard, disponivel: true },
   { href: "/clientes", label: "Clientes", icon: Users, disponivel: true },
   { href: "/fornecedores", label: "Fornecedores", icon: Truck, disponivel: true },
+  { href: "/fluxo-caixa", label: "Fluxo de caixa", icon: ChartLine, disponivel: true },
+  { href: "/orcamento", label: "Orçamento", icon: PiggyBank, disponivel: true },
   { href: "/relatorios", label: "Relatórios", icon: ChartLineUp, disponivel: true, subItens: SUB_ITENS_RELATORIOS },
   { href: "/configuracoes", label: "Configurações", icon: GearSix, disponivel: true, subItens: SUB_ITENS_CONFIGURACOES },
 ];
