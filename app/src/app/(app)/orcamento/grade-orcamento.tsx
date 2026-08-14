@@ -156,24 +156,34 @@ export function GradeOrcamento({ ano, linhas }: { ano: number; linhas: LinhaGrad
       <div className="mb-6 last:mb-0">
         <h3 className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">{titulo}</h3>
         <div className="overflow-x-auto">
-          <table className="w-full text-xs">
+          <table className="w-full table-fixed border-separate border-spacing-0 text-xs">
+            <colgroup>
+              <col className="w-44" />
+              {NOMES_MES.map((mes) => (
+                <col key={mes} className="w-[72px]" />
+              ))}
+              <col className="w-24" />
+            </colgroup>
             <thead>
-              <tr className="border-b border-border text-left text-[10.5px] font-bold uppercase tracking-wide text-muted-foreground">
-                <th className="sticky left-0 z-10 w-40 bg-card py-1.5 pr-2">Categoria</th>
+              <tr className="text-left text-[10.5px] font-bold uppercase tracking-wide text-muted-foreground">
+                <th className="sticky left-0 z-10 border-b border-border bg-card py-2 pr-2">Categoria</th>
                 {NOMES_MES.map((mes) => (
-                  <th key={mes} className="py-1.5 px-1 text-right">
+                  <th key={mes} className="border-b border-border py-2 px-1.5 text-right">
                     {mes}
                   </th>
                 ))}
-                <th className="py-1.5 pl-2"></th>
+                <th className="border-b border-border py-2 pl-2"></th>
               </tr>
             </thead>
             <tbody>
               {linhasDoTipo.map((linha) => {
                 const status = statusPorCategoria.get(linha.categoriaId);
                 return (
-                  <tr key={linha.categoriaId} className="border-b border-border last:border-none">
-                    <td className="sticky left-0 z-10 w-40 truncate bg-card py-1.5 pr-2 font-medium text-foreground" title={linha.categoriaNome}>
+                  <tr key={linha.categoriaId}>
+                    <td
+                      className="sticky left-0 z-10 truncate border-b border-border bg-card py-2 pr-2 font-medium text-foreground"
+                      title={linha.categoriaNome}
+                    >
                       {linha.categoriaNome}
                       {status && (
                         <span className={cn("ml-1.5 text-[9px] font-normal", status === "erro" ? "text-[#D8583A]" : "text-muted-foreground")}>
@@ -182,13 +192,13 @@ export function GradeOrcamento({ ano, linhas }: { ano: number; linhas: LinhaGrad
                       )}
                     </td>
                     {linha.celulas.map((celula) => (
-                      <td key={celula.mes} className="py-1 px-1">
+                      <td key={celula.mes} className="border-b border-border py-1.5 px-1.5">
                         <input
                           type="text"
                           inputMode="decimal"
                           defaultValue={formatarEdicao(valores.get(chave(linha.categoriaId, celula.mes)) ?? 0)}
                           placeholder="-"
-                          className="w-full rounded-md border border-transparent bg-muted/40 px-1.5 py-1 text-right tabular-nums text-foreground outline-none focus:border-primary focus:bg-card"
+                          className="w-full rounded-md border border-border/60 bg-muted/40 px-2 py-1.5 text-right tabular-nums text-foreground outline-none placeholder:text-muted-foreground/50 focus:border-primary focus:bg-card"
                           onBlur={(e) => {
                             const valor = parseValor(e.target.value);
                             if (valor !== (valores.get(chave(linha.categoriaId, celula.mes)) ?? 0)) {
@@ -198,7 +208,7 @@ export function GradeOrcamento({ ano, linhas }: { ano: number; linhas: LinhaGrad
                         />
                       </td>
                     ))}
-                    <td className="py-1 pl-2">
+                    <td className="border-b border-border py-1.5 pl-2">
                       <button
                         type="button"
                         onClick={() => copiarParaRestoDoAno(linha.categoriaId)}
