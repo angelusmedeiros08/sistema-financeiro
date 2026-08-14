@@ -13,7 +13,8 @@ import {
   Truck,
   ChartLineUp,
   GearSix,
-  CaretDown,
+  CaretRight,
+  CaretLeft,
 } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 
@@ -27,9 +28,6 @@ type ItemNav = {
   subItens?: SubItemNav[];
 };
 
-// Mesmo padrão do Conta Azul (grupo "Financeiro" na sidebar expande em
-// sub-itens em vez de navegar direto) — clicar em Relatórios abre a lista
-// dos 8 relatórios ali mesmo, sem precisar entrar na seção pra escolher.
 const SUB_ITENS_RELATORIOS: SubItemNav[] = [
   { href: "/relatorios/visao-geral", label: "Visão geral" },
   { href: "/relatorios/dre", label: "DRE" },
@@ -62,9 +60,20 @@ const ITENS_NAV: ItemNav[] = [
   { href: "/configuracoes", label: "Configurações", icon: GearSix, disponivel: true, subItens: SUB_ITENS_CONFIGURACOES },
 ];
 
+function grupoPelaRota(pathname: string): string | null {
+  const item = ITENS_NAV.find((i) => i.subItens && (pathname === i.href || pathname.startsWith(i.href + "/")));
+  return item?.href ?? null;
+}
+
 export function SidebarConteudo() {
   const pathname = usePathname();
-  const [expandidoManual, setExpandidoManual] = useState<Record<string, boolean>>({});
+  // Mesmo padrão do Conta Azul: clicar num item com sub-itens não expande
+  // em linha (isso é o que empurrava "Equipe" pra fora da tela quando dois
+  // grupos abriam ao mesmo tempo) — troca a sidebar inteira pra uma lista
+  // dedicada daquele grupo, com um botão de voltar no topo. Só um grupo
+  // por vez, sempre cabe na tela.
+  const [grupoAberto, setGrupoAberto] = useState<string | null>(() => grupoPelaRota(pathname));
+  const itemDoGrupo = ITENS_NAV.find((i) => i.href === grupoAberto);
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-8 bg-sidebar px-4 py-6 text-sidebar-foreground">
@@ -77,36 +86,63 @@ export function SidebarConteudo() {
         <span className="font-heading text-[15px] font-bold tracking-tight">Núcleo</span>
       </div>
 
-      <nav className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto">
-        {ITENS_NAV.map((item) => {
-          const dentroDaSecao = pathname === item.href || pathname.startsWith(item.href + "/");
-          const Icon = item.icon;
+      {itemDoGrupo?.subItens ? (
+        <nav className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto">
+          <button
+            type="button"
+            onClick={() => setGrupoAberto(null)}
+            className="mb-1 flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm font-semibold text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent/60 hover:text-white"
+          >
+            <CaretLeft size={15} />
+            {itemDoGrupo.label}
+          </button>
 
-          if (!item.disponivel) {
+          {itemDoGrupo.subItens.map((sub) => {
+            const ativo = pathname === sub.href;
             return (
-              <div
-                key={item.href}
-                className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium text-sidebar-foreground/35"
-                title="Em breve"
+              <Link
+                key={sub.href}
+                href={sub.href}
+                className={cn(
+                  "rounded-lg px-2.5 py-2 text-sm font-medium transition-colors",
+                  ativo ? "bg-sidebar-accent text-white" : "text-sidebar-foreground/70 hover:bg-sidebar-accent/60 hover:text-white",
+                )}
               >
-                <Icon size={17} weight="regular" />
-                <span className="flex-1">{item.label}</span>
-                <span className="rounded-full bg-white/8 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide">
-                  em breve
-                </span>
-              </div>
+                {sub.label}
+              </Link>
             );
-          }
+          })}
+        </nav>
+      ) : (
+        <nav className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto">
+          {ITENS_NAV.map((item) => {
+            const dentroDaSecao = pathname === item.href || pathname.startsWith(item.href + "/");
+            const Icon = item.icon;
 
-          if (item.subItens) {
-            const expandido = expandidoManual[item.href] ?? dentroDaSecao;
-            return (
-              <div key={item.href}>
+            if (!item.disponivel) {
+              return (
+                <div
+                  key={item.href}
+                  className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium text-sidebar-foreground/35"
+                  title="Em breve"
+                >
+                  <Icon size={17} weight="regular" />
+                  <span className="flex-1">{item.label}</span>
+                  <span className="rounded-full bg-white/8 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide">
+                    em breve
+                  </span>
+                </div>
+              );
+            }
+
+            if (item.subItens) {
+              return (
                 <button
+                  key={item.href}
                   type="button"
-                  onClick={() => setExpandidoManual((atual) => ({ ...atual, [item.href]: !expandido }))}
+                  onClick={() => setGrupoAberto(item.href)}
                   className={cn(
-                    "flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-semibold transition-colors",
+                    "flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-semibold transition-colors",
                     dentroDaSecao
                       ? "bg-sidebar-accent text-white"
                       : "text-sidebar-foreground/70 hover:bg-sidebar-accent/60 hover:text-white",
@@ -114,51 +150,29 @@ export function SidebarConteudo() {
                 >
                   <Icon size={17} weight={dentroDaSecao ? "bold" : "regular"} />
                   <span className="flex-1 text-left">{item.label}</span>
-                  <CaretDown size={13} className={cn("transition-transform", expandido && "rotate-180")} />
+                  <CaretRight size={13} />
                 </button>
+              );
+            }
 
-                {expandido && (
-                  <div className="mt-0.5 mb-1 flex flex-col gap-0.5 border-l border-sidebar-foreground/15 pl-3.5 ml-4.5">
-                    {item.subItens.map((sub) => {
-                      const ativo = pathname === sub.href;
-                      return (
-                        <Link
-                          key={sub.href}
-                          href={sub.href}
-                          className={cn(
-                            "rounded-lg px-2.5 py-1.5 text-[13px] font-medium transition-colors",
-                            ativo
-                              ? "bg-sidebar-accent/70 text-white"
-                              : "text-sidebar-foreground/60 hover:bg-sidebar-accent/40 hover:text-white",
-                          )}
-                        >
-                          {sub.label}
-                        </Link>
-                      );
-                    })}
-                  </div>
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  "flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-semibold transition-colors",
+                  dentroDaSecao
+                    ? "bg-sidebar-accent text-white"
+                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/60 hover:text-white",
                 )}
-              </div>
+              >
+                <Icon size={17} weight={dentroDaSecao ? "bold" : "regular"} />
+                {item.label}
+              </Link>
             );
-          }
-
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-semibold transition-colors",
-                dentroDaSecao
-                  ? "bg-sidebar-accent text-white"
-                  : "text-sidebar-foreground/70 hover:bg-sidebar-accent/60 hover:text-white",
-              )}
-            >
-              <Icon size={17} weight={dentroDaSecao ? "bold" : "regular"} />
-              {item.label}
-            </Link>
-          );
-        })}
-      </nav>
+          })}
+        </nav>
+      )}
     </div>
   );
 }
