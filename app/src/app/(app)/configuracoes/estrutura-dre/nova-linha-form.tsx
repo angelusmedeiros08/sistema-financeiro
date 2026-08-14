@@ -27,14 +27,16 @@ export function NovaLinhaDreForm() {
           <Input id="rotulo" name="rotulo" type="text" required placeholder="Ex.: Despesas Comerciais" />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="tipo">Tipo</Label>
-          <Select name="tipo" defaultValue="FOLHA">
-            <SelectTrigger id="tipo" className="w-full">
+          <Label htmlFor="tipo_calc">Tipo</Label>
+          <Select name="tipo_calc" defaultValue="FOLHA">
+            <SelectTrigger id="tipo_calc" className="w-full">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="FOLHA">Folha (soma categorias)</SelectItem>
               <SelectItem value="SUBTOTAL">Subtotal (acumulado)</SelectItem>
+              <SelectItem value="SUBTOTAL_ALTERNATIVO">Subtotal alternativo (rota paralela)</SelectItem>
+              <SelectItem value="RESULTADO_NAO_OPERACIONAL">Resultado não operacional</SelectItem>
             </SelectContent>
           </Select>
         </div>

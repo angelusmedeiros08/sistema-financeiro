@@ -1,38 +1,41 @@
 "use client";
 
 import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import type { LinhaDreResultado } from "@/lib/relatorios/dre";
+import type { Database } from "@/utils/supabase/database.types";
 import { formatarMoeda } from "@/lib/formatacao";
+
+type LinhaWaterfall = { rotulo: string; tipoCalc: Database["public"]["Enums"]["tipo_linha_dre"]; valorDireto: number };
 
 type BarraWaterfall = {
   rotulo: string;
   base: number;
   altura: number;
   valorReal: number;
-  ehSubtotal: boolean;
+  cor: string;
 };
 
 // Waterfall padrão em Recharts: uma série de base invisível + uma série de
-// delta visível empilhadas (Seção 4.3 do spec). Linha FOLHA sobe/desce a
-// partir do acumulado anterior; linha SUBTOTAL é uma barra cheia do zero
-// até o acumulado, marcando o total corrido naquele ponto da cascata.
-function montarBarras(linhas: LinhaDreResultado[]): BarraWaterfall[] {
+// delta visível empilhadas. Linha FOLHA sobe/desce a partir do acumulado
+// anterior; SUBTOTAL/SUBTOTAL_ALTERNATIVO/RESULTADO_NAO_OPERACIONAL são
+// barra cheia do zero até o valor já calculado pela cascata (dre.ts já
+// resolveu o que cada uma delas significa — aqui só desenha).
+function montarBarras(linhas: LinhaWaterfall[]): BarraWaterfall[] {
   let acumulado = 0;
   return linhas.map((linha) => {
-    if (linha.tipo === "SUBTOTAL") {
-      const barra = { rotulo: linha.rotulo, base: 0, altura: linha.valorAcumulado, valorReal: linha.valorAcumulado, ehSubtotal: true };
-      return barra;
+    if (linha.tipoCalc === "FOLHA") {
+      const base = acumulado + Math.min(linha.valorDireto, 0);
+      const altura = Math.abs(linha.valorDireto);
+      acumulado += linha.valorDireto;
+      return { rotulo: linha.rotulo, base, altura, valorReal: linha.valorDireto, cor: linha.valorDireto >= 0 ? "#157F6B" : "#D8583A" };
     }
-    const base = acumulado + Math.min(linha.valorDireto, 0);
-    const altura = Math.abs(linha.valorDireto);
-    acumulado += linha.valorDireto;
-    return { rotulo: linha.rotulo, base, altura, valorReal: linha.valorDireto, ehSubtotal: false };
+    const cor = linha.tipoCalc === "RESULTADO_NAO_OPERACIONAL" ? "#C98A1F" : "#6A56D8";
+    return { rotulo: linha.rotulo, base: 0, altura: linha.valorDireto, valorReal: linha.valorDireto, cor };
   });
 }
 
-export function WaterfallDre({ linhas }: { linhas: LinhaDreResultado[] }) {
+export function WaterfallDre({ linhas }: { linhas: LinhaWaterfall[] }) {
   const dados = montarBarras(linhas);
-  const semDado = linhas.length === 0 || linhas.every((l) => l.valorDireto === 0 && l.valorAcumulado === 0);
+  const semDado = linhas.length === 0 || linhas.every((l) => l.valorDireto === 0);
 
   return (
     <div className="relative">
@@ -64,7 +67,7 @@ export function WaterfallDre({ linhas }: { linhas: LinhaDreResultado[] }) {
           <Bar dataKey="base" stackId="cascata" fill="transparent" isAnimationActive={false} />
           <Bar dataKey="altura" stackId="cascata" radius={[4, 4, 4, 4]} maxBarSize={40}>
             {dados.map((d, i) => (
-              <Cell key={i} fill={d.ehSubtotal ? "#6A56D8" : d.valorReal >= 0 ? "#157F6B" : "#D8583A"} />
+              <Cell key={i} fill={d.cor} />
             ))}
           </Bar>
         </BarChart>

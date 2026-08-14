@@ -16,6 +16,20 @@ import {
 
 type Categoria = { id: string; nome: string; tipo: "RECEITA" | "DESPESA" };
 
+const ROTULO_TIPO: Record<LinhaDreConfig["tipoCalc"], string> = {
+  FOLHA: "Folha",
+  SUBTOTAL: "Subtotal",
+  SUBTOTAL_ALTERNATIVO: "Rota paralela",
+  RESULTADO_NAO_OPERACIONAL: "Resultado não operacional",
+};
+
+const CLASSE_BADGE_TIPO: Record<LinhaDreConfig["tipoCalc"], string> = {
+  FOLHA: "bg-muted text-muted-foreground",
+  SUBTOTAL: "bg-[#6A56D8]/12 text-[#4E3EAD]",
+  SUBTOTAL_ALTERNATIVO: "bg-[#6A56D8]/12 text-[#4E3EAD]",
+  RESULTADO_NAO_OPERACIONAL: "bg-[#C98A1F]/12 text-[#8A5E14]",
+};
+
 export function LinhaDreItem({
   linha,
   ehPrimeira,
@@ -69,9 +83,7 @@ export function LinhaDreItem({
           <p className="font-medium text-foreground">{linha.rotulo}</p>
         </div>
 
-        <Badge className={cn("border-none font-semibold", linha.tipo === "SUBTOTAL" ? "bg-[#6A56D8]/12 text-[#4E3EAD]" : "bg-muted text-muted-foreground")}>
-          {linha.tipo === "SUBTOTAL" ? "Subtotal" : "Folha"}
-        </Badge>
+        <Badge className={cn("border-none font-semibold", CLASSE_BADGE_TIPO[linha.tipoCalc])}>{ROTULO_TIPO[linha.tipoCalc]}</Badge>
 
         <Button
           type="button"
@@ -88,7 +100,7 @@ export function LinhaDreItem({
         </Button>
       </div>
 
-      {linha.tipo === "FOLHA" && (
+      {linha.tipoCalc === "FOLHA" && (
         <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-border pt-3">
           {linha.categorias.map((categoria) => (
             <Badge key={categoria.id} className="gap-1 border-none bg-muted font-medium text-foreground">

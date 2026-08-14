@@ -29,7 +29,7 @@ export async function criarLinhaDreAction(formData: FormData): Promise<Resultado
   const resultado = await criarLinhaDre(supabase, {
     tenantId: contexto.tenantId,
     rotulo: String(formData.get("rotulo") ?? ""),
-    tipo: String(formData.get("tipo") ?? "FOLHA") as TipoLinhaDre,
+    tipoCalc: String(formData.get("tipo_calc") ?? "FOLHA") as TipoLinhaDre,
   });
 
   if ("erro" in resultado) return resultado;

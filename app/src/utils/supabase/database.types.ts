@@ -612,26 +612,32 @@ export type Database = {
         Row: {
           criado_em: string
           id: string
+          id_dfc: Database["public"]["Enums"]["id_dfc_linha_dre"] | null
           ordem: number
           rotulo: string
           tenant_id: string
-          tipo: Database["public"]["Enums"]["tipo_linha_dre"]
+          tipo_calc: Database["public"]["Enums"]["tipo_linha_dre"]
+          waterfall_papel: number | null
         }
         Insert: {
           criado_em?: string
           id?: string
+          id_dfc?: Database["public"]["Enums"]["id_dfc_linha_dre"] | null
           ordem: number
           rotulo: string
           tenant_id: string
-          tipo: Database["public"]["Enums"]["tipo_linha_dre"]
+          tipo_calc: Database["public"]["Enums"]["tipo_linha_dre"]
+          waterfall_papel?: number | null
         }
         Update: {
           criado_em?: string
           id?: string
+          id_dfc?: Database["public"]["Enums"]["id_dfc_linha_dre"] | null
           ordem?: number
           rotulo?: string
           tenant_id?: string
-          tipo?: Database["public"]["Enums"]["tipo_linha_dre"]
+          tipo_calc?: Database["public"]["Enums"]["tipo_linha_dre"]
+          waterfall_papel?: number | null
         }
         Relationships: [
           {
@@ -1404,6 +1410,13 @@ export type Database = {
     Enums: {
       escopo_campo_personalizado: "CLIENTE" | "FORNECEDOR" | "AMBOS"
       forma_anexo: "ARQUIVO" | "LINK"
+      id_dfc_linha_dre:
+        | "OPERACIONAL_ENTRADA"
+        | "OPERACIONAL_SAIDA"
+        | "NAO_OPERACIONAL_ENTRADA"
+        | "NAO_OPERACIONAL_SAIDA"
+        | "INVESTIMENTO"
+        | "FINANCIAMENTO"
       natureza_conta: "DEVEDORA" | "CREDORA"
       natureza_pessoa: "FISICA" | "JURIDICA"
       origem_lancamento:
@@ -1444,7 +1457,11 @@ export type Database = {
         | "RECEITA"
         | "DESPESA"
       tipo_endereco: "COMERCIAL" | "COBRANCA" | "ENTREGA" | "OUTRO"
-      tipo_linha_dre: "FOLHA" | "SUBTOTAL"
+      tipo_linha_dre:
+        | "FOLHA"
+        | "SUBTOTAL"
+        | "SUBTOTAL_ALTERNATIVO"
+        | "RESULTADO_NAO_OPERACIONAL"
       tipo_partida: "DEBITO" | "CREDITO"
       unidade_intervalo: "DIA" | "SEMANA" | "MES"
     }
@@ -1576,6 +1593,14 @@ export const Constants = {
     Enums: {
       escopo_campo_personalizado: ["CLIENTE", "FORNECEDOR", "AMBOS"],
       forma_anexo: ["ARQUIVO", "LINK"],
+      id_dfc_linha_dre: [
+        "OPERACIONAL_ENTRADA",
+        "OPERACIONAL_SAIDA",
+        "NAO_OPERACIONAL_ENTRADA",
+        "NAO_OPERACIONAL_SAIDA",
+        "INVESTIMENTO",
+        "FINANCIAMENTO",
+      ],
       natureza_conta: ["DEVEDORA", "CREDORA"],
       natureza_pessoa: ["FISICA", "JURIDICA"],
       origem_lancamento: [
@@ -1621,7 +1646,12 @@ export const Constants = {
         "DESPESA",
       ],
       tipo_endereco: ["COMERCIAL", "COBRANCA", "ENTREGA", "OUTRO"],
-      tipo_linha_dre: ["FOLHA", "SUBTOTAL"],
+      tipo_linha_dre: [
+        "FOLHA",
+        "SUBTOTAL",
+        "SUBTOTAL_ALTERNATIVO",
+        "RESULTADO_NAO_OPERACIONAL",
+      ],
       tipo_partida: ["DEBITO", "CREDITO"],
       unidade_intervalo: ["DIA", "SEMANA", "MES"],
     },
