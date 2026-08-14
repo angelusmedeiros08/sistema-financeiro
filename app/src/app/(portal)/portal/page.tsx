@@ -36,13 +36,13 @@ export default async function PaginaPortal() {
           variant="teal"
           label="A receber (30 dias)"
           valor={formatarMoeda(dados.aReceber.total)}
-          detalhe={`${dados.aReceber.quantidade} título${dados.aReceber.quantidade === 1 ? "" : "s"}`}
+          detalhe={`Vencido: ${formatarMoeda(dados.vencidosReceber.vencidoTotal)} · Vence hoje: ${formatarMoeda(dados.vencidosReceber.venceHojeTotal)}`}
         />
         <StatCard
           variant="ambar"
           label="A pagar (30 dias)"
           valor={formatarMoeda(dados.aPagar.total)}
-          detalhe={`${dados.aPagar.quantidade} título${dados.aPagar.quantidade === 1 ? "" : "s"}`}
+          detalhe={`Vencido: ${formatarMoeda(dados.vencidosPagar.vencidoTotal)} · Vence hoje: ${formatarMoeda(dados.vencidosPagar.venceHojeTotal)}`}
         />
         <StatCard variant="coral" label="Resultado do mês" valor={formatarMoeda(dados.resultadoDoMes)} />
       </div>

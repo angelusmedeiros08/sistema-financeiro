@@ -103,14 +103,18 @@ export type ResumoVencimentos = {
 // telas diferentes).
 export async function buscarResumoVencimentos(
   supabase: Cliente,
-  params: { tenantId: string; tipo: "RECEITA" | "DESPESA" },
+  params: { tenantId: string; tipo: "RECEITA" | "DESPESA"; pessoaId?: string },
 ): Promise<ResumoVencimentos> {
-  const { data } = await supabase
+  let query = supabase
     .from("parcelas")
-    .select("valor, data_vencimento, eventos_financeiros!inner(tipo), baixas(valor_pago, estornado_em)")
+    .select("valor, data_vencimento, eventos_financeiros!inner(tipo, pessoa_id), baixas(valor_pago, estornado_em)")
     .eq("tenant_id", params.tenantId)
     .eq("eventos_financeiros.tipo", params.tipo)
     .in("status", ["PENDENTE", "RECEBIDO_PARCIAL", "ATRASADO"]);
+
+  if (params.pessoaId) query = query.eq("eventos_financeiros.pessoa_id", params.pessoaId);
+
+  const { data } = await query;
 
   const hojeIso = new Date().toISOString().slice(0, 10);
   const resumo: ResumoVencimentos = { vencidoTotal: 0, vencidoQuantidade: 0, venceHojeTotal: 0, venceHojeQuantidade: 0 };

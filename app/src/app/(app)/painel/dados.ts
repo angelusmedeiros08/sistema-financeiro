@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/utils/supabase/database.types";
 import { CODIGO_CAIXA_E_BANCOS } from "@/lib/contabil/plano-padrao";
+import { buscarResumoVencimentos } from "@/lib/relatorios/aging";
 
 type Cliente = SupabaseClient<Database>;
 
@@ -166,14 +167,16 @@ async function obterEventosRecentes(supabase: Cliente, tenantId: string, pessoaI
 // caixa fica de fora do filtro de propósito: é uma dimensão do caixa da
 // empresa inteira, não tem "saldo em caixa de uma pessoa".
 export async function obterDadosPainel(supabase: Cliente, tenantId: string, pessoaId?: string) {
-  const [saldoEmCaixa, aReceber, aPagar, resultadoDoMes, fluxo, eventosRecentes] = await Promise.all([
+  const [saldoEmCaixa, aReceber, aPagar, resultadoDoMes, fluxo, eventosRecentes, vencidosReceber, vencidosPagar] = await Promise.all([
     obterSaldoEmCaixa(supabase, tenantId),
     obterPendentesPorTipo(supabase, tenantId, "RECEITA", pessoaId),
     obterPendentesPorTipo(supabase, tenantId, "DESPESA", pessoaId),
     obterResultadoDoMes(supabase, tenantId, pessoaId),
     obterFluxoUltimosMeses(supabase, tenantId, 6, pessoaId),
     obterEventosRecentes(supabase, tenantId, pessoaId),
+    buscarResumoVencimentos(supabase, { tenantId, tipo: "RECEITA", pessoaId }),
+    buscarResumoVencimentos(supabase, { tenantId, tipo: "DESPESA", pessoaId }),
   ]);
 
-  return { saldoEmCaixa, aReceber, aPagar, resultadoDoMes, fluxo, eventosRecentes };
+  return { saldoEmCaixa, aReceber, aPagar, resultadoDoMes, fluxo, eventosRecentes, vencidosReceber, vencidosPagar };
 }
