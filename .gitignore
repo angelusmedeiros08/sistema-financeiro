@@ -6,3 +6,6 @@ _planilha_extraida/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Mockups temporários do brainstorming visual (Claude Code)
+.superpowers/
