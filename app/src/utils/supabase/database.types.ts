@@ -649,6 +649,58 @@ export type Database = {
           },
         ]
       }
+      orcamentos: {
+        Row: {
+          categoria_id: string
+          competencia: string
+          criado_em: string
+          criado_por: string | null
+          id: string
+          tenant_id: string
+          valor_previsto: number
+        }
+        Insert: {
+          categoria_id: string
+          competencia: string
+          criado_em?: string
+          criado_por?: string | null
+          id?: string
+          tenant_id: string
+          valor_previsto: number
+        }
+        Update: {
+          categoria_id?: string
+          competencia?: string
+          criado_em?: string
+          criado_por?: string | null
+          id?: string
+          tenant_id?: string
+          valor_previsto?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orcamentos_categoria_id_fkey"
+            columns: ["categoria_id"]
+            isOneToOne: false
+            referencedRelation: "categorias_financeiras"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orcamentos_criado_por_fkey"
+            columns: ["criado_por"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orcamentos_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       parcelas: {
         Row: {
           conta_financeira_id: string | null

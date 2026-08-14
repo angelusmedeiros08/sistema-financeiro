@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
 import { lerParametrosRelatorio } from "@/lib/relatorios/periodo";
-import { buscarAnaliseDespesas } from "@/lib/relatorios/analise-despesas";
+import { buscarAnaliseCategorias } from "@/lib/relatorios/analise-despesas";
 import { RelatoriosSubNav } from "../sub-nav";
 import { RelatoriosControles } from "../controles";
 import { Badge } from "@/components/ui/badge";
@@ -19,7 +19,7 @@ export default async function PaginaRelatoriosDespesas({
 
   const params = lerParametrosRelatorio(await searchParams);
   const supabase = await createClient();
-  const linhas = await buscarAnaliseDespesas(supabase, { tenantId: contexto.tenantId, ...params });
+  const linhas = await buscarAnaliseCategorias(supabase, { tenantId: contexto.tenantId, ...params, tipo: "DESPESA" });
   const maior = Math.max(...linhas.map((l) => l.total), 1);
 
   return (

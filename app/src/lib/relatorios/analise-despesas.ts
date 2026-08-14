@@ -1,7 +1,10 @@
 import type { Cliente, Regime } from "./regime";
 import { buscarMovimento } from "./regime";
+import type { Database } from "@/utils/supabase/database.types";
 
-export type LinhaAnaliseDespesa = {
+type TipoCategoria = Database["public"]["Enums"]["tipo_categoria"];
+
+export type LinhaAnaliseCategoria = {
   categoriaId: string;
   categoriaNome: string;
   ehCustoFixo: boolean;
@@ -10,25 +13,26 @@ export type LinhaAnaliseDespesa = {
   percentualAcumulado: number;
 };
 
-// Curva ABC: categoria de despesa ordenada do maior pro menor gasto, com
-// % de participação e % acumulado — a mesma leitura "quais 20% das
-// categorias respondem por 80% do gasto" da Análise de Despesas da
-// planilha (Seção 3.6 do mapeamento), calculada sobre o schema já
-// existente, sem tabela nova.
-export async function buscarAnaliseDespesas(
+// Curva ABC: categoria (receita OU despesa, conforme `tipo`) ordenada do
+// maior pro menor valor, com % de participação e % acumulado — a mesma
+// leitura "quais 20% das categorias respondem por 80%" da Análise de
+// Despesas da planilha (Seção 3.6 do mapeamento) e do "Top receitas" do
+// Dashboard Gerencial (Seção 3.8), calculada sobre o schema já existente,
+// sem tabela nova. `ehCustoFixo` só é significativo pra tipo=DESPESA.
+export async function buscarAnaliseCategorias(
   supabase: Cliente,
-  params: { tenantId: string; regime: Regime; dataInicio: string; dataFim: string },
-): Promise<LinhaAnaliseDespesa[]> {
+  params: { tenantId: string; regime: Regime; dataInicio: string; dataFim: string; tipo: TipoCategoria },
+): Promise<LinhaAnaliseCategoria[]> {
   const [movimento, { data: categorias }] = await Promise.all([
     buscarMovimento(supabase, params),
-    supabase.from("categorias_financeiras").select("id, nome, eh_custo_fixo").eq("tenant_id", params.tenantId).eq("tipo", "DESPESA"),
+    supabase.from("categorias_financeiras").select("id, nome, eh_custo_fixo").eq("tenant_id", params.tenantId).eq("tipo", params.tipo),
   ]);
 
   const categoriaPorId = new Map((categorias ?? []).map((c) => [c.id, c]));
   const somaPorCategoria = new Map<string, number>();
 
   for (const linha of movimento) {
-    if (linha.tipo !== "DESPESA" || !linha.categoriaId) continue;
+    if (linha.tipo !== params.tipo || !linha.categoriaId) continue;
     somaPorCategoria.set(linha.categoriaId, (somaPorCategoria.get(linha.categoriaId) ?? 0) + linha.valor);
   }
 

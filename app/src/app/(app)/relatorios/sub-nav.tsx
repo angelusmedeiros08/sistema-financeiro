@@ -11,6 +11,8 @@ const ITENS = [
   { href: "/relatorios/centro-custo", rotulo: "Centro de custo" },
   { href: "/relatorios/aging", rotulo: "Aging" },
   { href: "/relatorios/despesas", rotulo: "Análise de despesas" },
+  { href: "/relatorios/ponto-equilibrio", rotulo: "Ponto de equilíbrio" },
+  { href: "/relatorios/orcado-realizado", rotulo: "Orçado × Realizado" },
   { href: "/relatorios/comparativos", rotulo: "Comparativos" },
   { href: "/relatorios/contas-bancarias", rotulo: "Contas bancárias" },
 ] as const;

@@ -1,0 +1,156 @@
+"use client";
+
+import { useState, useTransition } from "react";
+import type { LinhaGradeOrcamento } from "@/lib/orcamento/orcamento";
+import { definirValorOrcamentoAction, copiarValorParaRestoDoAnoAction } from "@/lib/orcamento/orcamento-actions";
+import { cn } from "@/lib/utils";
+
+const NOMES_MES = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+
+function formatarEdicao(valor: number): string {
+  return valor === 0 ? "" : valor.toFixed(2).replace(".", ",");
+}
+
+function parseValor(texto: string): number {
+  const numero = Number(texto.replace(",", "."));
+  return Number.isFinite(numero) && numero >= 0 ? numero : 0;
+}
+
+// Grade categoria × 12 meses com autosave por célula (onBlur) — mesmo
+// padrão de coluna fixa/tabela compacta já validado na Matriz do DRE.
+// "Copiar Jan pro resto do ano" pede confirmação só quando algum mês de
+// destino já tem valor diferente de zero (evita sobrescrever sem querer).
+export function GradeOrcamento({ ano, linhas }: { ano: number; linhas: LinhaGradeOrcamento[] }) {
+  const [valores, setValores] = useState<Map<string, number>>(
+    () => new Map(linhas.flatMap((l) => l.celulas.map((c) => [`${l.categoriaId}:${c.mes}`, c.valorPrevisto] as const))),
+  );
+  const [, iniciarTransicao] = useTransition();
+  const [statusPorCategoria, setStatusPorCategoria] = useState<Map<string, "salvando" | "salvo" | "erro">>(new Map());
+
+  function chave(categoriaId: string, mes: number) {
+    return `${categoriaId}:${mes}`;
+  }
+
+  function marcarStatus(categoriaId: string, status: "salvando" | "salvo" | "erro") {
+    setStatusPorCategoria((atual) => new Map(atual).set(categoriaId, status));
+    if (status === "salvo") {
+      setTimeout(() => {
+        setStatusPorCategoria((atual) => {
+          if (atual.get(categoriaId) !== "salvo") return atual;
+          const proximo = new Map(atual);
+          proximo.delete(categoriaId);
+          return proximo;
+        });
+      }, 1500);
+    }
+  }
+
+  function salvarCelula(categoriaId: string, mes: number, valor: number) {
+    setValores((atual) => new Map(atual).set(chave(categoriaId, mes), valor));
+    marcarStatus(categoriaId, "salvando");
+    iniciarTransicao(async () => {
+      const resultado = await definirValorOrcamentoAction({ categoriaId, ano, mes, valorPrevisto: valor });
+      marcarStatus(categoriaId, "erro" in resultado ? "erro" : "salvo");
+    });
+  }
+
+  function copiarParaRestoDoAno(categoriaId: string) {
+    const valorJaneiro = valores.get(chave(categoriaId, 1)) ?? 0;
+    const mesesComValor = Array.from({ length: 11 }, (_, i) => i + 2).filter((mes) => (valores.get(chave(categoriaId, mes)) ?? 0) > 0);
+
+    if (mesesComValor.length > 0) {
+      const confirmado = window.confirm(
+        `${mesesComValor.length} mês(es) já têm valor preenchido nesta categoria. Copiar Jan pro resto do ano vai sobrescrever tudo. Continuar?`,
+      );
+      if (!confirmado) return;
+    }
+
+    setValores((atual) => {
+      const proximo = new Map(atual);
+      for (let mes = 2; mes <= 12; mes++) proximo.set(chave(categoriaId, mes), valorJaneiro);
+      return proximo;
+    });
+    marcarStatus(categoriaId, "salvando");
+    iniciarTransicao(async () => {
+      const resultado = await copiarValorParaRestoDoAnoAction({ categoriaId, ano, mesOrigem: 1, valorPrevisto: valorJaneiro });
+      marcarStatus(categoriaId, "erro" in resultado ? "erro" : "salvo");
+    });
+  }
+
+  function renderGrupo(tipo: "RECEITA" | "DESPESA", titulo: string) {
+    const linhasDoTipo = linhas.filter((l) => l.tipo === tipo);
+    if (linhasDoTipo.length === 0) return null;
+
+    return (
+      <div className="mb-6 last:mb-0">
+        <h3 className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">{titulo}</h3>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="border-b border-border text-left text-[10.5px] font-bold uppercase tracking-wide text-muted-foreground">
+                <th className="sticky left-0 z-10 w-40 bg-card py-1.5 pr-2">Categoria</th>
+                {NOMES_MES.map((mes) => (
+                  <th key={mes} className="py-1.5 px-1 text-right">
+                    {mes}
+                  </th>
+                ))}
+                <th className="py-1.5 pl-2"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {linhasDoTipo.map((linha) => {
+                const status = statusPorCategoria.get(linha.categoriaId);
+                return (
+                  <tr key={linha.categoriaId} className="border-b border-border last:border-none">
+                    <td className="sticky left-0 z-10 w-40 truncate bg-card py-1.5 pr-2 font-medium text-foreground" title={linha.categoriaNome}>
+                      {linha.categoriaNome}
+                      {status && (
+                        <span className={cn("ml-1.5 text-[9px] font-normal", status === "erro" ? "text-[#D8583A]" : "text-muted-foreground")}>
+                          {status === "salvando" ? "salvando…" : status === "erro" ? "erro" : "salvo"}
+                        </span>
+                      )}
+                    </td>
+                    {linha.celulas.map((celula) => (
+                      <td key={celula.mes} className="py-1 px-1">
+                        <input
+                          type="text"
+                          inputMode="decimal"
+                          defaultValue={formatarEdicao(valores.get(chave(linha.categoriaId, celula.mes)) ?? 0)}
+                          placeholder="-"
+                          className="w-full rounded-md border border-transparent bg-muted/40 px-1.5 py-1 text-right tabular-nums text-foreground outline-none focus:border-primary focus:bg-card"
+                          onBlur={(e) => {
+                            const valor = parseValor(e.target.value);
+                            if (valor !== (valores.get(chave(linha.categoriaId, celula.mes)) ?? 0)) {
+                              salvarCelula(linha.categoriaId, celula.mes, valor);
+                            }
+                          }}
+                        />
+                      </td>
+                    ))}
+                    <td className="py-1 pl-2">
+                      <button
+                        type="button"
+                        onClick={() => copiarParaRestoDoAno(linha.categoriaId)}
+                        className="whitespace-nowrap rounded-full bg-muted px-2 py-1 text-[10px] font-medium text-muted-foreground hover:bg-muted/70"
+                        title="Copia o valor de Janeiro pros outros 11 meses"
+                      >
+                        Jan → ano
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      {renderGrupo("RECEITA", "Receitas")}
+      {renderGrupo("DESPESA", "Despesas")}
+    </div>
+  );
+}

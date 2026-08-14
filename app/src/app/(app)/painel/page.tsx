@@ -6,18 +6,25 @@ import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
 import { obterDadosPainel } from "./dados";
 import { StatCard } from "@/components/painel/stat-card";
 import { FluxoChart } from "@/components/painel/fluxo-chart";
+import { IndicadorGauge } from "@/components/relatorios/indicador-gauge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatarMoeda } from "@/lib/formatacao";
 import { cn } from "@/lib/utils";
 import { ROTULO_STATUS_PARCELA, COR_STATUS_PARCELA } from "@/lib/status-parcela";
+import { buscarIndicadoresRealizacao, mesAtual } from "@/lib/relatorios/indicadores-gauge";
 
 export default async function PaginaPainel() {
   const contexto = await obterUsuarioETenantAtual();
   if ("erro" in contexto) redirect("/entrar");
 
   const supabase = await createClient();
-  const dados = await obterDadosPainel(supabase, contexto.tenantId);
+  const { inicio: mesInicio, fim: mesFim } = mesAtual();
+  const [dados, indicadoresCAR, indicadoresCAP] = await Promise.all([
+    obterDadosPainel(supabase, contexto.tenantId),
+    buscarIndicadoresRealizacao(supabase, { tenantId: contexto.tenantId, tipo: "RECEITA", mesInicio, mesFim }),
+    buscarIndicadoresRealizacao(supabase, { tenantId: contexto.tenantId, tipo: "DESPESA", mesInicio, mesFim }),
+  ]);
 
   const hoje = new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" });
 
@@ -51,6 +58,13 @@ export default async function PaginaPainel() {
           label="Resultado do mês"
           valor={formatarMoeda(dados.resultadoDoMes)}
         />
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <IndicadorGauge rotulo="% Realizado de contas a receber" valor={indicadoresCAR.percentualRealizado} />
+        <IndicadorGauge rotulo="% Realizado de contas a pagar" valor={indicadoresCAP.percentualRealizado} />
+        <IndicadorGauge rotulo="% Pago em atraso (a receber)" valor={indicadoresCAR.percentualPagoEmAtraso} invertido />
+        <IndicadorGauge rotulo="% Pago em atraso (a pagar)" valor={indicadoresCAP.percentualPagoEmAtraso} invertido />
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.3fr_1fr]">
