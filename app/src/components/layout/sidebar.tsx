@@ -41,6 +41,15 @@ const SUB_ITENS_RELATORIOS: SubItemNav[] = [
   { href: "/relatorios/contas-bancarias", label: "Contas bancárias" },
 ];
 
+const SUB_ITENS_CONFIGURACOES: SubItemNav[] = [
+  { href: "/configuracoes/centros-custo", label: "Centros de custo" },
+  { href: "/configuracoes/contas-financeiras", label: "Contas financeiras" },
+  { href: "/configuracoes/recorrencias", label: "Recorrências" },
+  { href: "/configuracoes/campos-personalizados", label: "Campos personalizados" },
+  { href: "/configuracoes/estrutura-dre", label: "Estrutura de DRE" },
+  { href: "/configuracoes/equipe", label: "Equipe" },
+];
+
 const ITENS_NAV: ItemNav[] = [
   { href: "/painel", label: "Painel", icon: SquaresFour, disponivel: true },
   { href: "/receitas", label: "Receitas", icon: Coins, disponivel: true },
@@ -50,7 +59,7 @@ const ITENS_NAV: ItemNav[] = [
   { href: "/clientes", label: "Clientes", icon: Users, disponivel: true },
   { href: "/fornecedores", label: "Fornecedores", icon: Truck, disponivel: true },
   { href: "/relatorios", label: "Relatórios", icon: ChartLineUp, disponivel: true, subItens: SUB_ITENS_RELATORIOS },
-  { href: "/configuracoes", label: "Configurações", icon: GearSix, disponivel: true },
+  { href: "/configuracoes", label: "Configurações", icon: GearSix, disponivel: true, subItens: SUB_ITENS_CONFIGURACOES },
 ];
 
 export function SidebarConteudo() {
