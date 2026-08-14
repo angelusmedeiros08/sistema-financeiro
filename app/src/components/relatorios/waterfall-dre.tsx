@@ -44,7 +44,7 @@ export function WaterfallDre({ linhas, altura = 420 }: { linhas: LinhaWaterfall[
   return (
     <div className="relative" style={{ height: altura }}>
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={dados} margin={{ top: 8, right: 8, left: 8, bottom: 8 }}>
+        <BarChart data={dados} margin={{ top: 8, right: 16, left: 96, bottom: 8 }}>
           <CartesianGrid vertical={false} stroke="var(--border)" />
           <XAxis
             dataKey="rotulo"
