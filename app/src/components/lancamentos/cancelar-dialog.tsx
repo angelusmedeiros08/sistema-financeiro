@@ -43,7 +43,7 @@ export function CancelarDialog({
         <form key={chaveFormulario} action={formAction} className="space-y-3">
           <input type="hidden" name="parcela_id" value={parcelaId} />
           <p className="text-sm text-muted-foreground">
-            <span className="font-medium text-foreground">{descricao}</span> — a parcela deixa de aparecer nas
+            <span className="font-medium text-foreground">{descricao}</span>: a parcela deixa de aparecer nas
             contas em aberto. Essa ação não pode ser desfeita diretamente.
           </p>
 

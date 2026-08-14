@@ -19,7 +19,7 @@ function formatarLinha(e: Endereco) {
     e.cidade && e.uf ? `${e.cidade}/${e.uf}` : e.cidade,
     e.cep,
   ].filter(Boolean);
-  return partes.length > 0 ? partes.join(" — ") : "Endereço incompleto";
+  return partes.length > 0 ? partes.join(", ") : "Endereço incompleto";
 }
 
 function formatarData(iso: string) {
@@ -159,7 +159,7 @@ export function EnderecosSecao({ pessoaId, enderecos }: { pessoaId: string; ende
             <ul className="mt-2 flex flex-col gap-1.5">
               {historico.map((e) => (
                 <li key={e.id} className="text-xs text-muted-foreground">
-                  <span className="line-through">{formatarLinha(e)}</span> — substituído em {formatarData(e.substituido_em!)}
+                  <span className="line-through">{formatarLinha(e)}</span> (substituído em {formatarData(e.substituido_em!)})
                 </li>
               ))}
             </ul>

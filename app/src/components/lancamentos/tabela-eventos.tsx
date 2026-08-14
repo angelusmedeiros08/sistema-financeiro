@@ -44,13 +44,13 @@ export function TabelaEventos({ eventos, textoVazio }: { eventos: EventoLinha[];
               <TableRow key={evento.id}>
                 <TableCell className="font-medium text-foreground">{evento.descricao ?? "Sem descrição"}</TableCell>
                 <TableCell className="text-muted-foreground">
-                  {categoriaNome ?? "—"}
+                  {categoriaNome ?? "-"}
                   {outrasCategorias > 0 && <span className="ml-1 text-xs">+{outrasCategorias}</span>}
                 </TableCell>
                 <TableCell className="text-muted-foreground">
                   {primeiraParcela
                     ? new Date(primeiraParcela.data_vencimento + "T00:00:00").toLocaleDateString("pt-BR")
-                    : "—"}
+                    : "-"}
                   {parcelas.length > 1 && <span className="ml-1 text-xs">({parcelas.length}x)</span>}
                 </TableCell>
                 <TableCell>
@@ -59,7 +59,7 @@ export function TabelaEventos({ eventos, textoVazio }: { eventos: EventoLinha[];
                       {ROTULO_STATUS_PARCELA[primeiraParcela.status] ?? primeiraParcela.status}
                     </Badge>
                   ) : (
-                    "—"
+                    "-"
                   )}
                 </TableCell>
                 <TableCell className="text-right font-semibold tabular-nums text-foreground">

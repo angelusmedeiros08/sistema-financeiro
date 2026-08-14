@@ -65,8 +65,8 @@ export default async function PaginaEquipe() {
             <TableBody>
               {(membros ?? []).map((m) => (
                 <TableRow key={m.usuario_id}>
-                  <TableCell className="font-medium text-foreground">{m.usuarios?.nome ?? "—"}</TableCell>
-                  <TableCell className="text-muted-foreground">{m.usuarios?.email ?? "—"}</TableCell>
+                  <TableCell className="font-medium text-foreground">{m.usuarios?.nome ?? "-"}</TableCell>
+                  <TableCell className="text-muted-foreground">{m.usuarios?.email ?? "-"}</TableCell>
                   <TableCell className="text-muted-foreground">{ROTULO_PAPEL[m.papel] ?? m.papel}</TableCell>
                   <TableCell>
                     <Badge className={cn("border-none font-semibold", m.ativo ? "bg-[#157F6B]/12 text-[#0F5F50]" : "bg-muted text-muted-foreground")}>

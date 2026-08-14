@@ -60,7 +60,7 @@ export type ParametrosRegraRecorrencia = {
 
 function validarTerminoExclusivo(numeroOcorrencias?: number | null, dataFim?: string | null) {
   if (numeroOcorrencias != null && dataFim != null) {
-    return { erro: "Escolha um jeito de terminar a recorrência: número de ocorrências OU data — nunca os dois." };
+    return { erro: "Escolha um jeito de terminar a recorrência: número de ocorrências OU data, nunca os dois." };
   }
   return null;
 }

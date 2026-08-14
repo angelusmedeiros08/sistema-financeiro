@@ -53,10 +53,10 @@ export async function buscarDadosParcela(
     pessoaNome: evento.pessoas?.nome ?? null,
     dataCompetencia: evento.data_competencia,
     categorias: (evento.rateio_categoria ?? []).map((r) => ({
-      nome: r.categorias_financeiras?.nome ?? "—",
+      nome: r.categorias_financeiras?.nome ?? "-",
       valor: Number(r.valor),
       centrosCusto: (r.rateio_centro_custo ?? []).map((cc) => ({
-        nome: cc.centros_custo?.nome ?? "—",
+        nome: cc.centros_custo?.nome ?? "-",
         valor: Number(cc.valor),
       })),
     })),

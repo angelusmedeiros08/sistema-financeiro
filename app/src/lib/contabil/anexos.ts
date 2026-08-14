@@ -42,7 +42,7 @@ export async function anexarDocumento(
       return { erro: "Selecione um arquivo." };
     }
     if (!TIPOS_MIME_ACEITOS.includes(params.arquivo.type)) {
-      return { erro: "Tipo de arquivo não aceito — envie PDF, JPG, PNG ou WEBP." };
+      return { erro: "Tipo de arquivo não aceito, envie PDF, JPG, PNG ou WEBP." };
     }
     if (params.arquivo.size > TAMANHO_MAXIMO_BYTES) {
       return { erro: "Arquivo maior que 10MB." };

@@ -39,7 +39,7 @@ export async function buscarAnaliseDespesas(
       const categoria = categoriaPorId.get(categoriaId);
       return {
         categoriaId,
-        categoriaNome: categoria?.nome ?? "—",
+        categoriaNome: categoria?.nome ?? "-",
         ehCustoFixo: categoria?.eh_custo_fixo ?? false,
         total: valorTotal,
       };

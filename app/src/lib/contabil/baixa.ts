@@ -101,7 +101,7 @@ export async function registrarBaixa(
   const contaDescontosConcedidos = contaPorCodigo.get(CODIGO_DESCONTOS_CONCEDIDOS);
 
   if (!contaContraparte || !contaReceitasFinanceiras || !contaDespesasFinanceiras || !contaDescontosObtidos || !contaDescontosConcedidos) {
-    return { erro: "Plano de contas incompleto para registrar baixa — contas de sistema ausentes." };
+    return { erro: "Plano de contas incompleto para registrar baixa: contas de sistema ausentes." };
   }
 
   const partidas: PartidaEntrada[] = [];
@@ -130,7 +130,7 @@ export async function registrarBaixa(
   const resultadoLancamento = await registrarLancamento(supabase, {
     tenant_id: params.tenant_id,
     data_competencia: params.data_pagamento,
-    descricao: `Baixa — ${parcela.eventos_financeiros?.descricao ?? "lançamento"}`,
+    descricao: `Baixa: ${parcela.eventos_financeiros?.descricao ?? "lançamento"}`,
     origem: "MANUAL",
     referencia_id: parcela.id,
     criado_por: params.criado_por,

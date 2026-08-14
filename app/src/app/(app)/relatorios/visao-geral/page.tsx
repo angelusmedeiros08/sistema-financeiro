@@ -88,8 +88,8 @@ export default async function PaginaRelatoriosVisaoGeral({
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <AgingBarras titulo="Vencido — a receber" dados={agingReceita} />
-        <AgingBarras titulo="Vencido — a pagar" dados={agingDespesa} />
+        <AgingBarras titulo="Vencido: a receber" dados={agingReceita} />
+        <AgingBarras titulo="Vencido: a pagar" dados={agingDespesa} />
       </div>
     </div>
   );

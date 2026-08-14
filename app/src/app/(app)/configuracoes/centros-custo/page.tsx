@@ -84,7 +84,7 @@ export default async function PaginaCentrosCusto({
               <TableBody>
                 {centros.map((c) => (
                   <TableRow key={c.id}>
-                    <TableCell className="text-muted-foreground">{c.codigo ?? "—"}</TableCell>
+                    <TableCell className="text-muted-foreground">{c.codigo ?? "-"}</TableCell>
                     <TableCell className="font-medium text-foreground">{c.nome}</TableCell>
                     <TableCell>
                       <Badge className={cn("border-none font-semibold", c.ativo ? "bg-[#157F6B]/12 text-[#0F5F50]" : "bg-muted text-muted-foreground")}>

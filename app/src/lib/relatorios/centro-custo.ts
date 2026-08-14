@@ -40,7 +40,7 @@ export async function buscarCentroCusto(
       const saldo = entradas - saidas;
       return {
         centroCustoId,
-        nome: nomePorId.get(centroCustoId) ?? "—",
+        nome: nomePorId.get(centroCustoId) ?? "-",
         entradas,
         saidas,
         saldo,

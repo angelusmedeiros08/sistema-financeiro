@@ -15,7 +15,7 @@ export async function cadastrar(formData: FormData): Promise<ResultadoAcao> {
   const senha = String(formData.get("senha") ?? "");
 
   if (!nomeEmpresa || !nomeUsuario || !email || senha.length < 8) {
-    return { erro: "Preencha todos os campos — a senha precisa de pelo menos 8 caracteres." };
+    return { erro: "Preencha todos os campos: a senha precisa de pelo menos 8 caracteres." };
   }
 
   // 1) cria o usuário no Supabase Auth (endpoint público, sem privilégio elevado)
@@ -182,7 +182,7 @@ export async function definirSenhaConvite(formData: FormData): Promise<Resultado
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return { erro: "Link de convite expirado ou inválido — peça um novo convite." };
+    return { erro: "Link de convite expirado ou inválido: peça um novo convite." };
   }
 
   const { error } = await supabase.auth.updateUser({ password: senha, data: { nome } });

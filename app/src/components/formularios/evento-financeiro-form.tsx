@@ -68,7 +68,7 @@ export function EventoFinanceiroForm({
           name="descricao"
           type="text"
           required
-          placeholder={ehReceita ? "Ex.: Honorários — Cliente Almeida" : "Ex.: Aluguel do escritório"}
+          placeholder={ehReceita ? "Ex.: Honorários de Cliente Almeida" : "Ex.: Aluguel do escritório"}
         />
       </div>
 

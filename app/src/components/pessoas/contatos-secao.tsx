@@ -156,8 +156,8 @@ export function ContatosSecao({ pessoaId, contatos }: { pessoaId: string; contat
             <ul className="mt-2 flex flex-col gap-1.5">
               {historico.map((c) => (
                 <li key={c.id} className="text-xs text-muted-foreground">
-                  <span className="line-through">{c.nome} {[c.email, c.telefone].filter(Boolean).join(" · ")}</span> — substituído em{" "}
-                  {formatarData(c.substituido_em!)}
+                  <span className="line-through">{c.nome} {[c.email, c.telefone].filter(Boolean).join(" · ")}</span> (substituído em{" "}
+                  {formatarData(c.substituido_em!)})
                 </li>
               ))}
             </ul>

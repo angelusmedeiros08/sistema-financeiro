@@ -13,7 +13,7 @@ export function createAdminClient() {
 
   if (!url || !serviceRoleKey) {
     throw new Error(
-      "SUPABASE_SERVICE_ROLE_KEY não configurada — necessária para operações administrativas.",
+      "SUPABASE_SERVICE_ROLE_KEY não configurada: necessária para operações administrativas.",
     );
   }
 

@@ -18,7 +18,7 @@ export function AgingBarras({ titulo, dados }: { titulo: string; dados: AgingRes
       </div>
 
       {faixas.length === 0 ? (
-        <p className="text-sm text-muted-foreground">Nada vencido — tudo em dia.</p>
+        <p className="text-sm text-muted-foreground">Nada vencido, tudo em dia.</p>
       ) : (
         <div className="flex flex-col gap-2.5">
           {faixas.map((faixa, i) => (

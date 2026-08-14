@@ -88,12 +88,12 @@ function LinhaBaixa({ baixa, caminhoPagina }: { baixa: Baixa; caminhoPagina: str
       <TableRow>
         <TableCell>{formatarData(baixa.data_pagamento)}</TableCell>
         <TableCell className="text-right tabular-nums">{formatarMoeda(baixa.valor_pago)}</TableCell>
-        <TableCell className="text-muted-foreground">{composicao || "—"}</TableCell>
+        <TableCell className="text-muted-foreground">{composicao || "-"}</TableCell>
         <TableCell>
           {baixa.anexos.length > 0 ? (
             <AnexosLista anexos={baixa.anexos} />
           ) : (
-            <span className="text-xs text-muted-foreground">—</span>
+            <span className="text-xs text-muted-foreground">-</span>
           )}
         </TableCell>
         <TableCell>
@@ -221,7 +221,7 @@ export function DetalheParcela({
           </div>
           <div>
             <dt className="text-muted-foreground">Categoria(s)</dt>
-            <dd className="font-medium text-foreground">{parcela.categorias.map((c) => c.nome).join(", ") || "—"}</dd>
+            <dd className="font-medium text-foreground">{parcela.categorias.map((c) => c.nome).join(", ") || "-"}</dd>
           </div>
         </dl>
 

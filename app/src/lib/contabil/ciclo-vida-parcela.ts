@@ -26,7 +26,7 @@ export async function estornarBaixa(
     return { erro: "Essa baixa já foi estornada." };
   }
   if (!baixa.lancamento_id) {
-    return { erro: "Baixa sem lançamento contábil associado — não é possível estornar." };
+    return { erro: "Baixa sem lançamento contábil associado, não é possível estornar." };
   }
 
   const { data: lancamentoOriginal, error: erroLancamento } = await supabase
@@ -58,7 +58,7 @@ export async function estornarBaixa(
   const resultadoLancamento = await registrarLancamento(supabase, {
     tenant_id: params.tenant_id,
     data_competencia: new Date().toISOString().slice(0, 10),
-    descricao: `Estorno — ${lancamentoOriginal.descricao}`,
+    descricao: `Estorno: ${lancamentoOriginal.descricao}`,
     origem: "ESTORNO",
     estornado_de_id: lancamentoOriginal.id,
     criado_por: params.criado_por,
@@ -100,7 +100,7 @@ export async function cancelarParcela(
 
   if (error) {
     if (error.message.includes("já tem baixa registrada")) {
-      return { erro: "Essa parcela já tem baixa registrada — estorne a baixa antes de cancelar." };
+      return { erro: "Essa parcela já tem baixa registrada, estorne a baixa antes de cancelar." };
     }
     return { erro: error.message };
   }

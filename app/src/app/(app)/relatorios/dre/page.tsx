@@ -120,10 +120,10 @@ export default async function PaginaRelatoriosDre({
 
       {aba === "indicadores" && (
         <div className="rounded-2xl border border-border bg-card p-6">
-          <h2 className="mb-1 font-heading text-base font-bold text-foreground">Indicadores — evolução no ano</h2>
+          <h2 className="mb-1 font-heading text-base font-bold text-foreground">Indicadores: evolução no ano</h2>
           <p className="mb-5 text-xs text-muted-foreground">
-            Margem de contribuição, margem bruta, EBITDA e margem líquida, todas em % sobre a receita líquida —
-            leitura direta das linhas 7, 8, 11 e 20 da matriz, mês a mês.
+            Margem de contribuição, margem bruta, EBITDA e margem líquida, todas em % sobre a receita líquida.
+            Leitura direta das linhas 7, 8, 11 e 20 da matriz, mês a mês.
           </p>
           <IndicadoresDreChart dados={indicadores} altura={420} />
         </div>
@@ -131,7 +131,7 @@ export default async function PaginaRelatoriosDre({
 
       {aba === "cascata" && (
         <div className="rounded-2xl border border-border bg-card p-6">
-          <h2 className="mb-1 font-heading text-base font-bold text-foreground">DRE em cascata — {ano}</h2>
+          <h2 className="mb-1 font-heading text-base font-bold text-foreground">DRE em cascata ({ano})</h2>
           <p className="mb-5 text-xs text-muted-foreground">Total do ano, linha a linha, na ordem real de tbTotalizadoresDRE.</p>
           <WaterfallDre linhas={linhas.map((l) => ({ rotulo: l.rotulo, tipoCalc: l.tipoCalc, valorDireto: l.total }))} altura={520} />
         </div>
@@ -140,7 +140,7 @@ export default async function PaginaRelatoriosDre({
       {aba === "matriz" && (
         <div className="rounded-2xl border border-border bg-card p-6">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="font-heading text-base font-bold text-foreground">DRE — Demonstrativo de Resultado</h2>
+            <h2 className="font-heading text-base font-bold text-foreground">DRE: Demonstrativo de Resultado</h2>
             <Link
               href={href({ detalhe: detalhado ? "0" : "1" })}
               className="rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground hover:bg-muted/70"

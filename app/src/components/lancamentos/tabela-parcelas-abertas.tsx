@@ -75,7 +75,7 @@ export function TabelaParcelasAbertas({
                 </TableCell>
                 <TableCell className="p-0">
                   <Link href={`/${caminhoBase}/${parcela.id}`} className="block px-4 py-3 text-muted-foreground">
-                    {parcela.eventos_financeiros?.pessoas?.nome ?? "—"}
+                    {parcela.eventos_financeiros?.pessoas?.nome ?? "-"}
                   </Link>
                 </TableCell>
                 <TableCell className="p-0">

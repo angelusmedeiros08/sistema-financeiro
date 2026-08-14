@@ -24,18 +24,18 @@ export default async function PaginaRelatoriosAging() {
       <RelatoriosSubNav />
 
       <p className="text-sm text-muted-foreground">
-        Aging analítico — não usa o seletor de Regime/Granularidade: mostra o saldo em aberto de todas as parcelas
+        Aging analítico: não usa o seletor de Regime/Granularidade, mostra o saldo em aberto de todas as parcelas
         pendentes hoje, por faixa de vencimento, o mesmo cálculo de <em>Contas a receber</em> e <em>Contas a pagar</em>.
       </p>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <AgingBarras titulo="Vencido — a receber" dados={agingReceita} />
-        <AgingBarras titulo="Vencido — a pagar" dados={agingDespesa} />
+        <AgingBarras titulo="Vencido: a receber" dados={agingReceita} />
+        <AgingBarras titulo="Vencido: a pagar" dados={agingDespesa} />
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <FaixasAVencer titulo="A vencer — a receber" dados={agingReceita} cor="#157F6B" />
-        <FaixasAVencer titulo="A vencer — a pagar" dados={agingDespesa} cor="#C98A1F" />
+        <FaixasAVencer titulo="A vencer: a receber" dados={agingReceita} cor="#157F6B" />
+        <FaixasAVencer titulo="A vencer: a pagar" dados={agingDespesa} cor="#C98A1F" />
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">

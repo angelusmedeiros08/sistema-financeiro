@@ -39,10 +39,10 @@ export function TabelaPessoas({
                   {p.nome}
                 </Link>
               </TableCell>
-              <TableCell className="text-muted-foreground">{p.documento ?? "—"}</TableCell>
-              <TableCell className="text-muted-foreground">{p.email ?? "—"}</TableCell>
-              <TableCell className="text-muted-foreground">{p.telefone ?? "—"}</TableCell>
-              <TableCell className="text-muted-foreground">{p.cidade && p.uf ? `${p.cidade}/${p.uf}` : "—"}</TableCell>
+              <TableCell className="text-muted-foreground">{p.documento ?? "-"}</TableCell>
+              <TableCell className="text-muted-foreground">{p.email ?? "-"}</TableCell>
+              <TableCell className="text-muted-foreground">{p.telefone ?? "-"}</TableCell>
+              <TableCell className="text-muted-foreground">{p.cidade && p.uf ? `${p.cidade}/${p.uf}` : "-"}</TableCell>
             </TableRow>
           ))}
         </TableBody>

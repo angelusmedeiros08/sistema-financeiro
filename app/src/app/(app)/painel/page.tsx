@@ -56,7 +56,7 @@ export default async function PaginaPainel() {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.3fr_1fr]">
         <div className="rounded-2xl border border-border bg-card p-5">
           <h2 className="mb-4 font-heading text-sm font-bold text-foreground">
-            Fluxo de caixa — últimos 6 meses
+            Fluxo de caixa (últimos 6 meses)
           </h2>
           <FluxoChart dados={dados.fluxo} />
         </div>

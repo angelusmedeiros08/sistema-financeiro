@@ -47,7 +47,7 @@ function formatarLinhaEnderecoPendente(e: EnderecoPendente) {
     e.bairro,
     e.cidade && e.uf ? `${e.cidade}/${e.uf}` : e.cidade,
   ].filter(Boolean);
-  return partes.length > 0 ? partes.join(" — ") : "Endereço incompleto";
+  return partes.length > 0 ? partes.join(", ") : "Endereço incompleto";
 }
 
 // Endereços/contatos ainda não têm pessoa_id na criação — ficam só em

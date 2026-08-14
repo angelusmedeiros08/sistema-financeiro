@@ -102,8 +102,8 @@ async function AbaContas({ tenantId, supabase }: { tenantId: string; supabase: A
                 {contas.map((c) => (
                   <TableRow key={c.id}>
                     <TableCell className="font-medium text-foreground">{c.nome}</TableCell>
-                    <TableCell className="text-muted-foreground">{ROTULO_TIPO[c.tipo ?? ""] ?? c.tipo ?? "—"}</TableCell>
-                    <TableCell className="text-muted-foreground">{c.banco ?? "—"}</TableCell>
+                    <TableCell className="text-muted-foreground">{ROTULO_TIPO[c.tipo ?? ""] ?? c.tipo ?? "-"}</TableCell>
+                    <TableCell className="text-muted-foreground">{c.banco ?? "-"}</TableCell>
                     <TableCell className="text-right tabular-nums">{formatarMoeda(Number(c.saldo_inicial))}</TableCell>
                     <TableCell>
                       <Badge className={cn("border-none font-semibold", c.ativo ? "bg-[#157F6B]/12 text-[#0F5F50]" : "bg-muted text-muted-foreground")}>

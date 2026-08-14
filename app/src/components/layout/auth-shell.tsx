@@ -24,7 +24,7 @@ export function AuthShell({
         </div>
 
         <p className="relative max-w-sm font-heading text-2xl font-bold leading-snug tracking-tight text-white">
-          Cada lançamento gera partidas dobradas corretas — automaticamente.
+          Cada lançamento gera partidas dobradas corretas, automaticamente.
         </p>
 
         <p className="relative text-sm text-white/50">

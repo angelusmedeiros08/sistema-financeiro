@@ -139,7 +139,7 @@ export function FormularioBaixa({
 
         <div className="space-y-1.5 border-t border-border pt-4">
           <Label>Anexos (opcional)</Label>
-          <p className="text-xs text-muted-foreground">Comprovante de pagamento — PIX, recibo, etc.</p>
+          <p className="text-xs text-muted-foreground">Comprovante de pagamento: PIX, recibo, etc.</p>
           <AnexoCampos />
         </div>
 
