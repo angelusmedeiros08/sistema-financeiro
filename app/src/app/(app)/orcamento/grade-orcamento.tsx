@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { CaretDown } from "@phosphor-icons/react";
 import type { LinhaGradeOrcamento } from "@/lib/orcamento/orcamento";
 import { definirValorOrcamentoAction, copiarValorParaRestoDoAnoAction } from "@/lib/orcamento/orcamento-actions";
 import { cn } from "@/lib/utils";
@@ -77,6 +78,76 @@ export function GradeOrcamento({ ano, linhas }: { ano: number; linhas: LinhaGrad
     });
   }
 
+  function totalAno(categoriaId: string): number {
+    return Array.from({ length: 12 }, (_, i) => valores.get(chave(categoriaId, i + 1)) ?? 0).reduce((s, v) => s + v, 0);
+  }
+
+  // Versão mobile: grade horizontal de 12 colunas vira ilegível/impossível
+  // de tocar numa tela estreita (célula caía pra ~20px, bem abaixo do
+  // mínimo de 44px de alvo de toque) — aqui é uma categoria por vez,
+  // expansível, com os 12 meses empilhados em coluna e input de altura
+  // real. Mesmo estado/mesmas actions da grade desktop, só a apresentação
+  // muda conforme a largura de tela (`hidden md:block` / `md:hidden`).
+  function renderGrupoMobile(tipo: "RECEITA" | "DESPESA", titulo: string) {
+    const linhasDoTipo = linhas.filter((l) => l.tipo === tipo);
+    if (linhasDoTipo.length === 0) return null;
+
+    return (
+      <div className="mb-6 last:mb-0">
+        <h3 className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">{titulo}</h3>
+        <div className="flex flex-col gap-2">
+          {linhasDoTipo.map((linha) => {
+            const status = statusPorCategoria.get(linha.categoriaId);
+            return (
+              <details key={linha.categoriaId} className="group overflow-hidden rounded-xl border border-border bg-card">
+                <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 [&::-webkit-details-marker]:hidden">
+                  <span className="text-sm font-semibold text-foreground">{linha.categoriaNome}</span>
+                  <span className="flex items-center gap-2">
+                    {status && (
+                      <span className={cn("text-[10px] font-medium", status === "erro" ? "text-[#D8583A]" : "text-muted-foreground")}>
+                        {status === "salvando" ? "salvando…" : status === "erro" ? "erro" : "salvo"}
+                      </span>
+                    )}
+                    <span className="text-xs font-semibold tabular-nums text-muted-foreground">R$ {formatarEdicao(totalAno(linha.categoriaId)) || "0,00"}</span>
+                    <CaretDown size={14} className="text-muted-foreground transition-transform group-open:rotate-180" />
+                  </span>
+                </summary>
+
+                <div className="flex flex-col gap-2 border-t border-border px-4 py-3">
+                  {linha.celulas.map((celula) => (
+                    <div key={celula.mes} className="flex items-center gap-3">
+                      <span className="w-9 shrink-0 text-xs font-medium text-muted-foreground">{NOMES_MES[celula.mes - 1]}</span>
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        defaultValue={formatarEdicao(valores.get(chave(linha.categoriaId, celula.mes)) ?? 0)}
+                        placeholder="-"
+                        className="h-11 flex-1 rounded-lg border border-border bg-muted/40 px-3 text-right text-base tabular-nums text-foreground outline-none focus:border-primary focus:bg-card"
+                        onBlur={(e) => {
+                          const valor = parseValor(e.target.value);
+                          if (valor !== (valores.get(chave(linha.categoriaId, celula.mes)) ?? 0)) {
+                            salvarCelula(linha.categoriaId, celula.mes, valor);
+                          }
+                        }}
+                      />
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => copiarParaRestoDoAno(linha.categoriaId)}
+                    className="mt-1 h-11 rounded-lg bg-muted text-sm font-medium text-muted-foreground hover:bg-muted/70"
+                  >
+                    Copiar Jan pro resto do ano
+                  </button>
+                </div>
+              </details>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
   function renderGrupo(tipo: "RECEITA" | "DESPESA", titulo: string) {
     const linhasDoTipo = linhas.filter((l) => l.tipo === tipo);
     if (linhasDoTipo.length === 0) return null;
@@ -149,8 +220,14 @@ export function GradeOrcamento({ ano, linhas }: { ano: number; linhas: LinhaGrad
 
   return (
     <div>
-      {renderGrupo("RECEITA", "Receitas")}
-      {renderGrupo("DESPESA", "Despesas")}
+      <div className="hidden md:block">
+        {renderGrupo("RECEITA", "Receitas")}
+        {renderGrupo("DESPESA", "Despesas")}
+      </div>
+      <div className="md:hidden">
+        {renderGrupoMobile("RECEITA", "Receitas")}
+        {renderGrupoMobile("DESPESA", "Despesas")}
+      </div>
     </div>
   );
 }
