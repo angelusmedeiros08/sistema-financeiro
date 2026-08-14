@@ -90,6 +90,46 @@ export async function buscarAging(
   return classificar(parcelas, new Date());
 }
 
+export type ResumoVencimentos = {
+  vencidoTotal: number;
+  vencidoQuantidade: number;
+  venceHojeTotal: number;
+  venceHojeQuantidade: number;
+};
+
+// Quebra vencidos × vencendo hoje — pedido explícito do sócio do usuário
+// pro Painel e reaproveitado aqui na Visão geral de Relatórios e na aba
+// Visão geral de Configurações → Contas Financeiras (mesma pergunta, três
+// telas diferentes).
+export async function buscarResumoVencimentos(
+  supabase: Cliente,
+  params: { tenantId: string; tipo: "RECEITA" | "DESPESA" },
+): Promise<ResumoVencimentos> {
+  const { data } = await supabase
+    .from("parcelas")
+    .select("valor, data_vencimento, eventos_financeiros!inner(tipo), baixas(valor_pago, estornado_em)")
+    .eq("tenant_id", params.tenantId)
+    .eq("eventos_financeiros.tipo", params.tipo)
+    .in("status", ["PENDENTE", "RECEBIDO_PARCIAL", "ATRASADO"]);
+
+  const hojeIso = new Date().toISOString().slice(0, 10);
+  const resumo: ResumoVencimentos = { vencidoTotal: 0, vencidoQuantidade: 0, venceHojeTotal: 0, venceHojeQuantidade: 0 };
+
+  for (const p of data ?? []) {
+    const pago = (p.baixas ?? []).filter((b) => !b.estornado_em).reduce((s, b) => s + Number(b.valor_pago), 0);
+    const saldo = Number(p.valor) - pago;
+    if (p.data_vencimento < hojeIso) {
+      resumo.vencidoTotal += saldo;
+      resumo.vencidoQuantidade += 1;
+    } else if (p.data_vencimento === hojeIso) {
+      resumo.venceHojeTotal += saldo;
+      resumo.venceHojeQuantidade += 1;
+    }
+  }
+
+  return resumo;
+}
+
 export type AgingPorParticipante = {
   pessoaId: string | null;
   nome: string;

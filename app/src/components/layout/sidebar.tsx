@@ -30,7 +30,7 @@ const ITENS_NAV: ItemNav[] = [
   { href: "/contas-a-pagar", label: "Contas a pagar", icon: CreditCard, disponivel: true },
   { href: "/clientes", label: "Clientes", icon: Users, disponivel: true },
   { href: "/fornecedores", label: "Fornecedores", icon: Truck, disponivel: true },
-  { href: "/relatorios", label: "Relatórios", icon: ChartLineUp, disponivel: false },
+  { href: "/relatorios", label: "Relatórios", icon: ChartLineUp, disponivel: true },
   { href: "/configuracoes", label: "Configurações", icon: GearSix, disponivel: true },
 ];
 
