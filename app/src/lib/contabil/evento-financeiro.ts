@@ -65,6 +65,21 @@ export async function resolverPessoaId(
   return data?.id ?? null;
 }
 
+// Mesmo fluxo "criar na hora" do combobox de pessoa, aplicado ao centro de
+// custo do modo simples do formulário: se veio um nome novo digitado (e
+// nenhum ID), cria o centro de custo e escreve o ID de volta no próprio
+// FormData — assim extrairLinhasCategoria (que lê centro_custo_id de forma
+// síncrona) nem precisa saber que uma criação aconteceu.
+export async function resolverCentroCustoIdSimples(supabase: Cliente, tenantId: string, formData: FormData): Promise<void> {
+  if (formData.get("centro_custo_id")) return;
+
+  const nome = String(formData.get("centro_custo_nome_novo") ?? "").trim();
+  if (!nome) return;
+
+  const { data } = await supabase.from("centros_custo").insert({ tenant_id: tenantId, nome }).select("id").single();
+  if (data?.id) formData.set("centro_custo_id", data.id);
+}
+
 export type LinhaCentroCusto = { centro_custo_id: string; valor: number };
 
 export type LinhaCategoria = {

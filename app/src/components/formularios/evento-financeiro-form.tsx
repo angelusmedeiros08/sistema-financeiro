@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PessoaCombobox } from "./pessoa-combobox";
+import { CentroCustoCombobox } from "./centro-custo-combobox";
 import { RateioCategorias } from "./rateio-categorias";
 import { RecorrenciaCampos } from "./recorrencia-campos";
 import { AnexoCampos } from "./anexo-campos";
@@ -111,7 +112,7 @@ export function EventoFinanceiroForm({
             onValidacaoChange={setRateioValido}
           />
         ) : (
-          <div className={centrosCusto.length > 0 ? "grid grid-cols-2 gap-3" : undefined}>
+          <div className="grid grid-cols-2 gap-3">
             <Select name="categoria_id" required>
               <SelectTrigger id="categoria_id" className="w-full">
                 <SelectValue placeholder="Selecione a categoria..." />
@@ -124,20 +125,7 @@ export function EventoFinanceiroForm({
                 ))}
               </SelectContent>
             </Select>
-            {centrosCusto.length > 0 && (
-              <Select name="centro_custo_id">
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Centro de custo (opcional)..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {centrosCusto.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.nome}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
+            <CentroCustoCombobox centrosCusto={centrosCusto} />
           </div>
         )}
       </div>

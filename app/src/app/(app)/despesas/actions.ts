@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/utils/supabase/server";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
-import { criarEventoFinanceiro, resolverPessoaId, extrairLinhasCategoria } from "@/lib/contabil/evento-financeiro";
+import { criarEventoFinanceiro, resolverPessoaId, resolverCentroCustoIdSimples, extrairLinhasCategoria } from "@/lib/contabil/evento-financeiro";
 import { extrairAnexosDraftDoFormData, anexarDraftsAoDono } from "@/lib/contabil/anexos";
 import { criarRegraRecorrenciaAction } from "@/lib/contabil/recorrencia-actions";
 
@@ -30,17 +30,18 @@ export async function criarDespesa(formData: FormData): Promise<ResultadoAcao> {
     return { erro: "Preencha descrição, valor (maior que zero) e vencimento." };
   }
 
-  const categorias = extrairLinhasCategoria(formData, categoriaId, valor);
-  if ("erro" in categorias) return categorias;
-  if (!categoriaId && categorias.length === 1) {
-    return { erro: "Selecione uma categoria." };
-  }
-
   const contexto = await obterUsuarioETenantAtual();
   if ("erro" in contexto) return { erro: contexto.erro };
   const { user, tenantId } = contexto;
 
   const supabase = await createClient();
+
+  await resolverCentroCustoIdSimples(supabase, tenantId, formData);
+  const categorias = extrairLinhasCategoria(formData, categoriaId, valor);
+  if ("erro" in categorias) return categorias;
+  if (!categoriaId && categorias.length === 1) {
+    return { erro: "Selecione uma categoria." };
+  }
 
   const pessoaResolvidaId = await resolverPessoaId(supabase, tenantId, {
     pessoaId,

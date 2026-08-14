@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/utils/supabase/server";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
-import { extrairLinhasCategoria, resolverPessoaId } from "./evento-financeiro";
+import { extrairLinhasCategoria, resolverPessoaId, resolverCentroCustoIdSimples } from "./evento-financeiro";
 import { criarRegraRecorrencia, editarRegraRecorrencia, cancelarRegraRecorrencia } from "./recorrencia";
 import { extrairAnexosDraftDoFormData, anexarDraftsAoDono } from "./anexos";
 import type { Database } from "@/utils/supabase/database.types";
@@ -54,12 +54,6 @@ export async function criarRegraRecorrenciaAction(tipo: TipoCategoria, formData:
     return { erro: "Preencha descrição, valor (maior que zero) e data de início." };
   }
 
-  const categorias = extrairLinhasCategoria(formData, categoriaId, valor);
-  if ("erro" in categorias) return categorias;
-  if (!categoriaId && categorias.length === 1) {
-    return { erro: "Selecione uma categoria." };
-  }
-
   const { numero_ocorrencias, data_fim } = extrairTermino(formData);
 
   const contexto = await obterUsuarioETenantAtual();
@@ -67,6 +61,13 @@ export async function criarRegraRecorrenciaAction(tipo: TipoCategoria, formData:
   const { user, tenantId } = contexto;
 
   const supabase = await createClient();
+
+  await resolverCentroCustoIdSimples(supabase, tenantId, formData);
+  const categorias = extrairLinhasCategoria(formData, categoriaId, valor);
+  if ("erro" in categorias) return categorias;
+  if (!categoriaId && categorias.length === 1) {
+    return { erro: "Selecione uma categoria." };
+  }
 
   const pessoaResolvidaId = await resolverPessoaId(supabase, tenantId, {
     pessoaId,
