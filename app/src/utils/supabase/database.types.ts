@@ -259,6 +259,7 @@ export type Database = {
           categoria_pai_id: string | null
           conta_contabil_id: string | null
           criado_em: string
+          eh_custo_fixo: boolean
           id: string
           nome: string
           tenant_id: string
@@ -268,6 +269,7 @@ export type Database = {
           categoria_pai_id?: string | null
           conta_contabil_id?: string | null
           criado_em?: string
+          eh_custo_fixo?: boolean
           id?: string
           nome: string
           tenant_id: string
@@ -277,6 +279,7 @@ export type Database = {
           categoria_pai_id?: string | null
           conta_contabil_id?: string | null
           criado_em?: string
+          eh_custo_fixo?: boolean
           id?: string
           nome?: string
           tenant_id?: string
@@ -1300,6 +1303,7 @@ export type Database = {
         Row: {
           categoria_id: string | null
           centro_custo_id: string | null
+          conta_financeira_id: string | null
           data_competencia: string | null
           data_vencimento: string | null
           evento_financeiro_id: string | null
@@ -1316,6 +1320,13 @@ export type Database = {
             columns: ["pessoa_id"]
             isOneToOne: false
             referencedRelation: "pessoas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parcelas_conta_financeira_id_fkey"
+            columns: ["conta_financeira_id"]
+            isOneToOne: false
+            referencedRelation: "contas_financeiras"
             referencedColumns: ["id"]
           },
           {
@@ -1346,6 +1357,7 @@ export type Database = {
           baixa_id: string | null
           categoria_id: string | null
           centro_custo_id: string | null
+          conta_financeira_id: string | null
           data_pagamento: string | null
           evento_financeiro_id: string | null
           parcela_id: string | null

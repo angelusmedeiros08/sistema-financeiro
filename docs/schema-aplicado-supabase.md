@@ -35,6 +35,9 @@ Registro do que foi efetivamente implementado no banco (região São Paulo, `sa-
 
 28. `032_backfill_linhas_dre_tenants_existentes` — backfill do template mínimo de DRE pros 3 tenants de teste criados antes da `031` (mesmo padrão de `backfill_plano_contas_financeiras_tenant_teste`), idempotente (`DO` block pula tenant que já tiver `linhas_dre`). Provisionamento pra tenant novo passa a viver em `(auth)/actions.ts::cadastrar()` (mesmo lugar que já provisiona plano de contas e categorias padrão — decisão de camada de aplicação, não de trigger de banco, consistente com o resto do onboarding).
 
+29. `033_movimento_views_conta_financeira` — as duas views de regime ganham `conta_financeira_id` (via `parcelas`/`baixas`, com `COALESCE` pra preferir a conta da baixa quando existir) — faltava pro Fluxo de Caixa e pro extrato de Contas Bancárias conseguirem quebrar por conta. `CREATE OR REPLACE VIEW` só adiciona coluna no fim, não quebra nada que já lia a view.
+30. `034_categoria_custo_fixo` — `categorias_financeiras.eh_custo_fixo boolean not null default false`. Sem essa classificação (fixo vs. variável), Ponto de Equilíbrio não existe de verdade — é a mesma distinção que a planilha de referência já tinha (`Tipo_Gasto`/`tbDF_PE`), como coluna real em vez de tabela auxiliar solta.
+
 ## Verificação final
 
 - `get_advisors` (segurança): **0 alertas** (só o warning pré-existente e não relacionado `auth_leaked_password_protection`).
