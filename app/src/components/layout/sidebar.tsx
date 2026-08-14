@@ -67,8 +67,8 @@ export function SidebarConteudo() {
   const [expandidoManual, setExpandidoManual] = useState<Record<string, boolean>>({});
 
   return (
-    <div className="flex h-full flex-col gap-8 bg-sidebar px-4 py-6 text-sidebar-foreground">
-      <div className="flex items-center gap-2.5 px-2">
+    <div className="flex h-full min-h-0 flex-col gap-8 bg-sidebar px-4 py-6 text-sidebar-foreground">
+      <div className="flex shrink-0 items-center gap-2.5 px-2">
         <span className="flex size-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#6A56D8] to-[#D8583A]">
           <svg viewBox="0 0 24 24" className="size-3.5 stroke-white" fill="none" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
             <path d="M4 12h16M4 6h16M4 18h10" />
@@ -77,7 +77,7 @@ export function SidebarConteudo() {
         <span className="font-heading text-[15px] font-bold tracking-tight">Núcleo</span>
       </div>
 
-      <nav className="flex flex-1 flex-col gap-0.5">
+      <nav className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto">
         {ITENS_NAV.map((item) => {
           const dentroDaSecao = pathname === item.href || pathname.startsWith(item.href + "/");
           const Icon = item.icon;
