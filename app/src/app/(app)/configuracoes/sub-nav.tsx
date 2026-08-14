@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 
 const ITENS = [
   { href: "/configuracoes/centros-custo", rotulo: "Centros de custo" },
+  { href: "/configuracoes/contas-financeiras", rotulo: "Contas financeiras" },
   { href: "/configuracoes/recorrencias", rotulo: "Recorrências" },
   { href: "/configuracoes/campos-personalizados", rotulo: "Campos personalizados" },
   { href: "/configuracoes/estrutura-dre", rotulo: "Estrutura de DRE" },
