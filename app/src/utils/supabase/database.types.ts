@@ -75,6 +75,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "anexos_baixa_id_fkey"
+            columns: ["baixa_id"]
+            isOneToOne: false
+            referencedRelation: "vw_movimento_realizado"
+            referencedColumns: ["baixa_id"]
+          },
+          {
             foreignKeyName: "anexos_criado_por_fkey"
             columns: ["criado_por"]
             isOneToOne: false
@@ -87,6 +94,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "eventos_financeiros"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "anexos_evento_financeiro_id_fkey"
+            columns: ["evento_financeiro_id"]
+            isOneToOne: false
+            referencedRelation: "vw_movimento_competencia_previsto"
+            referencedColumns: ["evento_financeiro_id"]
+          },
+          {
+            foreignKeyName: "anexos_evento_financeiro_id_fkey"
+            columns: ["evento_financeiro_id"]
+            isOneToOne: false
+            referencedRelation: "vw_movimento_realizado"
+            referencedColumns: ["evento_financeiro_id"]
           },
           {
             foreignKeyName: "anexos_regra_recorrencia_id_fkey"
@@ -171,6 +192,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "parcelas"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "baixas_parcela_id_fkey"
+            columns: ["parcela_id"]
+            isOneToOne: false
+            referencedRelation: "vw_movimento_competencia_previsto"
+            referencedColumns: ["parcela_id"]
+          },
+          {
+            foreignKeyName: "baixas_parcela_id_fkey"
+            columns: ["parcela_id"]
+            isOneToOne: false
+            referencedRelation: "vw_movimento_realizado"
+            referencedColumns: ["parcela_id"]
           },
           {
             foreignKeyName: "baixas_tenant_id_fkey"
@@ -540,6 +575,71 @@ export type Database = {
           },
         ]
       }
+      linha_dre_categorias: {
+        Row: {
+          categoria_id: string
+          linha_dre_id: string
+        }
+        Insert: {
+          categoria_id: string
+          linha_dre_id: string
+        }
+        Update: {
+          categoria_id?: string
+          linha_dre_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "linha_dre_categorias_categoria_id_fkey"
+            columns: ["categoria_id"]
+            isOneToOne: false
+            referencedRelation: "categorias_financeiras"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "linha_dre_categorias_linha_dre_id_fkey"
+            columns: ["linha_dre_id"]
+            isOneToOne: false
+            referencedRelation: "linhas_dre"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      linhas_dre: {
+        Row: {
+          criado_em: string
+          id: string
+          ordem: number
+          rotulo: string
+          tenant_id: string
+          tipo: Database["public"]["Enums"]["tipo_linha_dre"]
+        }
+        Insert: {
+          criado_em?: string
+          id?: string
+          ordem: number
+          rotulo: string
+          tenant_id: string
+          tipo: Database["public"]["Enums"]["tipo_linha_dre"]
+        }
+        Update: {
+          criado_em?: string
+          id?: string
+          ordem?: number
+          rotulo?: string
+          tenant_id?: string
+          tipo?: Database["public"]["Enums"]["tipo_linha_dre"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "linhas_dre_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       parcelas: {
         Row: {
           conta_financeira_id: string | null
@@ -594,6 +694,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "eventos_financeiros"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parcelas_evento_financeiro_id_fkey"
+            columns: ["evento_financeiro_id"]
+            isOneToOne: false
+            referencedRelation: "vw_movimento_competencia_previsto"
+            referencedColumns: ["evento_financeiro_id"]
+          },
+          {
+            foreignKeyName: "parcelas_evento_financeiro_id_fkey"
+            columns: ["evento_financeiro_id"]
+            isOneToOne: false
+            referencedRelation: "vw_movimento_realizado"
+            referencedColumns: ["evento_financeiro_id"]
           },
           {
             foreignKeyName: "parcelas_tenant_id_fkey"
@@ -864,6 +978,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "rateio_categoria_evento_financeiro_id_fkey"
+            columns: ["evento_financeiro_id"]
+            isOneToOne: false
+            referencedRelation: "vw_movimento_competencia_previsto"
+            referencedColumns: ["evento_financeiro_id"]
+          },
+          {
+            foreignKeyName: "rateio_categoria_evento_financeiro_id_fkey"
+            columns: ["evento_financeiro_id"]
+            isOneToOne: false
+            referencedRelation: "vw_movimento_realizado"
+            referencedColumns: ["evento_financeiro_id"]
+          },
+          {
             foreignKeyName: "rateio_categoria_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
@@ -1050,6 +1178,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "renegociacoes_parcela_id_fkey"
+            columns: ["parcela_id"]
+            isOneToOne: false
+            referencedRelation: "vw_movimento_competencia_previsto"
+            referencedColumns: ["parcela_id"]
+          },
+          {
+            foreignKeyName: "renegociacoes_parcela_id_fkey"
+            columns: ["parcela_id"]
+            isOneToOne: false
+            referencedRelation: "vw_movimento_realizado"
+            referencedColumns: ["parcela_id"]
+          },
+          {
             foreignKeyName: "renegociacoes_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
@@ -1154,7 +1296,95 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      vw_movimento_competencia_previsto: {
+        Row: {
+          categoria_id: string | null
+          centro_custo_id: string | null
+          data_competencia: string | null
+          data_vencimento: string | null
+          evento_financeiro_id: string | null
+          parcela_id: string | null
+          pessoa_id: string | null
+          status: Database["public"]["Enums"]["status_parcela"] | null
+          tenant_id: string | null
+          tipo: Database["public"]["Enums"]["tipo_categoria"] | null
+          valor: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "eventos_financeiros_pessoa_id_fkey"
+            columns: ["pessoa_id"]
+            isOneToOne: false
+            referencedRelation: "pessoas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rateio_categoria_categoria_id_fkey"
+            columns: ["categoria_id"]
+            isOneToOne: false
+            referencedRelation: "categorias_financeiras"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rateio_categoria_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rateio_centro_custo_centro_custo_id_fkey"
+            columns: ["centro_custo_id"]
+            isOneToOne: false
+            referencedRelation: "centros_custo"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vw_movimento_realizado: {
+        Row: {
+          baixa_id: string | null
+          categoria_id: string | null
+          centro_custo_id: string | null
+          data_pagamento: string | null
+          evento_financeiro_id: string | null
+          parcela_id: string | null
+          pessoa_id: string | null
+          tenant_id: string | null
+          tipo: Database["public"]["Enums"]["tipo_categoria"] | null
+          valor: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "eventos_financeiros_pessoa_id_fkey"
+            columns: ["pessoa_id"]
+            isOneToOne: false
+            referencedRelation: "pessoas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rateio_categoria_categoria_id_fkey"
+            columns: ["categoria_id"]
+            isOneToOne: false
+            referencedRelation: "categorias_financeiras"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rateio_categoria_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rateio_centro_custo_centro_custo_id_fkey"
+            columns: ["centro_custo_id"]
+            isOneToOne: false
+            referencedRelation: "centros_custo"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       [_ in never]: never
@@ -1202,6 +1432,7 @@ export type Database = {
         | "RECEITA"
         | "DESPESA"
       tipo_endereco: "COMERCIAL" | "COBRANCA" | "ENTREGA" | "OUTRO"
+      tipo_linha_dre: "FOLHA" | "SUBTOTAL"
       tipo_partida: "DEBITO" | "CREDITO"
       unidade_intervalo: "DIA" | "SEMANA" | "MES"
     }
@@ -1378,6 +1609,7 @@ export const Constants = {
         "DESPESA",
       ],
       tipo_endereco: ["COMERCIAL", "COBRANCA", "ENTREGA", "OUTRO"],
+      tipo_linha_dre: ["FOLHA", "SUBTOTAL"],
       tipo_partida: ["DEBITO", "CREDITO"],
       unidade_intervalo: ["DIA", "SEMANA", "MES"],
     },

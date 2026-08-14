@@ -81,13 +81,47 @@ export async function cadastrar(formData: FormData): Promise<ResultadoAcao> {
   const contaReceitas = contaPorCodigo.get(CODIGO_RECEITAS_GERAL)!;
   const contaDespesas = contaPorCodigo.get(CODIGO_DESPESAS_GERAL)!;
 
-  const { error: erroCategorias } = await admin.from("categorias_financeiras").insert([
-    { tenant_id: tenant.id, nome: "Receita Geral", tipo: "RECEITA", conta_contabil_id: contaReceitas },
-    { tenant_id: tenant.id, nome: "Despesa Geral", tipo: "DESPESA", conta_contabil_id: contaDespesas },
-  ]);
+  const { data: categoriasCriadas, error: erroCategorias } = await admin
+    .from("categorias_financeiras")
+    .insert([
+      { tenant_id: tenant.id, nome: "Receita Geral", tipo: "RECEITA", conta_contabil_id: contaReceitas },
+      { tenant_id: tenant.id, nome: "Despesa Geral", tipo: "DESPESA", conta_contabil_id: contaDespesas },
+    ])
+    .select("id, tipo");
 
-  if (erroCategorias) {
-    return { erro: erroCategorias.message };
+  if (erroCategorias || !categoriasCriadas) {
+    return { erro: erroCategorias?.message ?? "Falha ao provisionar categorias." };
+  }
+
+  // 4) provisiona o template mínimo de DRE (Fase 3) — 3 linhas já
+  // funcionais desde o primeiro lançamento, vinculadas às categorias
+  // recém-criadas. O usuário pode desdobrar em linhas mais finas depois,
+  // em Configurações → Estrutura de DRE.
+  const { data: linhasDreCriadas, error: erroLinhasDre } = await admin
+    .from("linhas_dre")
+    .insert([
+      { tenant_id: tenant.id, ordem: 1, rotulo: "Receita Bruta", tipo: "FOLHA" },
+      { tenant_id: tenant.id, ordem: 2, rotulo: "Despesas", tipo: "FOLHA" },
+      { tenant_id: tenant.id, ordem: 3, rotulo: "Resultado", tipo: "SUBTOTAL" },
+    ])
+    .select("id, ordem");
+
+  if (erroLinhasDre || !linhasDreCriadas) {
+    return { erro: erroLinhasDre?.message ?? "Falha ao provisionar estrutura de DRE." };
+  }
+
+  const linhaReceitaId = linhasDreCriadas.find((l) => l.ordem === 1)!.id;
+  const linhaDespesaId = linhasDreCriadas.find((l) => l.ordem === 2)!.id;
+
+  const { error: erroLinhaDreCategorias } = await admin.from("linha_dre_categorias").insert(
+    categoriasCriadas.map((c) => ({
+      linha_dre_id: c.tipo === "RECEITA" ? linhaReceitaId : linhaDespesaId,
+      categoria_id: c.id,
+    })),
+  );
+
+  if (erroLinhaDreCategorias) {
+    return { erro: erroLinhaDreCategorias.message };
   }
 
   const { error: erroContaFinanceira } = await admin.from("contas_financeiras").insert({
