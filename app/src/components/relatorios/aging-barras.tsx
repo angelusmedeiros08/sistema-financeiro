@@ -1,4 +1,4 @@
-import { formatarMoeda } from "@/lib/formatacao";
+import { formatarMoeda, formatarNumeroCompacto } from "@/lib/formatacao";
 import type { AgingResultado } from "@/lib/relatorios/aging";
 
 // Barra horizontal com gradiente de severidade âmbar→coral (Seção 4.3 do
@@ -30,8 +30,8 @@ export function AgingBarras({ titulo, dados }: { titulo: string; dados: AgingRes
                   style={{ width: `${Math.max(4, (faixa.total / maior) * 100)}%`, background: CORES_SEVERIDADE[i % CORES_SEVERIDADE.length] }}
                 />
               </div>
-              <span className="w-24 shrink-0 text-right text-xs font-semibold tabular-nums text-foreground">
-                {formatarMoeda(faixa.total)}
+              <span className="w-20 shrink-0 text-right text-xs font-semibold tabular-nums text-foreground">
+                {formatarNumeroCompacto(faixa.total)}
               </span>
             </div>
           ))}

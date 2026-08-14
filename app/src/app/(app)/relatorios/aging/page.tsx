@@ -4,7 +4,7 @@ import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
 import { buscarAging, buscarAgingPorParticipante } from "@/lib/relatorios/aging";
 import { RelatoriosSubNav } from "../sub-nav";
 import { AgingBarras } from "@/components/relatorios/aging-barras";
-import { formatarMoeda } from "@/lib/formatacao";
+import { formatarMoeda, formatarNumeroCompacto } from "@/lib/formatacao";
 
 export default async function PaginaRelatoriosAging() {
   const contexto = await obterUsuarioETenantAtual();
@@ -19,7 +19,7 @@ export default async function PaginaRelatoriosAging() {
   ]);
 
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-6">
+    <div className="flex w-full flex-col gap-6">
       <h1 className="text-xl font-bold tracking-tight text-foreground">Relatórios</h1>
       <RelatoriosSubNav />
 
@@ -75,8 +75,8 @@ function FaixasAVencer({
               <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
                 <div className="h-full rounded-full" style={{ width: `${Math.max(4, (faixa.total / maior) * 100)}%`, background: cor }} />
               </div>
-              <span className="w-24 shrink-0 text-right text-xs font-semibold tabular-nums text-foreground">
-                {formatarMoeda(faixa.total)}
+              <span className="w-20 shrink-0 text-right text-xs font-semibold tabular-nums text-foreground">
+                {formatarNumeroCompacto(faixa.total)}
               </span>
             </div>
           ))}
@@ -111,7 +111,7 @@ function TabelaParticipantes({
             {linhas.slice(0, 10).map((p) => (
               <tr key={p.pessoaId ?? p.nome} className="border-b border-border last:border-none">
                 <td className="p-3 font-medium text-foreground">{p.nome}</td>
-                <td className="p-3 text-right tabular-nums">{formatarMoeda(p.totalEmAberto)}</td>
+                <td className="p-3 text-right tabular-nums">{formatarNumeroCompacto(p.totalEmAberto)}</td>
                 <td className="p-3 text-right tabular-nums text-muted-foreground">
                   {p.diasDeAtrasoMaximo > 0 ? `${p.diasDeAtrasoMaximo} dias` : "em dia"}
                 </td>

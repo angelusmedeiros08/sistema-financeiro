@@ -6,7 +6,7 @@ import { buscarAnaliseDespesas } from "@/lib/relatorios/analise-despesas";
 import { RelatoriosSubNav } from "../sub-nav";
 import { RelatoriosControles } from "../controles";
 import { Badge } from "@/components/ui/badge";
-import { formatarMoeda, formatarPercentual } from "@/lib/formatacao";
+import { formatarNumeroCompacto, formatarPercentual } from "@/lib/formatacao";
 import { cn } from "@/lib/utils";
 
 export default async function PaginaRelatoriosDespesas({
@@ -23,7 +23,7 @@ export default async function PaginaRelatoriosDespesas({
   const maior = Math.max(...linhas.map((l) => l.total), 1);
 
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-6">
+    <div className="flex w-full flex-col gap-6">
       <h1 className="text-xl font-bold tracking-tight text-foreground">Relatórios</h1>
       <RelatoriosSubNav />
       <RelatoriosControles {...params} />
@@ -64,7 +64,7 @@ export default async function PaginaRelatoriosDespesas({
                       {l.ehCustoFixo ? "Fixo" : "Variável"}
                     </Badge>
                   </td>
-                  <td className="py-2.5 text-right tabular-nums font-semibold text-foreground">{formatarMoeda(l.total)}</td>
+                  <td className="py-2.5 text-right tabular-nums font-semibold text-foreground">{formatarNumeroCompacto(l.total)}</td>
                   <td className="py-2.5 text-right tabular-nums text-muted-foreground">{formatarPercentual(l.percentualDoTotal)}</td>
                   <td className={cn("py-2.5 text-right tabular-nums", l.percentualAcumulado <= 0.8 ? "font-semibold text-[#C98A1F]" : "text-muted-foreground")}>
                     {formatarPercentual(l.percentualAcumulado)}

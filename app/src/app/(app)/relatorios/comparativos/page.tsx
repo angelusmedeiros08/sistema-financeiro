@@ -7,7 +7,7 @@ import { buscarAnaliseComparativa, type TipoAnaliseComparativa } from "@/lib/rel
 import { RelatoriosSubNav } from "../sub-nav";
 import { RelatoriosControles } from "../controles";
 import { ComparativoBarras } from "@/components/relatorios/comparativo-barras";
-import { formatarMoeda, formatarPercentual } from "@/lib/formatacao";
+import { formatarNumeroCompacto, formatarPercentual } from "@/lib/formatacao";
 import { cn } from "@/lib/utils";
 
 const TIPOS: { valor: TipoAnaliseComparativa; rotulo: string; colunaComparacao: string }[] = [
@@ -39,7 +39,7 @@ export default async function PaginaRelatoriosComparativos({
   }
 
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-6">
+    <div className="flex w-full flex-col gap-6">
       <h1 className="text-xl font-bold tracking-tight text-foreground">Relatórios</h1>
       <RelatoriosSubNav />
       <RelatoriosControles {...params} />
@@ -88,8 +88,8 @@ export default async function PaginaRelatoriosComparativos({
                 {pontos.map((p) => (
                   <tr key={p.chave} className="border-b border-border last:border-none">
                     <td className="py-2.5 font-medium text-foreground">{p.chave}</td>
-                    <td className="py-2.5 text-right tabular-nums">{formatarMoeda(p.atual)}</td>
-                    <td className="py-2.5 text-right tabular-nums text-muted-foreground">{formatarMoeda(p.comparacao)}</td>
+                    <td className="py-2.5 text-right tabular-nums">{formatarNumeroCompacto(p.atual)}</td>
+                    <td className="py-2.5 text-right tabular-nums text-muted-foreground">{formatarNumeroCompacto(p.comparacao)}</td>
                     {tipoAtivo !== "YTD" && (
                       <td className={cn("py-2.5 text-right tabular-nums font-semibold", p.variacaoPercentual >= 0 ? "text-[#157F6B]" : "text-[#D8583A]")}>
                         {formatarPercentual(p.variacaoPercentual)}

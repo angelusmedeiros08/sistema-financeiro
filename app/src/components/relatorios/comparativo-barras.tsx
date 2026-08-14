@@ -12,13 +12,15 @@ export function ComparativoBarras({
   dados,
   eixoX,
   series,
+  altura = 300,
 }: {
   dados: Record<string, number | string>[];
   eixoX: string;
   series: SerieComparativo[];
+  altura?: number;
 }) {
   return (
-    <ResponsiveContainer width="100%" height={260}>
+    <ResponsiveContainer width="100%" height={altura}>
       <BarChart data={dados} margin={{ top: 4, right: 4, left: 4, bottom: 0 }}>
         <CartesianGrid vertical={false} stroke="var(--border)" />
         <XAxis dataKey={eixoX} axisLine={false} tickLine={false} tick={{ fill: "var(--muted-foreground)", fontSize: 11 }} />

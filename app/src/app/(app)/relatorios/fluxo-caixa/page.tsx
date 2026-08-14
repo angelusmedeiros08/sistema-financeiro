@@ -7,7 +7,7 @@ import { buscarFluxoCaixaGrade, buscarPrevistoRealizado } from "@/lib/relatorios
 import { RelatoriosSubNav } from "../sub-nav";
 import { RelatoriosControles } from "../controles";
 import { ComparativoBarras } from "@/components/relatorios/comparativo-barras";
-import { formatarMoeda } from "@/lib/formatacao";
+import { formatarNumeroCompacto } from "@/lib/formatacao";
 import { cn } from "@/lib/utils";
 
 const ABAS = [
@@ -36,7 +36,7 @@ export default async function PaginaRelatoriosFluxoCaixa({
   }
 
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-6">
+    <div className="flex w-full flex-col gap-6">
       <h1 className="text-xl font-bold tracking-tight text-foreground">Relatórios</h1>
       <RelatoriosSubNav />
       <RelatoriosControles {...params} />
@@ -112,12 +112,12 @@ async function FluxoDiario({
               pontos.map((p) => (
                 <tr key={p.chave} className="border-b border-border last:border-none">
                   <td className="p-3 font-medium text-foreground">{p.chave}</td>
-                  <td className="p-3 text-right tabular-nums text-[#157F6B]">{formatarMoeda(p.entradas)}</td>
-                  <td className="p-3 text-right tabular-nums text-[#D8583A]">{formatarMoeda(p.saidas)}</td>
+                  <td className="p-3 text-right tabular-nums text-[#157F6B]">{formatarNumeroCompacto(p.entradas)}</td>
+                  <td className="p-3 text-right tabular-nums text-[#D8583A]">{formatarNumeroCompacto(p.saidas)}</td>
                   <td className={cn("p-3 text-right tabular-nums font-semibold", p.saldoPeriodo >= 0 ? "text-[#157F6B]" : "text-[#D8583A]")}>
-                    {formatarMoeda(p.saldoPeriodo)}
+                    {formatarNumeroCompacto(p.saldoPeriodo)}
                   </td>
-                  <td className="p-3 text-right tabular-nums">{formatarMoeda(p.saldoAcumulado)}</td>
+                  <td className="p-3 text-right tabular-nums">{formatarNumeroCompacto(p.saldoAcumulado)}</td>
                 </tr>
               ))
             )}
@@ -179,10 +179,10 @@ async function FluxoPrevistoRealizado({
               pontos.map((p) => (
                 <tr key={p.chave} className="border-b border-border last:border-none">
                   <td className="p-3 font-medium text-foreground">{p.chave}</td>
-                  <td className="p-3 text-right tabular-nums text-[#157F6B]">{formatarMoeda(p.previsto)}</td>
-                  <td className="p-3 text-right tabular-nums text-[#6A56D8]">{formatarMoeda(p.realizado)}</td>
+                  <td className="p-3 text-right tabular-nums text-[#157F6B]">{formatarNumeroCompacto(p.previsto)}</td>
+                  <td className="p-3 text-right tabular-nums text-[#6A56D8]">{formatarNumeroCompacto(p.realizado)}</td>
                   <td className={cn("p-3 text-right tabular-nums font-semibold", p.variacao >= 0 ? "text-[#157F6B]" : "text-[#D8583A]")}>
-                    {formatarMoeda(p.variacao)}
+                    {formatarNumeroCompacto(p.variacao)}
                   </td>
                 </tr>
               ))

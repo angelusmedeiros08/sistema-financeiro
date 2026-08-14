@@ -6,7 +6,7 @@ import { buscarContasBancarias } from "@/lib/relatorios/contas-bancarias";
 import { RelatoriosSubNav } from "../sub-nav";
 import { RelatoriosControles } from "../controles";
 import { StatCard } from "@/components/painel/stat-card";
-import { formatarMoeda } from "@/lib/formatacao";
+import { formatarMoeda, formatarNumeroCompacto } from "@/lib/formatacao";
 import { cn } from "@/lib/utils";
 
 export default async function PaginaRelatoriosContasBancarias({
@@ -23,7 +23,7 @@ export default async function PaginaRelatoriosContasBancarias({
   const saldoTotal = contas.reduce((soma, c) => soma + c.saldoAcumulado, 0);
 
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-6">
+    <div className="flex w-full flex-col gap-6">
       <h1 className="text-xl font-bold tracking-tight text-foreground">Relatórios</h1>
       <RelatoriosSubNav />
       <RelatoriosControles {...params} />
@@ -45,16 +45,16 @@ export default async function PaginaRelatoriosContasBancarias({
               <div className="grid grid-cols-3 gap-3 border-t border-border pt-3 text-sm">
                 <div>
                   <p className="text-xs text-muted-foreground">Crédito no período</p>
-                  <p className="font-semibold tabular-nums text-[#157F6B]">{formatarMoeda(c.credito)}</p>
+                  <p className="font-semibold tabular-nums text-[#157F6B]">{formatarNumeroCompacto(c.credito)}</p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Débito no período</p>
-                  <p className="font-semibold tabular-nums text-[#D8583A]">{formatarMoeda(c.debito)}</p>
+                  <p className="font-semibold tabular-nums text-[#D8583A]">{formatarNumeroCompacto(c.debito)}</p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Saldo do período</p>
                   <p className={cn("font-semibold tabular-nums", c.saldoPeriodo >= 0 ? "text-[#157F6B]" : "text-[#D8583A]")}>
-                    {formatarMoeda(c.saldoPeriodo)}
+                    {formatarNumeroCompacto(c.saldoPeriodo)}
                   </p>
                 </div>
               </div>
