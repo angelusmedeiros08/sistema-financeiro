@@ -1,0 +1,61 @@
+import type { Cliente } from "./regime";
+import { buscarMovimento } from "./regime";
+
+export type NivelRiscoConcentracao = "ALTO" | "MEDIO" | "BAIXO";
+
+export type ClienteConcentracao = { pessoaId: string | null; nome: string; valor: number; percentual: number };
+
+export type ConcentracaoReceita = {
+  topClientes: ClienteConcentracao[];
+  percentualTop3: number;
+  nivelRisco: NivelRiscoConcentracao;
+};
+
+function isoMenosMeses(meses: number): string {
+  const data = new Date();
+  data.setMonth(data.getMonth() - meses);
+  return data.toISOString().slice(0, 10);
+}
+
+// "Quanto da minha receita depende de poucos clientes" — nenhum concorrente
+// pesquisado (docs/pesquisa-indicadores-financeiros-comparativo-mercado.md)
+// transforma isso num alerta de risco; aqui os 3 maiores clientes somando
+// metade ou mais da receita da janela classificam como ALTO.
+export async function buscarConcentracaoReceita(
+  supabase: Cliente,
+  params: { tenantId: string; mesesJanela?: number },
+): Promise<ConcentracaoReceita> {
+  const mesesJanela = params.mesesJanela ?? 12;
+  const dataInicio = isoMenosMeses(mesesJanela);
+  const dataFim = new Date().toISOString().slice(0, 10);
+
+  const [movimento, { data: pessoas }] = await Promise.all([
+    buscarMovimento(supabase, { tenantId: params.tenantId, regime: "competencia", dataInicio, dataFim }),
+    supabase.from("pessoas").select("id, nome").eq("tenant_id", params.tenantId),
+  ]);
+
+  const nomePorId = new Map((pessoas ?? []).map((p) => [p.id, p.nome]));
+  const somaPorPessoa = new Map<string, number>();
+
+  for (const linha of movimento) {
+    if (linha.tipo !== "RECEITA") continue;
+    const chave = linha.pessoaId ?? "__sem_pessoa__";
+    somaPorPessoa.set(chave, (somaPorPessoa.get(chave) ?? 0) + linha.valor);
+  }
+
+  const total = [...somaPorPessoa.values()].reduce((soma, v) => soma + v, 0);
+
+  const ordenado = [...somaPorPessoa.entries()]
+    .map(([chave, valor]) => ({
+      pessoaId: chave === "__sem_pessoa__" ? null : chave,
+      nome: chave === "__sem_pessoa__" ? "Sem pessoa" : (nomePorId.get(chave) ?? "-"),
+      valor,
+      percentual: total > 0 ? valor / total : 0,
+    }))
+    .sort((a, b) => b.valor - a.valor);
+
+  const percentualTop3 = ordenado.slice(0, 3).reduce((soma, c) => soma + c.percentual, 0);
+  const nivelRisco: NivelRiscoConcentracao = percentualTop3 >= 0.5 ? "ALTO" : percentualTop3 >= 0.3 ? "MEDIO" : "BAIXO";
+
+  return { topClientes: ordenado.slice(0, 5), percentualTop3, nivelRisco };
+}

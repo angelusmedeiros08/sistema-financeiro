@@ -165,6 +165,14 @@ export async function cadastrar(formData: FormData): Promise<ResultadoAcao> {
     return { erro: erroContaFinanceira.message };
   }
 
+  const { error: erroFormasPagamento } = await admin.from("formas_pagamento").insert(
+    ["Pix", "Boleto", "Cartão", "Dinheiro"].map((nome) => ({ tenant_id: tenant.id, nome })),
+  );
+
+  if (erroFormasPagamento) {
+    return { erro: erroFormasPagamento.message };
+  }
+
   return {
     sucesso: true,
     mensagem: "Cadastro criado! Verifique seu e-mail para confirmar a conta e depois entre com sua senha.",

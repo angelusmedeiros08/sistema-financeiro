@@ -24,6 +24,7 @@ export type ParametrosBaixa = {
   valor_taxa?: number;
   conta_financeira_id: string;
   metodo_pagamento?: string;
+  forma_pagamento_id?: string;
   criado_por?: string;
 };
 
@@ -155,6 +156,7 @@ export async function registrarBaixa(
       valor_desconto: desconto,
       valor_taxa: taxa,
       conta_financeira_id: params.conta_financeira_id,
+      forma_pagamento_id: params.forma_pagamento_id ?? null,
       lancamento_id: resultadoLancamento.lancamento_id,
     })
     .select("id")
@@ -176,4 +178,29 @@ export async function registrarBaixa(
   }
 
   return { baixa_id: baixa.id };
+}
+
+// Mesmo fluxo "criar na hora" já usado pra centro de custo/categoria/pessoa
+// (evento-financeiro.ts): se veio um nome novo digitado (e nenhum ID), cria
+// a forma de pagamento e escreve o ID de volta no FormData. Também devolve
+// o nome (existente ou recém-criado) pra `darBaixa` manter
+// `parcelas.metodo_pagamento` (texto, só de exibição) em sincronia sem
+// precisar de uma segunda leitura.
+export async function resolverFormaPagamentoIdSimples(
+  supabase: Cliente,
+  tenantId: string,
+  formData: FormData,
+): Promise<{ nome: string | null }> {
+  const idExistente = String(formData.get("forma_pagamento_id") ?? "");
+  if (idExistente) {
+    const { data } = await supabase.from("formas_pagamento").select("nome").eq("id", idExistente).maybeSingle();
+    return { nome: data?.nome ?? null };
+  }
+
+  const nomeNovo = String(formData.get("forma_pagamento_nome_novo") ?? "").trim();
+  if (!nomeNovo) return { nome: null };
+
+  const { data } = await supabase.from("formas_pagamento").insert({ tenant_id: tenantId, nome: nomeNovo }).select("id, nome").single();
+  if (data?.id) formData.set("forma_pagamento_id", data.id);
+  return { nome: data?.nome ?? null };
 }

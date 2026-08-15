@@ -131,6 +131,7 @@ export type Database = {
           criado_em: string
           data_pagamento: string
           estornado_em: string | null
+          forma_pagamento_id: string | null
           id: string
           lancamento_id: string | null
           parcela_id: string
@@ -146,6 +147,7 @@ export type Database = {
           criado_em?: string
           data_pagamento: string
           estornado_em?: string | null
+          forma_pagamento_id?: string | null
           id?: string
           lancamento_id?: string | null
           parcela_id: string
@@ -161,6 +163,7 @@ export type Database = {
           criado_em?: string
           data_pagamento?: string
           estornado_em?: string | null
+          forma_pagamento_id?: string | null
           id?: string
           lancamento_id?: string | null
           parcela_id?: string
@@ -177,6 +180,13 @@ export type Database = {
             columns: ["conta_financeira_id"]
             isOneToOne: false
             referencedRelation: "contas_financeiras"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "baixas_forma_pagamento_id_fkey"
+            columns: ["forma_pagamento_id"]
+            isOneToOne: false
+            referencedRelation: "formas_pagamento"
             referencedColumns: ["id"]
           },
           {
@@ -516,6 +526,38 @@ export type Database = {
           },
           {
             foreignKeyName: "eventos_financeiros_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      formas_pagamento: {
+        Row: {
+          ativo: boolean
+          criado_em: string
+          id: string
+          nome: string
+          tenant_id: string
+        }
+        Insert: {
+          ativo?: boolean
+          criado_em?: string
+          id?: string
+          nome: string
+          tenant_id: string
+        }
+        Update: {
+          ativo?: boolean
+          criado_em?: string
+          id?: string
+          nome?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "formas_pagamento_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"

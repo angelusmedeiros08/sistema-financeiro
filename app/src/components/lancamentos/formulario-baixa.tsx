@@ -11,8 +11,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { formatarMoeda } from "@/lib/formatacao";
 import { darBaixa } from "@/lib/contabil/baixa-actions";
 import { AnexoCampos } from "@/components/formularios/anexo-campos";
+import { FormaPagamentoCombobox } from "@/components/formularios/forma-pagamento-combobox";
 
 type ContaFinanceira = { id: string; nome: string };
+type FormaPagamento = { id: string; nome: string };
 const estadoInicial = { erro: "" };
 
 // Página cheia, substitui o antigo BaixaSheet — mesmo formulário, sem
@@ -23,6 +25,7 @@ export function FormularioBaixa({
   descricao,
   saldoResidual,
   contasFinanceiras,
+  formasPagamento,
   rotuloAcao,
   caminhoVoltar,
 }: {
@@ -30,6 +33,7 @@ export function FormularioBaixa({
   descricao: string;
   saldoResidual: number;
   contasFinanceiras: ContaFinanceira[];
+  formasPagamento: FormaPagamento[];
   rotuloAcao: string;
   caminhoVoltar: string;
 }) {
@@ -103,8 +107,8 @@ export function FormularioBaixa({
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="metodo_pagamento">Método de pagamento</Label>
-          <Input id="metodo_pagamento" name="metodo_pagamento" type="text" placeholder="Ex.: PIX, boleto, cartão" />
+          <Label>Forma de pagamento</Label>
+          <FormaPagamentoCombobox formasPagamento={formasPagamento} />
         </div>
 
         <button

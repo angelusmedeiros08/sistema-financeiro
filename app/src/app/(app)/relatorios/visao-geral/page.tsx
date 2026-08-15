@@ -8,6 +8,7 @@ import { buscarPontoEquilibrio } from "@/lib/relatorios/ponto-equilibrio";
 import { buscarAging, buscarResumoVencimentos } from "@/lib/relatorios/aging";
 import { buscarIndicadoresRealizacao, mesAtual } from "@/lib/relatorios/indicadores-gauge";
 import { buscarAnaliseCategorias } from "@/lib/relatorios/analise-despesas";
+import { buscarConcentracaoReceita } from "@/lib/relatorios/concentracao-receita";
 import { RelatoriosSubNav } from "../sub-nav";
 import { RelatoriosControles } from "../controles";
 import { StatCard } from "@/components/painel/stat-card";
@@ -16,6 +17,7 @@ import { WaterfallDre } from "@/components/relatorios/waterfall-dre";
 import { AgingBarras } from "@/components/relatorios/aging-barras";
 import { IndicadorGauge } from "@/components/relatorios/indicador-gauge";
 import { TopCategoriasDonut } from "@/components/relatorios/top-categorias-donut";
+import { BadgeRiscoConcentracao } from "@/components/relatorios/badge-risco-concentracao";
 import { formatarMoeda, formatarPercentual } from "@/lib/formatacao";
 
 export default async function PaginaRelatoriosVisaoGeral({
@@ -32,7 +34,7 @@ export default async function PaginaRelatoriosVisaoGeral({
 
   const { inicio: mesInicio, fim: mesFim } = mesAtual();
 
-  const [dre, fluxo, pontoEquilibrio, agingReceita, agingDespesa, resumoReceber, resumoPagar, indicadoresCAR, indicadoresCAP, topReceitas, topDespesas] =
+  const [dre, fluxo, pontoEquilibrio, agingReceita, agingDespesa, resumoReceber, resumoPagar, indicadoresCAR, indicadoresCAP, topReceitas, topDespesas, concentracao] =
     await Promise.all([
       buscarDRE(supabase, { tenantId, ...params }),
       buscarFluxoCaixaGrade(supabase, { tenantId, ...params }),
@@ -45,6 +47,7 @@ export default async function PaginaRelatoriosVisaoGeral({
       buscarIndicadoresRealizacao(supabase, { tenantId, tipo: "DESPESA", mesInicio, mesFim }),
       buscarAnaliseCategorias(supabase, { tenantId, ...params, tipo: "RECEITA" }),
       buscarAnaliseCategorias(supabase, { tenantId, ...params, tipo: "DESPESA" }),
+      buscarConcentracaoReceita(supabase, { tenantId }),
     ]);
 
   const resultado = dre.at(-1)?.valorAcumulado ?? 0;
@@ -58,6 +61,10 @@ export default async function PaginaRelatoriosVisaoGeral({
 
       <RelatoriosSubNav />
       <RelatoriosControles {...params} />
+
+      {concentracao.nivelRisco !== "BAIXO" && (
+        <BadgeRiscoConcentracao nivelRisco={concentracao.nivelRisco} percentualTop3={concentracao.percentualTop3} />
+      )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard

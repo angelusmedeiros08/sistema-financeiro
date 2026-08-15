@@ -8,6 +8,7 @@ const ITENS = [
   { href: "/configuracoes/categorias", rotulo: "Categorias" },
   { href: "/configuracoes/plano-de-contas", rotulo: "Plano de contas" },
   { href: "/configuracoes/centros-custo", rotulo: "Centros de custo" },
+  { href: "/configuracoes/formas-pagamento", rotulo: "Formas de pagamento" },
   { href: "/configuracoes/contas-financeiras", rotulo: "Contas financeiras" },
   { href: "/configuracoes/recorrencias", rotulo: "Recorrências" },
   { href: "/configuracoes/campos-personalizados", rotulo: "Campos personalizados" },

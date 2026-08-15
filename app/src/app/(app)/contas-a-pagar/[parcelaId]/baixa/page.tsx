@@ -16,9 +16,10 @@ export default async function PaginaBaixaContaAPagar({
   const { parcelaId } = await params;
   const supabase = await createClient();
 
-  const [parcela, { data: contasFinanceiras }] = await Promise.all([
+  const [parcela, { data: contasFinanceiras }, { data: formasPagamento }] = await Promise.all([
     buscarDadosParcela(supabase, { tenant_id: tenantId, parcela_id: parcelaId, tipo: "DESPESA" }),
     supabase.from("contas_financeiras").select("id, nome").eq("tenant_id", tenantId).eq("ativo", true).order("nome"),
+    supabase.from("formas_pagamento").select("id, nome").eq("tenant_id", tenantId).eq("ativo", true).order("nome"),
   ]);
 
   if (!parcela) notFound();
@@ -32,6 +33,7 @@ export default async function PaginaBaixaContaAPagar({
       descricao={parcela.descricao}
       saldoResidual={saldoResidual}
       contasFinanceiras={contasFinanceiras ?? []}
+      formasPagamento={formasPagamento ?? []}
       rotuloAcao="Dar baixa"
       caminhoVoltar={`/contas-a-pagar/${parcela.id}`}
     />

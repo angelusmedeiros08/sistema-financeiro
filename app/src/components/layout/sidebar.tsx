@@ -13,6 +13,7 @@ import {
   Truck,
   ChartLine,
   ChartLineUp,
+  ChartBar,
   PiggyBank,
   GearSix,
   CaretRight,
@@ -46,6 +47,7 @@ const SUB_ITENS_CONFIGURACOES: SubItemNav[] = [
   { href: "/configuracoes/categorias", label: "Categorias" },
   { href: "/configuracoes/plano-de-contas", label: "Plano de contas" },
   { href: "/configuracoes/centros-custo", label: "Centros de custo" },
+  { href: "/configuracoes/formas-pagamento", label: "Formas de pagamento" },
   { href: "/configuracoes/contas-financeiras", label: "Contas financeiras" },
   { href: "/configuracoes/recorrencias", label: "Recorrências" },
   { href: "/configuracoes/campos-personalizados", label: "Campos personalizados" },
@@ -64,6 +66,7 @@ const ITENS_NAV: ItemNav[] = [
   { href: "/fluxo-caixa", label: "Fluxo de caixa", icon: ChartLine, disponivel: true },
   { href: "/orcamento", label: "Orçamento", icon: PiggyBank, disponivel: true },
   { href: "/relatorios", label: "Relatórios", icon: ChartLineUp, disponivel: true, subItens: SUB_ITENS_RELATORIOS },
+  { href: "/indicadores", label: "Indicadores", icon: ChartBar, disponivel: true },
   { href: "/configuracoes", label: "Configurações", icon: GearSix, disponivel: true, subItens: SUB_ITENS_CONFIGURACOES },
 ];
 
