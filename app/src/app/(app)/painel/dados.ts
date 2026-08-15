@@ -2,6 +2,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/utils/supabase/database.types";
 import { CODIGO_CAIXA_E_BANCOS } from "@/lib/contabil/plano-padrao";
 import { buscarResumoVencimentos } from "@/lib/relatorios/aging";
+import { buscarMovimento } from "@/lib/relatorios/regime";
+import { mesAtual } from "@/lib/relatorios/indicadores-gauge";
 
 type Cliente = SupabaseClient<Database>;
 
@@ -96,6 +98,24 @@ async function obterResultadoDoMes(supabase: Cliente, tenantId: string, pessoaId
   );
 }
 
+// Quanto já virou caixa de fato este mês — reaproveita o mesmo mecanismo de
+// regime "realizado" (data_pagamento, via vw_movimento_realizado) que Fluxo
+// de Caixa e DFC já usam, em vez de reabrir parcelas/baixas na mão.
+async function obterRecebidoPagoDoMes(supabase: Cliente, tenantId: string, pessoaId?: string): Promise<{ recebido: number; pago: number }> {
+  const { inicio, fim } = mesAtual();
+  const movimento = await buscarMovimento(supabase, { tenantId, regime: "realizado", dataInicio: inicio, dataFim: fim });
+  const filtrado = pessoaId ? movimento.filter((m) => m.pessoaId === pessoaId) : movimento;
+
+  return filtrado.reduce(
+    (acc, m) => {
+      if (m.tipo === "RECEITA") acc.recebido += m.valor;
+      else acc.pago += m.valor;
+      return acc;
+    },
+    { recebido: 0, pago: 0 },
+  );
+}
+
 export type PontoFluxo = { mes: string; resultado: number };
 
 async function obterFluxoUltimosMeses(
@@ -167,7 +187,7 @@ async function obterEventosRecentes(supabase: Cliente, tenantId: string, pessoaI
 // caixa fica de fora do filtro de propósito: é uma dimensão do caixa da
 // empresa inteira, não tem "saldo em caixa de uma pessoa".
 export async function obterDadosPainel(supabase: Cliente, tenantId: string, pessoaId?: string) {
-  const [saldoEmCaixa, aReceber, aPagar, resultadoDoMes, fluxo, eventosRecentes, vencidosReceber, vencidosPagar] = await Promise.all([
+  const [saldoEmCaixa, aReceber, aPagar, resultadoDoMes, fluxo, eventosRecentes, vencidosReceber, vencidosPagar, recebidoPago] = await Promise.all([
     obterSaldoEmCaixa(supabase, tenantId),
     obterPendentesPorTipo(supabase, tenantId, "RECEITA", pessoaId),
     obterPendentesPorTipo(supabase, tenantId, "DESPESA", pessoaId),
@@ -176,7 +196,19 @@ export async function obterDadosPainel(supabase: Cliente, tenantId: string, pess
     obterEventosRecentes(supabase, tenantId, pessoaId),
     buscarResumoVencimentos(supabase, { tenantId, tipo: "RECEITA", pessoaId }),
     buscarResumoVencimentos(supabase, { tenantId, tipo: "DESPESA", pessoaId }),
+    obterRecebidoPagoDoMes(supabase, tenantId, pessoaId),
   ]);
 
-  return { saldoEmCaixa, aReceber, aPagar, resultadoDoMes, fluxo, eventosRecentes, vencidosReceber, vencidosPagar };
+  return {
+    saldoEmCaixa,
+    aReceber,
+    aPagar,
+    resultadoDoMes,
+    fluxo,
+    eventosRecentes,
+    vencidosReceber,
+    vencidosPagar,
+    recebidoDoMes: recebidoPago.recebido,
+    pagoDoMes: recebidoPago.pago,
+  };
 }

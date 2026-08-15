@@ -30,7 +30,7 @@ export default async function PaginaPortal() {
         <p className="text-sm capitalize text-muted-foreground">{hoje}</p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <StatCard variant="hero" label="Saldo em caixa" valor={formatarMoeda(dados.saldoEmCaixa)} />
         <StatCard
           variant="teal"
@@ -38,12 +38,14 @@ export default async function PaginaPortal() {
           valor={formatarMoeda(dados.aReceber.total)}
           detalhe={`Vencido: ${formatarMoeda(dados.vencidosReceber.vencidoTotal)} · Vence hoje: ${formatarMoeda(dados.vencidosReceber.venceHojeTotal)}`}
         />
+        <StatCard variant="teal" label="Recebido (mês)" valor={formatarMoeda(dados.recebidoDoMes)} />
         <StatCard
           variant="ambar"
           label="A pagar (30 dias)"
           valor={formatarMoeda(dados.aPagar.total)}
           detalhe={`Vencido: ${formatarMoeda(dados.vencidosPagar.vencidoTotal)} · Vence hoje: ${formatarMoeda(dados.vencidosPagar.venceHojeTotal)}`}
         />
+        <StatCard variant="violeta" label="Pago (mês)" valor={formatarMoeda(dados.pagoDoMes)} />
         <StatCard variant="coral" label="Resultado do mês" valor={formatarMoeda(dados.resultadoDoMes)} />
       </div>
 
