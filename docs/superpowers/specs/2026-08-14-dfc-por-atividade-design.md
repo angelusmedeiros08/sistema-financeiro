@@ -13,7 +13,6 @@ O mapeamento da planilha de referência (`docs/mapeamento-planilha-controle-fina
 - `/relatorios/dfc` (nova página) + entrada na sub-nav de Relatórios, entre DRE e Centro de custo.
 
 **Fora:**
-- Editar `id_dfc` das 24 linhas padrão pela UI (ficam fixas pelo modelo, mesma regra das contas "sistema" do Plano de Contas — plausível pedido futuro, não agora).
 - Granularidade Dia/Semana/Trimestre — o relatório é mensal fixo, como o `DFC_Direto` da planilha (`RelatoriosControles` não é usado aqui, só um seletor de Ano como a DRE).
 - Gráfico (a planilha tem barras Operacional/Investimento/Financiamento no Dashboard Gerencial — fica para quando a Visão Geral for revisitada).
 
@@ -50,7 +49,7 @@ Categorias sem `id_dfc` (ex.: vinculadas só a linhas SUBTOTAL, que não têm at
 
 ## 4. Estrutura de DRE — campo novo
 
-`NovaLinhaDreForm` ganha um segundo `<Select name="id_dfc">` com as 6 opções do enum (rótulos amigáveis: "Operacional (entrada)", "Operacional (saída)", "Não operacional (entrada)", "Não operacional (saída)", "Investimento", "Financiamento") mais "Nenhuma (não afeta caixa)" como padrão — mantém a granularidade real do enum em vez de inventar um mapeamento com perda de informação. `criarLinhaDre(supabase, { tenantId, rotulo, tipoCalc, idDfc? })` grava o campo; `LinhaDreItem` (linha já criada) ganha o mesmo select para edição, reaproveitando o padrão de auto-submit por `onValueChange` já usado ali para vincular/desvincular categoria.
+`NovaLinhaDreForm` ganha um segundo `<Select name="id_dfc">` com as 6 opções do enum (rótulos amigáveis: "Operacional (entrada)", "Operacional (saída)", "Não operacional (entrada)", "Não operacional (saída)", "Investimento", "Financiamento") mais "Nenhuma (não afeta caixa)" como padrão — mantém a granularidade real do enum em vez de inventar um mapeamento com perda de informação. `criarLinhaDre(supabase, { tenantId, rotulo, tipoCalc, idDfc? })` grava o campo. Nova função `editarIdDfcLinhaDre(supabase, { tenantId, linhaId, idDfc })` — `id_dfc` é só uma tag de classificação, não entra na cascata de cálculo da DRE, então não há risco em deixar reclassificar **qualquer** linha (padrão ou customizada), diferente de `tipo_calc`/`rotulo` das linhas padrão (essas continuam fixas). `LinhaDreItem` ganha o select de edição em toda linha `FOLHA`, reaproveitando o padrão de auto-submit por `onValueChange` já usado ali para vincular/desvincular categoria.
 
 ## 5. UI — `/relatorios/dfc`
 

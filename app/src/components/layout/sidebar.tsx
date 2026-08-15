@@ -33,6 +33,7 @@ type ItemNav = {
 const SUB_ITENS_RELATORIOS: SubItemNav[] = [
   { href: "/relatorios/visao-geral", label: "Visão geral" },
   { href: "/relatorios/dre", label: "DRE" },
+  { href: "/relatorios/dfc", label: "DFC" },
   { href: "/relatorios/centro-custo", label: "Centro de custo" },
   { href: "/relatorios/aging", label: "Aging" },
   { href: "/relatorios/despesas", label: "Análise de despesas" },

@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 const ITENS = [
   { href: "/relatorios/visao-geral", rotulo: "Visão geral" },
   { href: "/relatorios/dre", rotulo: "DRE" },
+  { href: "/relatorios/dfc", rotulo: "DFC" },
   { href: "/relatorios/centro-custo", rotulo: "Centro de custo" },
   { href: "/relatorios/aging", rotulo: "Aging" },
   { href: "/relatorios/despesas", rotulo: "Análise de despesas" },

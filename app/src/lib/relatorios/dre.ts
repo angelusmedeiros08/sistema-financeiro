@@ -3,7 +3,7 @@ import { buscarMovimento, valorComSinal } from "./regime";
 import type { Database } from "@/utils/supabase/database.types";
 
 type TipoCalcLinhaDre = Database["public"]["Enums"]["tipo_linha_dre"];
-type IdDfcLinhaDre = Database["public"]["Enums"]["id_dfc_linha_dre"];
+export type IdDfcLinhaDre = Database["public"]["Enums"]["id_dfc_linha_dre"];
 type Resultado = { sucesso: true } | { erro: string };
 
 const NOMES_MES = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
@@ -192,6 +192,7 @@ export type LinhaDreConfig = {
   ordem: number;
   rotulo: string;
   tipoCalc: TipoCalcLinhaDre;
+  idDfc: IdDfcLinhaDre | null;
   categorias: { id: string; nome: string }[];
 };
 
@@ -201,7 +202,7 @@ export async function listarLinhasDreConfig(
 ): Promise<LinhaDreConfig[]> {
   const { data } = await supabase
     .from("linhas_dre")
-    .select("id, ordem, rotulo, tipo_calc, linha_dre_categorias(categorias_financeiras(id, nome))")
+    .select("id, ordem, rotulo, tipo_calc, id_dfc, linha_dre_categorias(categorias_financeiras(id, nome))")
     .eq("tenant_id", params.tenantId)
     .order("ordem");
 
@@ -210,13 +211,14 @@ export async function listarLinhasDreConfig(
     ordem: l.ordem,
     rotulo: l.rotulo,
     tipoCalc: l.tipo_calc,
+    idDfc: l.id_dfc,
     categorias: l.linha_dre_categorias.map((c) => c.categorias_financeiras).filter((c): c is { id: string; nome: string } => c !== null),
   }));
 }
 
 export async function criarLinhaDre(
   supabase: Cliente,
-  params: { tenantId: string; rotulo: string; tipoCalc: TipoCalcLinhaDre },
+  params: { tenantId: string; rotulo: string; tipoCalc: TipoCalcLinhaDre; idDfc?: IdDfcLinhaDre | null },
 ): Promise<Resultado> {
   const rotulo = params.rotulo.trim();
   if (!rotulo) return { erro: "Informe um rótulo para a linha." };
@@ -231,7 +233,25 @@ export async function criarLinhaDre(
 
   const { error } = await supabase
     .from("linhas_dre")
-    .insert({ tenant_id: params.tenantId, rotulo, tipo_calc: params.tipoCalc, ordem: (ultima?.ordem ?? 0) + 1 });
+    .insert({ tenant_id: params.tenantId, rotulo, tipo_calc: params.tipoCalc, id_dfc: params.idDfc ?? null, ordem: (ultima?.ordem ?? 0) + 1 });
+
+  if (error) return { erro: error.message };
+  return { sucesso: true };
+}
+
+// id_dfc é só uma tag de classificação pro relatório de DFC — não entra na
+// cascata de cálculo da DRE, então não há risco em deixar reclassificar
+// qualquer linha (padrão ou customizada), diferente de tipo_calc/rotulo das
+// linhas padrão (essas continuam fixas pelo modelo).
+export async function editarIdDfcLinhaDre(
+  supabase: Cliente,
+  params: { tenantId: string; linhaId: string; idDfc: IdDfcLinhaDre | null },
+): Promise<Resultado> {
+  const { error } = await supabase
+    .from("linhas_dre")
+    .update({ id_dfc: params.idDfc })
+    .eq("id", params.linhaId)
+    .eq("tenant_id", params.tenantId);
 
   if (error) return { erro: error.message };
   return { sucesso: true };
@@ -342,8 +362,8 @@ export const MODELO_COMPLETO_DRE: { ordem: number; rotulo: string; tipoCalc: Tip
   { ordem: 18, rotulo: "Lucro antes dos impostos", tipoCalc: "SUBTOTAL", waterfallPapel: 3, idDfc: null },
   { ordem: 19, rotulo: "Tributos sobre o lucro", tipoCalc: "FOLHA", waterfallPapel: 2, idDfc: "OPERACIONAL_SAIDA" },
   { ordem: 20, rotulo: "Lucro líquido", tipoCalc: "SUBTOTAL", waterfallPapel: 2, idDfc: null },
-  { ordem: 21, rotulo: "Investimentos em Imobilizado", tipoCalc: "FOLHA", waterfallPapel: 2, idDfc: null },
-  { ordem: 22, rotulo: "Empréstimos e Dívidas", tipoCalc: "FOLHA", waterfallPapel: 2, idDfc: null },
+  { ordem: 21, rotulo: "Investimentos em Imobilizado", tipoCalc: "FOLHA", waterfallPapel: 2, idDfc: "INVESTIMENTO" },
+  { ordem: 22, rotulo: "Empréstimos e Dívidas", tipoCalc: "FOLHA", waterfallPapel: 2, idDfc: "FINANCIAMENTO" },
   { ordem: 23, rotulo: "Retirada de Lucros", tipoCalc: "FOLHA", waterfallPapel: 0, idDfc: "FINANCIAMENTO" },
   { ordem: 24, rotulo: "Lucro / Prejuízo Final", tipoCalc: "SUBTOTAL", waterfallPapel: 3, idDfc: null },
 ];

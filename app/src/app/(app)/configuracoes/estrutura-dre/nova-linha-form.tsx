@@ -9,6 +9,15 @@ import { criarLinhaDreAction } from "@/lib/relatorios/dre-actions";
 
 const estadoInicial = { erro: "" };
 
+export const OPCOES_ID_DFC = [
+  { valor: "OPERACIONAL_ENTRADA", rotulo: "Operacional (entrada)" },
+  { valor: "OPERACIONAL_SAIDA", rotulo: "Operacional (saída)" },
+  { valor: "NAO_OPERACIONAL_ENTRADA", rotulo: "Não operacional (entrada)" },
+  { valor: "NAO_OPERACIONAL_SAIDA", rotulo: "Não operacional (saída)" },
+  { valor: "INVESTIMENTO", rotulo: "Investimento" },
+  { valor: "FINANCIAMENTO", rotulo: "Financiamento" },
+] as const;
+
 export function NovaLinhaDreForm() {
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -21,7 +30,7 @@ export function NovaLinhaDreForm() {
 
   return (
     <form ref={formRef} action={formAction} className="rounded-2xl border border-border bg-card p-5">
-      <div className="grid grid-cols-[1fr_160px_auto] items-end gap-3">
+      <div className="grid grid-cols-[1fr_160px_180px_auto] items-end gap-3">
         <div className="space-y-1.5">
           <Label htmlFor="rotulo">Rótulo da linha</Label>
           <Input id="rotulo" name="rotulo" type="text" required placeholder="Ex.: Despesas Comerciais" />
@@ -37,6 +46,21 @@ export function NovaLinhaDreForm() {
               <SelectItem value="SUBTOTAL">Subtotal (acumulado)</SelectItem>
               <SelectItem value="SUBTOTAL_ALTERNATIVO">Subtotal alternativo (rota paralela)</SelectItem>
               <SelectItem value="RESULTADO_NAO_OPERACIONAL">Resultado não operacional</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="id_dfc">Atividade de DFC</Label>
+          <Select name="id_dfc">
+            <SelectTrigger id="id_dfc" className="w-full">
+              <SelectValue placeholder="Nenhuma (não afeta caixa)" />
+            </SelectTrigger>
+            <SelectContent>
+              {OPCOES_ID_DFC.map((o) => (
+                <SelectItem key={o.valor} value={o.valor}>
+                  {o.rotulo}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>

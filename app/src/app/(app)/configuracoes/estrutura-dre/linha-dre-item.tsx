@@ -12,9 +12,13 @@ import {
   reordenarLinhasDreAction,
   vincularCategoriaDreAction,
   desvincularCategoriaDreAction,
+  editarIdDfcLinhaDreAction,
 } from "@/lib/relatorios/dre-actions";
+import { OPCOES_ID_DFC } from "./nova-linha-form";
 
 type Categoria = { id: string; nome: string; tipo: "RECEITA" | "DESPESA" };
+
+const SEM_ATIVIDADE = "NENHUMA";
 
 const ROTULO_TIPO: Record<LinhaDreConfig["tipoCalc"], string> = {
   FOLHA: "Folha",
@@ -102,6 +106,33 @@ export function LinhaDreItem({
 
       {linha.tipoCalc === "FOLHA" && (
         <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-border pt-3">
+          <span className="text-xs font-medium text-muted-foreground">Atividade de DFC:</span>
+          <Select
+            disabled={pendente}
+            defaultValue={linha.idDfc ?? SEM_ATIVIDADE}
+            onValueChange={(valor) =>
+              iniciarTransicao(async () => {
+                const formData = new FormData();
+                formData.set("linha_id", linha.id);
+                if (valor !== SEM_ATIVIDADE) formData.set("id_dfc", valor);
+                await editarIdDfcLinhaDreAction(formData);
+              })
+            }
+          >
+            <SelectTrigger size="sm" className="h-6 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={SEM_ATIVIDADE}>Nenhuma (não afeta caixa)</SelectItem>
+              {OPCOES_ID_DFC.map((o) => (
+                <SelectItem key={o.valor} value={o.valor}>
+                  {o.rotulo}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <div className="flex w-full flex-wrap items-center gap-2 pt-1">
           {linha.categorias.map((categoria) => (
             <Badge key={categoria.id} className="gap-1 border-none bg-muted font-medium text-foreground">
               {categoria.nome}
@@ -142,6 +173,7 @@ export function LinhaDreItem({
               </SelectContent>
             </Select>
           )}
+          </div>
         </div>
       )}
     </div>
