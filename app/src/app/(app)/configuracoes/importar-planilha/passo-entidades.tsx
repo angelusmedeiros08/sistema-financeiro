@@ -78,13 +78,20 @@ export function PassoEntidades({
     setErro("");
 
     // Monta a lista de criação a partir das seções (mantém o tipo junto,
-    // já que o Record de decisões só guarda o texto original).
-    const paraCriar: { tipo: TipoEntidadeImportacao; nome: string; tipoCategoria?: "RECEITA" | "DESPESA" }[] = [];
+    // já que o Record de decisões só guarda o texto original). Pessoa nova
+    // herda o CPF/CNPJ da primeira linha do arquivo que citar esse nome e
+    // trouxer o documento preenchido (Seção 5 da spec: coluna só é usada
+    // quando Cliente/Fornecedor também vem preenchido nessa linha).
+    const paraCriar: { tipo: TipoEntidadeImportacao; nome: string; tipoCategoria?: "RECEITA" | "DESPESA"; documento?: string }[] = [];
     for (const secao of secoes) {
       for (const valor of secao.valores) {
         const d = decisoes[chaveDecisao(secao.tipo, valor)];
         if (d?.acao === "criar_novo") {
-          paraCriar.push({ tipo: secao.tipo, nome: valor, tipoCategoria: d.tipoCategoriaNova });
+          const documento =
+            secao.tipo === "pessoa"
+              ? linhasBrutas.find((l) => normalizarTexto(l.pessoa) === normalizarTexto(valor) && l.documentoPessoa.trim())?.documentoPessoa
+              : undefined;
+          paraCriar.push({ tipo: secao.tipo, nome: valor, tipoCategoria: d.tipoCategoriaNova, documento });
         }
       }
     }

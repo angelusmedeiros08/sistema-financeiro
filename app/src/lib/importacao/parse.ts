@@ -8,6 +8,8 @@ export type ResultadoParse = {
   tipoArquivo: "csv" | "xlsx";
   encodingUsado?: EncodingSuportado;
   delimitadorUsado?: string;
+  nomeAbaUsada?: string;
+  totalAbas?: number;
 };
 
 export type ParseArquivoOk = { resultado: ResultadoParse; buffer: ArrayBuffer };
@@ -27,21 +29,55 @@ export function validarArquivo(file: File): string | null {
   return null;
 }
 
+// Datas do Excel são number seriais sem timezone — o SheetJS (com
+// cellDates:true) sempre converte esse serial pro espaço UTC, então ler de
+// volta com getUTCFullYear/getUTCMonth/getUTCDate é o único jeito estável
+// (getFullYear/getMonth locais dependeriam do fuso do processo rodando o
+// import, podendo virar o dia errado). Célula numérica vira String()
+// direto (ponto decimal, nunca vírgula — quem interpreta locale é
+// parseValorPlanilha, não aqui).
+function celulaParaTexto(valor: unknown): string {
+  if (valor instanceof Date) {
+    const ano = valor.getUTCFullYear();
+    const mes = String(valor.getUTCMonth() + 1).padStart(2, "0");
+    const dia = String(valor.getUTCDate()).padStart(2, "0");
+    return `${ano}-${mes}-${dia}`;
+  }
+  if (typeof valor === "number") return String(valor);
+  return String(valor ?? "").trim();
+}
+
 function matrizParaColunas(matriz: unknown[][]): { colunas: string[]; linhas: string[][] } {
-  const [cabecalho, ...resto] = matriz;
-  const colunas = (cabecalho ?? []).map((c) => String(c ?? "").trim());
+  const [cabecalhoBruto, ...resto] = matriz;
+  const cabecalho = [...(cabecalhoBruto ?? [])];
+  // Uma linha de dado mais larga que o cabeçalho faz o SheetJS considerar a
+  // planilha inteira com essa largura (é uma grade, não uma lista de arrays
+  // soltos) — o cabeçalho volta com células fantasma vazias no fim. Corta
+  // essas células fantasma antes de fixar quantas colunas existem de
+  // verdade, senão sobra "Coluna 5", "Coluna 6" sem nome no mapeamento e as
+  // linhas longas nunca são truncadas nas colunas que ninguém nomeou.
+  while (cabecalho.length > 0 && celulaParaTexto(cabecalho[cabecalho.length - 1]) === "") {
+    cabecalho.pop();
+  }
+  const colunas = cabecalho.map(celulaParaTexto);
   const linhas = resto
-    .filter((linha) => Array.isArray(linha) && linha.some((celula) => String(celula ?? "").trim() !== ""))
-    .map((linha) => colunas.map((_, i) => String((linha as unknown[])[i] ?? "").trim()));
+    .filter((linha) => Array.isArray(linha) && linha.some((celula) => celulaParaTexto(celula) !== ""))
+    .map((linha) => colunas.map((_, i) => celulaParaTexto((linha as unknown[])[i])));
   return { colunas, linhas };
 }
 
 function parseXlsx(buffer: ArrayBuffer): ResultadoParse {
-  const workbook = XLSX.read(buffer, { type: "array", raw: false });
-  const planilha = workbook.Sheets[workbook.SheetNames[0]];
-  const matriz = XLSX.utils.sheet_to_json(planilha, { header: 1, raw: false, defval: "" }) as unknown[][];
+  const workbook = XLSX.read(buffer, { type: "array", cellDates: true });
+  const nomeAba = workbook.SheetNames[0];
+  const planilha = workbook.Sheets[nomeAba];
+  // raw:true devolve o tipo nativo da célula (Date, number, string) em vez
+  // do texto já formatado pelo SheetJS — o texto formatado segue o padrão
+  // curto americano da célula original (ex.: "1/15/26"), que nem bate com
+  // o que o Excel mostra nem com o que parseDataPlanilha reconhece.
+  // celulaParaTexto() é quem decide o formato final, sempre ISO pra data.
+  const matriz = XLSX.utils.sheet_to_json(planilha, { header: 1, raw: true, defval: "" }) as unknown[][];
   const { colunas, linhas } = matrizParaColunas(matriz);
-  return { colunas, linhas, tipoArquivo: "xlsx" };
+  return { colunas, linhas, tipoArquivo: "xlsx", nomeAbaUsada: nomeAba, totalAbas: workbook.SheetNames.length };
 }
 
 // Conta ocorrências de ; vs , fora de aspas na 1ª linha — nunca confia no

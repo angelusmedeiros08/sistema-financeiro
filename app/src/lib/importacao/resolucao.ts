@@ -33,7 +33,7 @@ export async function buscarEntidadesExistentes(supabase: Cliente, tenantId: str
   };
 }
 
-export type EntidadeNova = { tipo: TipoEntidadeImportacao; nome: string; tipoCategoria?: TipoCategoria };
+export type EntidadeNova = { tipo: TipoEntidadeImportacao; nome: string; tipoCategoria?: TipoCategoria; documento?: string };
 
 // Cria os poucos registros novos aprovados na tela de revisão (Seção 6/8 —
 // volume baixo, sequencial, sem RPC atômica própria). Pessoa nova nasce com
@@ -56,7 +56,7 @@ export async function criarEntidadeAprovada(supabase: Cliente, tenantId: string,
     case "pessoa": {
       const { data, error } = await supabase
         .from("pessoas")
-        .insert({ tenant_id: tenantId, nome: entidade.nome, perfis: ["CLIENTE", "FORNECEDOR"] })
+        .insert({ tenant_id: tenantId, nome: entidade.nome, documento: entidade.documento?.trim() || null, perfis: ["CLIENTE", "FORNECEDOR"] })
         .select("id")
         .single();
       if (error || !data) return { erro: error?.message ?? "Falha ao criar pessoa." };

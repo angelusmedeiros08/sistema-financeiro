@@ -80,6 +80,12 @@ export function PassoPreview({
         return validarLinha_(bruta, formatoNumerico, resolver, l.avisos);
       }),
     );
+    // "incluídas" só é inicializado 1x no mount — uma linha que nasceu com
+    // erro nunca entra nesse Set, então corrigir o campo e fazer o status
+    // virar ok/aviso não bastava: o checkbox continuava desmarcado e a
+    // linha ficava fora do "prontas" mesmo depois de corrigida. Corrigir o
+    // campo já é o sinal de que o usuário quer importar essa linha.
+    setIncluidas((atual) => new Set(atual).add(importKey));
   }
 
   function alternarInclusao(importKey: string) {

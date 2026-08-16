@@ -82,6 +82,13 @@ export function PassoMapeamento({
         </div>
       )}
 
+      {parseAtual.tipoArquivo === "xlsx" && (parseAtual.totalAbas ?? 1) > 1 && (
+        <p className="rounded-xl bg-muted/40 p-3 text-xs text-muted-foreground">
+          O arquivo tem {parseAtual.totalAbas} abas — lendo só <span className="font-medium text-foreground">&quot;{parseAtual.nomeAbaUsada}&quot;</span> (a
+          primeira). Se os dados estiverem em outra aba, mova pra primeira posição e reenvie.
+        </p>
+      )}
+
       <div className="space-y-1.5">
         <Label>Formato de número e data</Label>
         <RadioGroup value={formatoNumerico} onValueChange={(v) => setFormatoNumerico(v as FormatoNumerico)} className="flex gap-4">

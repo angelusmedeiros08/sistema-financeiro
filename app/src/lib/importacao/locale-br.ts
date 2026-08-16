@@ -30,7 +30,15 @@ export function parseDataPlanilha(bruto: string, formato: FormatoNumerico = "BR"
   const [dia, mes] = formato === "BR" ? [p1, p2] : [p2, p1];
   const diaN = Number(dia);
   const mesN = Number(mes);
+  const anoN = Number(ano);
   if (mesN < 1 || mesN > 12 || diaN < 1 || diaN > 31) return null;
+
+  // Confere contra o calendário de verdade (28/29 dias em fevereiro, meses
+  // de 30 dias etc.) — o Date do JS rola datas inválidas pro mês seguinte
+  // em vez de rejeitar (ex.: 30/02 vira 02/03), então um round-trip é o
+  // jeito confiável de pegar isso sem reimplementar regra de ano bissexto.
+  const dataTeste = new Date(anoN, mesN - 1, diaN);
+  if (dataTeste.getFullYear() !== anoN || dataTeste.getMonth() !== mesN - 1 || dataTeste.getDate() !== diaN) return null;
 
   return `${ano}-${mes.padStart(2, "0")}-${dia.padStart(2, "0")}`;
 }
