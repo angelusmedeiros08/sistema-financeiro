@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { GRUPOS_CONTAS_PADRAO, CONTAS_CONTABEIS_PADRAO, CODIGO_CAIXA_E_BANCOS, CODIGO_RECEITAS_GERAL, CODIGO_DESPESAS_GERAL } from "@/lib/contabil/plano-padrao";
+import { CATEGORIAS_PADRAO } from "@/lib/contabil/categorias-padrao";
 import { MODELO_COMPLETO_DRE } from "@/lib/relatorios/dre";
 
 type ResultadoAcao = { erro: string } | { sucesso: true; mensagem: string };
@@ -105,23 +106,11 @@ export async function cadastrar(formData: FormData): Promise<ResultadoAcao> {
   const contaReceitas = contaPorCodigo.get(CODIGO_RECEITAS_GERAL)!;
   const contaDespesas = contaPorCodigo.get(CODIGO_DESPESAS_GERAL)!;
 
-  const { data: categoriasCriadas, error: erroCategorias } = await admin
-    .from("categorias_financeiras")
-    .insert([
-      { tenant_id: tenant.id, nome: "Receita Geral", tipo: "RECEITA", conta_contabil_id: contaReceitas },
-      { tenant_id: tenant.id, nome: "Despesa Geral", tipo: "DESPESA", conta_contabil_id: contaDespesas },
-    ])
-    .select("id, tipo");
-
-  if (erroCategorias || !categoriasCriadas) {
-    return { erro: erroCategorias?.message ?? "Falha ao provisionar categorias." };
-  }
-
   // 4) provisiona as 23 linhas reais de tbTotalizadoresDRE (extraídas da
-  // planilha de referência) — já funcional desde o primeiro lançamento,
-  // vinculada às categorias recém-criadas. "Receita Geral" vai pra linha 1
-  // (Receitas operacionais); "Despesa Geral" vai pra linha 6 (Despesas
-  // variáveis), já que a categoria nasce com eh_custo_fixo=false.
+  // planilha de referência) — precisa vir antes das categorias porque o
+  // seed de categoria (Seção 4 de
+  // docs/superpowers/specs/2026-08-16-seed-categorias-e-bancos-design.md)
+  // vincula cada categoria nova à linha de DRE certa por `ordem`.
   const { data: linhasDreCriadas, error: erroLinhasDre } = await admin
     .from("linhas_dre")
     .insert(
@@ -140,13 +129,59 @@ export async function cadastrar(formData: FormData): Promise<ResultadoAcao> {
     return { erro: erroLinhasDre?.message ?? "Falha ao provisionar estrutura de DRE." };
   }
 
-  const linhaReceitasOperacionaisId = linhasDreCriadas.find((l) => l.ordem === 1)!.id;
-  const linhaDespesasVariaveisId = linhasDreCriadas.find((l) => l.ordem === 6)!.id;
+  const linhaIdPorOrdem = new Map(linhasDreCriadas.map((l) => [l.ordem, l.id]));
+
+  // Categoria não se auto-vincula a uma linha de DRE (isso é feito à parte,
+  // via linha_dre_categorias) — sem o vínculo abaixo, toda categoria nova
+  // nasceria "não classificada" na cascata. categoria_pai_id referencia o
+  // id gerado nesse mesmo insert, então as categorias sem pai (inclusive as
+  // que têm filhas) precisam existir antes das subcategorias.
+  const categoriasSemPai = CATEGORIAS_PADRAO.filter((c) => !c.paiNome);
+  const categoriasComPai = CATEGORIAS_PADRAO.filter((c) => c.paiNome);
+
+  const { data: criadasSemPai, error: erroCategoriasSemPai } = await admin
+    .from("categorias_financeiras")
+    .insert(
+      categoriasSemPai.map((c) => ({
+        tenant_id: tenant.id,
+        nome: c.nome,
+        tipo: c.tipo,
+        eh_custo_fixo: c.ehCustoFixo,
+        conta_contabil_id: c.tipo === "RECEITA" ? contaReceitas : contaDespesas,
+      })),
+    )
+    .select("id, nome");
+
+  if (erroCategoriasSemPai || !criadasSemPai) {
+    return { erro: erroCategoriasSemPai?.message ?? "Falha ao provisionar categorias." };
+  }
+
+  const idCategoriaPorNome = new Map(criadasSemPai.map((c) => [c.nome, c.id]));
+
+  const { data: criadasComPai, error: erroCategoriasComPai } = await admin
+    .from("categorias_financeiras")
+    .insert(
+      categoriasComPai.map((c) => ({
+        tenant_id: tenant.id,
+        nome: c.nome,
+        tipo: c.tipo,
+        eh_custo_fixo: c.ehCustoFixo,
+        conta_contabil_id: c.tipo === "RECEITA" ? contaReceitas : contaDespesas,
+        categoria_pai_id: idCategoriaPorNome.get(c.paiNome!),
+      })),
+    )
+    .select("id, nome");
+
+  if (erroCategoriasComPai || !criadasComPai) {
+    return { erro: erroCategoriasComPai?.message ?? "Falha ao provisionar subcategorias." };
+  }
+
+  for (const [nome, id] of criadasComPai.map((c) => [c.nome, c.id] as const)) idCategoriaPorNome.set(nome, id);
 
   const { error: erroLinhaDreCategorias } = await admin.from("linha_dre_categorias").insert(
-    categoriasCriadas.map((c) => ({
-      linha_dre_id: c.tipo === "RECEITA" ? linhaReceitasOperacionaisId : linhaDespesasVariaveisId,
-      categoria_id: c.id,
+    CATEGORIAS_PADRAO.map((c) => ({
+      linha_dre_id: linhaIdPorOrdem.get(c.ordemDre)!,
+      categoria_id: idCategoriaPorNome.get(c.nome)!,
     })),
   );
 

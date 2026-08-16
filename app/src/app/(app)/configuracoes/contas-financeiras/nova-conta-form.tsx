@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { BancoCombobox } from "@/components/formularios/banco-combobox";
 import { criarContaFinanceira } from "./actions";
 
 const estadoInicial = { erro: "" };
@@ -40,8 +41,8 @@ export function NovaContaFinanceiraForm() {
           </Select>
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="banco">Banco (opcional)</Label>
-          <Input id="banco" name="banco" type="text" placeholder="Ex.: Banco do Brasil" />
+          <Label>Banco (opcional)</Label>
+          <BancoCombobox />
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="saldo_inicial">Saldo inicial</Label>
