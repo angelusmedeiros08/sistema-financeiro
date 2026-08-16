@@ -5,6 +5,7 @@ import { createClient } from "@/utils/supabase/server";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
 import { listarPessoas } from "@/lib/pessoas/buscar-pessoa";
 import { TabelaPessoas } from "@/components/pessoas/tabela-pessoas";
+import { CtaImportarPessoas } from "@/components/pessoas/cta-importar-pessoas";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -61,11 +62,15 @@ export default async function PaginaFornecedores({
         <Input name="busca" defaultValue={busca} placeholder="Buscar por nome..." className="pl-9" />
       </form>
 
-      <TabelaPessoas
-        pessoas={fornecedores}
-        caminhoBase="fornecedores"
-        textoVazio={abaAtual.valor === "transportadoras" ? "Nenhuma transportadora cadastrada ainda." : "Nenhum fornecedor cadastrado ainda."}
-      />
+      {fornecedores.length === 0 && !busca ? (
+        <CtaImportarPessoas rotulo={abaAtual.valor === "transportadoras" ? "transportadora" : "fornecedor"} />
+      ) : (
+        <TabelaPessoas
+          pessoas={fornecedores}
+          caminhoBase="fornecedores"
+          textoVazio={abaAtual.valor === "transportadoras" ? "Nenhuma transportadora encontrada." : "Nenhum fornecedor encontrado."}
+        />
+      )}
     </div>
   );
 }

@@ -20,6 +20,7 @@ export async function criarPessoa(
     email?: string | null;
     telefone?: string | null;
     perfis: PerfilPessoa[];
+    campos_personalizados?: Record<string, Json>;
   },
 ): Promise<{ sucesso: true; id: string } | { erro: string }> {
   const nome = params.nome.trim();
@@ -36,6 +37,7 @@ export async function criarPessoa(
       email: params.email || null,
       telefone: params.telefone || null,
       perfis: params.perfis,
+      ...(params.campos_personalizados !== undefined ? { campos_personalizados: params.campos_personalizados } : {}),
     })
     .select("id")
     .single();

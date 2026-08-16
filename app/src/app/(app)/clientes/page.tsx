@@ -5,6 +5,7 @@ import { createClient } from "@/utils/supabase/server";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
 import { listarPessoas } from "@/lib/pessoas/buscar-pessoa";
 import { TabelaPessoas } from "@/components/pessoas/tabela-pessoas";
+import { CtaImportarPessoas } from "@/components/pessoas/cta-importar-pessoas";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -37,7 +38,11 @@ export default async function PaginaClientes({
         <Input name="busca" defaultValue={busca} placeholder="Buscar por nome..." className="pl-9" />
       </form>
 
-      <TabelaPessoas pessoas={clientes} caminhoBase="clientes" textoVazio="Nenhum cliente cadastrado ainda." />
+      {clientes.length === 0 && !busca ? (
+        <CtaImportarPessoas rotulo="cliente" />
+      ) : (
+        <TabelaPessoas pessoas={clientes} caminhoBase="clientes" textoVazio="Nenhum cliente encontrado." />
+      )}
     </div>
   );
 }
