@@ -107,6 +107,7 @@ export function validarLinhaPessoa(
   existentes: PessoaExistente[],
   camposPersonalizados: CampoPersonalizadoDefinicao[],
   primeiraLinhaPorDocumento?: Map<string, number>,
+  primeiraLinhaPorNomeNovo?: Map<string, number>,
 ): LinhaValidadaPessoa {
   const erros: string[] = [];
 
@@ -145,6 +146,20 @@ export function validarLinhaPessoa(
 
   const correspondencia = resolverCorrespondenciaPessoa(bruta, existentes);
 
+  // Mesmo problema do documento repetido, mas pelo nome: duas linhas sem
+  // documento e sem ninguém cadastrado que bata (as duas iam "criar nova"
+  // de qualquer jeito) nascem como dois cadastros idênticos se ninguém
+  // avisar. Só compara linha com "nenhuma" correspondência — linhas que já
+  // apontam pra alguém existente podem legitimamente compartilhar o nome
+  // (a união de perfis no commit já trata isso).
+  if (correspondencia.tipo === "nenhuma" && primeiraLinhaPorNomeNovo) {
+    const chaveNome = normalizarTexto(bruta.nome);
+    const primeiraLinha = chaveNome ? primeiraLinhaPorNomeNovo.get(chaveNome) : undefined;
+    if (primeiraLinha !== undefined && primeiraLinha !== bruta.linha) {
+      erros.push(`Nome repetido — já usado na linha ${primeiraLinha} desta mesma planilha (nenhuma das duas bate com cadastro existente).`);
+    }
+  }
+
   let status: StatusLinha = "ok";
   if (erros.length > 0) status = "erro";
   else if (correspondencia.tipo === "aproximada") status = "precisa_confirmar";
@@ -162,5 +177,16 @@ export function validarLinhasPessoa(
     const digitos = apenasDigitos(b.documento);
     if (digitos && !primeiraLinhaPorDocumento.has(digitos)) primeiraLinhaPorDocumento.set(digitos, b.linha);
   }
-  return brutas.map((b) => validarLinhaPessoa(b, existentes, camposPersonalizados, primeiraLinhaPorDocumento));
+
+  // Precisa da correspondência resolvida antes de comparar nomes entre
+  // linhas — só interessa colisão entre linhas que não bateram em ninguém
+  // já cadastrado (ver comentário em validarLinhaPessoa).
+  const primeiraLinhaPorNomeNovo = new Map<string, number>();
+  for (const b of brutas) {
+    if (resolverCorrespondenciaPessoa(b, existentes).tipo !== "nenhuma") continue;
+    const chave = normalizarTexto(b.nome);
+    if (chave && !primeiraLinhaPorNomeNovo.has(chave)) primeiraLinhaPorNomeNovo.set(chave, b.linha);
+  }
+
+  return brutas.map((b) => validarLinhaPessoa(b, existentes, camposPersonalizados, primeiraLinhaPorDocumento, primeiraLinhaPorNomeNovo));
 }

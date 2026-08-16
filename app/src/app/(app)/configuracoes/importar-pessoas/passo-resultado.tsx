@@ -2,8 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { CheckCircle, XCircle } from "@phosphor-icons/react";
+import { CheckCircle, DownloadSimple, XCircle } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
+import { baixarArquivoTexto } from "@/lib/importacao/download";
+import { COLUNAS_TEMPLATE_FIXAS } from "@/lib/pessoas/importacao/template";
 import { importarLinhaPessoaAction, revalidarPosImportacaoPessoasAction } from "./actions";
 import type { LinhaPronta } from "./passo-revisao";
 
@@ -51,6 +53,37 @@ export function PassoResultado({ linhas, onReiniciar }: { linhas: LinhaPronta[];
   const falhas = resultados.filter((r) => !r.sucesso);
   const percentual = linhas.length > 0 ? Math.round((feitos / linhas.length) * 100) : 100;
 
+  // Reconstrói a linha a partir dos campos já normalizados (não guardamos o
+  // texto bruto original) — suficiente pra reenviar depois de corrigir, já
+  // que os valores aqui são os que de fato seriam gravados.
+  function baixarErros() {
+    const cabecalho = COLUNAS_TEMPLATE_FIXAS.map((c) => c.rotulo).join(";") + ";Motivo do erro";
+    const linhasCsv = falhas.map((f) => {
+      const l = f.linha;
+      return [
+        l.nome,
+        l.perfisNovos.join(","),
+        l.documento ?? "",
+        l.natureza === "FISICA" ? "Física" : l.natureza === "JURIDICA" ? "Jurídica" : "",
+        l.email ?? "",
+        l.telefone ?? "",
+        l.endereco?.cep ?? "",
+        l.endereco?.logradouro ?? "",
+        l.endereco?.numero ?? "",
+        l.endereco?.complemento ?? "",
+        l.endereco?.bairro ?? "",
+        l.endereco?.cidade ?? "",
+        l.endereco?.uf ?? "",
+        l.contato?.nome ?? "",
+        l.contato?.cargo ?? "",
+        l.contato?.email ?? "",
+        l.contato?.telefone ?? "",
+        f.erro ?? "",
+      ].join(";");
+    });
+    baixarArquivoTexto("linhas-com-erro.csv", [cabecalho, ...linhasCsv].join("\n") + "\n");
+  }
+
   return (
     <div className="flex flex-col gap-6 rounded-2xl border border-border bg-card p-6">
       <div>
@@ -78,13 +111,19 @@ export function PassoResultado({ linhas, onReiniciar }: { linhas: LinhaPronta[];
           </div>
 
           {falhas.length > 0 && (
-            <ul className="max-h-40 space-y-1 overflow-auto rounded-xl bg-muted/40 p-3 text-xs text-muted-foreground">
-              {falhas.map((f, i) => (
-                <li key={i}>
-                  Linha {f.linha.linhaNumero} ({f.linha.nomeExibicao}): {f.erro}
-                </li>
-              ))}
-            </ul>
+            <div className="space-y-2">
+              <ul className="max-h-40 space-y-1 overflow-auto rounded-xl bg-muted/40 p-3 text-xs text-muted-foreground">
+                {falhas.map((f, i) => (
+                  <li key={i}>
+                    Linha {f.linha.linhaNumero} ({f.linha.nomeExibicao}): {f.erro}
+                  </li>
+                ))}
+              </ul>
+              <Button type="button" variant="outline" size="sm" className="gap-1.5" onClick={baixarErros}>
+                <DownloadSimple size={14} />
+                Baixar linhas com erro
+              </Button>
+            </div>
           )}
 
           <div className="flex gap-3">

@@ -12,7 +12,7 @@ export default async function PaginaImportarPessoas() {
   const supabase = await createClient();
 
   const [{ data: pessoasExistentes }, camposPersonalizados] = await Promise.all([
-    supabase.from("pessoas").select("id, nome, documento, perfis").eq("tenant_id", contexto.tenantId),
+    supabase.from("pessoas").select("id, nome, documento, perfis").eq("tenant_id", contexto.tenantId).order("nome"),
     listarCamposPersonalizados(supabase, { tenant_id: contexto.tenantId, apenasDisponiveis: true }),
   ]);
 
