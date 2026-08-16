@@ -1,43 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/utils/supabase/database.types";
-import { registrarLancamento } from "./ledger";
-import { CODIGO_CONTAS_A_RECEBER, CODIGO_CONTAS_A_PAGAR } from "./plano-padrao";
 import { buscarContaGenericaPorTipo } from "./plano-contas";
 import { criarCategoria } from "./categorias";
 
 type Cliente = SupabaseClient<Database>;
 type TipoCategoria = Database["public"]["Enums"]["tipo_categoria"];
-
-// Soma 1 mês de calendário a uma data ISO (YYYY-MM-DD), com o dia grudado no
-// último dia do mês de destino quando ele não existir (ex.: 31/jan + 1 mês
-// não vira 3/mar, vira 28 ou 29/fev) — sem isso, parcelamento com
-// vencimento no fim do mês desliza de forma silenciosamente errada.
-function adicionarMeses(dataISO: string, meses: number): string {
-  const [ano, mes, dia] = dataISO.split("-").map(Number);
-  const primeiroDiaAlvo = new Date(Date.UTC(ano, mes - 1 + meses, 1));
-  const ultimoDiaDoMesAlvo = new Date(
-    Date.UTC(primeiroDiaAlvo.getUTCFullYear(), primeiroDiaAlvo.getUTCMonth() + 1, 0),
-  ).getUTCDate();
-  const diaFinal = Math.min(dia, ultimoDiaDoMesAlvo);
-  return new Date(Date.UTC(primeiroDiaAlvo.getUTCFullYear(), primeiroDiaAlvo.getUTCMonth(), diaFinal))
-    .toISOString()
-    .slice(0, 10);
-}
-
-function calcularParcelas(valorTotal: number, numeroParcelas: number, primeiroVencimento: string) {
-  const valorBase = Math.floor((valorTotal / numeroParcelas) * 100) / 100;
-  let somaAlocada = 0;
-  const parcelas = [];
-  for (let i = 0; i < numeroParcelas; i++) {
-    const ultima = i === numeroParcelas - 1;
-    // a diferença de arredondamento da divisão inteira vai inteira na
-    // última parcela — nunca fica escondida/perdida em nenhuma delas.
-    const valor = ultima ? Math.round((valorTotal - somaAlocada) * 100) / 100 : valorBase;
-    somaAlocada += valor;
-    parcelas.push({ numero: i + 1, valor, data_vencimento: adicionarMeses(primeiroVencimento, i) });
-  }
-  return parcelas;
-}
 
 // Resolve o pessoa_id de um lançamento: usa o existente se veio um ID, cria
 // um cadastro mínimo se veio só um nome digitado (fluxo de "criar na hora"
@@ -210,6 +177,11 @@ export type ParametrosEventoFinanceiro = {
   // preenchido só quando o evento é gerado pelo job de recorrência —
   // rastreabilidade pura, nenhum comportamento depende disso depois de criado.
   regra_recorrencia_id?: string;
+  // preenchido só pelo módulo de importação de planilha — dá idempotência a
+  // uma linha (uma segunda chamada com a mesma chave retorna o evento já
+  // criado em vez de duplicar, ver Seção 3 de
+  // docs/superpowers/specs/2026-08-16-importacao-de-planilha-design.md).
+  import_key?: string;
 };
 
 // Cria um evento financeiro (receita ou despesa) com seu rateio (1 ou mais
@@ -217,6 +189,14 @@ export type ParametrosEventoFinanceiro = {
 // como núcleo comum tanto por "nova despesa" quanto por "nova receita", que
 // só invertem qual lado (débito/crédito) recebe a conta da categoria vs.
 // Contas a Receber/Pagar.
+//
+// Toda a cadeia (evento, rateio de categoria, rateio de centro de custo,
+// parcelas, lançamento contábil, partidas) roda dentro da função de banco
+// `criar_evento_financeiro` — a transação implícita da função garante que um
+// erro em qualquer ponto desfaz tudo, sem deixar órfão (achado da spec de
+// importação: a versão anterior fazia os mesmos inserts em sequência, sem
+// transação, e uma falha no meio podia deixar um evento sem rateio ou um
+// lançamento desbalanceado).
 export async function criarEventoFinanceiro(
   supabase: Cliente,
   params: ParametrosEventoFinanceiro,
@@ -230,147 +210,24 @@ export async function criarEventoFinanceiro(
     return { erro: "A soma das categorias não bate com o valor total." };
   }
 
-  const { data: contaContrapartida, error: erroContaContrapartida } = await supabase
-    .from("contas_contabeis")
-    .select("id")
-    .eq("tenant_id", params.tenant_id)
-    .eq("codigo", params.tipo === "RECEITA" ? CODIGO_CONTAS_A_RECEBER : CODIGO_CONTAS_A_PAGAR)
-    .single();
-
-  if (erroContaContrapartida || !contaContrapartida) {
-    return { erro: "Conta contábil de Contas a Receber/Pagar não encontrada para este tenant." };
-  }
-
-  // nunca confiamos nas categorias vindas do formulário sem revalidar —
-  // buscamos de novo no servidor, escopadas ao tenant e ao tipo do evento.
-  const categoriaIds = params.categorias.map((c) => c.categoria_id);
-  const { data: categoriasEncontradas, error: erroCategorias } = await supabase
-    .from("categorias_financeiras")
-    .select("id, conta_contabil_id")
-    .eq("tenant_id", params.tenant_id)
-    .eq("tipo", params.tipo)
-    .in("id", categoriaIds);
-
-  if (erroCategorias || !categoriasEncontradas || categoriasEncontradas.length !== new Set(categoriaIds).size) {
-    return { erro: "Uma ou mais categorias são inválidas." };
-  }
-
-  const contaContabilPorCategoria = new Map(categoriasEncontradas.map((c) => [c.id, c.conta_contabil_id]));
-  if (categoriasEncontradas.some((c) => !c.conta_contabil_id)) {
-    return { erro: "Categoria sem conta contábil vinculada." };
-  }
-
-  const { data: evento, error: erroEvento } = await supabase
-    .from("eventos_financeiros")
-    .insert({
-      tenant_id: params.tenant_id,
-      tipo: params.tipo,
-      data_competencia: params.data_competencia,
-      valor_total: params.valor_total,
-      descricao: params.descricao,
-      pessoa_id: params.pessoa_id ?? null,
-      criado_por: params.criado_por,
-      regra_recorrencia_id: params.regra_recorrencia_id,
-    })
-    .select("id")
-    .single();
-
-  if (erroEvento || !evento) {
-    return { erro: erroEvento?.message ?? "Falha ao criar evento financeiro." };
-  }
-
-  const { data: rateiosCriados, error: erroRateio } = await supabase
-    .from("rateio_categoria")
-    .insert(
-      params.categorias.map((c) => ({
-        tenant_id: params.tenant_id,
-        evento_financeiro_id: evento.id,
-        categoria_id: c.categoria_id,
-        valor: c.valor,
-      })),
-    )
-    // uma única instrução INSERT preserva a ordem das linhas no retorno —
-    // por isso dá pra casar rateiosCriados[i] com params.categorias[i].
-    .select("id");
-
-  if (erroRateio || !rateiosCriados) return { erro: erroRateio?.message ?? "Falha ao gravar rateio de categorias." };
-
-  // centro de custo é sempre opcional, por linha — nenhuma partida do
-  // ledger depende dele, é só uma dimensão de relatório.
-  const linhasCentroCusto: { tenant_id: string; rateio_categoria_id: string; centro_custo_id: string; valor: number }[] = [];
-  params.categorias.forEach((c, indice) => {
-    const rateioCategoriaId = rateiosCriados[indice].id;
-    if (c.centro_custo_id) {
-      linhasCentroCusto.push({ tenant_id: params.tenant_id, rateio_categoria_id: rateioCategoriaId, centro_custo_id: c.centro_custo_id, valor: c.valor });
-    } else if (c.centros_custo) {
-      for (const cc of c.centros_custo) {
-        linhasCentroCusto.push({ tenant_id: params.tenant_id, rateio_categoria_id: rateioCategoriaId, centro_custo_id: cc.centro_custo_id, valor: cc.valor });
-      }
-    }
+  const { data: eventoId, error } = await supabase.rpc("criar_evento_financeiro", {
+    p_tenant_id: params.tenant_id,
+    p_tipo: params.tipo,
+    p_descricao: params.descricao,
+    p_valor_total: params.valor_total,
+    p_data_competencia: params.data_competencia,
+    p_categorias: params.categorias,
+    p_pessoa_id: params.pessoa_id ?? undefined,
+    p_numero_parcelas: params.numero_parcelas,
+    p_primeiro_vencimento: params.primeiro_vencimento,
+    p_criado_por: params.criado_por,
+    p_regra_recorrencia_id: params.regra_recorrencia_id,
+    p_import_key: params.import_key,
   });
 
-  if (linhasCentroCusto.length > 0) {
-    // nunca confiamos nos centro_custo_id vindos do formulário sem revalidar.
-    const centroCustoIds = [...new Set(linhasCentroCusto.map((l) => l.centro_custo_id))];
-    const { data: centrosEncontrados, error: erroCentros } = await supabase
-      .from("centros_custo")
-      .select("id")
-      .eq("tenant_id", params.tenant_id)
-      .in("id", centroCustoIds);
-
-    if (erroCentros || !centrosEncontrados || centrosEncontrados.length !== centroCustoIds.length) {
-      return { erro: "Um ou mais centros de custo são inválidos." };
-    }
-
-    const { error: erroRateioCentroCusto } = await supabase.from("rateio_centro_custo").insert(linhasCentroCusto);
-    if (erroRateioCentroCusto) return { erro: erroRateioCentroCusto.message };
+  if (error || !eventoId) {
+    return { erro: error?.message ?? "Falha ao criar evento financeiro." };
   }
 
-  const parcelas = calcularParcelas(params.valor_total, params.numero_parcelas, params.primeiro_vencimento);
-
-  const { error: erroParcelas } = await supabase.from("parcelas").insert(
-    parcelas.map((p) => ({
-      tenant_id: params.tenant_id,
-      evento_financeiro_id: evento.id,
-      numero: p.numero,
-      data_vencimento: p.data_vencimento,
-      valor: p.valor,
-      status: "PENDENTE" as const,
-    })),
-  );
-
-  if (erroParcelas) return { erro: erroParcelas.message };
-
-  // reconhecimento contábil no regime de competência — a saída/entrada de
-  // caixa de verdade só vira lançamento quando a parcela for baixada.
-  // 1 partida de contrapartida (valor total) + 1 partida por categoria do
-  // rateio (seu próprio valor) — com 1 categoria só, é a mesma coisa de
-  // sempre (2 partidas); com N, o lado da categoria só se multiplica.
-  const tipoLadoCategoria = params.tipo === "RECEITA" ? ("CREDITO" as const) : ("DEBITO" as const);
-  const tipoContrapartida = params.tipo === "RECEITA" ? ("DEBITO" as const) : ("CREDITO" as const);
-
-  const partidas = [
-    { conta_contabil_id: contaContrapartida.id, tipo: tipoContrapartida, valor: params.valor_total },
-    ...params.categorias.map((c) => ({
-      conta_contabil_id: contaContabilPorCategoria.get(c.categoria_id)!,
-      tipo: tipoLadoCategoria,
-      valor: c.valor,
-    })),
-  ];
-
-  const resultadoLancamento = await registrarLancamento(supabase, {
-    tenant_id: params.tenant_id,
-    data_competencia: params.data_competencia,
-    descricao: params.descricao,
-    origem: "MANUAL",
-    referencia_id: evento.id,
-    criado_por: params.criado_por,
-    partidas,
-  });
-
-  if ("erro" in resultadoLancamento) {
-    return { erro: resultadoLancamento.erro };
-  }
-
-  return { evento_id: evento.id };
+  return { evento_id: eventoId };
 }

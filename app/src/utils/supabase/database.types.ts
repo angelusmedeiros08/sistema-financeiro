@@ -470,6 +470,7 @@ export type Database = {
           descricao: string | null
           documento_fiscal_id: string | null
           id: string
+          import_key: string | null
           pessoa_id: string | null
           regra_recorrencia_id: string | null
           tenant_id: string
@@ -483,6 +484,7 @@ export type Database = {
           descricao?: string | null
           documento_fiscal_id?: string | null
           id?: string
+          import_key?: string | null
           pessoa_id?: string | null
           regra_recorrencia_id?: string | null
           tenant_id: string
@@ -496,6 +498,7 @@ export type Database = {
           descricao?: string | null
           documento_fiscal_id?: string | null
           id?: string
+          import_key?: string | null
           pessoa_id?: string | null
           regra_recorrencia_id?: string | null
           tenant_id?: string
@@ -1502,7 +1505,23 @@ export type Database = {
       }
     }
     Functions: {
-      [_ in never]: never
+      criar_evento_financeiro: {
+        Args: {
+          p_categorias: Json
+          p_criado_por?: string
+          p_data_competencia: string
+          p_descricao: string
+          p_import_key?: string
+          p_numero_parcelas: number
+          p_pessoa_id?: string
+          p_primeiro_vencimento: string
+          p_regra_recorrencia_id?: string
+          p_tenant_id: string
+          p_tipo: Database["public"]["Enums"]["tipo_categoria"]
+          p_valor_total: number
+        }
+        Returns: string
+      }
     }
     Enums: {
       escopo_campo_personalizado: "CLIENTE" | "FORNECEDOR" | "AMBOS"

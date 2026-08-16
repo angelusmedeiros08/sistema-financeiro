@@ -7,6 +7,7 @@ import { obterDadosPainel } from "./dados";
 import { StatCard } from "@/components/painel/stat-card";
 import { FluxoChart } from "@/components/painel/fluxo-chart";
 import { IndicadorGauge } from "@/components/relatorios/indicador-gauge";
+import { CtaImportarPlanilha } from "@/components/lancamentos/cta-importar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatarMoeda } from "@/lib/formatacao";
@@ -94,7 +95,7 @@ export default async function PaginaPainel() {
           </div>
 
           {dados.eventosRecentes.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Nenhum lançamento ainda.</p>
+            <CtaImportarPlanilha />
           ) : (
             <ul className="flex flex-col">
               {dados.eventosRecentes.map((evento) => (
