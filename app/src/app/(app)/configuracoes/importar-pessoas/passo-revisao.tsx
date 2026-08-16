@@ -8,10 +8,10 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { montarLinhasBrutas } from "@/lib/pessoas/importacao/template";
-import { validarLinhasPessoa, validarLinhaPessoa } from "@/lib/pessoas/importacao/validacao";
+import { validarLinhasPessoa } from "@/lib/pessoas/importacao/validacao";
 import type { PessoaExistente } from "@/lib/pessoas/importacao/correspondencia";
 import type { CampoPersonalizadoDefinicao } from "@/lib/pessoas/buscar-pessoa";
-import type { ColunaChave, DecisaoLinha, LinhaBrutaPessoa, LinhaValidadaPessoa } from "@/lib/pessoas/importacao/tipos";
+import type { ColunaChave, DecisaoLinha, LinhaValidadaPessoa } from "@/lib/pessoas/importacao/tipos";
 import type { ParametrosImportarLinhaPessoa } from "./actions";
 import { cn } from "@/lib/utils";
 
@@ -50,22 +50,24 @@ export function PassoRevisao({
   const [incluidas, setIncluidas] = useState<Set<number>>(() => new Set(linhas.filter((l) => decisaoPadrao(l) !== null).map((l) => l.linha)));
 
   function editarCampo(linhaNum: number, campo: "nome" | "perfil" | "documento", texto: string) {
-    setLinhas((atual) =>
-      atual.map((l) => {
-        if (l.linha !== linhaNum) return l;
-        const bruta: LinhaBrutaPessoa = { ...l, [campo]: texto };
-        const revalidada = validarLinhaPessoa(bruta, pessoasExistentes, camposPersonalizados);
-        const decisao = decisaoPadrao(revalidada);
-        setDecisoes((d) => ({ ...d, [linhaNum]: decisao }));
-        setIncluidas((inc) => {
-          const novo = new Set(inc);
-          if (decisao) novo.add(linhaNum);
-          else novo.delete(linhaNum);
-          return novo;
-        });
-        return revalidada;
-      }),
-    );
+    setLinhas((atual) => {
+      // Revalida o conjunto inteiro (não só a linha editada) — a checagem
+      // de CPF/CNPJ repetido dentro do próprio arquivo depende de ver todas
+      // as linhas juntas, senão editar uma linha não refletiria se ela
+      // passou a colidir (ou deixou de colidir) com outra.
+      const atualizadas = atual.map((l) => (l.linha === linhaNum ? { ...l, [campo]: texto } : l));
+      const revalidadas = validarLinhasPessoa(atualizadas, pessoasExistentes, camposPersonalizados);
+      const linhaRevalidada = revalidadas.find((l) => l.linha === linhaNum)!;
+      const decisao = decisaoPadrao(linhaRevalidada);
+      setDecisoes((d) => ({ ...d, [linhaNum]: decisao }));
+      setIncluidas((inc) => {
+        const novo = new Set(inc);
+        if (decisao) novo.add(linhaNum);
+        else novo.delete(linhaNum);
+        return novo;
+      });
+      return revalidadas;
+    });
   }
 
   function mudarDecisao(linhaNum: number, decisao: DecisaoLinha) {

@@ -106,6 +106,7 @@ export function validarLinhaPessoa(
   bruta: LinhaBrutaPessoa,
   existentes: PessoaExistente[],
   camposPersonalizados: CampoPersonalizadoDefinicao[],
+  primeiraLinhaPorDocumento?: Map<string, number>,
 ): LinhaValidadaPessoa {
   const erros: string[] = [];
 
@@ -116,6 +117,18 @@ export function validarLinhaPessoa(
 
   const documentoValido = validarDocumento(bruta.documento);
   if (documentoValido === false) erros.push("CPF/CNPJ inválido (dígito verificador não bate).");
+
+  // Duas linhas com o mesmo CPF/CNPJ na MESMA planilha nunca correspondem
+  // entre si sozinhas (a correspondência só olha pro que já existe no
+  // banco) — sem essa checagem, ambas viram "criar nova" e nascem dois
+  // cadastros com o mesmo documento.
+  const digitosDocumento = apenasDigitos(bruta.documento);
+  if (digitosDocumento && primeiraLinhaPorDocumento) {
+    const primeiraLinha = primeiraLinhaPorDocumento.get(digitosDocumento);
+    if (primeiraLinha !== undefined && primeiraLinha !== bruta.linha) {
+      erros.push(`CPF/CNPJ repetido — já usado na linha ${primeiraLinha} desta mesma planilha.`);
+    }
+  }
 
   const naturezaResolvida = inferirNatureza(bruta.natureza, bruta.documento);
   if (bruta.natureza.trim() && naturezaResolvida === null) erros.push("Natureza inválida (use Física ou Jurídica).");
@@ -144,5 +157,10 @@ export function validarLinhasPessoa(
   existentes: PessoaExistente[],
   camposPersonalizados: CampoPersonalizadoDefinicao[],
 ): LinhaValidadaPessoa[] {
-  return brutas.map((b) => validarLinhaPessoa(b, existentes, camposPersonalizados));
+  const primeiraLinhaPorDocumento = new Map<string, number>();
+  for (const b of brutas) {
+    const digitos = apenasDigitos(b.documento);
+    if (digitos && !primeiraLinhaPorDocumento.has(digitos)) primeiraLinhaPorDocumento.set(digitos, b.linha);
+  }
+  return brutas.map((b) => validarLinhaPessoa(b, existentes, camposPersonalizados, primeiraLinhaPorDocumento));
 }
