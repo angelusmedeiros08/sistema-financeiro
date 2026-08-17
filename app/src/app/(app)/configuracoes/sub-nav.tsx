@@ -10,8 +10,6 @@ const ITENS = [
   { href: "/configuracoes/centros-custo", rotulo: "Centros de custo" },
   { href: "/configuracoes/formas-pagamento", rotulo: "Formas de pagamento" },
   { href: "/configuracoes/contas-financeiras", rotulo: "Contas financeiras" },
-  { href: "/configuracoes/importar-planilha", rotulo: "Importar planilha" },
-  { href: "/configuracoes/importar-pessoas", rotulo: "Importar clientes/fornecedores" },
   { href: "/configuracoes/recorrencias", rotulo: "Recorrências" },
   { href: "/configuracoes/campos-personalizados", rotulo: "Campos personalizados" },
   { href: "/configuracoes/estrutura-dre", rotulo: "Estrutura de DRE" },

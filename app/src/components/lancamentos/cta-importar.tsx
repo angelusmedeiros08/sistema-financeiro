@@ -13,7 +13,7 @@ export function CtaImportarPlanilha() {
         Cadastre manualmente pelo formulário acima ou traga de uma vez o histórico que você já mantém numa planilha.
       </p>
       <Button asChild size="sm" className="gap-1.5">
-        <Link href="/configuracoes/importar-planilha">
+        <Link href="/importacao/planilha">
           <UploadSimple size={14} />
           Importar planilha
         </Link>

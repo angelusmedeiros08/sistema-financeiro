@@ -15,6 +15,7 @@ import {
   ChartLineUp,
   ChartBar,
   PiggyBank,
+  UploadSimple,
   GearSix,
   CaretRight,
   CaretLeft,
@@ -67,6 +68,7 @@ const ITENS_NAV: ItemNav[] = [
   { href: "/orcamento", label: "Orçamento", icon: PiggyBank, disponivel: true },
   { href: "/relatorios", label: "Relatórios", icon: ChartLineUp, disponivel: true, subItens: SUB_ITENS_RELATORIOS },
   { href: "/indicadores", label: "Indicadores", icon: ChartBar, disponivel: true },
+  { href: "/importacao", label: "Importação", icon: UploadSimple, disponivel: true },
   { href: "/configuracoes", label: "Configurações", icon: GearSix, disponivel: true, subItens: SUB_ITENS_CONFIGURACOES },
 ];
 

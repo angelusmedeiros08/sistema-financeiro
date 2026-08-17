@@ -10,7 +10,7 @@ export function CtaImportarPessoas({ rotulo }: { rotulo: string }) {
       <p className="text-sm font-medium text-foreground">Nenhum {rotulo} cadastrado ainda.</p>
       <p className="max-w-sm text-sm text-muted-foreground">Cadastre manualmente pelo botão acima ou importe sua planilha de contatos de uma vez.</p>
       <Button asChild size="sm" className="gap-1.5">
-        <Link href="/configuracoes/importar-pessoas">
+        <Link href="/importacao/pessoas">
           <UploadSimple size={14} />
           Importar planilha
         </Link>

@@ -1,27 +1,14 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/utils/supabase/server";
-import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
-import { listarCamposPersonalizados } from "@/lib/pessoas/buscar-pessoa";
-import { ConfiguracoesSubNav } from "../sub-nav";
-import { ImportarPessoasWizard } from "./wizard";
 
-export default async function PaginaImportarPessoas() {
-  const contexto = await obterUsuarioETenantAtual();
-  if ("erro" in contexto) redirect("/entrar");
-
-  const supabase = await createClient();
-
-  const [{ data: pessoasExistentes }, camposPersonalizados] = await Promise.all([
-    supabase.from("pessoas").select("id, nome, documento, perfis").eq("tenant_id", contexto.tenantId).order("nome"),
-    listarCamposPersonalizados(supabase, { tenant_id: contexto.tenantId, apenasDisponiveis: true }),
-  ]);
-
-  return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-6">
-      <h1 className="text-xl font-bold tracking-tight text-foreground">Importar clientes/fornecedores</h1>
-      <ConfiguracoesSubNav />
-
-      <ImportarPessoasWizard pessoasExistentesIniciais={pessoasExistentes ?? []} camposPersonalizados={camposPersonalizados} />
-    </div>
-  );
+// Import de clientes/fornecedores subiu pro módulo de topo "Importação"
+// (não mais sub-item de Configurações) — rota antiga preservada como
+// redirect pra não quebrar link salvo/histórico do navegador.
+export default async function PaginaConfiguracoesImportarPessoasRedirect({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | undefined>>;
+}) {
+  const sp = await searchParams;
+  const query = new URLSearchParams(Object.entries(sp).filter(([, v]) => v !== undefined) as [string, string][]).toString();
+  redirect(query ? `/importacao/pessoas?${query}` : "/importacao/pessoas");
 }
