@@ -536,6 +536,113 @@ export type Database = {
           },
         ]
       }
+      extrato_linha_baixas: {
+        Row: {
+          baixa_id: string
+          criado_em: string
+          extrato_linha_id: string
+          tenant_id: string
+        }
+        Insert: {
+          baixa_id: string
+          criado_em?: string
+          extrato_linha_id: string
+          tenant_id: string
+        }
+        Update: {
+          baixa_id?: string
+          criado_em?: string
+          extrato_linha_id?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "extrato_linha_baixas_baixa_id_fkey"
+            columns: ["baixa_id"]
+            isOneToOne: false
+            referencedRelation: "baixas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "extrato_linha_baixas_baixa_id_fkey"
+            columns: ["baixa_id"]
+            isOneToOne: false
+            referencedRelation: "vw_movimento_realizado"
+            referencedColumns: ["baixa_id"]
+          },
+          {
+            foreignKeyName: "extrato_linha_baixas_extrato_linha_id_fkey"
+            columns: ["extrato_linha_id"]
+            isOneToOne: false
+            referencedRelation: "extrato_linhas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "extrato_linha_baixas_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      extrato_linhas: {
+        Row: {
+          chave_dedup: string
+          conta_financeira_id: string
+          criado_em: string
+          data: string
+          descricao: string
+          fitid: string | null
+          id: string
+          status: Database["public"]["Enums"]["status_extrato_linha"]
+          tenant_id: string
+          tipo: Database["public"]["Enums"]["tipo_extrato_linha"]
+          valor: number
+        }
+        Insert: {
+          chave_dedup: string
+          conta_financeira_id: string
+          criado_em?: string
+          data: string
+          descricao?: string
+          fitid?: string | null
+          id?: string
+          status?: Database["public"]["Enums"]["status_extrato_linha"]
+          tenant_id: string
+          tipo: Database["public"]["Enums"]["tipo_extrato_linha"]
+          valor: number
+        }
+        Update: {
+          chave_dedup?: string
+          conta_financeira_id?: string
+          criado_em?: string
+          data?: string
+          descricao?: string
+          fitid?: string | null
+          id?: string
+          status?: Database["public"]["Enums"]["status_extrato_linha"]
+          tenant_id?: string
+          tipo?: Database["public"]["Enums"]["tipo_extrato_linha"]
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "extrato_linhas_conta_financeira_id_fkey"
+            columns: ["conta_financeira_id"]
+            isOneToOne: false
+            referencedRelation: "contas_financeiras"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "extrato_linhas_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       formas_pagamento: {
         Row: {
           ativo: boolean
@@ -1155,6 +1262,58 @@ export type Database = {
           },
         ]
       }
+      regras_categorizacao: {
+        Row: {
+          categoria_id: string
+          criado_em: string
+          descricao_normalizada: string
+          id: string
+          origem: Database["public"]["Enums"]["origem_regra_categorizacao"]
+          pessoa_id: string | null
+          tenant_id: string
+        }
+        Insert: {
+          categoria_id: string
+          criado_em?: string
+          descricao_normalizada: string
+          id?: string
+          origem?: Database["public"]["Enums"]["origem_regra_categorizacao"]
+          pessoa_id?: string | null
+          tenant_id: string
+        }
+        Update: {
+          categoria_id?: string
+          criado_em?: string
+          descricao_normalizada?: string
+          id?: string
+          origem?: Database["public"]["Enums"]["origem_regra_categorizacao"]
+          pessoa_id?: string | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "regras_categorizacao_categoria_id_fkey"
+            columns: ["categoria_id"]
+            isOneToOne: false
+            referencedRelation: "categorias_financeiras"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "regras_categorizacao_pessoa_id_fkey"
+            columns: ["pessoa_id"]
+            isOneToOne: false
+            referencedRelation: "pessoas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "regras_categorizacao_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       regras_recorrencia: {
         Row: {
           ativa: boolean
@@ -1544,6 +1703,7 @@ export type Database = {
         | "CAPTURA_IA"
         | "RENEGOCIACAO"
         | "ESTORNO"
+      origem_regra_categorizacao: "MANUAL" | "HISTORICO"
       papel_usuario:
         | "admin"
         | "financeiro_senior"
@@ -1551,6 +1711,7 @@ export type Database = {
         | "contador"
         | "cliente_portal"
       perfil_pessoa: "CLIENTE" | "FORNECEDOR" | "TRANSPORTADORA"
+      status_extrato_linha: "PENDENTE" | "CONCILIADA" | "IGNORADA"
       status_parcela:
         | "PENDENTE"
         | "QUITADO"
@@ -1573,6 +1734,7 @@ export type Database = {
         | "RECEITA"
         | "DESPESA"
       tipo_endereco: "COMERCIAL" | "COBRANCA" | "ENTREGA" | "OUTRO"
+      tipo_extrato_linha: "CREDITO" | "DEBITO"
       tipo_linha_dre:
         | "FOLHA"
         | "SUBTOTAL"
@@ -1729,6 +1891,7 @@ export const Constants = {
         "RENEGOCIACAO",
         "ESTORNO",
       ],
+      origem_regra_categorizacao: ["MANUAL", "HISTORICO"],
       papel_usuario: [
         "admin",
         "financeiro_senior",
@@ -1737,6 +1900,7 @@ export const Constants = {
         "cliente_portal",
       ],
       perfil_pessoa: ["CLIENTE", "FORNECEDOR", "TRANSPORTADORA"],
+      status_extrato_linha: ["PENDENTE", "CONCILIADA", "IGNORADA"],
       status_parcela: [
         "PENDENTE",
         "QUITADO",
@@ -1762,6 +1926,7 @@ export const Constants = {
         "DESPESA",
       ],
       tipo_endereco: ["COMERCIAL", "COBRANCA", "ENTREGA", "OUTRO"],
+      tipo_extrato_linha: ["CREDITO", "DEBITO"],
       tipo_linha_dre: [
         "FOLHA",
         "SUBTOTAL",

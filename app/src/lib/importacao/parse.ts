@@ -94,7 +94,7 @@ function detectarDelimitador(primeiraLinha: string): string {
   return semicolons > 0 ? ";" : virgulas > 0 ? "," : ";";
 }
 
-function decodificarComFallback(buffer: ArrayBuffer): { texto: string; encoding: EncodingSuportado } {
+export function decodificarComFallback(buffer: ArrayBuffer): { texto: string; encoding: EncodingSuportado } {
   try {
     const texto = new TextDecoder("utf-8", { fatal: true }).decode(buffer);
     return { texto, encoding: "utf-8" };
@@ -115,7 +115,7 @@ function parseCsvTexto(texto: string): { colunas: string[]; linhas: string[][]; 
   return { colunas, linhas, delimitador };
 }
 
-function parseCsvAutomatico(buffer: ArrayBuffer): ResultadoParse {
+export function parseCsvAutomatico(buffer: ArrayBuffer): ResultadoParse {
   const { texto, encoding } = decodificarComFallback(buffer);
   const { colunas, linhas, delimitador } = parseCsvTexto(texto);
   return { colunas, linhas, tipoArquivo: "csv", encodingUsado: encoding, delimitadorUsado: delimitador };

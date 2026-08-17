@@ -9,6 +9,7 @@ import { NovaContaFinanceiraForm } from "./nova-conta-form";
 import { ToggleAtivoContaButton } from "./toggle-ativo-button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { StatCard } from "@/components/painel/stat-card";
 import { formatarMoeda } from "@/lib/formatacao";
 import { cn } from "@/lib/utils";
@@ -111,7 +112,12 @@ async function AbaContas({ tenantId, supabase }: { tenantId: string; supabase: A
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
-                      <ToggleAtivoContaButton id={c.id} ativo={c.ativo} />
+                      <div className="flex justify-end gap-2">
+                        <Button asChild variant="outline" size="sm" className="h-7 text-xs">
+                          <Link href={`/configuracoes/contas-financeiras/${c.id}/conciliar`}>Conciliar</Link>
+                        </Button>
+                        <ToggleAtivoContaButton id={c.id} ativo={c.ativo} />
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
