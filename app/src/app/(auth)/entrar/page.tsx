@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import Link from "next/link";
 import { entrar } from "../actions";
+import { CADASTRO_PUBLICO_ATIVO } from "../config";
 import { AuthShell } from "@/components/layout/auth-shell";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -37,12 +38,14 @@ export default function PaginaEntrar() {
         </Button>
       </form>
 
-      <p className="mt-6 text-center text-sm text-muted-foreground">
-        Ainda não tem conta?{" "}
-        <Link href="/cadastro" className="font-semibold text-foreground underline underline-offset-4">
-          Criar conta
-        </Link>
-      </p>
+      {CADASTRO_PUBLICO_ATIVO && (
+        <p className="mt-6 text-center text-sm text-muted-foreground">
+          Ainda não tem conta?{" "}
+          <Link href="/cadastro" className="font-semibold text-foreground underline underline-offset-4">
+            Criar conta
+          </Link>
+        </p>
+      )}
     </AuthShell>
   );
 }

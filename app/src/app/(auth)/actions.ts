@@ -6,10 +6,15 @@ import { createAdminClient } from "@/utils/supabase/admin";
 import { GRUPOS_CONTAS_PADRAO, CONTAS_CONTABEIS_PADRAO, CODIGO_CAIXA_E_BANCOS, CODIGO_RECEITAS_GERAL, CODIGO_DESPESAS_GERAL } from "@/lib/contabil/plano-padrao";
 import { CATEGORIAS_PADRAO } from "@/lib/contabil/categorias-padrao";
 import { MODELO_COMPLETO_DRE } from "@/lib/relatorios/dre";
+import { CADASTRO_PUBLICO_ATIVO } from "./config";
 
 type ResultadoAcao = { erro: string } | { sucesso: true; mensagem: string };
 
 export async function cadastrar(formData: FormData): Promise<ResultadoAcao> {
+  if (!CADASTRO_PUBLICO_ATIVO) {
+    return { erro: "Cadastro fechado no momento — peça um convite a quem já usa o sistema." };
+  }
+
   const nomeEmpresa = String(formData.get("nome_empresa") ?? "").trim();
   const nomeUsuario = String(formData.get("nome_usuario") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim();

@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import Link from "next/link";
 import { cadastrar } from "../actions";
+import { CADASTRO_PUBLICO_ATIVO } from "../config";
 import { AuthShell } from "@/components/layout/auth-shell";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,7 +20,11 @@ export default function PaginaCadastro() {
 
   return (
     <AuthShell titulo="Criar conta" subtitulo="Cadastre sua empresa para começar.">
-      {estado.sucesso ? (
+      {!CADASTRO_PUBLICO_ATIVO ? (
+        <p className="rounded-xl border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
+          Cadastro fechado no momento — peça um convite a quem já usa o sistema.
+        </p>
+      ) : estado.sucesso ? (
         <p className="rounded-xl border border-[#157F6B]/25 bg-[#157F6B]/10 p-4 text-sm text-[#0F5F50]">
           {estado.sucesso}
         </p>
