@@ -3,6 +3,7 @@ import type { Database } from "@/utils/supabase/database.types";
 import type { EntidadeExistente, TipoEntidadeImportacao } from "./tipos";
 import { criarCategoria } from "@/lib/contabil/categorias";
 import { buscarContaGenericaPorTipo } from "@/lib/contabil/plano-contas";
+import type { PessoaExistente } from "@/lib/pessoas/importacao/correspondencia";
 
 type Cliente = SupabaseClient<Database>;
 type TipoCategoria = Database["public"]["Enums"]["tipo_categoria"];
@@ -10,7 +11,11 @@ type TipoCategoria = Database["public"]["Enums"]["tipo_categoria"];
 export type EntidadesExistentes = {
   categorias: (EntidadeExistente & { tipo: TipoCategoria })[];
   centrosCusto: EntidadeExistente[];
-  pessoas: EntidadeExistente[];
+  // Tipo mais rico que EntidadeExistente (documento/email/telefone) —
+  // reaproveita o mesmo formato do import de Clientes/Fornecedores, já que
+  // a correspondência de pessoa agora usa a mesma função dos dois wizards
+  // (Seção "Mudanças concretas" da spec de homônimos).
+  pessoas: PessoaExistente[];
   formasPagamento: EntidadeExistente[];
 };
 
@@ -21,7 +26,7 @@ export async function buscarEntidadesExistentes(supabase: Cliente, tenantId: str
   const [{ data: categorias }, { data: centrosCusto }, { data: pessoas }, { data: formasPagamento }] = await Promise.all([
     supabase.from("categorias_financeiras").select("id, nome, tipo").eq("tenant_id", tenantId),
     supabase.from("centros_custo").select("id, nome").eq("tenant_id", tenantId).eq("ativo", true),
-    supabase.from("pessoas").select("id, nome").eq("tenant_id", tenantId),
+    supabase.from("pessoas").select("id, nome, documento, email, telefone, perfis").eq("tenant_id", tenantId),
     supabase.from("formas_pagamento").select("id, nome").eq("tenant_id", tenantId).eq("ativo", true),
   ]);
 

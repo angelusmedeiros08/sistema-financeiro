@@ -147,12 +147,12 @@ export function validarLinhaPessoa(
   const correspondencia = resolverCorrespondenciaPessoa(bruta, existentes);
 
   // Mesmo problema do documento repetido, mas pelo nome: duas linhas sem
-  // documento e sem ninguém cadastrado que bata (as duas iam "criar nova"
-  // de qualquer jeito) nascem como dois cadastros idênticos se ninguém
-  // avisar. Só compara linha com "nenhuma" correspondência — linhas que já
-  // apontam pra alguém existente podem legitimamente compartilhar o nome
-  // (a união de perfis no commit já trata isso).
-  if (correspondencia.tipo === "nenhuma" && primeiraLinhaPorNomeNovo) {
+  // ninguém cadastrado que bata com confiança (as duas iam "criar nova" de
+  // qualquer jeito) nascem como dois cadastros idênticos se ninguém avisar.
+  // Inclui "fraca" além de "nenhuma" — dica fraca também é, no fundo, "não
+  // achou ninguém com confiança". Linhas que já apontam pra alguém existente
+  // (mesmo que precisando confirmar) podem legitimamente compartilhar nome.
+  if ((correspondencia.tipo === "nenhuma" || correspondencia.tipo === "fraca") && primeiraLinhaPorNomeNovo) {
     const chaveNome = normalizarTexto(bruta.nome);
     const primeiraLinha = chaveNome ? primeiraLinhaPorNomeNovo.get(chaveNome) : undefined;
     if (primeiraLinha !== undefined && primeiraLinha !== bruta.linha) {
@@ -160,11 +160,34 @@ export function validarLinhaPessoa(
     }
   }
 
+  const avisos: string[] = [];
+  const decideSozinho = correspondencia.tipo === "exata_documento" && correspondencia.candidatos.length === 1;
   let status: StatusLinha = "ok";
-  if (erros.length > 0) status = "erro";
-  else if (correspondencia.tipo === "aproximada") status = "precisa_confirmar";
+  if (erros.length > 0) {
+    status = "erro";
+  } else if (correspondencia.tipo === "exata_documento" && !decideSozinho) {
+    status = "precisa_confirmar";
+    avisos.push(`Documento encontrado em mais de um cadastro (${correspondencia.candidatos.map((c) => c.nome).join(", ")}) — escolha qual é.`);
+  } else if (correspondencia.tipo === "documento_conflito") {
+    status = "precisa_confirmar";
+    const candidato = correspondencia.candidatos[0];
+    avisos.push(
+      `Nome bate com "${candidato.nome}", mas o documento informado é diferente do cadastrado${candidato.documento ? ` (${candidato.documento})` : " (cadastro sem documento)"} — confirme se é a mesma pessoa.`,
+    );
+  } else if (correspondencia.tipo === "exata_nome") {
+    status = "precisa_confirmar";
+    avisos.push(
+      correspondencia.candidatos.length > 1
+        ? `Mais de um cadastro com esse nome — escolha qual é.`
+        : `Mesmo nome de um cadastro existente, sem documento pra confirmar — escolha se é a mesma pessoa ou crie um cadastro novo.`,
+    );
+  } else if (correspondencia.tipo === "aproximada") {
+    status = "precisa_confirmar";
+  } else if (correspondencia.tipo === "fraca") {
+    avisos.push(`Pode ser "${correspondencia.candidatos[0].nome}" (nome parecido) — confira antes de criar um cadastro novo.`);
+  }
 
-  return { ...bruta, perfisValidos, naturezaResolvida, correspondencia, status, erros };
+  return { ...bruta, perfisValidos, naturezaResolvida, correspondencia, status, erros, avisos };
 }
 
 export function validarLinhasPessoa(
@@ -183,7 +206,8 @@ export function validarLinhasPessoa(
   // já cadastrado (ver comentário em validarLinhaPessoa).
   const primeiraLinhaPorNomeNovo = new Map<string, number>();
   for (const b of brutas) {
-    if (resolverCorrespondenciaPessoa(b, existentes).tipo !== "nenhuma") continue;
+    const tipo = resolverCorrespondenciaPessoa(b, existentes).tipo;
+    if (tipo !== "nenhuma" && tipo !== "fraca") continue;
     const chave = normalizarTexto(b.nome);
     if (chave && !primeiraLinhaPorNomeNovo.has(chave)) primeiraLinhaPorNomeNovo.set(chave, b.linha);
   }

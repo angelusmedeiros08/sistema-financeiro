@@ -19,9 +19,18 @@ export type LinhaPronta = ParametrosImportarLinhaPessoa & { linhaNumero: number;
 
 function decisaoPadrao(l: LinhaValidadaPessoa): DecisaoLinha {
   if (l.status === "erro") return null;
-  if (l.correspondencia.tipo === "aproximada") return null;
-  if (l.correspondencia.tipo === "nenhuma") return { acao: "criar", pessoaId: null };
-  return { acao: "atualizar", pessoaId: l.correspondencia.pessoaId };
+  // Único caso que ainda decide sozinho: documento bateu com EXATAMENTE um
+  // cadastro. Nome sozinho (mesmo "exata_nome") nunca mais pré-decide —
+  // pode ser homônimo (Seção "Modelo de correspondência" da spec).
+  const decideSozinho = l.correspondencia.tipo === "exata_documento" && l.correspondencia.candidatos.length === 1;
+  if (decideSozinho) return { acao: "atualizar", pessoaId: l.correspondencia.candidatos[0].id };
+  if (l.correspondencia.tipo === "nenhuma" || l.correspondencia.tipo === "fraca") return { acao: "criar", pessoaId: null };
+  return null;
+}
+
+function rotuloCandidato(p: { documento: string | null; email: string | null; telefone: string | null }): string | null {
+  const partes = [p.documento, p.email, p.telefone].filter((v): v is string => Boolean(v));
+  return partes.length > 0 ? partes.join(" · ") : null;
 }
 
 export function PassoRevisao({
@@ -93,11 +102,12 @@ export function PassoRevisao({
       const decisao = decisoes[l.linha]!;
       const pessoaExistente = decisao.acao === "atualizar" ? pessoasExistentes.find((p) => p.id === decisao.pessoaId) : undefined;
       // Só confia na grafia da própria linha pra sobrescrever o nome quando
-      // a correspondência foi por documento ou nome idêntico — aproximada
-      // (ou uma pessoa escolhida manualmente, que pode ter sido só uma
-      // correção de rota) significa que o texto da linha pode ser só um
+      // a correspondência veio de documento ou de nome idêntico (incluindo
+      // conflito de documento, que também exige nome idêntico) — aproximada
+      // ou fraca (ou uma pessoa escolhida manualmente, que pode ter sido só
+      // uma correção de rota) significa que o texto da linha pode ser só um
       // erro de digitação da pessoa já cadastrada, não o nome real dela.
-      const permitirAtualizarNome = l.correspondencia.tipo === "exata_documento" || l.correspondencia.tipo === "exata_nome";
+      const permitirAtualizarNome = ["exata_documento", "exata_nome", "documento_conflito"].includes(l.correspondencia.tipo);
       return {
         linhaNumero: l.linha,
         nomeExibicao: l.nome || pessoaExistente?.nome || `Linha ${l.linha}`,
@@ -167,10 +177,8 @@ export function PassoRevisao({
           <TableBody>
             {linhas.map((l) => {
               const decisao = decisoes[l.linha];
-              const opcoesPessoa = [
-                l.correspondencia.pessoaId && { id: l.correspondencia.pessoaId, nome: l.correspondencia.nome ?? "" },
-                ...pessoasExistentes.filter((p) => p.id !== l.correspondencia.pessoaId).map((p) => ({ id: p.id, nome: p.nome })),
-              ].filter((v): v is { id: string; nome: string } => Boolean(v));
+              const idsCandidatos = new Set(l.correspondencia.candidatos.map((c) => c.id));
+              const opcoesPessoa = [...l.correspondencia.candidatos, ...pessoasExistentes.filter((p) => !idsCandidatos.has(p.id))];
 
               const valorSelect = decisao ? (decisao.acao === "criar" ? "__criar__" : decisao.pessoaId ?? "") : "";
 
@@ -189,6 +197,7 @@ export function PassoRevisao({
                       <CheckCircle size={16} weight="fill" className="text-[#157F6B]" />
                     )}
                     {l.erros.length > 0 && <p className="mt-0.5 max-w-40 text-xs text-muted-foreground">{l.erros.join(" ")}</p>}
+                    {l.avisos.length > 0 && <p className="mt-0.5 max-w-40 text-xs text-amber-700 dark:text-amber-400">{l.avisos.join(" ")}</p>}
                   </TableCell>
                   <TableCell>
                     <Input className="h-7 w-36 text-xs" value={l.nome} onChange={(e) => editarCampo(l.linha, "nome", e.target.value)} />
@@ -209,11 +218,17 @@ export function PassoRevisao({
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="__criar__">+ Criar pessoa nova</SelectItem>
-                        {opcoesPessoa.map((p) => (
-                          <SelectItem key={p.id} value={p.id}>
-                            Atualizar &quot;{p.nome}&quot;
-                          </SelectItem>
-                        ))}
+                        {opcoesPessoa.map((p) => {
+                          const rotulo = rotuloCandidato(p);
+                          return (
+                            <SelectItem key={p.id} value={p.id}>
+                              <span className="flex flex-col">
+                                <span>Atualizar &quot;{p.nome}&quot;</span>
+                                {rotulo && <span className="text-[10px] text-muted-foreground">{rotulo}</span>}
+                              </span>
+                            </SelectItem>
+                          );
+                        })}
                       </SelectContent>
                     </Select>
                   </TableCell>

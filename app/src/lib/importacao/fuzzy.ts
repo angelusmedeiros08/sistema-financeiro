@@ -2,13 +2,27 @@ import { distance } from "fastest-levenshtein";
 import { normalizarTexto } from "./locale-br";
 import type { CorrespondenciaEntidade, EntidadeExistente } from "./tipos";
 
-// Constante fixa (não configurável nesta versão) — Seção 6 da spec.
-const LIMIAR_SIMILARIDADE = 0.85;
+// Constantes fixas (não configuráveis nesta versão) — Seção 6 da spec
+// original, LIMIAR_DICA acrescentado pela spec de homônimos.
+export const LIMIAR_SIMILARIDADE = 0.85;
+export const LIMIAR_DICA = 0.6;
 
-function similaridade(a: string, b: string): number {
+export function similaridade(a: string, b: string): number {
   const maiorTamanho = Math.max(a.length, b.length);
   if (maiorTamanho === 0) return 1;
   return 1 - distance(a, b) / maiorTamanho;
+}
+
+// Todos os candidatos acima de um piso de similaridade, ordenados do mais
+// pro menos parecido — usado pela correspondência de pessoa (que precisa
+// listar MÚLTIPLOS candidatos pra desambiguar homônimo, diferente de
+// resolverCorrespondencia() abaixo, que só quer o melhor único).
+export function candidatosPorSimilaridade<T extends { nome: string }>(valorOriginal: string, existentes: T[], limiarMinimo: number): { entidade: T; score: number }[] {
+  const normalizado = normalizarTexto(valorOriginal);
+  return existentes
+    .map((e) => ({ entidade: e, score: similaridade(normalizado, normalizarTexto(e.nome)) }))
+    .filter((r) => r.score >= limiarMinimo)
+    .sort((a, b) => b.score - a.score);
 }
 
 // Nunca decide sozinho: exato vira correspondência direta, aproximado vira

@@ -50,18 +50,41 @@ export type LinhaBrutaPessoa = {
   camposPersonalizados: Record<string, string>;
 };
 
-export type TipoCorrespondencia = "exata_documento" | "exata_nome" | "aproximada" | "nenhuma";
+// documento_conflito: nome bate com um cadastro, mas o documento informado
+// na linha diverge do documento desse cadastro (ou o cadastro não tem
+// documento) — pode ser a mesma pessoa com dado desatualizado, pode ser
+// homônimo real. fraca: nome parecido abaixo do limiar de sugestão, só uma
+// dica pra evitar duplicata por variação de grafia (nunca decide sozinho).
+export type TipoCorrespondencia = "exata_documento" | "documento_conflito" | "exata_nome" | "aproximada" | "fraca" | "nenhuma";
 
+// Entrada mínima que a resolução de correspondência precisa — deliberadamente
+// menor que LinhaBrutaPessoa pra poder ser reaproveitada pelo import
+// financeiro (que tem seu próprio formato de linha, só nome+documento importam).
+export type EntradaCorrespondenciaPessoa = { nome: string; documento: string };
+
+export type CandidatoPessoa = {
+  id: string;
+  nome: string;
+  documento: string | null;
+  email: string | null;
+  telefone: string | null;
+};
+
+// candidatos sempre carrega todo mundo que bateu (não só o "melhor") — é
+// isso que permite a tela avisar "tem mais de um" em vez de escolher
+// silenciosamente o primeiro (Seção "Modelo de correspondência" da spec de
+// homônimos). Só decide sozinho quando tipo === "exata_documento" e
+// candidatos.length === 1.
 export type CorrespondenciaPessoa = {
-  pessoaId: string | null;
-  nome: string | null;
   tipo: TipoCorrespondencia;
+  candidatos: CandidatoPessoa[];
 };
 
 export type AcaoLinha = "criar" | "atualizar";
 
-// Decisão do usuário por linha — null enquanto uma correspondência
-// aproximada ainda não foi confirmada (Seção 6: "precisa confirmar").
+// Decisão do usuário por linha — null enquanto uma correspondência que
+// precisa de confirmação humana ainda não foi confirmada (Seção 6: "precisa
+// confirmar").
 export type DecisaoLinha = { acao: AcaoLinha; pessoaId: string | null } | null;
 
 export type StatusLinha = "ok" | "precisa_confirmar" | "erro";
@@ -72,4 +95,7 @@ export type LinhaValidadaPessoa = LinhaBrutaPessoa & {
   correspondencia: CorrespondenciaPessoa;
   status: StatusLinha;
   erros: string[];
+  // Não bloqueiam a linha (diferente de erros) — só chamam atenção antes de
+  // confirmar, pro caso de conflito de documento ou correspondência fraca.
+  avisos: string[];
 };
