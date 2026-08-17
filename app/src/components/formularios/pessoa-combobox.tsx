@@ -13,14 +13,16 @@ export function PessoaCombobox({
   pessoas,
   perfil,
   label,
+  pessoaInicial,
 }: {
   pessoas: Pessoa[];
   perfil: "CLIENTE" | "FORNECEDOR";
   label: string;
+  pessoaInicial?: Pessoa | null;
 }) {
   const [aberto, setAberto] = useState(false);
   const [busca, setBusca] = useState("");
-  const [selecionada, setSelecionada] = useState<Pessoa | null>(null);
+  const [selecionada, setSelecionada] = useState<Pessoa | null>(pessoaInicial ?? null);
   const [novoNome, setNovoNome] = useState("");
 
   const filtradas = pessoas.filter((p) => p.nome.toLowerCase().includes(busca.toLowerCase()));

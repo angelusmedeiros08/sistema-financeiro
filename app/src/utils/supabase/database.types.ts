@@ -1156,6 +1156,63 @@ export type Database = {
           },
         ]
       }
+      produtos_servicos: {
+        Row: {
+          ativo: boolean
+          categoria_financeira_id: string
+          codigo_referencia: string | null
+          criado_em: string
+          descricao: string | null
+          id: string
+          nome: string
+          preco_venda: number
+          tenant_id: string
+          tipo: Database["public"]["Enums"]["tipo_produto_servico"]
+          unidade_medida: string | null
+        }
+        Insert: {
+          ativo?: boolean
+          categoria_financeira_id: string
+          codigo_referencia?: string | null
+          criado_em?: string
+          descricao?: string | null
+          id?: string
+          nome: string
+          preco_venda: number
+          tenant_id: string
+          tipo: Database["public"]["Enums"]["tipo_produto_servico"]
+          unidade_medida?: string | null
+        }
+        Update: {
+          ativo?: boolean
+          categoria_financeira_id?: string
+          codigo_referencia?: string | null
+          criado_em?: string
+          descricao?: string | null
+          id?: string
+          nome?: string
+          preco_venda?: number
+          tenant_id?: string
+          tipo?: Database["public"]["Enums"]["tipo_produto_servico"]
+          unidade_medida?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "produtos_servicos_categoria_financeira_id_fkey"
+            columns: ["categoria_financeira_id"]
+            isOneToOne: false
+            referencedRelation: "categorias_financeiras"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "produtos_servicos_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rateio_categoria: {
         Row: {
           categoria_id: string
@@ -1562,6 +1619,152 @@ export type Database = {
         }
         Relationships: []
       }
+      venda_itens: {
+        Row: {
+          descricao: string
+          id: string
+          preco_unitario: number
+          produto_servico_id: string
+          quantidade: number
+          tenant_id: string
+          valor_total: number | null
+          venda_id: string
+        }
+        Insert: {
+          descricao: string
+          id?: string
+          preco_unitario: number
+          produto_servico_id: string
+          quantidade: number
+          tenant_id: string
+          valor_total?: number | null
+          venda_id: string
+        }
+        Update: {
+          descricao?: string
+          id?: string
+          preco_unitario?: number
+          produto_servico_id?: string
+          quantidade?: number
+          tenant_id?: string
+          valor_total?: number | null
+          venda_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venda_itens_produto_servico_id_fkey"
+            columns: ["produto_servico_id"]
+            isOneToOne: false
+            referencedRelation: "produtos_servicos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "venda_itens_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "venda_itens_venda_id_fkey"
+            columns: ["venda_id"]
+            isOneToOne: false
+            referencedRelation: "vendas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vendas: {
+        Row: {
+          criado_em: string
+          criado_por: string | null
+          data_emissao: string
+          evento_financeiro_id: string | null
+          forma_pagamento_id: string | null
+          id: string
+          numero: number
+          numero_parcelas: number
+          observacoes: string | null
+          pessoa_id: string
+          primeiro_vencimento: string | null
+          status: Database["public"]["Enums"]["status_venda"]
+          tenant_id: string
+        }
+        Insert: {
+          criado_em?: string
+          criado_por?: string | null
+          data_emissao?: string
+          evento_financeiro_id?: string | null
+          forma_pagamento_id?: string | null
+          id?: string
+          numero?: number
+          numero_parcelas?: number
+          observacoes?: string | null
+          pessoa_id: string
+          primeiro_vencimento?: string | null
+          status?: Database["public"]["Enums"]["status_venda"]
+          tenant_id: string
+        }
+        Update: {
+          criado_em?: string
+          criado_por?: string | null
+          data_emissao?: string
+          evento_financeiro_id?: string | null
+          forma_pagamento_id?: string | null
+          id?: string
+          numero?: number
+          numero_parcelas?: number
+          observacoes?: string | null
+          pessoa_id?: string
+          primeiro_vencimento?: string | null
+          status?: Database["public"]["Enums"]["status_venda"]
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendas_evento_financeiro_id_fkey"
+            columns: ["evento_financeiro_id"]
+            isOneToOne: false
+            referencedRelation: "eventos_financeiros"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendas_evento_financeiro_id_fkey"
+            columns: ["evento_financeiro_id"]
+            isOneToOne: false
+            referencedRelation: "vw_movimento_competencia_previsto"
+            referencedColumns: ["evento_financeiro_id"]
+          },
+          {
+            foreignKeyName: "vendas_evento_financeiro_id_fkey"
+            columns: ["evento_financeiro_id"]
+            isOneToOne: false
+            referencedRelation: "vw_movimento_realizado"
+            referencedColumns: ["evento_financeiro_id"]
+          },
+          {
+            foreignKeyName: "vendas_forma_pagamento_id_fkey"
+            columns: ["forma_pagamento_id"]
+            isOneToOne: false
+            referencedRelation: "formas_pagamento"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendas_pessoa_id_fkey"
+            columns: ["pessoa_id"]
+            isOneToOne: false
+            referencedRelation: "pessoas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendas_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       vw_movimento_competencia_previsto: {
@@ -1720,6 +1923,7 @@ export type Database = {
         | "RECEBIDO_PARCIAL"
         | "ATRASADO"
         | "PERDIDO"
+      status_venda: "RASCUNHO" | "ENVIADO" | "APROVADO" | "RECUSADO"
       tipo_anexo:
         | "CONTRATO"
         | "DOCUMENTO_FISCAL"
@@ -1741,6 +1945,7 @@ export type Database = {
         | "SUBTOTAL_ALTERNATIVO"
         | "RESULTADO_NAO_OPERACIONAL"
       tipo_partida: "DEBITO" | "CREDITO"
+      tipo_produto_servico: "PRODUTO" | "SERVICO"
       unidade_intervalo: "DIA" | "SEMANA" | "MES"
     }
     CompositeTypes: {
@@ -1910,6 +2115,7 @@ export const Constants = {
         "ATRASADO",
         "PERDIDO",
       ],
+      status_venda: ["RASCUNHO", "ENVIADO", "APROVADO", "RECUSADO"],
       tipo_anexo: [
         "CONTRATO",
         "DOCUMENTO_FISCAL",
@@ -1934,6 +2140,7 @@ export const Constants = {
         "RESULTADO_NAO_OPERACIONAL",
       ],
       tipo_partida: ["DEBITO", "CREDITO"],
+      tipo_produto_servico: ["PRODUTO", "SERVICO"],
       unidade_intervalo: ["DIA", "SEMANA", "MES"],
     },
   },
