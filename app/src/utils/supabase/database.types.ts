@@ -1555,6 +1555,7 @@ export type Database = {
           convidado_em: string
           papel: Database["public"]["Enums"]["papel_usuario"]
           pessoa_id: string | null
+          senha_definida: boolean
           tenant_id: string
           usuario_id: string
         }
@@ -1563,6 +1564,7 @@ export type Database = {
           convidado_em?: string
           papel: Database["public"]["Enums"]["papel_usuario"]
           pessoa_id?: string | null
+          senha_definida?: boolean
           tenant_id: string
           usuario_id: string
         }
@@ -1571,6 +1573,7 @@ export type Database = {
           convidado_em?: string
           papel?: Database["public"]["Enums"]["papel_usuario"]
           pessoa_id?: string | null
+          senha_definida?: boolean
           tenant_id?: string
           usuario_id?: string
         }

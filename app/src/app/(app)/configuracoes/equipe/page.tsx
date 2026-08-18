@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
-import { createAdminClient } from "@/utils/supabase/admin";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -26,7 +25,7 @@ export default async function PaginaEquipe() {
   const [{ data: membros }, { data: clientes }] = await Promise.all([
     supabase
       .from("usuario_tenant")
-      .select("usuario_id, papel, ativo, convidado_em, usuarios(nome, email)")
+      .select("usuario_id, papel, ativo, senha_definida, convidado_em, usuarios(nome, email)")
       .eq("tenant_id", contexto.tenantId)
       .order("convidado_em"),
     supabase
@@ -38,20 +37,6 @@ export default async function PaginaEquipe() {
   ]);
 
   const souAdmin = contexto.papel === "admin";
-
-  // "Pendente" = convite enviado mas o usuário nunca definiu senha
-  // (email_confirmed_at ainda nulo). Não dá pra saber isso pelas tabelas
-  // public — só a API admin de auth expõe esse campo.
-  const admin = createAdminClient();
-  const statusPorUsuario = new Map<string, boolean>();
-  if (souAdmin && membros?.length) {
-    await Promise.all(
-      membros.map(async (m) => {
-        const { data } = await admin.auth.admin.getUserById(m.usuario_id);
-        statusPorUsuario.set(m.usuario_id, !!data.user?.email_confirmed_at);
-      }),
-    );
-  }
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-6">
@@ -80,12 +65,14 @@ export default async function PaginaEquipe() {
             </TableHeader>
             <TableBody>
               {(membros ?? []).map((m) => {
-                const confirmado = statusPorUsuario.get(m.usuario_id) ?? true;
                 // Independe de `ativo`: um convite pendente pode ter sido
                 // revogado numa tentativa anterior sem nunca ter sido aceito
                 // — nesse caso ainda precisa do botão de cancelar (que apaga
-                // a conta de auth), não do de reativar.
-                const pendente = !confirmado;
+                // a conta de auth), não do de reativar. senha_definida (não
+                // email_confirmed_at do Supabase) é o sinal certo: esse
+                // último já fica true assim que a pessoa clica em "Aceitar
+                // convite", antes de existir senha de verdade.
+                const pendente = !m.senha_definida;
                 return (
                   <TableRow key={m.usuario_id}>
                     <TableCell className="font-medium text-foreground">{m.usuarios?.nome ?? "-"}</TableCell>

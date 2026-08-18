@@ -288,6 +288,17 @@ export async function definirSenhaConvite(formData: FormData): Promise<Resultado
   if (error) return { erro: error.message };
 
   await supabase.from("usuarios").update({ nome }).eq("id", user.id);
+  // marca aqui, não em aceitarConvite() — email_confirmed_at já fica true
+  // desde o clique em "Aceitar convite", antes da senha existir de fato.
+  // senha_definida é o sinal certo de "consegue entrar" pra tela de Equipe.
+  // Client admin (service_role) de propósito: a policy de UPDATE em
+  // usuario_tenant é admin-only (não dá pra um convidado comum atualizar a
+  // própria linha), e o usuário recém-convidado normalmente não é admin —
+  // sem isso o UPDATE seria bloqueado em silêncio pelo RLS. Só grava
+  // senha_definida, nunca papel/ativo, então não abre brecha de escalonar
+  // privilégio.
+  const admin = createAdminClient();
+  await admin.from("usuario_tenant").update({ senha_definida: true }).eq("usuario_id", user.id);
 
   const { data: vinculo } = await supabase
     .from("usuario_tenant")
