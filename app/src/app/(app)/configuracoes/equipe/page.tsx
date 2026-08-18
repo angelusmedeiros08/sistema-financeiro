@@ -81,7 +81,11 @@ export default async function PaginaEquipe() {
             <TableBody>
               {(membros ?? []).map((m) => {
                 const confirmado = statusPorUsuario.get(m.usuario_id) ?? true;
-                const pendente = m.ativo && !confirmado;
+                // Independe de `ativo`: um convite pendente pode ter sido
+                // revogado numa tentativa anterior sem nunca ter sido aceito
+                // — nesse caso ainda precisa do botão de cancelar (que apaga
+                // a conta de auth), não do de reativar.
+                const pendente = !confirmado;
                 return (
                   <TableRow key={m.usuario_id}>
                     <TableCell className="font-medium text-foreground">{m.usuarios?.nome ?? "-"}</TableCell>
