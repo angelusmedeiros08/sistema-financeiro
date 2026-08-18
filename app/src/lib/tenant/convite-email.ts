@@ -25,9 +25,15 @@ export async function enviarEmailConvite(params: {
   const host = process.env.BREVO_SMTP_HOST;
   const usuario = process.env.BREVO_SMTP_USER;
   const senha = process.env.BREVO_SMTP_PASSWORD;
+  // Remetente de verdade (precisa ser um e-mail verificado no Brevo, em
+  // "Remetentes, domínio, IPs") — nunca o login de autenticação SMTP
+  // (b5da10001@smtp-brevo.com), que é só uma credencial interna e não uma
+  // identidade de remetente autorizada. Usar o login como "From" faz o
+  // Brevo recusar ou descartar o envio silenciosamente.
+  const remetente = process.env.BREVO_SENDER_EMAIL;
 
-  if (!host || !usuario || !senha) {
-    return { erro: "SMTP do convite não configurado (BREVO_SMTP_HOST/USER/PASSWORD)." };
+  if (!host || !usuario || !senha || !remetente) {
+    return { erro: "SMTP do convite não configurado (BREVO_SMTP_HOST/USER/PASSWORD/SENDER_EMAIL)." };
   }
 
   const transportador = nodemailer.createTransport({
@@ -41,7 +47,7 @@ export async function enviarEmailConvite(params: {
 
   try {
     await transportador.sendMail({
-      from: `"Sistema Financeiro" <${usuario}>`,
+      from: `"Sistema Financeiro" <${remetente}>`,
       to: params.email,
       subject: `Convite para ${params.tenantNome}`,
       html: `
@@ -65,6 +71,12 @@ export async function enviarEmailConvite(params: {
     });
     return { sucesso: true };
   } catch (erro) {
-    return { erro: erro instanceof Error ? erro.message : "Falha ao enviar e-mail de convite." };
+    // inclui a resposta bruta do servidor SMTP quando disponível — é o
+    // detalhe que realmente diz por que o Brevo recusou (remetente não
+    // verificado, autenticação, etc.), não só "falha ao enviar".
+    const detalhe =
+      erro && typeof erro === "object" && "response" in erro ? String((erro as { response?: unknown }).response) : undefined;
+    const mensagem = erro instanceof Error ? erro.message : "Falha ao enviar e-mail de convite.";
+    return { erro: detalhe ? `${mensagem} — ${detalhe}` : mensagem };
   }
 }
