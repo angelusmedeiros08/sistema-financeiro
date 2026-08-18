@@ -74,6 +74,43 @@ export async function convidarUsuario(
   return { sucesso: true };
 }
 
+// Cancela um convite que nunca foi aceito (usuário nunca definiu senha).
+// Precisa apagar tanto o vínculo com o tenant quanto a conta de auth —
+// supabase.auth.admin.inviteUserByEmail() rejeita convidar de novo um
+// e-mail que já existe em auth.users (mesmo não confirmado, error_code
+// email_exists), então só remover o vínculo não bastaria pra liberar um
+// reenvio. auth.users é global no projeto (compartilhado entre tenants),
+// então só apaga a conta se esse usuário não tiver vínculo em mais
+// nenhum tenant.
+export async function cancelarConvitePendente(
+  supabase: Cliente,
+  params: { tenant_id: string; usuario_id: string; papelChamador: PapelUsuario },
+): Promise<{ sucesso: true } | { erro: string }> {
+  if (params.papelChamador !== "admin") {
+    return { erro: "Só administradores podem cancelar convites." };
+  }
+
+  const { error: erroVinculo } = await supabase
+    .from("usuario_tenant")
+    .delete()
+    .eq("tenant_id", params.tenant_id)
+    .eq("usuario_id", params.usuario_id);
+
+  if (erroVinculo) return { erro: erroVinculo.message };
+
+  const admin = createAdminClient();
+  const { count } = await admin
+    .from("usuario_tenant")
+    .select("tenant_id", { count: "exact", head: true })
+    .eq("usuario_id", params.usuario_id);
+
+  if (!count) {
+    await admin.auth.admin.deleteUser(params.usuario_id);
+  }
+
+  return { sucesso: true };
+}
+
 export async function definirAcessoUsuario(
   supabase: Cliente,
   params: { tenant_id: string; usuario_id: string; ativo: boolean; papelChamador: PapelUsuario },

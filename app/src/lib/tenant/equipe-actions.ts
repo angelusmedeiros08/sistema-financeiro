@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/utils/supabase/server";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
-import { convidarUsuario, definirAcessoUsuario } from "./equipe";
+import { convidarUsuario, definirAcessoUsuario, cancelarConvitePendente } from "./equipe";
 import { resolverPessoaId } from "@/lib/contabil/evento-financeiro";
 import type { Database } from "@/utils/supabase/database.types";
 
@@ -44,6 +44,26 @@ export async function convidarUsuarioAction(formData: FormData): Promise<Resulta
     papel,
     papelChamador: contexto.papel,
     pessoa_id: pessoaId,
+  });
+
+  if ("erro" in resultado) return resultado;
+
+  revalidatePath("/configuracoes/equipe");
+  return { sucesso: true };
+}
+
+export async function cancelarConviteAction(formData: FormData): Promise<ResultadoAcao> {
+  const usuarioId = String(formData.get("usuario_id") ?? "");
+  if (!usuarioId) return { erro: "Usuário inválido." };
+
+  const contexto = await obterUsuarioETenantAtual();
+  if ("erro" in contexto) return { erro: contexto.erro };
+
+  const supabase = await createClient();
+  const resultado = await cancelarConvitePendente(supabase, {
+    tenant_id: contexto.tenantId,
+    usuario_id: usuarioId,
+    papelChamador: contexto.papel,
   });
 
   if ("erro" in resultado) return resultado;

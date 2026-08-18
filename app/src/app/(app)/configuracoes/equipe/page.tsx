@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
+import { createAdminClient } from "@/utils/supabase/admin";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -7,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { ConfiguracoesSubNav } from "../sub-nav";
 import { ConvidarForm } from "./convidar-form";
 import { AcessoToggleButton } from "./acesso-toggle-button";
+import { CancelarConviteButton } from "./cancelar-convite-button";
 
 const ROTULO_PAPEL: Record<string, string> = {
   admin: "Admin",
@@ -37,6 +39,20 @@ export default async function PaginaEquipe() {
 
   const souAdmin = contexto.papel === "admin";
 
+  // "Pendente" = convite enviado mas o usuário nunca definiu senha
+  // (email_confirmed_at ainda nulo). Não dá pra saber isso pelas tabelas
+  // public — só a API admin de auth expõe esse campo.
+  const admin = createAdminClient();
+  const statusPorUsuario = new Map<string, boolean>();
+  if (souAdmin && membros?.length) {
+    await Promise.all(
+      membros.map(async (m) => {
+        const { data } = await admin.auth.admin.getUserById(m.usuario_id);
+        statusPorUsuario.set(m.usuario_id, !!data.user?.email_confirmed_at);
+      }),
+    );
+  }
+
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-6">
       <h1 className="text-xl font-bold tracking-tight text-foreground">Equipe</h1>
@@ -63,23 +79,41 @@ export default async function PaginaEquipe() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {(membros ?? []).map((m) => (
-                <TableRow key={m.usuario_id}>
-                  <TableCell className="font-medium text-foreground">{m.usuarios?.nome ?? "-"}</TableCell>
-                  <TableCell className="text-muted-foreground">{m.usuarios?.email ?? "-"}</TableCell>
-                  <TableCell className="text-muted-foreground">{ROTULO_PAPEL[m.papel] ?? m.papel}</TableCell>
-                  <TableCell>
-                    <Badge className={cn("border-none font-semibold", m.ativo ? "bg-[#157F6B]/12 text-[#0F5F50]" : "bg-muted text-muted-foreground")}>
-                      {m.ativo ? "Ativo" : "Revogado"}
-                    </Badge>
-                  </TableCell>
-                  {souAdmin && (
-                    <TableCell className="text-right">
-                      {m.usuario_id !== contexto.user.id && <AcessoToggleButton usuarioId={m.usuario_id} ativo={m.ativo} />}
+              {(membros ?? []).map((m) => {
+                const confirmado = statusPorUsuario.get(m.usuario_id) ?? true;
+                const pendente = m.ativo && !confirmado;
+                return (
+                  <TableRow key={m.usuario_id}>
+                    <TableCell className="font-medium text-foreground">{m.usuarios?.nome ?? "-"}</TableCell>
+                    <TableCell className="text-muted-foreground">{m.usuarios?.email ?? "-"}</TableCell>
+                    <TableCell className="text-muted-foreground">{ROTULO_PAPEL[m.papel] ?? m.papel}</TableCell>
+                    <TableCell>
+                      <Badge
+                        className={cn(
+                          "border-none font-semibold",
+                          pendente
+                            ? "bg-amber-500/12 text-amber-700"
+                            : m.ativo
+                              ? "bg-[#157F6B]/12 text-[#0F5F50]"
+                              : "bg-muted text-muted-foreground",
+                        )}
+                      >
+                        {pendente ? "Convite pendente" : m.ativo ? "Ativo" : "Revogado"}
+                      </Badge>
                     </TableCell>
-                  )}
-                </TableRow>
-              ))}
+                    {souAdmin && (
+                      <TableCell className="text-right">
+                        {m.usuario_id !== contexto.user.id &&
+                          (pendente ? (
+                            <CancelarConviteButton usuarioId={m.usuario_id} />
+                          ) : (
+                            <AcessoToggleButton usuarioId={m.usuario_id} ativo={m.ativo} />
+                          ))}
+                      </TableCell>
+                    )}
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </div>
