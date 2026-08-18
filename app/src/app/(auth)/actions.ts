@@ -233,6 +233,31 @@ export async function entrar(formData: FormData): Promise<ResultadoAcao | never>
   redirect("/painel");
 }
 
+// Consome o token de convite só quando a pessoa clica de propósito no botão
+// "Aceitar convite" (chamada via form POST em /convite/aceitar) — nunca no
+// carregamento da página em si. Diferente do fluxo antigo (link do e-mail
+// apontando direto pro /verify do Supabase, consumível com um simples GET),
+// isso evita que scanners de segurança de e-mail gastem o token sozinhos
+// antes do clique real.
+export async function aceitarConvite(formData: FormData): Promise<never> {
+  const token = String(formData.get("token") ?? "");
+  const email = String(formData.get("email") ?? "");
+  const next = String(formData.get("next") ?? "/convite/definir-senha");
+
+  if (!token || !email) {
+    redirect("/entrar?erro=link_invalido");
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.verifyOtp({ email, token, type: "invite" });
+
+  if (error) {
+    redirect("/entrar?erro=link_invalido");
+  }
+
+  redirect(next.startsWith("/") && !next.startsWith("//") ? next : "/convite/definir-senha");
+}
+
 // Chamada pela tela que o link de convite leva depois do /auth/confirm já
 // ter trocado o code por uma sessão de verdade — o usuário já está
 // autenticado nesse ponto, só falta escolher a senha (equivalente ao

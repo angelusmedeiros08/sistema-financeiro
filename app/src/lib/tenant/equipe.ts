@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/utils/supabase/admin";
+import { enviarEmailConvite } from "./convite-email";
 import type { Database } from "@/utils/supabase/database.types";
 
 type Cliente = SupabaseClient<Database>;
@@ -31,9 +32,18 @@ export async function convidarUsuario(
 
   const admin = createAdminClient();
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
-  const { data: convite, error: erroConvite } = await admin.auth.admin.inviteUserByEmail(params.email, {
-    data: { nome: params.email },
-    redirectTo: `${siteUrl}/auth/confirm?next=/convite/definir-senha`,
+
+  // generateLink() só cria o usuário e devolve o token — não manda e-mail
+  // nenhum. Diferente de inviteUserByEmail(), que dispara o e-mail do
+  // Supabase apontando direto pro endpoint de verificação dele (consumível
+  // com um simples GET, vulnerável a scanner de segurança de e-mail
+  // "clicando" no link sozinho antes da pessoa de verdade). Mandamos o
+  // e-mail nós mesmos, com um link pra /convite/aceitar, que só consome o
+  // token quando a pessoa clica de propósito num botão.
+  const { data: convite, error: erroConvite } = await admin.auth.admin.generateLink({
+    type: "invite",
+    email: params.email,
+    options: { data: { nome: params.email } },
   });
 
   if (erroConvite || !convite.user) {
@@ -41,6 +51,24 @@ export async function convidarUsuario(
     // pode revelar se esse e-mail já tem conta em OUTRO tenant da mesma
     // plataforma, vazando informação entre clientes da SaaS.
     return { erro: "Não foi possível enviar o convite. Confirme o e-mail e tente novamente." };
+  }
+
+  const { data: tenant } = await supabase.from("tenants").select("nome").eq("id", params.tenant_id).single();
+  const linkAceite = `${siteUrl}/convite/aceitar?token=${encodeURIComponent(convite.properties.hashed_token)}&email=${encodeURIComponent(params.email)}&papel=${params.papel}&tenant=${encodeURIComponent(tenant?.nome ?? "")}&next=${encodeURIComponent("/convite/definir-senha")}`;
+
+  const resultadoEmail = await enviarEmailConvite({
+    email: params.email,
+    tenantNome: tenant?.nome ?? "seu escritório",
+    papel: params.papel,
+    linkAceite,
+  });
+
+  if ("erro" in resultadoEmail) {
+    // o usuário já foi criado em auth.users pelo generateLink() acima —
+    // não desfaz isso aqui: o admin pode tentar convidar de novo (o fluxo
+    // de "já existe" abaixo reconhece e reaproveita), ou cancelar o
+    // convite pendente pela tela de Equipe se quiser desistir.
+    return { erro: resultadoEmail.erro };
   }
 
   // já era membro (convite repetido, ou reingresso): reativa e atualiza o
