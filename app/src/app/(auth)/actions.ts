@@ -249,7 +249,10 @@ export async function aceitarConvite(formData: FormData): Promise<never> {
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.verifyOtp({ email, token, type: "invite" });
+  // token_hash (não "token" com email) — a variante {email, token} espera um
+  // código de 6 dígitos, não o hash que geramos em generateLink(). Usar o
+  // par errado falha sempre, em qualquer link, não só nos velhos.
+  const { error } = await supabase.auth.verifyOtp({ token_hash: token, type: "invite" });
 
   if (error) {
     redirect("/entrar?erro=link_invalido");
