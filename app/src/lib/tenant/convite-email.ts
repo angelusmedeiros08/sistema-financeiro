@@ -1,5 +1,5 @@
 import "server-only";
-import nodemailer from "nodemailer";
+import { criarTransportadorBrevo, detalheErroSmtp } from "@/lib/email/transportador-brevo";
 
 const ROTULO_PAPEL: Record<string, string> = {
   admin: "Admin",
@@ -22,26 +22,9 @@ export async function enviarEmailConvite(params: {
   papel: string;
   linkAceite: string;
 }): Promise<{ sucesso: true } | { erro: string }> {
-  const host = process.env.BREVO_SMTP_HOST;
-  const usuario = process.env.BREVO_SMTP_USER;
-  const senha = process.env.BREVO_SMTP_PASSWORD;
-  // Remetente de verdade (precisa ser um e-mail verificado no Brevo, em
-  // "Remetentes, domínio, IPs") — nunca o login de autenticação SMTP
-  // (b5da10001@smtp-brevo.com), que é só uma credencial interna e não uma
-  // identidade de remetente autorizada. Usar o login como "From" faz o
-  // Brevo recusar ou descartar o envio silenciosamente.
-  const remetente = process.env.BREVO_SENDER_EMAIL;
-
-  if (!host || !usuario || !senha || !remetente) {
-    return { erro: "SMTP do convite não configurado (BREVO_SMTP_HOST/USER/PASSWORD/SENDER_EMAIL)." };
-  }
-
-  const transportador = nodemailer.createTransport({
-    host,
-    port: 587,
-    secure: false,
-    auth: { user: usuario, pass: senha },
-  });
+  const config = criarTransportadorBrevo();
+  if ("erro" in config) return config;
+  const { transportador, remetente } = config;
 
   const rotuloPapel = ROTULO_PAPEL[params.papel] ?? params.papel;
 
@@ -71,12 +54,6 @@ export async function enviarEmailConvite(params: {
     });
     return { sucesso: true };
   } catch (erro) {
-    // inclui a resposta bruta do servidor SMTP quando disponível — é o
-    // detalhe que realmente diz por que o Brevo recusou (remetente não
-    // verificado, autenticação, etc.), não só "falha ao enviar".
-    const detalhe =
-      erro && typeof erro === "object" && "response" in erro ? String((erro as { response?: unknown }).response) : undefined;
-    const mensagem = erro instanceof Error ? erro.message : "Falha ao enviar e-mail de convite.";
-    return { erro: detalhe ? `${mensagem} — ${detalhe}` : mensagem };
+    return { erro: detalheErroSmtp(erro, "Falha ao enviar e-mail de convite.") };
   }
 }

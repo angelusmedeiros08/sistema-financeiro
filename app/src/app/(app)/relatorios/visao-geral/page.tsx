@@ -9,6 +9,7 @@ import { buscarAging, buscarResumoVencimentos } from "@/lib/relatorios/aging";
 import { buscarIndicadoresRealizacao, mesAtual } from "@/lib/relatorios/indicadores-gauge";
 import { buscarAnaliseCategorias } from "@/lib/relatorios/analise-despesas";
 import { buscarConcentracaoReceita } from "@/lib/relatorios/concentracao-receita";
+import { buscarSaldoProjetado } from "@/lib/relatorios/saldo-projetado";
 import { RelatoriosSubNav } from "../sub-nav";
 import { RelatoriosControles } from "../controles";
 import { StatCard } from "@/components/painel/stat-card";
@@ -18,6 +19,7 @@ import { AgingBarras } from "@/components/relatorios/aging-barras";
 import { IndicadorGauge } from "@/components/relatorios/indicador-gauge";
 import { TopCategoriasDonut } from "@/components/relatorios/top-categorias-donut";
 import { BadgeRiscoConcentracao } from "@/components/relatorios/badge-risco-concentracao";
+import { BadgeRupturaSaldo } from "@/components/relatorios/badge-ruptura-saldo";
 import { formatarMoeda, formatarPercentual } from "@/lib/formatacao";
 
 export default async function PaginaRelatoriosVisaoGeral({
@@ -34,7 +36,7 @@ export default async function PaginaRelatoriosVisaoGeral({
 
   const { inicio: mesInicio, fim: mesFim } = mesAtual();
 
-  const [dre, fluxo, pontoEquilibrio, agingReceita, agingDespesa, resumoReceber, resumoPagar, indicadoresCAR, indicadoresCAP, topReceitas, topDespesas, concentracao] =
+  const [dre, fluxo, pontoEquilibrio, agingReceita, agingDespesa, resumoReceber, resumoPagar, indicadoresCAR, indicadoresCAP, topReceitas, topDespesas, concentracao, saldoProjetado] =
     await Promise.all([
       buscarDRE(supabase, { tenantId, ...params }),
       buscarFluxoCaixaGrade(supabase, { tenantId, ...params }),
@@ -48,7 +50,10 @@ export default async function PaginaRelatoriosVisaoGeral({
       buscarAnaliseCategorias(supabase, { tenantId, ...params, tipo: "RECEITA" }),
       buscarAnaliseCategorias(supabase, { tenantId, ...params, tipo: "DESPESA" }),
       buscarConcentracaoReceita(supabase, { tenantId }),
+      buscarSaldoProjetado(supabase, tenantId),
     ]);
+
+  const projecaoD7 = saldoProjetado.projecoes.find((p) => p.dias === 7);
 
   const resultado = dre.at(-1)?.valorAcumulado ?? 0;
   const fluxoParaGrafico = fluxo.map((p) => ({ mes: p.chave, resultado: p.saldoPeriodo }));
@@ -62,8 +67,11 @@ export default async function PaginaRelatoriosVisaoGeral({
       <RelatoriosSubNav />
       <RelatoriosControles {...params} />
 
-      {concentracao.nivelRisco !== "BAIXO" && (
-        <BadgeRiscoConcentracao nivelRisco={concentracao.nivelRisco} percentualTop3={concentracao.percentualTop3} />
+      {(concentracao.nivelRisco !== "BAIXO" || projecaoD7?.ruptura) && (
+        <div className="flex flex-wrap gap-2">
+          {projecaoD7?.ruptura && <BadgeRupturaSaldo saldoD7={projecaoD7.saldo} />}
+          {concentracao.nivelRisco !== "BAIXO" && <BadgeRiscoConcentracao nivelRisco={concentracao.nivelRisco} percentualTop3={concentracao.percentualTop3} />}
+        </div>
       )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">

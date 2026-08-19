@@ -14,6 +14,41 @@ export type Database = {
   }
   public: {
     Tables: {
+      alertas_enviados: {
+        Row: {
+          destinatario_id: string
+          enviado_em: string
+          id: string
+          referencia_data: string
+          tenant_id: string
+          tipo: Database["public"]["Enums"]["tipo_alerta"]
+        }
+        Insert: {
+          destinatario_id: string
+          enviado_em?: string
+          id?: string
+          referencia_data: string
+          tenant_id: string
+          tipo: Database["public"]["Enums"]["tipo_alerta"]
+        }
+        Update: {
+          destinatario_id?: string
+          enviado_em?: string
+          id?: string
+          referencia_data?: string
+          tenant_id?: string
+          tipo?: Database["public"]["Enums"]["tipo_alerta"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alertas_enviados_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       anexos: {
         Row: {
           baixa_id: string | null
@@ -1642,6 +1677,7 @@ export type Database = {
           cnpj: string | null
           criado_em: string
           id: string
+          limiar_saldo_minimo_alerta: number
           nome: string
           plano: string
         }
@@ -1649,6 +1685,7 @@ export type Database = {
           cnpj?: string | null
           criado_em?: string
           id?: string
+          limiar_saldo_minimo_alerta?: number
           nome: string
           plano?: string
         }
@@ -1656,6 +1693,7 @@ export type Database = {
           cnpj?: string | null
           criado_em?: string
           id?: string
+          limiar_saldo_minimo_alerta?: number
           nome?: string
           plano?: string
         }
@@ -2042,6 +2080,7 @@ export type Database = {
         | "ATRASADO"
         | "PERDIDO"
       status_venda: "RASCUNHO" | "ENVIADO" | "APROVADO" | "RECUSADO"
+      tipo_alerta: "resumo_equipe" | "vencimento_cliente"
       tipo_anexo:
         | "CONTRATO"
         | "DOCUMENTO_FISCAL"
@@ -2238,6 +2277,7 @@ export const Constants = {
         "PERDIDO",
       ],
       status_venda: ["RASCUNHO", "ENVIADO", "APROVADO", "RECUSADO"],
+      tipo_alerta: ["resumo_equipe", "vencimento_cliente"],
       tipo_anexo: [
         "CONTRATO",
         "DOCUMENTO_FISCAL",

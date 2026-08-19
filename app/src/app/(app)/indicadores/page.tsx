@@ -7,9 +7,11 @@ import { buscarVariacaoCategorias } from "@/lib/relatorios/variacao-categorias";
 import { buscarPMR, buscarPMP } from "@/lib/relatorios/prazos-medios";
 import { buscarAging } from "@/lib/relatorios/aging";
 import { buscarDistribuicaoFormaPagamento } from "@/lib/relatorios/distribuicao-forma-pagamento";
+import { buscarSaldoProjetado, type SaldoProjetado } from "@/lib/relatorios/saldo-projetado";
 import { TopCategoriasDonut } from "@/components/relatorios/top-categorias-donut";
 import { AgingBarras } from "@/components/relatorios/aging-barras";
 import { BadgeRiscoConcentracao } from "@/components/relatorios/badge-risco-concentracao";
+import { BadgeRupturaSaldo } from "@/components/relatorios/badge-ruptura-saldo";
 import { formatarMoeda, formatarPercentual } from "@/lib/formatacao";
 import { cn } from "@/lib/utils";
 
@@ -20,7 +22,8 @@ export default async function PaginaIndicadores() {
 
   const supabase = await createClient();
 
-  const [concentracao, variacaoReceitas, variacaoDespesas, pmr, pmp, agingReceber, agingPagar, distribuicaoFormaPagamento] = await Promise.all([
+  const [saldoProjetado, concentracao, variacaoReceitas, variacaoDespesas, pmr, pmp, agingReceber, agingPagar, distribuicaoFormaPagamento] = await Promise.all([
+    buscarSaldoProjetado(supabase, tenantId),
     buscarConcentracaoReceita(supabase, { tenantId }),
     buscarVariacaoCategorias(supabase, { tenantId, tipo: "RECEITA" }),
     buscarVariacaoCategorias(supabase, { tenantId, tipo: "DESPESA" }),
@@ -30,6 +33,8 @@ export default async function PaginaIndicadores() {
     buscarAging(supabase, { tenantId, tipo: "DESPESA" }),
     buscarDistribuicaoFormaPagamento(supabase, { tenantId }),
   ]);
+
+  const projecaoD7 = saldoProjetado.projecoes.find((p) => p.dias === 7);
 
   const donutClientes = concentracao.topClientes.map((c, i) => ({
     categoriaId: c.pessoaId ?? `sem-pessoa-${i}`,
@@ -52,6 +57,14 @@ export default async function PaginaIndicadores() {
   return (
     <div className="flex w-full flex-col gap-6">
       <h1 className="text-xl font-bold tracking-tight text-foreground">Indicadores</h1>
+
+      <section className="rounded-2xl border border-border bg-card p-6">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <h2 className="font-heading text-base font-bold text-foreground">Estou ficando sem caixa?</h2>
+          {projecaoD7?.ruptura && <BadgeRupturaSaldo saldoD7={projecaoD7.saldo} />}
+        </div>
+        <CardSaldoProjetado {...saldoProjetado} />
+      </section>
 
       <section className="rounded-2xl border border-border bg-card p-6">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
@@ -106,6 +119,26 @@ export default async function PaginaIndicadores() {
           </div>
         </div>
       </section>
+    </div>
+  );
+}
+
+function CardSaldoProjetado({ saldoAtual, projecoes, limiar }: SaldoProjetado) {
+  return (
+    <div className="rounded-xl border border-border p-4">
+      <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+        <h3 className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Saldo atual</h3>
+        <span className="text-lg font-bold tabular-nums text-foreground">{formatarMoeda(saldoAtual)}</span>
+      </div>
+      <div className="grid grid-cols-3 gap-3">
+        {projecoes.map((p) => (
+          <div key={p.dias} className={cn("rounded-xl p-3", p.ruptura ? "bg-[#D8583A]/8" : "bg-muted/40")}>
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">D+{p.dias}</p>
+            <p className={cn("mt-1 text-lg font-bold tabular-nums", p.ruptura ? "text-[#D8583A]" : "text-foreground")}>{formatarMoeda(p.saldo)}</p>
+          </div>
+        ))}
+      </div>
+      {limiar > 0 && <p className="mt-3 text-xs text-muted-foreground">Colchão mínimo configurado: {formatarMoeda(limiar)}</p>}
     </div>
   );
 }
