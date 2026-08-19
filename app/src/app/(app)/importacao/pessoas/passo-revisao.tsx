@@ -58,7 +58,7 @@ export function PassoRevisao({
   });
   const [incluidas, setIncluidas] = useState<Set<number>>(() => new Set(linhas.filter((l) => decisaoPadrao(l) !== null).map((l) => l.linha)));
 
-  function editarCampo(linhaNum: number, campo: "nome" | "perfil" | "documento", texto: string) {
+  function editarCampo(linhaNum: number, campo: "nome" | "perfil" | "documento" | "email" | "telefone" | "enderecoCep", texto: string) {
     setLinhas((atual) => {
       // Revalida o conjunto inteiro (não só a linha editada) — a checagem
       // de CPF/CNPJ repetido dentro do próprio arquivo depende de ver todas
@@ -96,6 +96,11 @@ export function PassoRevisao({
   const prontas = linhas.filter((l) => l.status !== "erro" && decisoes[l.linha] && incluidas.has(l.linha));
   const precisamConfirmar = linhas.filter((l) => l.status !== "erro" && !decisoes[l.linha]);
   const comErro = linhas.filter((l) => l.status === "erro");
+  // Resumo pré-confirmação — última checagem antes de uma escrita em massa
+  // que não tem "desfazer" fácil pra atualizações (só criações podem ser
+  // desfeitas depois, na Central de Importações).
+  const novos = prontas.filter((l) => decisoes[l.linha]?.acao === "criar").length;
+  const atualizacoes = prontas.filter((l) => decisoes[l.linha]?.acao === "atualizar").length;
 
   function importar() {
     const linhasProntas: LinhaPronta[] = prontas.map((l) => {
@@ -171,6 +176,9 @@ export function PassoRevisao({
               <TableHead>Nome</TableHead>
               <TableHead>Perfil</TableHead>
               <TableHead>Documento</TableHead>
+              <TableHead>E-mail</TableHead>
+              <TableHead>Telefone</TableHead>
+              <TableHead>CEP</TableHead>
               <TableHead>Ação</TableHead>
             </TableRow>
           </TableHeader>
@@ -209,6 +217,15 @@ export function PassoRevisao({
                     <Input className="h-7 w-32 text-xs" value={l.documento} onChange={(e) => editarCampo(l.linha, "documento", e.target.value)} />
                   </TableCell>
                   <TableCell>
+                    <Input className="h-7 w-36 text-xs" value={l.email} onChange={(e) => editarCampo(l.linha, "email", e.target.value)} />
+                  </TableCell>
+                  <TableCell>
+                    <Input className="h-7 w-28 text-xs" value={l.telefone} onChange={(e) => editarCampo(l.linha, "telefone", e.target.value)} />
+                  </TableCell>
+                  <TableCell>
+                    <Input className="h-7 w-24 text-xs" value={l.enderecoCep} onChange={(e) => editarCampo(l.linha, "enderecoCep", e.target.value)} />
+                  </TableCell>
+                  <TableCell>
                     <Select
                       value={valorSelect}
                       onValueChange={(v) => mudarDecisao(l.linha, v === "__criar__" ? { acao: "criar", pessoaId: null } : { acao: "atualizar", pessoaId: v })}
@@ -238,6 +255,14 @@ export function PassoRevisao({
           </TableBody>
         </Table>
       </div>
+
+      {prontas.length > 0 && (
+        <p className="text-sm text-muted-foreground">
+          Isso vai criar <strong className="text-foreground">{novos}</strong> {novos === 1 ? "pessoa nova" : "pessoas novas"} e atualizar{" "}
+          <strong className="text-foreground">{atualizacoes}</strong> {atualizacoes === 1 ? "cadastro existente" : "cadastros existentes"}. Atualizações não podem
+          ser desfeitas depois — confira antes de confirmar.
+        </p>
+      )}
 
       <div className="flex justify-between">
         <Button type="button" variant="ghost" className="gap-1.5" onClick={onVoltar}>

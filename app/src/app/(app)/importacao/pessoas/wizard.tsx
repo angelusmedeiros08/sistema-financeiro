@@ -23,6 +23,7 @@ const ESTADO_INICIAL = {
   etapa: "upload" as Etapa,
   buffer: null as ArrayBuffer | null,
   parse: null as ResultadoParse | null,
+  nomeArquivo: "",
   linhasTexto: [] as string[][],
   mapeamento: {} as Partial<Record<ColunaChave, number>>,
   linhasProntas: [] as LinhaPronta[],
@@ -62,7 +63,7 @@ export function ImportarPessoasWizard({
       {estado.etapa === "upload" && (
         <PassoUpload
           camposPersonalizados={camposPersonalizados}
-          onAvancar={({ buffer, parse }) => setEstado((s) => ({ ...s, etapa: "mapeamento", buffer, parse }))}
+          onAvancar={({ arquivo, buffer, parse }) => setEstado((s) => ({ ...s, etapa: "mapeamento", buffer, parse, nomeArquivo: arquivo.name }))}
         />
       )}
 
@@ -88,7 +89,7 @@ export function ImportarPessoasWizard({
       )}
 
       {estado.etapa === "resultado" && (
-        <PassoResultado linhas={estado.linhasProntas} onReiniciar={() => setEstado(ESTADO_INICIAL)} />
+        <PassoResultado linhas={estado.linhasProntas} nomeArquivo={estado.nomeArquivo} onReiniciar={() => setEstado(ESTADO_INICIAL)} />
       )}
     </div>
   );

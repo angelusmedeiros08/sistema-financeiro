@@ -675,6 +675,118 @@ export type Database = {
           },
         ]
       }
+      importacoes: {
+        Row: {
+          criado_em: string
+          criado_por: string | null
+          id: string
+          nome_arquivo: string
+          status: Database["public"]["Enums"]["status_importacao"]
+          tenant_id: string
+          tipo: Database["public"]["Enums"]["tipo_importacao"]
+          total_linhas: number
+        }
+        Insert: {
+          criado_em?: string
+          criado_por?: string | null
+          id?: string
+          nome_arquivo: string
+          status?: Database["public"]["Enums"]["status_importacao"]
+          tenant_id: string
+          tipo: Database["public"]["Enums"]["tipo_importacao"]
+          total_linhas: number
+        }
+        Update: {
+          criado_em?: string
+          criado_por?: string | null
+          id?: string
+          nome_arquivo?: string
+          status?: Database["public"]["Enums"]["status_importacao"]
+          tenant_id?: string
+          tipo?: Database["public"]["Enums"]["tipo_importacao"]
+          total_linhas?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "importacoes_criado_por_fkey"
+            columns: ["criado_por"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "importacoes_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      importacoes_itens: {
+        Row: {
+          acao: Database["public"]["Enums"]["acao_item_importacao"]
+          criado_em: string
+          dados_normalizados: Json
+          desfeito_em: string | null
+          erro: string | null
+          id: string
+          importacao_id: string
+          linha_numero: number
+          pessoa_id: string | null
+          status: Database["public"]["Enums"]["status_item_importacao"]
+          tenant_id: string
+        }
+        Insert: {
+          acao: Database["public"]["Enums"]["acao_item_importacao"]
+          criado_em?: string
+          dados_normalizados: Json
+          desfeito_em?: string | null
+          erro?: string | null
+          id?: string
+          importacao_id: string
+          linha_numero: number
+          pessoa_id?: string | null
+          status?: Database["public"]["Enums"]["status_item_importacao"]
+          tenant_id: string
+        }
+        Update: {
+          acao?: Database["public"]["Enums"]["acao_item_importacao"]
+          criado_em?: string
+          dados_normalizados?: Json
+          desfeito_em?: string | null
+          erro?: string | null
+          id?: string
+          importacao_id?: string
+          linha_numero?: number
+          pessoa_id?: string | null
+          status?: Database["public"]["Enums"]["status_item_importacao"]
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "importacoes_itens_importacao_id_fkey"
+            columns: ["importacao_id"]
+            isOneToOne: false
+            referencedRelation: "importacoes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "importacoes_itens_pessoa_id_fkey"
+            columns: ["pessoa_id"]
+            isOneToOne: false
+            referencedRelation: "pessoas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "importacoes_itens_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lancamentos: {
         Row: {
           criado_em: string
@@ -1889,6 +2001,7 @@ export type Database = {
       }
     }
     Enums: {
+      acao_item_importacao: "criar" | "atualizar"
       escopo_campo_personalizado: "CLIENTE" | "FORNECEDOR" | "AMBOS"
       forma_anexo: "ARQUIVO" | "LINK"
       id_dfc_linha_dre:
@@ -1918,6 +2031,8 @@ export type Database = {
         | "cliente_portal"
       perfil_pessoa: "CLIENTE" | "FORNECEDOR" | "TRANSPORTADORA"
       status_extrato_linha: "PENDENTE" | "CONCILIADA" | "IGNORADA"
+      status_importacao: "em_andamento" | "concluida" | "cancelada"
+      status_item_importacao: "sucesso" | "erro" | "pendente"
       status_parcela:
         | "PENDENTE"
         | "QUITADO"
@@ -1942,6 +2057,7 @@ export type Database = {
         | "DESPESA"
       tipo_endereco: "COMERCIAL" | "COBRANCA" | "ENTREGA" | "OUTRO"
       tipo_extrato_linha: "CREDITO" | "DEBITO"
+      tipo_importacao: "pessoas"
       tipo_linha_dre:
         | "FOLHA"
         | "SUBTOTAL"
@@ -2077,6 +2193,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      acao_item_importacao: ["criar", "atualizar"],
       escopo_campo_personalizado: ["CLIENTE", "FORNECEDOR", "AMBOS"],
       forma_anexo: ["ARQUIVO", "LINK"],
       id_dfc_linha_dre: [
@@ -2109,6 +2226,8 @@ export const Constants = {
       ],
       perfil_pessoa: ["CLIENTE", "FORNECEDOR", "TRANSPORTADORA"],
       status_extrato_linha: ["PENDENTE", "CONCILIADA", "IGNORADA"],
+      status_importacao: ["em_andamento", "concluida", "cancelada"],
+      status_item_importacao: ["sucesso", "erro", "pendente"],
       status_parcela: [
         "PENDENTE",
         "QUITADO",
@@ -2136,6 +2255,7 @@ export const Constants = {
       ],
       tipo_endereco: ["COMERCIAL", "COBRANCA", "ENTREGA", "OUTRO"],
       tipo_extrato_linha: ["CREDITO", "DEBITO"],
+      tipo_importacao: ["pessoas"],
       tipo_linha_dre: [
         "FOLHA",
         "SUBTOTAL",

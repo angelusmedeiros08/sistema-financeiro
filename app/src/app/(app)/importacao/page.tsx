@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Coins, Users, Package, Sparkle, ArrowRight } from "@phosphor-icons/react/dist/ssr";
+import { Coins, Users, Package, Sparkle, ArrowRight, ClockCounterClockwise } from "@phosphor-icons/react/dist/ssr";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
 import { cn } from "@/lib/utils";
 
@@ -24,9 +24,18 @@ export default async function PaginaImportacao() {
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-6">
-      <div>
-        <h1 className="text-xl font-bold tracking-tight text-foreground">Importação</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Escolha o que você quer importar.</p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-xl font-bold tracking-tight text-foreground">Importação</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Escolha o que você quer importar.</p>
+        </div>
+        <Link
+          href="/importacao/historico"
+          className="flex shrink-0 items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
+        >
+          <ClockCounterClockwise size={14} />
+          Central de Importações
+        </Link>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
