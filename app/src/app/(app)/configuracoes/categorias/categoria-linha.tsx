@@ -48,7 +48,7 @@ export function CategoriaLinha({
         </TableCell>
         <TableCell className={cn("text-muted-foreground", ehGrupo && "font-bold")}>{categoria.contaContabilNome ?? "-"}</TableCell>
         <TableCell>
-          {categoria.ehCustoFixo && <Badge className="border-none bg-[#6A56D8]/12 font-semibold text-[#4E3EAD]">Fixo</Badge>}
+          {categoria.ehCustoFixo && <Badge className="border-none bg-[#7A8B5C]/12 font-semibold text-[#4F5C3A]">Fixo</Badge>}
         </TableCell>
         <TableCell className="text-right">
           <Button type="button" variant="ghost" size="sm" onClick={() => setEditando(true)}>

@@ -94,7 +94,7 @@ export function SidebarConteudo() {
   return (
     <div className="flex h-full min-h-0 flex-col gap-8 bg-sidebar px-4 py-6 text-sidebar-foreground">
       <div className="flex shrink-0 items-center gap-2.5 px-2">
-        <span className="flex size-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#6A56D8] to-[#D8583A]">
+        <span className="flex size-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#157F6B] to-[#A87C1F]">
           <svg viewBox="0 0 24 24" className="size-3.5 stroke-white" fill="none" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
             <path d="M4 12h16M4 6h16M4 18h10" />
           </svg>

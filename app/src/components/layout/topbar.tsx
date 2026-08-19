@@ -2,6 +2,7 @@ import { List, SignOut } from "@phosphor-icons/react/dist/ssr";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { SidebarConteudo } from "./sidebar";
+import { ThemeToggle } from "./theme-toggle";
 import { sair } from "@/app/(auth)/actions";
 
 export function Topbar({ tenantNome, email }: { tenantNome: string; email: string }) {
@@ -26,6 +27,7 @@ export function Topbar({ tenantNome, email }: { tenantNome: string; email: strin
 
       <div className="flex items-center gap-3">
         <span className="hidden text-sm text-muted-foreground sm:inline">{email}</span>
+        <ThemeToggle />
         <form action={sair}>
           <Button variant="ghost" size="icon" type="submit" title="Sair">
             <SignOut size={19} />

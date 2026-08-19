@@ -1,11 +1,16 @@
+import { Pie } from "@visx/shape";
+import { Group } from "@visx/group";
 import { formatarMoeda, formatarNumeroCompacto, formatarPercentual } from "@/lib/formatacao";
 import type { LinhaAnaliseCategoria } from "@/lib/relatorios/analise-despesas";
 
 // Rosca com até 5 fatias + "Outras" agregando o resto — estilo validado no
 // companion de brainstorming (preferido a ranking em barra e a treemap).
-const PALETA = ["#6A56D8", "#157F6B", "#C98A1F", "#D8583A", "#4E3EAD", "#8A94A6"];
+// Motor de desenho é @visx/shape (Pie) em vez de strokeDasharray calculado
+// à mão — mesmo resultado visual, mas sem a trigonometria manual, e abre
+// caminho pra tooltip por fatia no futuro sem reescrever o componente.
+const PALETA = ["#7A8B5C", "#157F6B", "#C98A1F", "#D8583A", "#4F5C3A", "#8A94A6"];
 const RAIO = 70;
-const CIRCUNFERENCIA = 2 * Math.PI * RAIO;
+const ESPESSURA = 28;
 const MAX_FATIAS_NOMEADAS = 5;
 
 type Fatia = { rotulo: string; total: number; cor: string };
@@ -34,29 +39,11 @@ export function TopCategoriasDonut({ titulo, linhas }: { titulo: string; linhas:
       ) : (
         <div className="flex flex-wrap items-center gap-6">
           <svg viewBox="0 0 200 200" width="170" height="170" className="shrink-0">
-            {(() => {
-              let acumulado = 0;
-              return fatias.map((fatia) => {
-                const fracao = fatia.total / total;
-                const dasharray = `${fracao * CIRCUNFERENCIA} ${CIRCUNFERENCIA}`;
-                const dashoffset = -acumulado * CIRCUNFERENCIA;
-                acumulado += fracao;
-                return (
-                  <circle
-                    key={fatia.rotulo}
-                    cx="100"
-                    cy="100"
-                    r={RAIO}
-                    fill="none"
-                    stroke={fatia.cor}
-                    strokeWidth="28"
-                    strokeDasharray={dasharray}
-                    strokeDashoffset={dashoffset}
-                    transform="rotate(-90 100 100)"
-                  />
-                );
-              });
-            })()}
+            <Group top={100} left={100}>
+              <Pie data={fatias} pieValue={(f) => f.total} outerRadius={RAIO} innerRadius={RAIO - ESPESSURA} padAngle={0.012}>
+                {(pie) => pie.arcs.map((arc) => <path key={arc.data.rotulo} d={pie.path(arc) ?? undefined} fill={arc.data.cor} />)}
+              </Pie>
+            </Group>
             <text x="100" y="96" textAnchor="middle" className="fill-foreground" fontSize="19" fontWeight="700">
               {formatarNumeroCompacto(total)}
             </text>

@@ -29,8 +29,8 @@ const ROTULO_TIPO: Record<LinhaDreConfig["tipoCalc"], string> = {
 
 const CLASSE_BADGE_TIPO: Record<LinhaDreConfig["tipoCalc"], string> = {
   FOLHA: "bg-muted text-muted-foreground",
-  SUBTOTAL: "bg-[#6A56D8]/12 text-[#4E3EAD]",
-  SUBTOTAL_ALTERNATIVO: "bg-[#6A56D8]/12 text-[#4E3EAD]",
+  SUBTOTAL: "bg-[#7A8B5C]/12 text-[#4F5C3A]",
+  SUBTOTAL_ALTERNATIVO: "bg-[#7A8B5C]/12 text-[#4F5C3A]",
   RESULTADO_NAO_OPERACIONAL: "bg-[#C98A1F]/12 text-[#8A5E14]",
 };
 

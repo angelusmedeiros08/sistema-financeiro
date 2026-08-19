@@ -27,7 +27,7 @@ const ABAS = [
 const CLASSE_LINHA: Record<LinhaDreMatriz["tipoCalc"], string> = {
   FOLHA: "text-muted-foreground",
   SUBTOTAL: "bg-muted/40 font-bold",
-  SUBTOTAL_ALTERNATIVO: "bg-[#6A56D8]/8 font-bold",
+  SUBTOTAL_ALTERNATIVO: "bg-[#7A8B5C]/8 font-bold",
   RESULTADO_NAO_OPERACIONAL: "bg-[#C98A1F]/8 font-bold",
 };
 

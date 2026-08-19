@@ -151,7 +151,7 @@ async function FluxoPrevistoRealizado({
           eixoX="chave"
           series={[
             { chave: "previsto", nome: "Previsto", cor: "#157F6B" },
-            { chave: "realizado", nome: "Realizado", cor: "#6A56D8" },
+            { chave: "realizado", nome: "Realizado", cor: "#7A8B5C" },
           ]}
         />
       </div>
@@ -178,7 +178,7 @@ async function FluxoPrevistoRealizado({
                 <tr key={p.chave} className="border-b border-border last:border-none">
                   <td className="p-3 font-medium text-foreground">{p.chave}</td>
                   <td className="p-3 text-right tabular-nums text-[#157F6B]">{formatarNumeroCompacto(p.previsto)}</td>
-                  <td className="p-3 text-right tabular-nums text-[#6A56D8]">{formatarNumeroCompacto(p.realizado)}</td>
+                  <td className="p-3 text-right tabular-nums text-[#7A8B5C]">{formatarNumeroCompacto(p.realizado)}</td>
                   <td className={cn("p-3 text-right tabular-nums font-semibold", p.variacao >= 0 ? "text-[#157F6B]" : "text-[#D8583A]")}>
                     {formatarNumeroCompacto(p.variacao)}
                   </td>

@@ -47,9 +47,9 @@ export function EvolucaoPontoEquilibrioChart({ dados, altura = 320 }: { dados: P
             type="monotone"
             dataKey="pontoEquilibrio"
             name="Ponto de equilíbrio"
-            stroke="#6A56D8"
+            stroke="#7A8B5C"
             strokeWidth={2}
-            dot={{ r: 3, fill: "#6A56D8", strokeWidth: 0 }}
+            dot={{ r: 3, fill: "#7A8B5C", strokeWidth: 0 }}
             activeDot={{ r: 5 }}
           />
           <Line

@@ -4,19 +4,19 @@ import { cn } from "@/lib/utils";
 const cartaoVariantes = cva("flex flex-col gap-2 rounded-2xl p-5", {
   variants: {
     variant: {
-      hero: "bg-gradient-to-br from-[#6A56D8] to-[#D8583A] text-white",
-      violeta: "border-t-[3px] border-t-[#6A56D8] bg-card text-card-foreground",
+      hero: "bg-gradient-to-br from-[#157F6B] to-[#A87C1F] text-white",
+      sage: "border-t-[3px] border-t-[#7A8B5C] bg-card text-card-foreground",
       coral: "border-t-[3px] border-t-[#D8583A] bg-card text-card-foreground",
       ambar: "border-t-[3px] border-t-[#C98A1F] bg-card text-card-foreground",
       teal: "border-t-[3px] border-t-[#157F6B] bg-card text-card-foreground",
     },
   },
-  defaultVariants: { variant: "violeta" },
+  defaultVariants: { variant: "sage" },
 });
 
 const corRotulo: Record<string, string> = {
   hero: "text-white/85",
-  violeta: "text-[#6A56D8]",
+  sage: "text-[#7A8B5C]",
   coral: "text-[#D8583A]",
   ambar: "text-[#C98A1F]",
   teal: "text-[#157F6B]",
@@ -31,7 +31,7 @@ type StatCardProps = VariantProps<typeof cartaoVariantes> & {
 export function StatCard({ label, valor, detalhe, variant }: StatCardProps) {
   return (
     <div className={cn(cartaoVariantes({ variant }), variant !== "hero" && "border border-border")}>
-      <span className={cn("text-[11.5px] font-bold uppercase tracking-wide", corRotulo[variant ?? "violeta"])}>
+      <span className={cn("text-[11.5px] font-bold uppercase tracking-wide", corRotulo[variant ?? "sage"])}>
         {label}
       </span>
       <span className="font-heading text-[22px] font-bold tracking-tight tabular-nums">{valor}</span>

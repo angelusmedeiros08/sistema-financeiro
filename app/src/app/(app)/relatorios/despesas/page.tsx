@@ -60,7 +60,7 @@ export default async function PaginaRelatoriosDespesas({
                     </div>
                   </td>
                   <td className="py-2.5">
-                    <Badge className={cn("border-none font-semibold", l.ehCustoFixo ? "bg-[#6A56D8]/12 text-[#4E3EAD]" : "bg-muted text-muted-foreground")}>
+                    <Badge className={cn("border-none font-semibold", l.ehCustoFixo ? "bg-[#7A8B5C]/12 text-[#4F5C3A]" : "bg-muted text-muted-foreground")}>
                       {l.ehCustoFixo ? "Fixo" : "Variável"}
                     </Badge>
                   </td>

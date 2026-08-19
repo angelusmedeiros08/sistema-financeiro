@@ -6,7 +6,7 @@ import { formatarPercentual } from "@/lib/formatacao";
 
 const SERIES = [
   { chave: "mc", nome: "Margem de contribuição", cor: "#157F6B" },
-  { chave: "margemBruta", nome: "Margem bruta", cor: "#6A56D8" },
+  { chave: "margemBruta", nome: "Margem bruta", cor: "#7A8B5C" },
   { chave: "ebitda", nome: "EBITDA", cor: "#C98A1F" },
   { chave: "margemLiquida", nome: "Margem líquida", cor: "#D8583A" },
 ] as const;

@@ -60,7 +60,7 @@ export default async function PaginaPainel() {
           detalhe={`Vencido: ${formatarMoeda(dados.vencidosPagar.vencidoTotal)} · Vence hoje: ${formatarMoeda(dados.vencidosPagar.venceHojeTotal)}`}
         />
         <StatCard
-          variant="violeta"
+          variant="sage"
           label="Pago (mês)"
           valor={formatarMoeda(dados.pagoDoMes)}
         />

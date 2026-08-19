@@ -12,7 +12,7 @@ export const COR_STATUS_PARCELA: Record<string, string> = {
   PENDENTE: "bg-[#C98A1F]/12 text-[#96690F]",
   QUITADO: "bg-[#157F6B]/12 text-[#0F5F50]",
   CANCELADO: "bg-muted text-muted-foreground",
-  RENEGOCIADO: "bg-[#6A56D8]/12 text-[#4C3BAD]",
+  RENEGOCIADO: "bg-[#7A8B5C]/12 text-[#4F5C3A]",
   RECEBIDO_PARCIAL: "bg-[#C98A1F]/12 text-[#96690F]",
   ATRASADO: "bg-[#D8583A]/12 text-[#A8412A]",
   PERDIDO: "bg-muted text-muted-foreground",

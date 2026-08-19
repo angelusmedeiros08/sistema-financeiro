@@ -28,7 +28,7 @@ function montarBarras(linhas: LinhaWaterfall[]): BarraWaterfall[] {
       acumulado += linha.valorDireto;
       return { rotulo: linha.rotulo, base, altura, valorReal: linha.valorDireto, cor: linha.valorDireto >= 0 ? "#157F6B" : "#D8583A" };
     }
-    const cor = linha.tipoCalc === "RESULTADO_NAO_OPERACIONAL" ? "#C98A1F" : "#6A56D8";
+    const cor = linha.tipoCalc === "RESULTADO_NAO_OPERACIONAL" ? "#C98A1F" : "#7A8B5C";
     return { rotulo: linha.rotulo, base: 0, altura: linha.valorDireto, valorReal: linha.valorDireto, cor };
   });
 }

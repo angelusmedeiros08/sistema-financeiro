@@ -36,7 +36,7 @@ const COR_TIPO: Record<string, string> = {
   RECEITA: "#157F6B",
   PASSIVO: "#D8583A",
   DESPESA: "#D8583A",
-  PATRIMONIO_LIQUIDO: "#6A56D8",
+  PATRIMONIO_LIQUIDO: "#7A8B5C",
 };
 
 export function ContaLinha({ conta, todasContas }: { conta: ContaContabilComNivel; todasContas: ContaContabilComNivel[] }) {
@@ -73,7 +73,7 @@ export function ContaLinha({ conta, todasContas }: { conta: ContaContabilComNive
           </span>
         </TableCell>
         <TableCell>
-          <Badge className={cn("border-none font-semibold", conta.natureza === "DEVEDORA" ? "bg-[#6A56D8]/12 text-[#4E3EAD]" : "bg-[#157F6B]/12 text-[#0F5F50]")}>
+          <Badge className={cn("border-none font-semibold", conta.natureza === "DEVEDORA" ? "bg-[#7A8B5C]/12 text-[#4F5C3A]" : "bg-[#157F6B]/12 text-[#0F5F50]")}>
             {conta.natureza === "DEVEDORA" ? "Devedora" : "Credora"}
           </Badge>
         </TableCell>

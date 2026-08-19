@@ -45,7 +45,7 @@ export default async function PaginaPortal() {
           valor={formatarMoeda(dados.aPagar.total)}
           detalhe={`Vencido: ${formatarMoeda(dados.vencidosPagar.vencidoTotal)} · Vence hoje: ${formatarMoeda(dados.vencidosPagar.venceHojeTotal)}`}
         />
-        <StatCard variant="violeta" label="Pago (mês)" valor={formatarMoeda(dados.pagoDoMes)} />
+        <StatCard variant="sage" label="Pago (mês)" valor={formatarMoeda(dados.pagoDoMes)} />
         <StatCard variant="coral" label="Resultado do mês" valor={formatarMoeda(dados.resultadoDoMes)} />
       </div>
 

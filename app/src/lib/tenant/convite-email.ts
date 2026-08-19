@@ -42,7 +42,7 @@ export async function enviarEmailConvite(params: {
           </p>
           <p style="margin: 32px 0;">
             <a href="${params.linkAceite}"
-               style="background: #6d28d9; color: #fff; padding: 12px 24px; border-radius: 10px; text-decoration: none; font-weight: 600;">
+               style="background: #157F6B; color: #fff; padding: 12px 24px; border-radius: 10px; text-decoration: none; font-weight: 600;">
               Aceitar convite
             </a>
           </p>

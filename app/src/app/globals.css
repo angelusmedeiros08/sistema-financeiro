@@ -38,6 +38,7 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  --color-accent-gold: var(--accent-gold);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -47,79 +48,84 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-/* Paleta "Signal": conteúdo claro com um único violeta autoral como cor de
-   ação, quatro cores de apoio nos indicadores (violeta/coral/âmbar/verde-
-   azulado) e a sidebar sempre escura (independente do tema do app — é
-   identidade visual fixa do produto, não um estado de dark mode). */
+/* Substitui a antiga paleta "Signal" (violeta autoral) — pesquisa de
+   17 frentes (docs/pesquisa-referencias-visuais-reforma-design.md)
+   apontou verde-petróleo escuro como "o novo azul-marinho" das fintechs
+   B2B premium (Pennylane/N26 convergiram nisso de forma independente).
+   Teal como accent primário, terracota pro negativo, carvão quente como
+   tinta, fundo bege/pedra (não o cinza-azulado padrão de SaaS genérico),
+   dourado envelhecido como accent terciário pontual — nunca em botão
+   primário, só destaque (badge/marco). Sidebar continua sempre escura,
+   independente do tema (identidade visual fixa do produto). */
 :root {
-  --background: #f5f4f8;
-  --foreground: #15141c;
+  --background: #f5f4f1;
+  --foreground: #1a1d1f;
   --card: #ffffff;
-  --card-foreground: #15141c;
+  --card-foreground: #1a1d1f;
   --popover: #ffffff;
-  --popover-foreground: #15141c;
-  --primary: #6a56d8;
+  --popover-foreground: #1a1d1f;
+  --primary: #157f6b;
   --primary-foreground: #ffffff;
-  --secondary: #ece9f6;
-  --secondary-foreground: #15141c;
-  --muted: #ece9f6;
-  --muted-foreground: #716f7e;
-  --accent: #ece4ff;
-  --accent-foreground: #5642c2;
-  --destructive: #c0392b;
-  --border: #e1deea;
-  --input: #e1deea;
-  --ring: #6a56d8;
-  --chart-1: #6a56d8;
+  --secondary: #ece9e4;
+  --secondary-foreground: #1a1d1f;
+  --muted: #ece9e4;
+  --muted-foreground: #716f68;
+  --accent: #dceee9;
+  --accent-foreground: #0f5f50;
+  --accent-gold: #a87c1f;
+  --destructive: #d8583a;
+  --border: #e5e1d8;
+  --input: #e5e1d8;
+  --ring: #157f6b;
+  --chart-1: #157f6b;
   --chart-2: #d8583a;
-  --chart-3: #157f6b;
-  --chart-4: #c98a1f;
-  --chart-5: #3d6fd1;
+  --chart-3: #a87c1f;
+  --chart-4: #3d6fd1;
+  --chart-5: #7a8b5c;
   --radius: 0.875rem;
-  --sidebar: #14161f;
-  --sidebar-foreground: #e9e7f2;
-  --sidebar-primary: #6a56d8;
-  --sidebar-primary-foreground: #ffffff;
+  --sidebar: #14181a;
+  --sidebar-foreground: #e9eae5;
+  --sidebar-primary: #1f9c84;
+  --sidebar-primary-foreground: #0d1210;
   --sidebar-accent: rgba(255, 255, 255, 0.09);
   --sidebar-accent-foreground: #ffffff;
   --sidebar-border: rgba(255, 255, 255, 0.08);
-  --sidebar-ring: #6a56d8;
+  --sidebar-ring: #1f9c84;
 }
 
-/* Definido para quando um seletor de tema for adicionado — ainda não há
-   toggle na UI, então .dark não é aplicada em lugar nenhum hoje. */
 .dark {
-  --background: #131319;
-  --foreground: #edeaf5;
-  --card: #1c1b24;
-  --card-foreground: #edeaf5;
-  --popover: #1c1b24;
-  --popover-foreground: #edeaf5;
-  --primary: #8b7ae8;
-  --primary-foreground: #131319;
-  --secondary: #26242f;
-  --secondary-foreground: #edeaf5;
-  --muted: #26242f;
-  --muted-foreground: #9c99ac;
-  --accent: #2c2a38;
-  --accent-foreground: #c9bfff;
-  --destructive: #e5766a;
+  --background: #17191a;
+  --foreground: #edebe7;
+  --card: #1b2321;
+  --card-foreground: #edebe7;
+  --popover: #1b2321;
+  --popover-foreground: #edebe7;
+  --primary: #1f9c84;
+  --primary-foreground: #0d1210;
+  --secondary: #242927;
+  --secondary-foreground: #edebe7;
+  --muted: #242927;
+  --muted-foreground: #9c9a94;
+  --accent: #24312d;
+  --accent-foreground: #6fd3bb;
+  --accent-gold: #c99a3b;
+  --destructive: #e2694b;
   --border: rgba(255, 255, 255, 0.1);
   --input: rgba(255, 255, 255, 0.14);
-  --ring: #8b7ae8;
-  --chart-1: #8b7ae8;
-  --chart-2: #e37357;
-  --chart-3: #2fa98a;
-  --chart-4: #dca53e;
-  --chart-5: #6e97e8;
-  --sidebar: #0f1017;
-  --sidebar-foreground: #e9e7f2;
-  --sidebar-primary: #8b7ae8;
-  --sidebar-primary-foreground: #131319;
+  --ring: #1f9c84;
+  --chart-1: #1f9c84;
+  --chart-2: #e2694b;
+  --chart-3: #c99a3b;
+  --chart-4: #6e97e8;
+  --chart-5: #9bae7a;
+  --sidebar: #0f1311;
+  --sidebar-foreground: #e9eae5;
+  --sidebar-primary: #1f9c84;
+  --sidebar-primary-foreground: #0d1210;
   --sidebar-accent: rgba(255, 255, 255, 0.08);
   --sidebar-accent-foreground: #ffffff;
   --sidebar-border: rgba(255, 255, 255, 0.08);
-  --sidebar-ring: #8b7ae8;
+  --sidebar-ring: #1f9c84;
 }
 
 @layer base {

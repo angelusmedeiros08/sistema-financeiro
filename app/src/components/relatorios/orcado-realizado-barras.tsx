@@ -41,7 +41,7 @@ export function OrcadoRealizadoBarras({ linhas }: { linhas: LinhaOrcadoRealizado
                 <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
                   <div
                     className="h-full rounded-full"
-                    style={{ width: `${(linha.totalRealizado / maior) * 100}%`, background: linha.tipo === "RECEITA" ? "#157F6B" : "#6A56D8" }}
+                    style={{ width: `${(linha.totalRealizado / maior) * 100}%`, background: linha.tipo === "RECEITA" ? "#157F6B" : "#7A8B5C" }}
                   />
                 </div>
                 <span className="w-16 shrink-0 text-right text-[10px] font-semibold tabular-nums text-foreground">
