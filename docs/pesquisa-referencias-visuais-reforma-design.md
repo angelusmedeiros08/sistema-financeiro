@@ -131,7 +131,7 @@ Mais relevante para as telas tipo "admin" do sistema (Plano de Contas, Categoria
 
 1. **Tremor** (tremor.so) — grátis desde a aquisição pela Vercel (jan/2025), MIT. Construído sobre a mesma base Radix+Tailwind do shadcn (zero conflito de sistema headless), modelo copy-paste idêntico. É hoje a referência específica pra "dashboard financeiro/analytics sem cara de template genérico" — KPI cards, badges de delta, tabelas com barra de progresso embutida. **Melhor integração de toda a pesquisa.**
 2. **TanStack Table** (tanstack.com/table) — headless, MIT, ~15KB. É o padrão que o próprio shadcn/ui documenta oficialmente pra "Data Table". Resolve o problema central de tabelas densas de lançamento/parcela (sort, filtro, paginação, seleção de linha) compondo nativamente com os componentes shadcn já existentes (Table, Checkbox, DropdownMenu). Pra volume grande, acoplar **TanStack Virtual** (mesma família).
-3. **visx** (Airbnb) — pra continuar evoluindo os gráficos já construídos à mão (waterfall, gauge, aging) sem perder controle visual — troca só o motor de renderização (D3 manual → composição React), preservando as decisões de design já tomadas, que hoje são um ativo do produto.
+3. **Correção de fato (verificada em 19/08/2026, após a primeira versão deste documento)**: o app já usa **Recharts** de verdade para 5 gráficos (`fluxo-chart`, `comparativo-barras`, `evolucao-ponto-equilibrio-chart`, `indicadores-dre-chart`, e até o waterfall do DRE, via `BarChart`+`Cell` colorido por barra) — não é tudo "feito à mão" como a primeira versão deste documento registrou. Só `aging-barras`, `indicador-gauge` e `top-categorias-donut` são de fato sem biblioteca (CSS/SVG puro). Isso muda a decisão real: não é "evoluir gráficos manuais pra visx", é **decidir se mantém Recharts** (pesquisa anterior o descreveu como "a opção mais genérica" do mercado, 48,9M downloads/semana, risco de "já vi isso em todo canto") **ou migra pra Tremor charts/visx** nos 5 componentes que já usam Recharts — um trabalho de migração, não de evolução. Pros 3 componentes já manuais (aging/gauge/donut), aí sim visx é o caminho natural de formalizar sem perder controle visual.
 4. **Untitled UI** (untitledui.com) e **Tailwind Plus/Catalyst** — não instalar literalmente (Untitled UI usa React Aria, conflita com o Radix do shadcn), mas usar como **referência de design tokens** (paleta neutra, tipografia, espaçamento, hierarquia de card) a reimplementar manualmente. Vale considerar a licença Figma da Untitled UI (mais barata, ~US$129) só como benchmark visual.
 
 **Evitar**: Ant Design (visual datado/"enterprise chinês 2019", reescrita cara), Mantine/Park UI/HeroUI (sistemas de design completos concorrentes, forçariam retema total sem ganho claro), Radix Themes (conflita com o próprio theming do shadcn), Base UI/Ariakit (sem ganho sobre o Radix atual — monitorar Base UI a distância como possível sucessor do Radix no futuro).
@@ -153,22 +153,59 @@ Pesquisa crítica de 9 templates de admin dashboard — **4 viraram clichê visu
 ## 6. Ferramentas de apoio
 
 - **Ícones**: manter Phosphor Icons (7.700+ ícones, 6 pesos — vantagem real pra um domínio com ícones específicos como nota fiscal/boleto/conciliação em múltiplos estados). Sem motivo forte pra trocar por Lucide (o "default" do shadcn) ou Untitled UI icons agora.
-- **Command palette**: adicionar **cmdk** (cmdk.paco.me) — mesma lib por trás do Cmd+K da Linear/Vercel/Raycast, sem estilo próprio imposto. Ganho de produtividade real pra busca rápida de lançamento/cliente/relatório.
+- **Command palette**: `cmdk` **já está instalado** (`package.json`), mas hoje só é consumido dentro de `components/ui/command.tsx` — o primitivo que o shadcn usa por baixo dos comboboxes com busca (ex.: seletor de pessoa/categoria), não como paleta de comando global tipo Cmd+K. O gap real não é instalar a lib, é **montar um atalho global** (Cmd+K abrindo busca rápida de lançamento/cliente/relatório) reaproveitando o `Command` que já existe.
 - **Animação**: **Motion** (ex-Framer Motion, motion.dev) — usar com disciplina, só em microinterações funcionais (hover/tap, transição de modal/tooltip, stagger de lista). Excesso de motion é um dos sinais de "startup genérica" a evitar, segundo a própria pesquisa.
-- **Galeria de inspiração pra consulta contínua amanhã**: **Mobbin** (mobbin.com) — única com filtro direto "Finance+"/dashboard financeiro, cobre telas de produto logado real (não só marketing), tem os padrões de UI genéricos (empty state, tabela) que vamos precisar tela por tela. SaaSFrame como segunda opção (exporta Figma). Land-book/Godly/Lapa Ninja ficam mais pra landing page de marketing do que telas internas do ERP.
+- **Galeria de inspiração pra consulta contínua**: **Refero** (refero.design) — achado de uma segunda rodada de pesquisa, maior ainda que Mobbin (132 mil+ telas reais buscáveis por padrão de UX/empresa/linguagem natural), com plugin Figma e até um **MCP** pra consultar direto por agente de IA — vale registrar como ferramenta de consulta contínua, inclusive automatizável. **Mobbin** continua relevante (filtro direto "Finance+"/dashboard financeiro). **BentoGrids** (bentogrids.com) pro padrão de layout modular que já flertamos no ciclo de Central de Indicadores. **Screenlane** como terceira opção de screenshot real com busca por elemento específico. SaaSFrame/Land-book/Godly/Lapa Ninja ficam mais pra landing page de marketing do que telas internas do ERP.
+- **Ilustração de empty state**: unDraw hoje é considerado clichê ("bonequinhos roxos" reconhecíveis em qualquer lugar). Dado o tom sério do produto (ERP jurídico-financeiro), a recomendação é **abandonar personagem ilustrado e usar iconografia geométrica simples** (linha fina, cor de marca) em vez de comprar de um banco de ilustração — mais alinhado ao "sem cara de IA" já é o objetivo do projeto. Se quiser manter ilustração, **Blush** é a alternativa menos clichê ao unDraw.
 
-## 7. Padrões de navegação e densidade de dado — recomendações concretas
+## 7. Design systems enterprise — estudar padrões, não adotar como biblioteca
+
+Pesquisa dedicada a IBM Carbon, Shopify Polaris, Atlassian Design System, GitHub Primer e Salesforce Lightning (SLDS) — os sistemas mais maduros do mercado especificamente pra aplicações densas em dado (o problema mais próximo do nosso: plano de contas, lançamentos, tabelas grandes).
+
+**Recomendação: não adotar nenhum como biblioteca real.** Todos trazem sistema de token/CSS/tema próprio que colidiria com Tailwind/shadcn já em uso, e dois dos cinco estão em situação de manutenção decadente pra React — **Polaris React foi oficialmente descontinuado** (Shopify migrou pra Web Components em out/2025) e o wrapper React do Salesforce (`design-system-react`) é projeto "community-supported", não o caminho oficial (a Salesforce foca em LWC, não React, e a fonte "Salesforce Sans" é proprietária/não redistribuível).
+
+**Vale estudar e reimplementar em cima do shadcn**, em ordem de relevância pro nosso problema de "grid de lançamento financeiro com muitas colunas numéricas":
+
+1. **GitHub Primer `DataTable`** (primer.style) — o achado mais concreto e diretamente aplicável: **alinhamento à direita nativo pra coluna numérica** (facilita comparação visual de valores — ponto direto pro Plano de Contas/tabela de lançamento), **três níveis de densidade de célula** (Condensed/Normal/Spacious, ideia pra oferecer como preferência do usuário), sistema de largura de coluna flexível (`grow`/`auto`/fixa com min/max). Fonte própria Mona Sans (open source). É o mais "produto de dev tool contemporâneo" dos cinco, o que menos parece "enterprise datado".
+2. **IBM Carbon `DataTable`** (carbondesignsystem.com) — segunda referência forte pro padrão de seleção em massa + toolbar de ações + paginação. Achado relevante: o próprio time do Carbon (IBM Products) está migrando o motor interno de tabela pra **TanStack Table**, mantendo Carbon só como camada visual — valida a decisão já tomada aqui de separar motor de tabela (headless, TanStack) da camada visual (shadcn).
+3. **Atlassian `dynamic-table`** (atlassian.design) — vale estudar o conceito de "calm density" (densidade de informação sem parecer sobrecarregado) e a categoria tipográfica dedicada **"Metric"** (28/24/16px, pensada pra números em destaque) — aplicação direta pros KPIs do painel de Indicadores. Fonte própria "Atlassian Sans".
+4. **Polaris `IndexTable`** — só como referência de UX de bulk actions/seleção (não copiar código, já descontinuado em React).
+5. **SLDS** — menor prioridade, só como contexto histórico de CRM financeiro enterprise denso.
+
+## 8. Utilitários que faltam no projeto hoje
+
+Levantamento do que o projeto **não tem ainda** (confirmado no `package.json` e no código-fonte, não suposição) e o que a pesquisa recomenda pra cada gap:
+
+| Gap confirmado | Recomendação | Por quê |
+|---|---|---|
+| Sem lib de toast/notificação (feedback hoje é só texto inline, `{erro && <p>}`) | **Sonner** (sonner.emilkowal.ski) | É hoje o padrão oficial do shadcn/ui — o componente `Toast` baseado em Radix foi descontinuado na documentação, que recomenda Sonner no lugar. ~47M downloads/semana (9,7x mais que react-hot-toast), integração nativa com os tokens de tema do projeto. |
+| Sem geração de PDF (relevante pra exportar DRE/relatórios, e futuramente boleto/nota) | **@react-pdf/renderer** (react-pdf.org) | Único que roda limpo em função serverless da Vercel sem infraestrutura extra (Puppeteer/Playwright exigiriam Chromium ~300MB e setup pesado). Permite registrar a fonte de marca e cores via `Font.register()`/`StyleSheet`. |
+| Datas via `Date` nativo + funções próprias (`somarDias` etc.) | **date-fns**, introduzido seletivamente (não substituir tudo) | Cobre nativamente dias úteis (`addBusinessDays`, `isWeekend`), fim de mês, diferença de dias — exatamente o que hoje é código próprio no domínio de vencimento/parcelamento/regime de competência. Tree-shakeable por função, líder de adoção (~91,7M downloads/semana). Feriado nacional continua sendo lógica própria — nenhuma das libs pesquisadas (date-fns/Day.js/Luxon) tem calendário de feriados BR embutido. |
+| Sem dark mode / toggle de tema | **next-themes** (github.com/pacocoursey/next-themes) | Segue sendo o padrão de fato pra Next.js+Tailwind — resolve o "flash de tema errado" injetando script bloqueante no `<head>` antes da hidratação. Menos de 1KB, mantido ativamente (compatibilidade React 19 confirmada). |
+| `zod` instalado (devDependency) mas não usado em lugar nenhum | — | Registrar como achado, não como recomendação de lib nova — já está no projeto, só falta decidir onde aplicar (validação de formulário é o uso mais natural, especialmente combinado com `react-hook-form` se um dia for adotado). |
+
+## 9. Ferramentas de pagamento e documento brasileiro
+
+Hoje o app só registra "Pix"/"Boleto" como rótulo de forma de pagamento (texto livre), sem gerar nada de verdade. Pra quando isso virar funcionalidade real:
+
+- **Pix estático (copia-e-cola), sem provedor pago**: `pix-utils` (npm) pra montar o payload EMV certo (mais próximo de uma implementação de referência do Bacen, cobre os vários tipos de chave) + a lib `qrcode` (genérica, estável) pra renderizar a imagem. Cobre só o caso simples, sem confirmação automática de pagamento.
+- **Boleto e Pix dinâmico com webhook de confirmação** — não existe lib pura pra isso, precisa de provedor bancário (BaaS/PSP). **Asaas** é a recomendação de primeira escolha: documentação em português muito completa, sandbox fácil, um único endpoint (`POST /v3/lean/payments`) já emite boleto (com PDF) e Pix dinâmico. **Efí (ex-Gerencianet)** como opção mais "enterprise" se o produto crescer pra precisar de mais recursos bancários (Open Finance, CNAB) depois.
+- **Validação/formatação de CPF/CNPJ**: `cpf-cnpj-validator` (npm, carvalhoviniciusluiz) — mantido ativamente, já suporta o **CNPJ alfanumérico** da Receita Federal (mudança que passou a valer em 2026), com adapters pra Zod (que já está instalado no projeto, sem uso — esse seria um uso natural).
+
+## 10. Padrões de navegação e densidade de dado — recomendações concretas
 
 Pra telas densas (Plano de Contas, Categorias, Regras de Categorização, tabelas de lançamento): seguir o modelo do **Supabase Table Editor** — hierarquia de profundidade por borda em 3 níveis em vez de zebra-striping ou sombra pesada, uma única cor de acento reservada a estado/ação, tipografia majoritariamente em peso regular pra não competir com o dado. Complementar com a ideia do **Retool** de densidade ajustável pelo usuário (compacta/confortável) e detalhe-ao-lado-da-linha em vez de modal.
 
 Pra sidebar: a Pennylane (a referência mais próxima do nosso próprio produto) documentou um redesign de navegação com submenus fixáveis/recolhíveis e "themed product spaces" (módulos com tratamento visual diferenciado dentro da mesma sidebar) que reduziu tempo de conclusão de tarefa em 47% — vale estudar esse case a fundo quando chegar a hora de reorganizar a sidebar (que já está mapeada como etapa futura dedicada, ver memória do projeto).
 
-## 8. Próximos passos
+## 11. Próximos passos
 
-Isso é só o mapeamento — nenhuma decisão final foi tomada, nenhum código foi alterado. Pra amanhã, os pontos que precisam de decisão explícita do usuário antes de qualquer implementação:
+Isso é só o mapeamento — nenhuma decisão final foi tomada, nenhum código foi alterado. Os pontos que precisam de decisão explícita do usuário antes de qualquer implementação:
 
 1. **Aprovar (ou ajustar) a direção de paleta**: teal/terracota existentes + carvão quente + dourado envelhecido como accent terciário.
 2. **Escolher o par tipográfico**: Cabinet Grotesk + Public Sans (recomendado) vs. Geist + Geist Mono (mais simples) vs. outra combinação.
-3. **Aprovar a decisão técnica**: manter shadcn/Radix, adicionar Tremor + TanStack Table + visx (recomendado) — ou revisitar.
-4. **Decidir escopo da primeira leva**: token de tema (cor/fonte/radius) primeiro em todo o app, ou uma tela piloto (ex.: Indicadores ou Painel) pra validar a direção antes de propagar?
-5. Esse ciclo deve seguir o processo normal (`/brainstorming` → clarificar → propor abordagens → spec → plano → implementação) antes de qualquer código — este documento é só o insumo de pesquisa, não um spec aprovado.
+3. **Aprovar a decisão técnica de componente/gráfico**: manter shadcn/Radix, adicionar Tremor + TanStack Table (recomendado); decidir se migra os 5 gráficos que já usam Recharts pra Tremor/visx ou mantém Recharts (ver correção na seção 5).
+4. **Aprovar os utilitários novos**: Sonner (toast), @react-pdf/renderer (PDF), date-fns seletivo (datas), next-themes (dark mode) — seção 8.
+5. **Decidir se/quando vale investir em pagamento real** (Pix/boleto via Asaas ou Efí) — seção 9, não é bloqueio pra reforma visual, é nota pra quando o produto crescer.
+6. **Decidir escopo da primeira leva**: token de tema (cor/fonte/radius) primeiro em todo o app, ou uma tela piloto (ex.: Indicadores ou Painel) pra validar a direção antes de propagar?
+7. Esse ciclo deve seguir o processo normal (`/brainstorming` → clarificar → propor abordagens → spec → plano → implementação) antes de qualquer código — este documento é só o insumo de pesquisa, não um spec aprovado.
