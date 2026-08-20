@@ -1,5 +1,6 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { TagCategoria } from "@/components/ui/tag-categoria";
 import { formatarMoeda } from "@/lib/formatacao";
 import { ROTULO_STATUS_PARCELA, COR_STATUS_PARCELA } from "@/lib/status-parcela";
 import { cn } from "@/lib/utils";
@@ -43,9 +44,15 @@ export function TabelaEventos({ eventos, textoVazio }: { eventos: EventoLinha[];
             return (
               <TableRow key={evento.id}>
                 <TableCell className="font-medium text-foreground">{evento.descricao ?? "Sem descrição"}</TableCell>
-                <TableCell className="text-muted-foreground">
-                  {categoriaNome ?? "-"}
-                  {outrasCategorias > 0 && <span className="ml-1 text-xs">+{outrasCategorias}</span>}
+                <TableCell>
+                  {categoriaNome ? (
+                    <span className="inline-flex items-center gap-1">
+                      <TagCategoria nome={categoriaNome} />
+                      {outrasCategorias > 0 && <span className="text-xs text-muted-foreground">+{outrasCategorias}</span>}
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground">-</span>
+                  )}
                 </TableCell>
                 <TableCell className="text-muted-foreground">
                   {primeiraParcela

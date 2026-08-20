@@ -6,6 +6,7 @@ import { NovoCentroCustoForm } from "./novo-centro-custo-form";
 import { ToggleAtivoButton } from "./toggle-ativo-button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { TagCategoria } from "@/components/ui/tag-categoria";
 import { cn } from "@/lib/utils";
 import { ConfiguracoesSubNav } from "../sub-nav";
 
@@ -85,7 +86,9 @@ export default async function PaginaCentrosCusto({
                 {centros.map((c) => (
                   <TableRow key={c.id}>
                     <TableCell className="text-muted-foreground">{c.codigo ?? "-"}</TableCell>
-                    <TableCell className="font-medium text-foreground">{c.nome}</TableCell>
+                    <TableCell>
+                      <TagCategoria nome={c.nome} />
+                    </TableCell>
                     <TableCell>
                       <Badge className={cn("border-none font-semibold", c.ativo ? "bg-[#157F6B]/12 text-[#0F5F50]" : "bg-muted text-muted-foreground")}>
                         {c.ativo ? "Ativo" : "Inativo"}

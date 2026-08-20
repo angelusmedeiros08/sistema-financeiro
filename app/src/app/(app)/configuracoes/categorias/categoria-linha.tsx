@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TableCell, TableRow } from "@/components/ui/table";
+import { TagCategoria } from "@/components/ui/tag-categoria";
 import { cn } from "@/lib/utils";
 import { editarCategoriaAction } from "@/lib/contabil/categorias-actions";
 import type { Categoria } from "@/lib/contabil/categorias";
@@ -44,7 +45,7 @@ export function CategoriaLinha({
           className={cn("text-foreground", ehGrupo ? "font-bold" : "font-medium")}
           style={{ paddingLeft: categoria.categoriaPaiId ? "32px" : "12px" }}
         >
-          {categoria.nome}
+          {ehGrupo ? categoria.nome : <TagCategoria nome={categoria.nome} />}
         </TableCell>
         <TableCell className={cn("text-muted-foreground", ehGrupo && "font-bold")}>{categoria.contaContabilNome ?? "-"}</TableCell>
         <TableCell>
