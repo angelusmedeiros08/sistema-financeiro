@@ -1,6 +1,6 @@
 "use client";
 
-import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Area, CartesianGrid, ComposedChart, Legend, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import type { IndicadorMensal } from "@/lib/relatorios/dre";
 import { formatarPercentual } from "@/lib/formatacao";
 
@@ -21,7 +21,13 @@ export function IndicadoresDreChart({ dados, altura = 220 }: { dados: IndicadorM
   return (
     <div className="relative">
       <ResponsiveContainer width="100%" height={altura}>
-        <LineChart data={dados} margin={{ top: 4, right: 4, left: 4, bottom: 0 }}>
+        <ComposedChart data={dados} margin={{ top: 4, right: 4, left: 4, bottom: 0 }}>
+          <defs>
+            <linearGradient id="areaMargemContribuicao" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#0FA37E" stopOpacity={0.25} />
+              <stop offset="100%" stopColor="#0FA37E" stopOpacity={0} />
+            </linearGradient>
+          </defs>
           <CartesianGrid vertical={false} stroke="var(--border)" />
           <XAxis dataKey="chave" axisLine={false} tickLine={false} tick={{ fill: "var(--muted-foreground)", fontSize: 11 }} />
           <YAxis
@@ -41,20 +47,35 @@ export function IndicadoresDreChart({ dados, altura = 220 }: { dados: IndicadorM
             formatter={(value) => formatarPercentual(Number(value))}
           />
           <Legend wrapperStyle={{ fontSize: 12 }} />
-          {SERIES.map((serie) => (
-            <Line
-              key={serie.chave}
-              type="monotone"
-              dataKey={serie.chave}
-              name={serie.nome}
-              stroke={serie.cor}
-              strokeWidth={2.25}
-              dot={{ r: 3, fill: serie.cor, strokeWidth: 0 }}
-              activeDot={{ r: 5 }}
-              animationDuration={600}
-            />
-          ))}
-        </LineChart>
+          {SERIES.map((serie) =>
+            serie.chave === "mc" ? (
+              <Area
+                key={serie.chave}
+                type="monotone"
+                dataKey={serie.chave}
+                name={serie.nome}
+                stroke={serie.cor}
+                strokeWidth={2.25}
+                fill="url(#areaMargemContribuicao)"
+                dot={{ r: 3, fill: serie.cor, strokeWidth: 0 }}
+                activeDot={{ r: 5 }}
+                animationDuration={600}
+              />
+            ) : (
+              <Line
+                key={serie.chave}
+                type="monotone"
+                dataKey={serie.chave}
+                name={serie.nome}
+                stroke={serie.cor}
+                strokeWidth={2.25}
+                dot={{ r: 3, fill: serie.cor, strokeWidth: 0 }}
+                activeDot={{ r: 5 }}
+                animationDuration={600}
+              />
+            ),
+          )}
+        </ComposedChart>
       </ResponsiveContainer>
       {semDado && (
         <p className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">

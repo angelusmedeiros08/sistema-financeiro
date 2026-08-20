@@ -1,6 +1,6 @@
 "use client";
 
-import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Area, CartesianGrid, ComposedChart, Legend, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import type { PontoEvolucaoPE } from "@/lib/relatorios/ponto-equilibrio";
 import { formatarMoeda, formatarNumeroCompacto, formatarPercentual } from "@/lib/formatacao";
 
@@ -12,7 +12,13 @@ export function EvolucaoPontoEquilibrioChart({ dados, altura = 320 }: { dados: P
   return (
     <div className="relative">
       <ResponsiveContainer width="100%" height={altura}>
-        <LineChart data={dados} margin={{ top: 4, right: 8, left: 4, bottom: 0 }}>
+        <ComposedChart data={dados} margin={{ top: 4, right: 8, left: 4, bottom: 0 }}>
+          <defs>
+            <linearGradient id="areaPontoEquilibrio" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#4C7DF0" stopOpacity={0.28} />
+              <stop offset="100%" stopColor="#4C7DF0" stopOpacity={0} />
+            </linearGradient>
+          </defs>
           <CartesianGrid vertical={false} stroke="var(--border)" />
           <XAxis dataKey="chave" axisLine={false} tickLine={false} tick={{ fill: "var(--muted-foreground)", fontSize: 11 }} />
           <YAxis
@@ -42,13 +48,14 @@ export function EvolucaoPontoEquilibrioChart({ dados, altura = 320 }: { dados: P
             formatter={(value, nome) => (nome === "Margem de contribuição %" ? formatarPercentual(Number(value)) : formatarMoeda(Number(value)))}
           />
           <Legend wrapperStyle={{ fontSize: 12 }} />
-          <Line
+          <Area
             yAxisId="pe"
             type="monotone"
             dataKey="pontoEquilibrio"
             name="Ponto de equilíbrio"
             stroke="#4C7DF0"
             strokeWidth={2.25}
+            fill="url(#areaPontoEquilibrio)"
             dot={{ r: 3, fill: "#4C7DF0", strokeWidth: 0 }}
             activeDot={{ r: 5 }}
             animationDuration={600}
@@ -64,7 +71,7 @@ export function EvolucaoPontoEquilibrioChart({ dados, altura = 320 }: { dados: P
             activeDot={{ r: 5 }}
             animationDuration={600}
           />
-        </LineChart>
+        </ComposedChart>
       </ResponsiveContainer>
       {semDado && (
         <p className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">
