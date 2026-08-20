@@ -20,6 +20,7 @@ import {
   CaretLeft,
   Star,
 } from "@phosphor-icons/react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 type SubItemNav = { href: string; label: string };
@@ -155,8 +156,12 @@ export function SidebarConteudo({ emailUsuario, emSheet = false }: { emailUsuari
     window.localStorage.setItem(chaveFavoritos(emailUsuario), JSON.stringify(favoritos));
   }, [favoritos, emailUsuario]);
 
-  function alternarFavorito(href: string) {
-    setFavoritos((prev) => (prev.includes(href) ? prev.filter((h) => h !== href) : [...prev, href]));
+  function alternarFavorito(href: string, label: string) {
+    setFavoritos((prev) => {
+      const jaEra = prev.includes(href);
+      toast(jaEra ? `${label} removido dos favoritos` : `${label} adicionado aos favoritos`);
+      return jaEra ? prev.filter((h) => h !== href) : [...prev, href];
+    });
   }
 
   function limparTimers() {
@@ -231,7 +236,7 @@ export function SidebarConteudo({ emailUsuario, emSheet = false }: { emailUsuari
                 >
                   {sub.label}
                 </Link>
-                <BotaoEstrela ativo={favoritado} onToggle={() => alternarFavorito(sub.href)} />
+                <BotaoEstrela ativo={favoritado} onToggle={() => alternarFavorito(sub.href, sub.label)} />
               </div>
             );
           })}
@@ -261,7 +266,7 @@ export function SidebarConteudo({ emailUsuario, emSheet = false }: { emailUsuari
                   >
                     {fav.label}
                   </Link>
-                  <BotaoEstrela ativo onToggle={() => alternarFavorito(fav.href)} />
+                  <BotaoEstrela ativo onToggle={() => alternarFavorito(fav.href, fav.label)} />
                 </div>
               );
             })}
@@ -323,7 +328,7 @@ export function SidebarConteudo({ emailUsuario, emSheet = false }: { emailUsuari
                     <Icon size={17} weight={ativo ? "bold" : "regular"} />
                     {item.label}
                   </Link>
-                  <BotaoEstrela ativo={favoritado} onToggle={() => alternarFavorito(item.href)} />
+                  <BotaoEstrela ativo={favoritado} onToggle={() => alternarFavorito(item.href, item.label)} />
                 </div>
               );
             })();

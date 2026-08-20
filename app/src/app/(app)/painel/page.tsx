@@ -1,10 +1,13 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { formatDistanceToNowStrict } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { Wallet, HandCoins, Coins, CreditCard } from "@phosphor-icons/react/dist/ssr";
 import { createClient } from "@/utils/supabase/server";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
 import { obterDadosPainel } from "./dados";
 import { StatCard } from "@/components/painel/stat-card";
+import { MotionCard } from "@/components/painel/motion-card";
 import { FluxoChart } from "@/components/painel/fluxo-chart";
 import { PrimeirosPassosCard } from "@/components/painel/primeiros-passos";
 import { IndicadorGauge } from "@/components/relatorios/indicador-gauge";
@@ -15,6 +18,10 @@ import { formatarMoeda } from "@/lib/formatacao";
 import { cn } from "@/lib/utils";
 import { ROTULO_STATUS_PARCELA, COR_STATUS_PARCELA } from "@/lib/status-parcela";
 import { buscarIndicadoresRealizacao, mesAtual } from "@/lib/relatorios/indicadores-gauge";
+
+function tempoRelativo(dataIso: string): string {
+  return formatDistanceToNowStrict(new Date(dataIso + "T00:00:00"), { addSuffix: true, locale: ptBR });
+}
 
 export default async function PaginaPainel() {
   const contexto = await obterUsuarioETenantAtual();
@@ -56,42 +63,54 @@ export default async function PaginaPainel() {
 
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
           <div className="lg:col-span-5">
-            <StatCard
-              variant="hero"
-              label="Saldo em caixa"
-              valor={formatarMoeda(dados.saldoEmCaixa)}
-              serie={dados.saldoSerieSeisMeses}
-            />
+            <MotionCard index={0}>
+              <StatCard
+                variant="hero"
+                label="Saldo em caixa"
+                valor={formatarMoeda(dados.saldoEmCaixa)}
+                serie={dados.saldoSerieSeisMeses}
+              />
+            </MotionCard>
           </div>
           <div className="lg:col-span-7">
-            <StatCard
-              variant={dados.resultadoDoMes >= 0 ? "teal" : "coral"}
-              label="Resultado do mês"
-              valor={formatarMoeda(dados.resultadoDoMes)}
-              detalhe="Receitas menos despesas no mês corrente, por competência"
-              delta={dados.resultadoDeltaPercentual}
-              serie={dados.fluxo.map((f) => f.resultado)}
-            />
+            <MotionCard index={1}>
+              <StatCard
+                variant={dados.resultadoDoMes >= 0 ? "teal" : "coral"}
+                label="Resultado do mês"
+                valor={formatarMoeda(dados.resultadoDoMes)}
+                detalhe="Receitas menos despesas no mês corrente, por competência"
+                delta={dados.resultadoDeltaPercentual}
+                serie={dados.fluxo.map((f) => f.resultado)}
+              />
+            </MotionCard>
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          <StatCard
-            variant="teal"
-            icon={HandCoins}
-            label="A receber (30 dias)"
-            valor={formatarMoeda(dados.aReceber.total)}
-            detalhe={`Vencido: ${formatarMoeda(dados.vencidosReceber.vencidoTotal)}`}
-          />
-          <StatCard variant="azul" icon={Coins} label="Recebido (mês)" valor={formatarMoeda(dados.recebidoDoMes)} />
-          <StatCard
-            variant="ambar"
-            icon={CreditCard}
-            label="A pagar (30 dias)"
-            valor={formatarMoeda(dados.aPagar.total)}
-            detalhe={`Vencido: ${formatarMoeda(dados.vencidosPagar.vencidoTotal)}`}
-          />
-          <StatCard variant="roxo" icon={Wallet} label="Pago (mês)" valor={formatarMoeda(dados.pagoDoMes)} />
+          <MotionCard index={2}>
+            <StatCard
+              variant="teal"
+              icon={HandCoins}
+              label="A receber (30 dias)"
+              valor={formatarMoeda(dados.aReceber.total)}
+              detalhe={`Vencido: ${formatarMoeda(dados.vencidosReceber.vencidoTotal)}`}
+            />
+          </MotionCard>
+          <MotionCard index={3}>
+            <StatCard variant="azul" icon={Coins} label="Recebido (mês)" valor={formatarMoeda(dados.recebidoDoMes)} />
+          </MotionCard>
+          <MotionCard index={4}>
+            <StatCard
+              variant="ambar"
+              icon={CreditCard}
+              label="A pagar (30 dias)"
+              valor={formatarMoeda(dados.aPagar.total)}
+              detalhe={`Vencido: ${formatarMoeda(dados.vencidosPagar.vencidoTotal)}`}
+            />
+          </MotionCard>
+          <MotionCard index={5}>
+            <StatCard variant="roxo" icon={Wallet} label="Pago (mês)" valor={formatarMoeda(dados.pagoDoMes)} />
+          </MotionCard>
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -138,7 +157,9 @@ export default async function PaginaPainel() {
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium text-foreground">{evento.descricao ?? "Sem descrição"}</p>
-                    <p className="text-xs text-muted-foreground">{evento.tipo === "RECEITA" ? "Receita" : "Despesa"}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {evento.tipo === "RECEITA" ? "Receita" : "Despesa"} · {tempoRelativo(evento.dataCompetencia)}
+                    </p>
                   </div>
                   {evento.status && (
                     <Badge className={cn("border-none font-semibold", COR_STATUS_PARCELA[evento.status])}>

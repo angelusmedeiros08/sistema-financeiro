@@ -22,7 +22,9 @@ export function Sparkline({ dados, cor }: { dados: number[]; cor: string }) {
           strokeWidth={1.75}
           fill={`url(#${gradiente})`}
           dot={false}
-          isAnimationActive={false}
+          isAnimationActive
+          animationDuration={700}
+          animationEasing="ease-out"
         />
       </AreaChart>
     </ResponsiveContainer>

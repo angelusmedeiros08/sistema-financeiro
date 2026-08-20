@@ -159,12 +159,13 @@ export type EventoRecente = {
   tipo: "RECEITA" | "DESPESA";
   valor_total: number;
   status: string | null;
+  dataCompetencia: string;
 };
 
 async function obterEventosRecentes(supabase: Cliente, tenantId: string, pessoaId?: string): Promise<EventoRecente[]> {
   let query = supabase
     .from("eventos_financeiros")
-    .select("id, descricao, tipo, valor_total, parcelas(status)")
+    .select("id, descricao, tipo, valor_total, data_competencia, parcelas(status)")
     .eq("tenant_id", tenantId)
     .order("data_competencia", { ascending: false })
     .limit(5);
@@ -179,6 +180,7 @@ async function obterEventosRecentes(supabase: Cliente, tenantId: string, pessoaI
     tipo: e.tipo,
     valor_total: Number(e.valor_total),
     status: e.parcelas?.[0]?.status ?? null,
+    dataCompetencia: e.data_competencia,
   }));
 }
 
