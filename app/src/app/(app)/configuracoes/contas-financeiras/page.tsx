@@ -187,7 +187,7 @@ async function VisaoGeralContasFinanceiras({ tenantId, supabase }: { tenantId: s
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Débito</p>
-                  <p className="font-semibold tabular-nums text-[#D8583A]">{formatarMoeda(c.debito)}</p>
+                  <p className="font-semibold tabular-nums text-[#B23A2E]">{formatarMoeda(c.debito)}</p>
                 </div>
               </div>
             </div>

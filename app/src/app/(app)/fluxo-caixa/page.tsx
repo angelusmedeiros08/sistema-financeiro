@@ -83,7 +83,7 @@ async function FluxoDiario({
           eixoX="chave"
           series={[
             { chave: "entradas", nome: "Entradas", cor: "#157F6B" },
-            { chave: "saidas", nome: "Saídas", cor: "#D8583A" },
+            { chave: "saidas", nome: "Saídas", cor: "#B23A2E" },
           ]}
         />
       </div>
@@ -111,8 +111,8 @@ async function FluxoDiario({
                 <tr key={p.chave} className="border-b border-border last:border-none">
                   <td className="p-3 font-medium text-foreground">{p.chave}</td>
                   <td className="p-3 text-right tabular-nums text-[#157F6B]">{formatarNumeroCompacto(p.entradas)}</td>
-                  <td className="p-3 text-right tabular-nums text-[#D8583A]">{formatarNumeroCompacto(p.saidas)}</td>
-                  <td className={cn("p-3 text-right tabular-nums font-semibold", p.saldoPeriodo >= 0 ? "text-[#157F6B]" : "text-[#D8583A]")}>
+                  <td className="p-3 text-right tabular-nums text-[#B23A2E]">{formatarNumeroCompacto(p.saidas)}</td>
+                  <td className={cn("p-3 text-right tabular-nums font-semibold", p.saldoPeriodo >= 0 ? "text-[#157F6B]" : "text-[#B23A2E]")}>
                     {formatarNumeroCompacto(p.saldoPeriodo)}
                   </td>
                   <td className="p-3 text-right tabular-nums">{formatarNumeroCompacto(p.saldoAcumulado)}</td>
@@ -179,7 +179,7 @@ async function FluxoPrevistoRealizado({
                   <td className="p-3 font-medium text-foreground">{p.chave}</td>
                   <td className="p-3 text-right tabular-nums text-[#157F6B]">{formatarNumeroCompacto(p.previsto)}</td>
                   <td className="p-3 text-right tabular-nums text-[#7A8B5C]">{formatarNumeroCompacto(p.realizado)}</td>
-                  <td className={cn("p-3 text-right tabular-nums font-semibold", p.variacao >= 0 ? "text-[#157F6B]" : "text-[#D8583A]")}>
+                  <td className={cn("p-3 text-right tabular-nums font-semibold", p.variacao >= 0 ? "text-[#157F6B]" : "text-[#B23A2E]")}>
                     {formatarNumeroCompacto(p.variacao)}
                   </td>
                 </tr>

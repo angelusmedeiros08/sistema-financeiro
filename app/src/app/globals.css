@@ -39,6 +39,8 @@
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
   --color-accent-gold: var(--accent-gold);
+  --color-positivo: var(--positivo);
+  --color-positivo-foreground: var(--positivo-foreground);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -48,15 +50,12 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-/* Substitui a antiga paleta "Signal" (violeta autoral) — pesquisa de
-   17 frentes (docs/pesquisa-referencias-visuais-reforma-design.md)
-   apontou verde-petróleo escuro como "o novo azul-marinho" das fintechs
-   B2B premium (Pennylane/N26 convergiram nisso de forma independente).
-   Teal como accent primário, terracota pro negativo, carvão quente como
-   tinta, fundo bege/pedra (não o cinza-azulado padrão de SaaS genérico),
-   dourado envelhecido como accent terciário pontual — nunca em botão
-   primário, só destaque (badge/marco). Sidebar continua sempre escura,
-   independente do tema (identidade visual fixa do produto). */
+/* Fase 2 da reforma visual (docs/superpowers/specs/2026-08-19-reforma-visual-shell-navegacao-design.md):
+   terracota vira cor de marca/ação (--primary), separada de propósito do
+   vermelho de erro (--destructive) — antes os dois coincidiam no mesmo
+   hex, o que colidia visualmente entre "botão de ação" e "conta vencida".
+   Teal deixa de ser marca e vira só cor semântica de "positivo" (receita,
+   saldo bom). Sidebar continua sempre escura, independente do tema. */
 :root {
   --background: #f5f4f1;
   --foreground: #1a1d1f;
@@ -64,19 +63,21 @@
   --card-foreground: #1a1d1f;
   --popover: #ffffff;
   --popover-foreground: #1a1d1f;
-  --primary: #157f6b;
+  --primary: #d8583a;
   --primary-foreground: #ffffff;
   --secondary: #ece9e4;
   --secondary-foreground: #1a1d1f;
   --muted: #ece9e4;
   --muted-foreground: #716f68;
-  --accent: #dceee9;
-  --accent-foreground: #0f5f50;
+  --accent: #f6e6de;
+  --accent-foreground: #a8412a;
   --accent-gold: #a87c1f;
-  --destructive: #d8583a;
+  --positivo: #157f6b;
+  --positivo-foreground: #0f5f50;
+  --destructive: #b23a2e;
   --border: #e5e1d8;
   --input: #e5e1d8;
-  --ring: #157f6b;
+  --ring: #d8583a;
   --chart-1: #157f6b;
   --chart-2: #d8583a;
   --chart-3: #a87c1f;
@@ -85,12 +86,12 @@
   --radius: 0.875rem;
   --sidebar: #14181a;
   --sidebar-foreground: #e9eae5;
-  --sidebar-primary: #1f9c84;
-  --sidebar-primary-foreground: #0d1210;
+  --sidebar-primary: #e2694b;
+  --sidebar-primary-foreground: #2a1108;
   --sidebar-accent: rgba(255, 255, 255, 0.09);
   --sidebar-accent-foreground: #ffffff;
   --sidebar-border: rgba(255, 255, 255, 0.08);
-  --sidebar-ring: #1f9c84;
+  --sidebar-ring: #e2694b;
 }
 
 .dark {
@@ -100,19 +101,21 @@
   --card-foreground: #edebe7;
   --popover: #1b2321;
   --popover-foreground: #edebe7;
-  --primary: #1f9c84;
-  --primary-foreground: #0d1210;
+  --primary: #e2694b;
+  --primary-foreground: #2a1108;
   --secondary: #242927;
   --secondary-foreground: #edebe7;
   --muted: #242927;
   --muted-foreground: #9c9a94;
-  --accent: #24312d;
-  --accent-foreground: #6fd3bb;
+  --accent: #362219;
+  --accent-foreground: #f0a58c;
   --accent-gold: #c99a3b;
-  --destructive: #e2694b;
+  --positivo: #1f9c84;
+  --positivo-foreground: #6fd3bb;
+  --destructive: #c94a3d;
   --border: rgba(255, 255, 255, 0.1);
   --input: rgba(255, 255, 255, 0.14);
-  --ring: #1f9c84;
+  --ring: #e2694b;
   --chart-1: #1f9c84;
   --chart-2: #e2694b;
   --chart-3: #c99a3b;
@@ -120,12 +123,12 @@
   --chart-5: #9bae7a;
   --sidebar: #0f1311;
   --sidebar-foreground: #e9eae5;
-  --sidebar-primary: #1f9c84;
-  --sidebar-primary-foreground: #0d1210;
+  --sidebar-primary: #e2694b;
+  --sidebar-primary-foreground: #2a1108;
   --sidebar-accent: rgba(255, 255, 255, 0.08);
   --sidebar-accent-foreground: #ffffff;
   --sidebar-border: rgba(255, 255, 255, 0.08);
-  --sidebar-ring: #1f9c84;
+  --sidebar-ring: #e2694b;
 }
 
 @layer base {

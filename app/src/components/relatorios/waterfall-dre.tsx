@@ -26,7 +26,7 @@ function montarBarras(linhas: LinhaWaterfall[]): BarraWaterfall[] {
       const base = acumulado + Math.min(linha.valorDireto, 0);
       const altura = Math.abs(linha.valorDireto);
       acumulado += linha.valorDireto;
-      return { rotulo: linha.rotulo, base, altura, valorReal: linha.valorDireto, cor: linha.valorDireto >= 0 ? "#157F6B" : "#D8583A" };
+      return { rotulo: linha.rotulo, base, altura, valorReal: linha.valorDireto, cor: linha.valorDireto >= 0 ? "#157F6B" : "#B23A2E" };
     }
     const cor = linha.tipoCalc === "RESULTADO_NAO_OPERACIONAL" ? "#C98A1F" : "#7A8B5C";
     return { rotulo: linha.rotulo, base: 0, altura: linha.valorDireto, valorReal: linha.valorDireto, cor };

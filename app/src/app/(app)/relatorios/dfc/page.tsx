@@ -107,7 +107,7 @@ export default async function PaginaRelatoriosDfc({
                             {formatarNumeroCompacto(previsto)}
                           </td>
                           <td className="py-1.5 px-1 text-right tabular-nums">{formatarNumeroCompacto(realizado)}</td>
-                          <td className={cn("py-1.5 px-1 text-right tabular-nums", variacao >= 0 ? "text-[#157F6B]" : "text-[#D8583A]")}>
+                          <td className={cn("py-1.5 px-1 text-right tabular-nums", variacao >= 0 ? "text-[#157F6B]" : "text-[#B23A2E]")}>
                             {formatarNumeroCompacto(variacao)}
                           </td>
                         </Fragment>
@@ -117,7 +117,7 @@ export default async function PaginaRelatoriosDfc({
                       {formatarNumeroCompacto(linha.totalPrevisto)}
                     </td>
                     <td className="py-1.5 px-1 text-right tabular-nums font-semibold">{formatarNumeroCompacto(linha.totalRealizado)}</td>
-                    <td className={cn("py-1.5 px-1 text-right tabular-nums font-semibold", variacaoTotal >= 0 ? "text-[#157F6B]" : "text-[#D8583A]")}>
+                    <td className={cn("py-1.5 px-1 text-right tabular-nums font-semibold", variacaoTotal >= 0 ? "text-[#157F6B]" : "text-[#B23A2E]")}>
                       {formatarNumeroCompacto(variacaoTotal)}
                     </td>
                   </tr>

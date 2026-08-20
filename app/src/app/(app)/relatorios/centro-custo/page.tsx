@@ -42,11 +42,11 @@ export default async function PaginaRelatoriosCentroCusto({
                   <span className="w-40 shrink-0 truncate text-xs font-medium text-foreground">{l.nome}</span>
                   <div className="relative h-2 flex-1 overflow-hidden rounded-full bg-muted">
                     <div
-                      className={cn("h-full rounded-full", l.saldo >= 0 ? "bg-[#157F6B]" : "bg-[#D8583A]")}
+                      className={cn("h-full rounded-full", l.saldo >= 0 ? "bg-[#157F6B]" : "bg-[#B23A2E]")}
                       style={{ width: `${Math.max(4, (Math.abs(l.saldo) / maiorSaldoAbsoluto) * 100)}%` }}
                     />
                   </div>
-                  <span className={cn("w-28 shrink-0 text-right text-xs font-semibold tabular-nums", l.saldo >= 0 ? "text-[#157F6B]" : "text-[#D8583A]")}>
+                  <span className={cn("w-28 shrink-0 text-right text-xs font-semibold tabular-nums", l.saldo >= 0 ? "text-[#157F6B]" : "text-[#B23A2E]")}>
                     {formatarMoeda(l.saldo)}
                   </span>
                 </div>
@@ -68,8 +68,8 @@ export default async function PaginaRelatoriosCentroCusto({
                   <tr key={l.centroCustoId} className="border-b border-border last:border-none">
                     <td className="py-2.5 font-medium text-foreground">{l.nome}</td>
                     <td className="py-2.5 text-right tabular-nums text-[#157F6B]">{formatarNumeroCompacto(l.entradas)}</td>
-                    <td className="py-2.5 text-right tabular-nums text-[#D8583A]">{formatarNumeroCompacto(l.saidas)}</td>
-                    <td className={cn("py-2.5 text-right tabular-nums font-semibold", l.saldo >= 0 ? "text-[#157F6B]" : "text-[#D8583A]")}>
+                    <td className="py-2.5 text-right tabular-nums text-[#B23A2E]">{formatarNumeroCompacto(l.saidas)}</td>
+                    <td className={cn("py-2.5 text-right tabular-nums font-semibold", l.saldo >= 0 ? "text-[#157F6B]" : "text-[#B23A2E]")}>
                       {formatarNumeroCompacto(l.saldo)}
                     </td>
                     <td className="py-2.5 text-right tabular-nums text-muted-foreground">{formatarPercentual(l.margemPercentual)}</td>

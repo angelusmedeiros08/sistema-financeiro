@@ -140,7 +140,7 @@ export function LinhaConciliacaoCard({
         <div>
           <div className="flex items-center gap-2">
             <span className="text-sm font-semibold text-foreground">{formatarMoeda(linha.valor)}</span>
-            <Badge className={cn("border-none text-[10px] font-semibold", linha.tipo === "CREDITO" ? "bg-[#157F6B]/12 text-[#0F5F50]" : "bg-[#D8583A]/12 text-[#D8583A]")}>
+            <Badge className={cn("border-none text-[10px] font-semibold", linha.tipo === "CREDITO" ? "bg-[#157F6B]/12 text-[#0F5F50]" : "bg-[#B23A2E]/12 text-[#B23A2E]")}>
               {linha.tipo === "CREDITO" ? "Crédito" : "Débito"}
             </Badge>
             <span className="text-xs text-muted-foreground">{formatarDataIsoParaBR(linha.data)}</span>

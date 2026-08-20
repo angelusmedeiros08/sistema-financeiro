@@ -183,7 +183,7 @@ export default async function PaginaRelatoriosDre({
                           {formatarNumeroCompacto(valor)}
                         </td>
                       ))}
-                      <td className={cn("py-1.5 px-1.5 text-right tabular-nums font-semibold", linha.total >= 0 ? "text-[#157F6B]" : "text-[#D8583A]")}>
+                      <td className={cn("py-1.5 px-1.5 text-right tabular-nums font-semibold", linha.total >= 0 ? "text-[#157F6B]" : "text-[#B23A2E]")}>
                         {formatarNumeroCompacto(linha.total)}
                       </td>
                       <td className="py-1.5 pl-1.5 text-right tabular-nums text-muted-foreground">{formatarPercentual(linha.avPercentual)}</td>

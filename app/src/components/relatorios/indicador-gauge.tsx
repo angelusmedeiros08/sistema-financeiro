@@ -5,7 +5,7 @@ import { formatarPercentual } from "@/lib/formatacao";
 // MENOR. Estilo validado no companion de brainstorming (medidor linear
 // com zonas), preferido a velocímetro circular.
 const ZONAS_PADRAO = [
-  { ate: 0.4, cor: "#D8583A" },
+  { ate: 0.4, cor: "#B23A2E" },
   { ate: 0.7, cor: "#C98A1F" },
   { ate: 1, cor: "#157F6B" },
 ] as const;
@@ -13,7 +13,7 @@ const ZONAS_PADRAO = [
 const ZONAS_INVERTIDAS = [
   { ate: 0.3, cor: "#157F6B" },
   { ate: 0.65, cor: "#C98A1F" },
-  { ate: 1, cor: "#D8583A" },
+  { ate: 1, cor: "#B23A2E" },
 ] as const;
 
 function corDaZona(valor: number, invertido: boolean): string {

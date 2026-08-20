@@ -55,7 +55,7 @@ export default async function PaginaRelatoriosDespesas({
                     <div className="flex flex-col gap-1">
                       <span className="font-medium text-foreground">{l.categoriaNome}</span>
                       <div className="h-1.5 w-full max-w-40 overflow-hidden rounded-full bg-muted">
-                        <div className="h-full rounded-full bg-[#D8583A]" style={{ width: `${(l.total / maior) * 100}%` }} />
+                        <div className="h-full rounded-full bg-[#B23A2E]" style={{ width: `${(l.total / maior) * 100}%` }} />
                       </div>
                     </div>
                   </td>

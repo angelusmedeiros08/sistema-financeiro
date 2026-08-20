@@ -17,7 +17,7 @@ export default async function LayoutApp({ children }: { children: React.ReactNod
 
   return (
     <div className="flex min-h-screen">
-      <Sidebar />
+      <Sidebar emailUsuario={contexto.user.email ?? undefined} />
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar tenantNome={contexto.tenantNome} email={contexto.user.email ?? ""} />
         <main className="flex-1 px-4 py-8 lg:px-8">{children}</main>

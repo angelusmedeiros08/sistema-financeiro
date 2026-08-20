@@ -91,7 +91,7 @@ export default async function PaginaRelatoriosComparativos({
                     <td className="py-2.5 text-right tabular-nums">{formatarNumeroCompacto(p.atual)}</td>
                     <td className="py-2.5 text-right tabular-nums text-muted-foreground">{formatarNumeroCompacto(p.comparacao)}</td>
                     {tipoAtivo !== "YTD" && (
-                      <td className={cn("py-2.5 text-right tabular-nums font-semibold", p.variacaoPercentual >= 0 ? "text-[#157F6B]" : "text-[#D8583A]")}>
+                      <td className={cn("py-2.5 text-right tabular-nums font-semibold", p.variacaoPercentual >= 0 ? "text-[#157F6B]" : "text-[#B23A2E]")}>
                         {formatarPercentual(p.variacaoPercentual)}
                       </td>
                     )}

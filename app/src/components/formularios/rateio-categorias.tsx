@@ -323,7 +323,7 @@ export function RateioCategorias({
                         >
                           Usar 1 centro de custo
                         </button>
-                        <p className={cn("text-xs font-medium", diferencaSub === 0 ? "text-[#157F6B]" : "text-[#D8583A]")}>
+                        <p className={cn("text-xs font-medium", diferencaSub === 0 ? "text-[#157F6B]" : "text-[#B23A2E]")}>
                           {diferencaSub === 0 ? "Bate certinho" : formatarMoeda(diferencaSub)}
                         </p>
                       </div>
@@ -341,7 +341,7 @@ export function RateioCategorias({
           <Plus size={13} />
           Adicionar categoria
         </Button>
-        <p className={cn("text-xs font-medium", diferenca === 0 ? "text-[#157F6B]" : "text-[#D8583A]")}>
+        <p className={cn("text-xs font-medium", diferenca === 0 ? "text-[#157F6B]" : "text-[#B23A2E]")}>
           {diferenca === 0
             ? "Soma bate certinho"
             : diferenca > 0

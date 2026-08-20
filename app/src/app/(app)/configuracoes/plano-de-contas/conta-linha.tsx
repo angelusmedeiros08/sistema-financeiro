@@ -34,8 +34,8 @@ const ROTULO_TIPO: Record<string, string> = Object.fromEntries(OPCOES_TIPO.map((
 const COR_TIPO: Record<string, string> = {
   ATIVO: "#157F6B",
   RECEITA: "#157F6B",
-  PASSIVO: "#D8583A",
-  DESPESA: "#D8583A",
+  PASSIVO: "#B23A2E",
+  DESPESA: "#B23A2E",
   PATRIMONIO_LIQUIDO: "#7A8B5C",
 };
 

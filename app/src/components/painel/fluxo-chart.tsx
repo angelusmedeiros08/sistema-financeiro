@@ -31,7 +31,7 @@ export function FluxoChart({ dados }: { dados: PontoFluxo[] }) {
           />
           <Bar dataKey="resultado" radius={[6, 6, 6, 6]} maxBarSize={34}>
             {dados.map((d, i) => (
-              <Cell key={i} fill={d.resultado >= 0 ? "#157F6B" : "#D8583A"} />
+              <Cell key={i} fill={d.resultado >= 0 ? "#157F6B" : "#B23A2E"} />
             ))}
           </Bar>
         </BarChart>

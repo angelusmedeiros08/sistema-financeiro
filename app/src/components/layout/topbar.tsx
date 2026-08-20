@@ -3,6 +3,8 @@ import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/s
 import { Button } from "@/components/ui/button";
 import { SidebarConteudo } from "./sidebar";
 import { ThemeToggle } from "./theme-toggle";
+import { CommandPaletteBusca } from "./command-palette-busca";
+import { NovoRegistroMenu } from "./novo-registro-menu";
 import { sair } from "@/app/(auth)/actions";
 
 export function Topbar({ tenantNome, email }: { tenantNome: string; email: string }) {
@@ -17,15 +19,25 @@ export function Topbar({ tenantNome, email }: { tenantNome: string; email: strin
         </SheetTrigger>
         <SheetContent side="left" className="w-60 border-r-0 bg-sidebar p-0 text-sidebar-foreground [&_button]:text-sidebar-foreground">
           <SheetTitle className="sr-only">Menu de navegação</SheetTitle>
-          <SidebarConteudo />
+          <SidebarConteudo emSheet />
         </SheetContent>
       </Sheet>
 
-      <div className="min-w-0 flex-1">
+      <span className="hidden shrink-0 font-heading text-[15px] font-bold tracking-tight text-foreground lg:inline">
+        Núcleo
+      </span>
+
+      <div className="hidden min-w-0 flex-1 justify-center lg:flex">
+        <CommandPaletteBusca />
+      </div>
+
+      <div className="min-w-0 flex-1 lg:hidden">
         <p className="truncate text-sm font-semibold text-foreground">{tenantNome}</p>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2.5">
+        <NovoRegistroMenu />
+        <span className="hidden text-sm text-muted-foreground xl:inline">{tenantNome}</span>
         <span className="hidden text-sm text-muted-foreground sm:inline">{email}</span>
         <ThemeToggle />
         <form action={sair}>

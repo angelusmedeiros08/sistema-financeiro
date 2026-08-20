@@ -1,10 +1,12 @@
 import { formatarMoeda, formatarNumeroCompacto } from "@/lib/formatacao";
 import type { AgingResultado } from "@/lib/relatorios/aging";
 
-// Barra horizontal com gradiente de severidade âmbar→coral (Seção 4.3 do
+// Barra horizontal com gradiente de severidade âmbar→vermelho (Seção 4.3 do
 // spec) — usada resumida na Visão geral e por extenso no Aging Analítico.
 // Faixas zeradas somem da lista pra não poluir quando o tenant está em dia.
-const CORES_SEVERIDADE = ["#C98A1F", "#CE7C33", "#D46E47", "#D8613B", "#D8583A", "#D14A38", "#C93D37"];
+// Termina no vermelho de erro (--destructive), não no terracota (--primary),
+// pra não confundir "quanto mais vencido" com a cor de ação do sistema.
+const CORES_SEVERIDADE = ["#C98A1F", "#CE7C33", "#D46E47", "#D0603B", "#C94A3D", "#B23A2E", "#8F2E24"];
 
 export function AgingBarras({ titulo, dados }: { titulo: string; dados: AgingResultado }) {
   const faixas = dados.vencido.filter((f) => f.total > 0);
@@ -14,7 +16,7 @@ export function AgingBarras({ titulo, dados }: { titulo: string; dados: AgingRes
     <div className="rounded-2xl border border-border bg-card p-5">
       <div className="mb-4 flex items-center justify-between">
         <h2 className="font-heading text-sm font-bold text-foreground">{titulo}</h2>
-        <span className="text-sm font-bold tabular-nums text-[#D8583A]">{formatarMoeda(dados.totalVencido)}</span>
+        <span className="text-sm font-bold tabular-nums text-[#B23A2E]">{formatarMoeda(dados.totalVencido)}</span>
       </div>
 
       {faixas.length === 0 ? (

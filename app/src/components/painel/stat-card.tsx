@@ -6,7 +6,7 @@ const cartaoVariantes = cva("flex flex-col gap-2 rounded-2xl p-5", {
     variant: {
       hero: "bg-gradient-to-br from-[#157F6B] to-[#A87C1F] text-white",
       sage: "border-t-[3px] border-t-[#7A8B5C] bg-card text-card-foreground",
-      coral: "border-t-[3px] border-t-[#D8583A] bg-card text-card-foreground",
+      coral: "border-t-[3px] border-t-[#B23A2E] bg-card text-card-foreground",
       ambar: "border-t-[3px] border-t-[#C98A1F] bg-card text-card-foreground",
       teal: "border-t-[3px] border-t-[#157F6B] bg-card text-card-foreground",
     },
@@ -17,7 +17,7 @@ const cartaoVariantes = cva("flex flex-col gap-2 rounded-2xl p-5", {
 const corRotulo: Record<string, string> = {
   hero: "text-white/85",
   sage: "text-[#7A8B5C]",
-  coral: "text-[#D8583A]",
+  coral: "text-[#B23A2E]",
   ambar: "text-[#C98A1F]",
   teal: "text-[#157F6B]",
 };

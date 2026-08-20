@@ -108,7 +108,7 @@ export default async function PaginaIndicadores() {
                   <li key={f.formaPagamentoId ?? "nao-informado"} className="flex items-center justify-between gap-3 text-sm">
                     <span className="flex-1 truncate text-foreground">{f.nome}</span>
                     <span className="shrink-0 tabular-nums text-muted-foreground">{formatarMoeda(f.valorTotal)}</span>
-                    <span className={cn("w-20 shrink-0 text-right text-xs font-semibold tabular-nums", f.atrasoMedioDias > 0 ? "text-[#D8583A]" : "text-[#157F6B]")}>
+                    <span className={cn("w-20 shrink-0 text-right text-xs font-semibold tabular-nums", f.atrasoMedioDias > 0 ? "text-[#B23A2E]" : "text-[#157F6B]")}>
                       {f.atrasoMedioDias >= 0 ? "+" : ""}
                       {f.atrasoMedioDias.toFixed(1)}d
                     </span>
@@ -132,9 +132,9 @@ function CardSaldoProjetado({ saldoAtual, projecoes, limiar }: SaldoProjetado) {
       </div>
       <div className="grid grid-cols-3 gap-3">
         {projecoes.map((p) => (
-          <div key={p.dias} className={cn("rounded-xl p-3", p.ruptura ? "bg-[#D8583A]/8" : "bg-muted/40")}>
+          <div key={p.dias} className={cn("rounded-xl p-3", p.ruptura ? "bg-[#B23A2E]/8" : "bg-muted/40")}>
             <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">D+{p.dias}</p>
-            <p className={cn("mt-1 text-lg font-bold tabular-nums", p.ruptura ? "text-[#D8583A]" : "text-foreground")}>{formatarMoeda(p.saldo)}</p>
+            <p className={cn("mt-1 text-lg font-bold tabular-nums", p.ruptura ? "text-[#B23A2E]" : "text-foreground")}>{formatarMoeda(p.saldo)}</p>
           </div>
         ))}
       </div>
@@ -147,7 +147,7 @@ function CardPrazoMedio({ titulo, dias, quantidadeBaixas }: { titulo: string; di
   return (
     <div className="rounded-2xl border border-border bg-card p-5">
       <p className="mb-1 text-xs font-semibold text-muted-foreground">{titulo}</p>
-      <p className={cn("text-2xl font-bold tabular-nums", dias > 0 ? "text-[#D8583A]" : "text-[#157F6B]")}>
+      <p className={cn("text-2xl font-bold tabular-nums", dias > 0 ? "text-[#B23A2E]" : "text-[#157F6B]")}>
         {dias >= 0 ? "+" : ""}
         {dias.toFixed(1)} dias
       </p>
@@ -177,7 +177,7 @@ function ListaVariacaoCategorias({
               <li key={l.categoriaId} className="flex items-center gap-3 text-sm">
                 <span className="flex-1 truncate text-foreground">{l.nome}</span>
                 <span className="shrink-0 tabular-nums text-muted-foreground">{formatarMoeda(l.valorMesAtual)}</span>
-                <span className={cn("flex shrink-0 items-center gap-0.5 text-xs font-semibold tabular-nums", positivo ? "text-[#157F6B]" : "text-[#D8583A]")}>
+                <span className={cn("flex shrink-0 items-center gap-0.5 text-xs font-semibold tabular-nums", positivo ? "text-[#157F6B]" : "text-[#B23A2E]")}>
                   {positivo ? <ArrowUp size={11} weight="bold" /> : <ArrowDown size={11} weight="bold" />}
                   {formatarPercentual(Math.abs(l.variacaoPercentual))}
                 </span>

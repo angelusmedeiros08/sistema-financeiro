@@ -36,6 +36,21 @@ export default async function PaginaPainel() {
         <p className="text-sm capitalize text-muted-foreground">{hoje}</p>
       </div>
 
+      <div className="flex flex-wrap gap-2">
+        <Button asChild size="sm" className="rounded-full">
+          <Link href="/despesas">Nova despesa</Link>
+        </Button>
+        <Button asChild size="sm" variant="outline" className="rounded-full">
+          <Link href="/receitas">Nova receita</Link>
+        </Button>
+        <Button asChild size="sm" variant="outline" className="rounded-full">
+          <Link href="/clientes/novo">Novo cliente</Link>
+        </Button>
+        <Button asChild size="sm" variant="outline" className="rounded-full">
+          <Link href="/vendas/nova">Nova venda</Link>
+        </Button>
+      </div>
+
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <StatCard
           variant="hero"
@@ -106,7 +121,7 @@ export default async function PaginaPainel() {
                   <span
                     className={
                       "flex size-8 shrink-0 items-center justify-center rounded-lg " +
-                      (evento.tipo === "RECEITA" ? "bg-[#157F6B]" : "bg-[#D8583A]")
+                      (evento.tipo === "RECEITA" ? "bg-[#157F6B]" : "bg-[#B23A2E]")
                     }
                   >
                     {evento.tipo === "RECEITA" ? (

@@ -8,7 +8,7 @@ const SERIES = [
   { chave: "mc", nome: "Margem de contribuição", cor: "#157F6B" },
   { chave: "margemBruta", nome: "Margem bruta", cor: "#7A8B5C" },
   { chave: "ebitda", nome: "EBITDA", cor: "#C98A1F" },
-  { chave: "margemLiquida", nome: "Margem líquida", cor: "#D8583A" },
+  { chave: "margemLiquida", nome: "Margem líquida", cor: "#B23A2E" },
 ] as const;
 
 // Série mensal de indicadores — todos % sobre a receita líquida, derivados

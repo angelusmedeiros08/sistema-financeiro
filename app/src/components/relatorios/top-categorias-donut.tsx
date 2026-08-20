@@ -8,7 +8,7 @@ import type { LinhaAnaliseCategoria } from "@/lib/relatorios/analise-despesas";
 // Motor de desenho é @visx/shape (Pie) em vez de strokeDasharray calculado
 // à mão — mesmo resultado visual, mas sem a trigonometria manual, e abre
 // caminho pra tooltip por fatia no futuro sem reescrever o componente.
-const PALETA = ["#7A8B5C", "#157F6B", "#C98A1F", "#D8583A", "#4F5C3A", "#8A94A6"];
+const PALETA = ["#7A8B5C", "#157F6B", "#C98A1F", "#8A5A3D", "#4F5C3A", "#8A94A6"];
 const RAIO = 70;
 const ESPESSURA = 28;
 const MAX_FATIAS_NOMEADAS = 5;
