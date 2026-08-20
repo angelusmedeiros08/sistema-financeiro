@@ -6,7 +6,7 @@ import { lerParametrosRelatorio } from "@/lib/relatorios/periodo";
 import { buscarAnaliseComparativa, type TipoAnaliseComparativa } from "@/lib/relatorios/analises-comparativas";
 import { RelatoriosSubNav } from "../sub-nav";
 import { RelatoriosControles } from "../controles";
-import { ComparativoBarras } from "@/components/relatorios/comparativo-barras";
+import { ComparativoLinhaAnotada } from "@/components/relatorios/comparativo-linha-anotada";
 import { formatarNumeroCompacto, formatarPercentual } from "@/lib/formatacao";
 import { cn } from "@/lib/utils";
 
@@ -66,14 +66,7 @@ export default async function PaginaRelatoriosComparativos({
           <p className="text-sm text-muted-foreground">Sem movimentação suficiente no período para comparar.</p>
         ) : (
           <>
-            <ComparativoBarras
-              dados={pontos}
-              eixoX="chave"
-              series={[
-                { chave: "atual", nome: "Período", cor: "#4C7DF0" },
-                { chave: "comparacao", nome: config.colunaComparacao, cor: "#B45FC7" },
-              ]}
-            />
+            <ComparativoLinhaAnotada pontos={pontos} nomeComparacao={config.colunaComparacao} mostrarAnotacao={tipoAtivo !== "YTD"} />
 
             <table className="mt-4 w-full text-sm">
               <thead>
@@ -91,7 +84,7 @@ export default async function PaginaRelatoriosComparativos({
                     <td className="py-2.5 text-right tabular-nums">{formatarNumeroCompacto(p.atual)}</td>
                     <td className="py-2.5 text-right tabular-nums text-muted-foreground">{formatarNumeroCompacto(p.comparacao)}</td>
                     {tipoAtivo !== "YTD" && (
-                      <td className={cn("py-2.5 text-right tabular-nums font-semibold", p.variacaoPercentual >= 0 ? "text-[#157F6B]" : "text-[#B23A2E]")}>
+                      <td className={cn("py-2.5 text-right tabular-nums font-semibold", p.variacaoPercentual >= 0 ? "text-[#0FA37E]" : "text-[#B23A2E]")}>
                         {formatarPercentual(p.variacaoPercentual)}
                       </td>
                     )}

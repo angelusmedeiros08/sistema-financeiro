@@ -17,9 +17,15 @@ importers:
       '@supabase/supabase-js':
         specifier: ^2.112.3
         version: 2.112.3
+      '@visx/annotation':
+        specifier: ^4.0.0
+        version: 4.0.0(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@visx/axis':
         specifier: ^4.0.0
         version: 4.0.0(@types/react@19.2.18)(react@19.2.8)
+      '@visx/curve':
+        specifier: ^4.0.0
+        version: 4.0.0
       '@visx/event':
         specifier: ^4.0.0
         version: 4.0.0(@types/react@19.2.18)(react@19.2.8)
@@ -1774,6 +1780,15 @@ packages:
     cpu: [x64]
     os: [win32]
 
+  '@visx/annotation@4.0.0':
+    resolution: {integrity: sha512-+ZZVyEqtUuMxKb3C2yN30/lPybao9+B733nnG+raW9ztFE9/Z3M+vAT0X/lxZiTc3uL6ZJlP7xzZN2+LcydWsQ==}
+    peerDependencies:
+      '@types/react': ^18.0.0 || ^19.0.0
+      react: ^18.0.0 || ^19.0.0
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
+
   '@visx/axis@4.0.0':
     resolution: {integrity: sha512-cSPNO9Aic2UX49AmIeJJ9TQrrAkvUHpHOGqimUAXhbg07VI3HoHDKcXZdrjvQz+g0LhubrUkjj8Gwju2WZ3dtg==}
     peerDependencies:
@@ -1798,6 +1813,15 @@ packages:
 
   '@visx/curve@4.0.0':
     resolution: {integrity: sha512-bXrOSd2BzVCxR7kBE7gPTSU4plxzYN75w7erdHYabwn3vzP+xFk1o0gg3NOHEPJzt5tXqf0Ecm5YqHACOnipTA==}
+
+  '@visx/drag@4.0.0':
+    resolution: {integrity: sha512-hWfe8a1sqkxTkcQP6EKNAsSZ9d/0owBOjyoC+cgULorfXkmBJpDK2xV7YGsicUqSbM1tuNIrPJME2HQACBc9Ng==}
+    peerDependencies:
+      '@types/react': ^18.0.0 || ^19.0.0
+      react: ^18.0.0 || ^19.0.0
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
 
   '@visx/event@4.0.0':
     resolution: {integrity: sha512-sOcVVzOUxOefF8mQenRFtutoEO7P9icpTcSJM36Sv13sepQbPBuYLknX7RV+EzqyNLOze5cO5GmLIUNH82FOoA==}
@@ -5881,6 +5905,19 @@ snapshots:
   '@unrs/resolver-binding-win32-x64-msvc@1.12.2':
     optional: true
 
+  '@visx/annotation@4.0.0(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
+    dependencies:
+      '@visx/drag': 4.0.0(@types/react@19.2.18)(react@19.2.8)
+      '@visx/group': 4.0.0(@types/react@19.2.18)(react@19.2.8)
+      '@visx/text': 4.0.0(@types/react@19.2.18)(react@19.2.8)
+      classnames: 2.5.1
+      react: 19.2.8
+      react-use-measure: 2.1.7(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+    optionalDependencies:
+      '@types/react': 19.2.18
+    transitivePeerDependencies:
+      - react-dom
+
   '@visx/axis@4.0.0(@types/react@19.2.18)(react@19.2.8)':
     dependencies:
       '@visx/group': 4.0.0(@types/react@19.2.18)(react@19.2.8)
@@ -5904,6 +5941,14 @@ snapshots:
   '@visx/curve@4.0.0':
     dependencies:
       '@visx/vendor': 4.0.0
+
+  '@visx/drag@4.0.0(@types/react@19.2.18)(react@19.2.8)':
+    dependencies:
+      '@visx/event': 4.0.0(@types/react@19.2.18)(react@19.2.8)
+      '@visx/point': 4.0.0
+      react: 19.2.8
+    optionalDependencies:
+      '@types/react': 19.2.18
 
   '@visx/event@4.0.0(@types/react@19.2.18)(react@19.2.8)':
     dependencies:

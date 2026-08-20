@@ -2,12 +2,12 @@
 
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis } from "recharts";
 import { formatarMoeda } from "@/lib/formatacao";
+import { TooltipEscuro } from "@/components/relatorios/tooltip-escuro";
 
 export type SerieComparativo = { chave: string; nome: string; cor: string };
 
-// Barras agrupadas genéricas — Previsto×Realizado, e reaproveitado pelas
-// Análises Comparativas (AH/YoY) — mesma grade/tooltip do FluxoChart, só
-// com N séries lado a lado em vez de uma.
+// Barras agrupadas genéricas — hoje só Previsto×Realizado (Fluxo de Caixa);
+// Análises Comparativas usa ComparativoLinhaAnotada (linha+anotação).
 export function ComparativoBarras({
   dados,
   eixoX,
@@ -26,13 +26,7 @@ export function ComparativoBarras({
         <XAxis dataKey={eixoX} axisLine={false} tickLine={false} tick={{ fill: "var(--muted-foreground)", fontSize: 11 }} />
         <Tooltip
           cursor={{ fill: "var(--muted)" }}
-          contentStyle={{
-            background: "var(--popover)",
-            border: "1px solid var(--border)",
-            borderRadius: "0.625rem",
-            fontSize: 12,
-          }}
-          formatter={(value) => formatarMoeda(Number(value))}
+          content={<TooltipEscuro labelFormatter={(chave) => String(chave)} valueFormatter={(valor) => formatarMoeda(valor)} />}
         />
         <Legend wrapperStyle={{ fontSize: 12 }} />
         {series.map((serie) => (
