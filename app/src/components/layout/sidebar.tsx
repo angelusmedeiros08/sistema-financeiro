@@ -19,7 +19,6 @@ import {
   CaretRight,
   CaretLeft,
   Star,
-  SidebarSimple,
 } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 
@@ -30,6 +29,7 @@ type ItemNav = {
   label: string;
   icon: React.ComponentType<{ size?: number; weight?: "regular" | "bold" | "fill"; className?: string }>;
   disponivel: boolean;
+  secao?: string;
   subItens?: SubItemNav[];
 };
 
@@ -79,19 +79,17 @@ const ITENS_NAV: ItemNav[] = [
   { href: "/contas-a-receber", label: "Contas a receber", icon: HandCoins, disponivel: true },
   { href: "/contas-a-pagar", label: "Contas a pagar", icon: CreditCard, disponivel: true },
   { href: "/fluxo-caixa", label: "Fluxo de caixa", icon: ChartLine, disponivel: true },
-  { href: "/pessoas", label: "Pessoas", icon: Users, disponivel: true, subItens: SUB_ITENS_PESSOAS },
-  { href: "/comercial", label: "Comercial", icon: ShoppingCart, disponivel: true, subItens: SUB_ITENS_COMERCIAL },
-  { href: "/analise", label: "Análise", icon: ChartBar, disponivel: true, subItens: SUB_ITENS_ANALISE },
-  { href: "/relatorios", label: "Relatórios", icon: ChartLineUp, disponivel: true, subItens: SUB_ITENS_RELATORIOS },
-  { href: "/importacao", label: "Importação", icon: UploadSimple, disponivel: true },
-  { href: "/configuracoes", label: "Configurações", icon: GearSix, disponivel: true, subItens: SUB_ITENS_CONFIGURACOES },
+  { href: "/pessoas", label: "Pessoas", icon: Users, disponivel: true, secao: "Gestão", subItens: SUB_ITENS_PESSOAS },
+  { href: "/comercial", label: "Comercial", icon: ShoppingCart, disponivel: true, secao: "Gestão", subItens: SUB_ITENS_COMERCIAL },
+  { href: "/analise", label: "Análise", icon: ChartBar, disponivel: true, secao: "Gestão", subItens: SUB_ITENS_ANALISE },
+  { href: "/relatorios", label: "Relatórios", icon: ChartLineUp, disponivel: true, secao: "Sistema", subItens: SUB_ITENS_RELATORIOS },
+  { href: "/importacao", label: "Importação", icon: UploadSimple, disponivel: true, secao: "Sistema" },
+  { href: "/configuracoes", label: "Configurações", icon: GearSix, disponivel: true, secao: "Sistema", subItens: SUB_ITENS_CONFIGURACOES },
 ];
 
 export const TODOS_ITENS_FOLHA: SubItemNav[] = ITENS_NAV.flatMap((item) =>
   item.subItens ? item.subItens : [{ href: item.href, label: item.label }],
 );
-
-const CHAVE_COLAPSADA = "nucleo:sidebar:colapsada";
 
 function chaveFavoritos(emailUsuario?: string) {
   return `nucleo:sidebar:favoritos:${emailUsuario ?? "anon"}`;
@@ -127,40 +125,20 @@ function BotaoEstrela({ ativo, onToggle }: { ativo: boolean; onToggle: () => voi
   );
 }
 
+// Sidebar sempre em repouso como rail de ícones (~60px); passar o mouse (ou
+// foco de teclado) sobrepõe um painel completo com rótulos por cima do
+// conteúdo — nunca empurra o layout. Mecanismo único (não há mais um estado
+// "expandida fixa"), igual ao comportamento da Conta Azul/Uxcel observado.
 export function SidebarConteudo({ emailUsuario, emSheet = false }: { emailUsuario?: string; emSheet?: boolean }) {
   const pathname = usePathname();
 
-  // Mesmo padrão do Conta Azul: clicar num item com sub-itens não expande
-  // em linha — troca o painel único pra uma lista dedicada daquele grupo,
-  // com um botão de voltar no topo. Só usado quando a sidebar está expandida
-  // (fixa ou temporariamente, via hover); ver docs/superpowers/specs/2026-08-19-reforma-visual-shell-navegacao-design.md.
   const [grupoAberto, setGrupoAberto] = useState<string | null>(() => grupoPelaRota(pathname));
-
-  const [colapsada, setColapsada] = useState(false);
-  const colapsadaHidratada = useRef(false);
+  const [aberta, setAberta] = useState(false);
   const [favoritos, setFavoritos] = useState<string[]>([]);
   const favoritosHidratados = useRef(false);
-
-  // Enquanto colapsada: hover/foco no rail expande temporariamente em overlay
-  // (nunca empurra o conteúdo por baixo) — dois modos distintos, testados
-  // separadamente na Conta Azul: item solto expande o rail inteiro numa
-  // coluna com rótulos; item de grupo mantém o rail estreito e abre um
-  // painel de contexto adicional ao lado (duas colunas).
-  const [overlayGeral, setOverlayGeral] = useState(false);
-  const [grupoFlutuante, setGrupoFlutuante] = useState<string | null>(null);
   const timerAbrir = useRef<ReturnType<typeof setTimeout> | null>(null);
   const timerFechar = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    if (emSheet) return;
-    setColapsada(window.localStorage.getItem(CHAVE_COLAPSADA) === "1");
-    colapsadaHidratada.current = true;
-  }, [emSheet]);
-
-  useEffect(() => {
-    if (!colapsadaHidratada.current) return;
-    window.localStorage.setItem(CHAVE_COLAPSADA, colapsada ? "1" : "0");
-  }, [colapsada]);
+  const railRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     try {
@@ -186,332 +164,282 @@ export function SidebarConteudo({ emailUsuario, emSheet = false }: { emailUsuari
     if (timerFechar.current) clearTimeout(timerFechar.current);
   }
 
-  function fecharOverlays() {
+  function agendarAbrir() {
     limparTimers();
-    setOverlayGeral(false);
-    setGrupoFlutuante(null);
-  }
-
-  function agendarAbrirGeral() {
-    limparTimers();
-    timerAbrir.current = setTimeout(() => {
-      setOverlayGeral(true);
-      setGrupoFlutuante(null);
-    }, 100);
-  }
-
-  function agendarAbrirGrupo(href: string) {
-    limparTimers();
-    timerAbrir.current = setTimeout(() => {
-      setGrupoFlutuante(href);
-      setOverlayGeral(false);
-    }, 100);
+    timerAbrir.current = setTimeout(() => setAberta(true), 100);
   }
 
   function agendarFechar() {
     limparTimers();
-    timerFechar.current = setTimeout(fecharOverlays, 250);
+    timerFechar.current = setTimeout(() => setAberta(false), 250);
   }
 
-  function aoFocarGeral() {
+  function aoFocar() {
     limparTimers();
-    setOverlayGeral(true);
-    setGrupoFlutuante(null);
-  }
-
-  function aoFocarGrupo(href: string) {
-    limparTimers();
-    setGrupoFlutuante(href);
-    setOverlayGeral(false);
+    setAberta(true);
   }
 
   function aoPerderFoco(e: React.FocusEvent<HTMLDivElement>) {
     if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-      fecharOverlays();
+      limparTimers();
+      setAberta(false);
     }
   }
 
   useEffect(() => {
-    if (!overlayGeral && !grupoFlutuante) return;
+    if (!aberta) return;
     function aoTeclar(e: KeyboardEvent) {
       if (e.key === "Escape") {
-        fecharOverlays();
+        limparTimers();
+        setAberta(false);
         railRef.current?.focus();
       }
     }
     document.addEventListener("keydown", aoTeclar);
     return () => document.removeEventListener("keydown", aoTeclar);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [overlayGeral, grupoFlutuante]);
+  }, [aberta]);
 
-  const railRef = useRef<HTMLButtonElement>(null);
   const itemDoGrupo = ITENS_NAV.find((i) => i.href === grupoAberto);
-  const itemDoGrupoFlutuante = ITENS_NAV.find((i) => i.href === grupoFlutuante);
   const itensFavoritados = favoritos
     .map((href) => TODOS_ITENS_FOLHA.find((i) => i.href === href))
     .filter((i): i is SubItemNav => Boolean(i));
 
-  function renderConteudoExpandido(opcoes: { mostrarColapsar?: boolean } = {}) {
+  function renderLista() {
+    if (itemDoGrupo?.subItens) {
+      return (
+        <nav className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto">
+          <button
+            type="button"
+            onClick={() => setGrupoAberto(null)}
+            className="mb-1 flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm font-semibold text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent/60 hover:text-white"
+          >
+            <CaretLeft size={15} />
+            {itemDoGrupo.label}
+          </button>
+
+          {itemDoGrupo.subItens.map((sub) => {
+            const ativo = pathname === sub.href;
+            const favoritado = favoritos.includes(sub.href);
+            return (
+              <div key={sub.href} className="group/item flex items-center gap-1">
+                <Link
+                  href={sub.href}
+                  className={cn(
+                    "flex-1 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors",
+                    ativo ? "bg-sidebar-accent text-white" : "text-sidebar-foreground/70 hover:bg-sidebar-accent/60 hover:text-white",
+                  )}
+                >
+                  {sub.label}
+                </Link>
+                <BotaoEstrela ativo={favoritado} onToggle={() => alternarFavorito(sub.href)} />
+              </div>
+            );
+          })}
+        </nav>
+      );
+    }
+
+    let secaoAnterior: string | undefined;
+
     return (
-      <div className="flex h-full min-h-0 flex-col gap-6 bg-sidebar px-4 py-6 text-sidebar-foreground">
-        <div className="shrink-0 px-2">
-          <span className="font-heading text-[15px] font-bold tracking-tight">Núcleo</span>
-        </div>
-
-        {itemDoGrupo?.subItens ? (
-          <nav className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto">
-            <button
-              type="button"
-              onClick={() => setGrupoAberto(null)}
-              className="mb-1 flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm font-semibold text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent/60 hover:text-white"
-            >
-              <CaretLeft size={15} />
-              {itemDoGrupo.label}
-            </button>
-
-            {itemDoGrupo.subItens.map((sub) => {
-              const ativo = pathname === sub.href;
-              const favoritado = favoritos.includes(sub.href);
+      <nav className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">
+        {itensFavoritados.length > 0 && (
+          <div className="flex flex-col gap-0.5">
+            <span className="px-2.5 text-[10px] font-bold uppercase tracking-wide text-sidebar-foreground/40">
+              Favoritos
+            </span>
+            {itensFavoritados.map((fav) => {
+              const ativo = pathname === fav.href;
               return (
-                <div key={sub.href} className="group/item flex items-center gap-1">
+                <div key={fav.href} className="group/item flex items-center gap-1">
                   <Link
-                    href={sub.href}
+                    href={fav.href}
                     className={cn(
                       "flex-1 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors",
                       ativo ? "bg-sidebar-accent text-white" : "text-sidebar-foreground/70 hover:bg-sidebar-accent/60 hover:text-white",
                     )}
                   >
-                    {sub.label}
+                    {fav.label}
                   </Link>
-                  <BotaoEstrela ativo={favoritado} onToggle={() => alternarFavorito(sub.href)} />
+                  <BotaoEstrela ativo onToggle={() => alternarFavorito(fav.href)} />
                 </div>
               );
             })}
-          </nav>
-        ) : (
-          <nav className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">
-            {itensFavoritados.length > 0 && (
-              <div className="flex flex-col gap-0.5">
-                <span className="px-2.5 text-[10px] font-bold uppercase tracking-wide text-sidebar-foreground/40">
-                  Favoritos
-                </span>
-                {itensFavoritados.map((fav) => {
-                  const ativo = pathname === fav.href;
-                  return (
-                    <div key={fav.href} className="group/item flex items-center gap-1">
-                      <Link
-                        href={fav.href}
-                        className={cn(
-                          "flex-1 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors",
-                          ativo ? "bg-sidebar-accent text-white" : "text-sidebar-foreground/70 hover:bg-sidebar-accent/60 hover:text-white",
-                        )}
-                      >
-                        {fav.label}
-                      </Link>
-                      <BotaoEstrela ativo onToggle={() => alternarFavorito(fav.href)} />
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+          </div>
+        )}
 
-            <div className="flex flex-col gap-0.5">
-              {ITENS_NAV.map((item) => {
-                const ativo = itemAtivo(item, pathname);
-                const Icon = item.icon;
-                const favoritado = !item.subItens && favoritos.includes(item.href);
+        <div className="flex flex-col gap-0.5">
+          {ITENS_NAV.map((item) => {
+            const ativo = itemAtivo(item, pathname);
+            const Icon = item.icon;
+            const favoritado = !item.subItens && favoritos.includes(item.href);
+            const mostrarCabecalho = item.secao && item.secao !== secaoAnterior;
+            secaoAnterior = item.secao;
 
-                if (!item.disponivel) {
-                  return (
-                    <div
-                      key={item.href}
-                      className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium text-sidebar-foreground/35"
-                      title="Em breve"
-                    >
-                      <Icon size={17} weight="regular" />
-                      <span className="flex-1">{item.label}</span>
-                      <span className="rounded-full bg-white/8 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide">
-                        em breve
-                      </span>
-                    </div>
-                  );
-                }
-
-                if (item.subItens) {
-                  return (
-                    <button
-                      key={item.href}
-                      type="button"
-                      onClick={() => setGrupoAberto(item.href)}
-                      className={cn(
-                        "flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-semibold transition-colors",
-                        ativo ? "bg-sidebar-accent text-white" : "text-sidebar-foreground/70 hover:bg-sidebar-accent/60 hover:text-white",
-                      )}
-                    >
-                      <Icon size={17} weight={ativo ? "bold" : "regular"} />
-                      <span className="flex-1 text-left">{item.label}</span>
-                      <CaretRight size={13} />
-                    </button>
-                  );
-                }
-
+            const conteudoItem = (() => {
+              if (!item.disponivel) {
                 return (
-                  <div key={item.href} className="group/item flex items-center gap-1">
-                    <Link
-                      href={item.href}
-                      className={cn(
-                        "flex flex-1 items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-semibold transition-colors",
-                        ativo ? "bg-sidebar-accent text-white" : "text-sidebar-foreground/70 hover:bg-sidebar-accent/60 hover:text-white",
-                      )}
-                    >
-                      <Icon size={17} weight={ativo ? "bold" : "regular"} />
-                      {item.label}
-                    </Link>
-                    <BotaoEstrela ativo={favoritado} onToggle={() => alternarFavorito(item.href)} />
+                  <div
+                    key={item.href}
+                    className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium text-sidebar-foreground/35"
+                    title="Em breve"
+                  >
+                    <Icon size={17} weight="regular" />
+                    <span className="flex-1">{item.label}</span>
+                    <span className="rounded-full bg-white/8 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide">
+                      em breve
+                    </span>
                   </div>
                 );
-              })}
-            </div>
-          </nav>
-        )}
+              }
 
-        {opcoes.mostrarColapsar && (
-          <button
-            type="button"
-            onClick={() => setColapsada(true)}
-            className="flex shrink-0 items-center gap-2 rounded-lg px-2.5 py-2 text-xs font-semibold text-sidebar-foreground/50 transition-colors hover:bg-sidebar-accent/60 hover:text-white"
-          >
-            <SidebarSimple size={16} />
-            Recolher menu
-          </button>
-        )}
-      </div>
+              if (item.subItens) {
+                return (
+                  <button
+                    key={item.href}
+                    type="button"
+                    onClick={() => setGrupoAberto(item.href)}
+                    className={cn(
+                      "flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-semibold transition-colors",
+                      ativo ? "bg-sidebar-accent text-white" : "text-sidebar-foreground/70 hover:bg-sidebar-accent/60 hover:text-white",
+                    )}
+                  >
+                    <Icon size={17} weight={ativo ? "bold" : "regular"} />
+                    <span className="flex-1 text-left">{item.label}</span>
+                    <CaretRight size={13} />
+                  </button>
+                );
+              }
+
+              return (
+                <div key={item.href} className="group/item flex items-center gap-1">
+                  <Link
+                    href={item.href}
+                    className={cn(
+                      "flex flex-1 items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-semibold transition-colors",
+                      ativo ? "bg-sidebar-accent text-white" : "text-sidebar-foreground/70 hover:bg-sidebar-accent/60 hover:text-white",
+                    )}
+                  >
+                    <Icon size={17} weight={ativo ? "bold" : "regular"} />
+                    {item.label}
+                  </Link>
+                  <BotaoEstrela ativo={favoritado} onToggle={() => alternarFavorito(item.href)} />
+                </div>
+              );
+            })();
+
+            return (
+              <div key={item.href}>
+                {mostrarCabecalho && (
+                  <span className="mt-3 mb-1 block px-2.5 text-[10px] font-bold uppercase tracking-wide text-sidebar-foreground/35">
+                    {item.secao}
+                  </span>
+                )}
+                {conteudoItem}
+              </div>
+            );
+          })}
+        </div>
+      </nav>
     );
   }
 
   if (emSheet) {
-    return renderConteudoExpandido();
+    return (
+      <div className="flex h-full min-h-0 flex-col gap-6 bg-sidebar px-4 py-6 text-sidebar-foreground">
+        <div className="shrink-0 px-2">
+          <span className="font-heading text-[15px] font-bold tracking-tight">Núcleo</span>
+        </div>
+        {renderLista()}
+      </div>
+    );
   }
 
   return (
-    <aside
-      className={cn(
-        "relative hidden shrink-0 border-r border-sidebar-border lg:block",
-        colapsada ? "w-[60px]" : "w-[260px]",
-      )}
-    >
-      <div className="sticky top-0 h-screen">
-        {!colapsada ? (
-          renderConteudoExpandido({ mostrarColapsar: true })
-        ) : (
-          <div className="relative h-full" onMouseLeave={agendarFechar} onMouseEnter={limparTimers} onBlur={aoPerderFoco}>
-            <div className="flex h-full flex-col items-center gap-1 bg-sidebar px-2 py-6 text-sidebar-foreground">
-              <button
-                ref={railRef}
-                type="button"
-                onClick={() => setColapsada(false)}
-                title="Expandir menu"
-                className="mb-5 flex size-9 shrink-0 items-center justify-center rounded-lg text-sidebar-foreground/60 transition-colors hover:bg-sidebar-accent/60 hover:text-white"
-              >
-                <SidebarSimple size={17} />
-              </button>
-
-              {ITENS_NAV.map((item) => {
-                const ativo = itemAtivo(item, pathname);
-                const Icon = item.icon;
-
-                if (!item.disponivel) {
-                  return (
-                    <div
-                      key={item.href}
-                      title={`${item.label} (em breve)`}
-                      className="flex size-9 shrink-0 items-center justify-center rounded-lg text-sidebar-foreground/25"
-                    >
-                      <Icon size={18} weight="regular" />
-                    </div>
-                  );
-                }
-
-                if (item.subItens) {
-                  return (
-                    <button
-                      key={item.href}
-                      type="button"
-                      title={item.label}
-                      onMouseEnter={() => agendarAbrirGrupo(item.href)}
-                      onFocus={() => aoFocarGrupo(item.href)}
-                      onClick={() => setGrupoFlutuante((atual) => (atual === item.href ? null : item.href))}
-                      className={cn(
-                        "flex size-9 shrink-0 items-center justify-center rounded-lg transition-colors",
-                        ativo || grupoFlutuante === item.href
-                          ? "bg-sidebar-accent text-white"
-                          : "text-sidebar-foreground/60 hover:bg-sidebar-accent/60 hover:text-white",
-                      )}
-                    >
-                      <span className="sr-only">{item.label}</span>
-                      <Icon size={18} weight={ativo ? "bold" : "regular"} />
-                    </button>
-                  );
-                }
-
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    title={item.label}
-                    onMouseEnter={agendarAbrirGeral}
-                    onFocus={aoFocarGeral}
-                    className={cn(
-                      "flex size-9 shrink-0 items-center justify-center rounded-lg transition-colors",
-                      ativo ? "bg-sidebar-accent text-white" : "text-sidebar-foreground/60 hover:bg-sidebar-accent/60 hover:text-white",
-                    )}
-                  >
-                    <span className="sr-only">{item.label}</span>
-                    <Icon size={18} weight={ativo ? "bold" : "regular"} />
-                  </Link>
-                );
-              })}
-            </div>
-
-            {overlayGeral && (
-              <div
-                className="fixed inset-y-0 left-[60px] z-50 w-[260px] shadow-2xl"
-                onMouseEnter={limparTimers}
-                onMouseLeave={agendarFechar}
-              >
-                {renderConteudoExpandido()}
-              </div>
-            )}
-
-            {grupoFlutuante && itemDoGrupoFlutuante?.subItens && (
-              <div
-                className="fixed inset-y-0 left-[60px] z-50 flex w-[240px] flex-col gap-1 bg-sidebar px-3 py-6 text-sidebar-foreground shadow-2xl"
-                onMouseEnter={limparTimers}
-                onMouseLeave={agendarFechar}
-              >
-                <span className="mb-2 px-1.5 text-sm font-bold text-white">{itemDoGrupoFlutuante.label}</span>
-                {itemDoGrupoFlutuante.subItens.map((sub) => {
-                  const ativo = pathname === sub.href;
-                  const favoritado = favoritos.includes(sub.href);
-                  return (
-                    <div key={sub.href} className="group/item flex items-center gap-1">
-                      <Link
-                        href={sub.href}
-                        className={cn(
-                          "flex-1 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors",
-                          ativo ? "bg-sidebar-accent text-white" : "text-sidebar-foreground/70 hover:bg-sidebar-accent/60 hover:text-white",
-                        )}
-                      >
-                        {sub.label}
-                      </Link>
-                      <BotaoEstrela ativo={favoritado} onToggle={() => alternarFavorito(sub.href)} />
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+    <aside className="relative hidden w-[60px] shrink-0 lg:block">
+      <div
+        ref={railRef}
+        tabIndex={-1}
+        className="sticky top-0 z-40 h-screen w-[60px] outline-none"
+        onMouseEnter={agendarAbrir}
+        onMouseLeave={agendarFechar}
+        onFocus={aoFocar}
+        onBlur={aoPerderFoco}
+      >
+        {/* Rail: sempre visível, ícones apenas — fica no fluxo normal (nunca some), reserva o espaço fixo do layout. */}
+        <div className="flex h-full flex-col items-center gap-1 border-r border-sidebar-border bg-sidebar px-2 py-6 text-sidebar-foreground">
+          <div className="mb-5 flex size-9 shrink-0 items-center justify-center">
+            <span className="flex size-6 items-center justify-center rounded-md bg-gradient-to-br from-[#D8583A] to-[#A87C1F] font-heading text-[11px] font-bold text-white">
+              N
+            </span>
           </div>
-        )}
+
+          {ITENS_NAV.map((item) => {
+            const ativo = itemAtivo(item, pathname);
+            const Icon = item.icon;
+
+            if (!item.disponivel) {
+              return (
+                <div
+                  key={item.href}
+                  title={`${item.label} (em breve)`}
+                  className="flex size-9 shrink-0 items-center justify-center rounded-lg text-sidebar-foreground/25"
+                >
+                  <Icon size={18} weight="regular" />
+                </div>
+              );
+            }
+
+            if (item.subItens) {
+              return (
+                <div
+                  key={item.href}
+                  title={item.label}
+                  className={cn(
+                    "flex size-9 shrink-0 items-center justify-center rounded-lg transition-colors",
+                    ativo ? "bg-sidebar-accent text-white" : "text-sidebar-foreground/60",
+                  )}
+                >
+                  <span className="sr-only">{item.label}</span>
+                  <Icon size={18} weight={ativo ? "bold" : "regular"} />
+                </div>
+              );
+            }
+
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                title={item.label}
+                className={cn(
+                  "flex size-9 shrink-0 items-center justify-center rounded-lg transition-colors",
+                  ativo ? "bg-sidebar-accent text-white" : "text-sidebar-foreground/60 hover:bg-sidebar-accent/60 hover:text-white",
+                )}
+              >
+                <span className="sr-only">{item.label}</span>
+                <Icon size={18} weight={ativo ? "bold" : "regular"} />
+              </Link>
+            );
+          })}
+        </div>
+
+        {/* Overlay: some sobre o conteúdo ao passar o mouse/focar, nunca reflui o layout por baixo. */}
+        <div
+          className={cn(
+            "fixed inset-y-0 left-0 z-40 w-[260px] shadow-2xl transition-[opacity,transform] duration-150",
+            aberta ? "pointer-events-auto translate-x-0 opacity-100" : "pointer-events-none -translate-x-2 opacity-0",
+          )}
+        >
+          <div className="flex h-full min-h-0 flex-col gap-6 bg-sidebar px-4 py-6 text-sidebar-foreground">
+            <div className="flex shrink-0 items-center gap-2.5 px-2">
+              <span className="flex size-6 items-center justify-center rounded-md bg-gradient-to-br from-[#D8583A] to-[#A87C1F] font-heading text-[11px] font-bold text-white">
+                N
+              </span>
+              <span className="font-heading text-[15px] font-bold tracking-tight">Núcleo</span>
+            </div>
+            {renderLista()}
+          </div>
+        </div>
       </div>
     </aside>
   );
