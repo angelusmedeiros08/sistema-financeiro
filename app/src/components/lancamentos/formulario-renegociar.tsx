@@ -46,7 +46,7 @@ export function FormularioRenegociar({
         <span className="text-foreground">Renegociar vencimento</span>
       </div>
 
-      <form action={formAction} className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-5">
+      <form action={formAction} className="flex flex-col gap-4 rounded-2xl bg-card shadow-card p-5">
         <input type="hidden" name="parcela_id" value={parcelaId} />
 
         <div className="rounded-xl border border-border bg-muted/40 p-3 text-sm">

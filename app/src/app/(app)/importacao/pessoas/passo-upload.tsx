@@ -40,7 +40,7 @@ export function PassoUpload({
   }
 
   return (
-    <div className="flex flex-col gap-6 rounded-2xl border border-border bg-card p-6">
+    <div className="flex flex-col gap-6 rounded-2xl bg-card shadow-card p-6">
       <div className="flex items-start justify-between gap-4">
         <div>
           <h2 className="text-sm font-bold text-foreground">1. Envie sua planilha</h2>

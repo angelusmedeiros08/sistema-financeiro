@@ -50,12 +50,12 @@ export default async function PaginaPortal() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.3fr_1fr]">
-        <div className="rounded-2xl border border-border bg-card p-5">
+        <div className="rounded-2xl bg-card shadow-card p-5">
           <h2 className="mb-4 font-heading text-sm font-bold text-foreground">Fluxo de caixa (últimos 6 meses)</h2>
           <FluxoChart dados={dados.fluxo} />
         </div>
 
-        <div className="rounded-2xl border border-border bg-card p-5">
+        <div className="rounded-2xl bg-card shadow-card p-5">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="font-heading text-sm font-bold text-foreground">Lançamentos recentes</h2>
             <Button asChild variant="ghost" size="sm" className="h-7 text-xs">

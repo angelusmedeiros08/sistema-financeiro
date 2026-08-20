@@ -54,7 +54,7 @@ export default async function PaginaRelatoriosDfc({
         </div>
       </div>
 
-      <div className="rounded-2xl border border-border bg-card p-6">
+      <div className="rounded-2xl bg-card shadow-card p-6">
         <div className="mb-4">
           <h2 className="font-heading text-base font-bold text-foreground">DFC: Fluxo de Caixa por atividade</h2>
           <p className="text-xs text-muted-foreground">

@@ -31,7 +31,7 @@ export function TopCategoriasDonut({ titulo, linhas }: { titulo: string; linhas:
   const total = fatias.reduce((soma, f) => soma + f.total, 0);
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-5">
+    <div className="rounded-2xl bg-card shadow-card p-5">
       <h2 className="mb-4 font-heading text-sm font-bold text-foreground">{titulo}</h2>
 
       {total === 0 ? (

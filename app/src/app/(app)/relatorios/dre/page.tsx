@@ -119,7 +119,7 @@ export default async function PaginaRelatoriosDre({
       </div>
 
       {aba === "indicadores" && (
-        <div className="rounded-2xl border border-border bg-card p-6">
+        <div className="rounded-2xl bg-card shadow-card p-6">
           <h2 className="mb-1 font-heading text-base font-bold text-foreground">Indicadores: evolução no ano</h2>
           <p className="mb-5 text-xs text-muted-foreground">
             Margem de contribuição, margem bruta, EBITDA e margem líquida, todas em % sobre a receita líquida.
@@ -130,7 +130,7 @@ export default async function PaginaRelatoriosDre({
       )}
 
       {aba === "cascata" && (
-        <div className="rounded-2xl border border-border bg-card p-6">
+        <div className="rounded-2xl bg-card shadow-card p-6">
           <h2 className="mb-1 font-heading text-base font-bold text-foreground">DRE em cascata ({ano})</h2>
           <p className="mb-5 text-xs text-muted-foreground">Total do ano, linha a linha, na ordem real de tbTotalizadoresDRE.</p>
           <WaterfallDre linhas={linhas.map((l) => ({ rotulo: l.rotulo, tipoCalc: l.tipoCalc, valorDireto: l.total }))} altura={520} />
@@ -138,7 +138,7 @@ export default async function PaginaRelatoriosDre({
       )}
 
       {aba === "matriz" && (
-        <div className="rounded-2xl border border-border bg-card p-6">
+        <div className="rounded-2xl bg-card shadow-card p-6">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="font-heading text-base font-bold text-foreground">DRE: Demonstrativo de Resultado</h2>
             <Link

@@ -55,26 +55,26 @@ export default async function PaginaDetalheImportacao({ params }: { params: Prom
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <div className="rounded-2xl border border-border bg-card p-4">
+        <div className="rounded-2xl bg-card shadow-card p-4">
           <p className="text-xs font-medium text-muted-foreground">Total de linhas</p>
           <p className="mt-1 text-2xl font-bold text-foreground">{importacao.totalLinhas}</p>
         </div>
-        <div className="rounded-2xl border border-border bg-card p-4">
+        <div className="rounded-2xl bg-card shadow-card p-4">
           <p className="text-xs font-medium text-muted-foreground">Sucesso</p>
           <p className="mt-1 text-2xl font-bold text-[#0F5F50]">{importacao.sucessos}</p>
         </div>
-        <div className="rounded-2xl border border-border bg-card p-4">
+        <div className="rounded-2xl bg-card shadow-card p-4">
           <p className="text-xs font-medium text-muted-foreground">Erro</p>
           <p className="mt-1 text-2xl font-bold text-destructive">{importacao.erros}</p>
         </div>
-        <div className="rounded-2xl border border-border bg-card p-4">
+        <div className="rounded-2xl bg-card shadow-card p-4">
           <p className="text-xs font-medium text-muted-foreground">Pendente</p>
           <p className="mt-1 text-2xl font-bold text-foreground">{importacao.pendentes}</p>
         </div>
       </div>
 
       {(podeRetomar || itensCriadosSucesso.length > 0) && (
-        <div className="flex flex-wrap items-start gap-6 rounded-2xl border border-border bg-card p-4">
+        <div className="flex flex-wrap items-start gap-6 rounded-2xl bg-card shadow-card p-4">
           {podeRetomar && <RetomarPainel importacaoId={importacao.id} contagemPendente={contagemPendente} />}
           {itensCriadosSucesso.length > 0 && <DesfazerPainel importacaoId={importacao.id} contagemAtiva={contagemAtiva} />}
         </div>
@@ -83,7 +83,7 @@ export default async function PaginaDetalheImportacao({ params }: { params: Prom
       {itensComErro.length > 0 && (
         <section>
           <h2 className="mb-3 text-xs font-bold uppercase tracking-wide text-muted-foreground">Linhas com erro</h2>
-          <div className="overflow-hidden rounded-2xl border border-border bg-card">
+          <div className="overflow-hidden rounded-2xl bg-card shadow-card">
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">

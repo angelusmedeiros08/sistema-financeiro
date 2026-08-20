@@ -71,7 +71,7 @@ export default async function PaginaCentrosCusto({
             Nenhum centro de custo {filtro === "inativos" ? "inativo" : "cadastrado"} ainda.
           </p>
         ) : (
-          <div className="overflow-hidden rounded-2xl border border-border bg-card">
+          <div className="overflow-hidden rounded-2xl bg-card shadow-card">
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">

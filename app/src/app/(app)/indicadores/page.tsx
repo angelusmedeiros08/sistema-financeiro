@@ -58,7 +58,7 @@ export default async function PaginaIndicadores() {
     <div className="flex w-full flex-col gap-6">
       <h1 className="text-xl font-bold tracking-tight text-foreground">Indicadores</h1>
 
-      <section className="rounded-2xl border border-border bg-card p-6">
+      <section className="rounded-2xl bg-card shadow-card p-6">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <h2 className="font-heading text-base font-bold text-foreground">Estou ficando sem caixa?</h2>
           {projecaoD7?.ruptura && <BadgeRupturaSaldo saldoD7={projecaoD7.saldo} />}
@@ -66,7 +66,7 @@ export default async function PaginaIndicadores() {
         <CardSaldoProjetado {...saldoProjetado} />
       </section>
 
-      <section className="rounded-2xl border border-border bg-card p-6">
+      <section className="rounded-2xl bg-card shadow-card p-6">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <h2 className="font-heading text-base font-bold text-foreground">Meu risco está concentrado?</h2>
           <BadgeRiscoConcentracao nivelRisco={concentracao.nivelRisco} percentualTop3={concentracao.percentualTop3} />
@@ -74,7 +74,7 @@ export default async function PaginaIndicadores() {
         <TopCategoriasDonut titulo="Top clientes por receita (últimos 12 meses)" linhas={donutClientes} />
       </section>
 
-      <section className="rounded-2xl border border-border bg-card p-6">
+      <section className="rounded-2xl bg-card shadow-card p-6">
         <h2 className="mb-4 font-heading text-base font-bold text-foreground">Onde meu dinheiro está indo?</h2>
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <ListaVariacaoCategorias titulo="Receitas — maior variação vs. mês anterior" linhas={variacaoReceitas} />
@@ -82,7 +82,7 @@ export default async function PaginaIndicadores() {
         </div>
       </section>
 
-      <section className="rounded-2xl border border-border bg-card p-6">
+      <section className="rounded-2xl bg-card shadow-card p-6">
         <h2 className="mb-4 font-heading text-base font-bold text-foreground">Quem não paga em dia, e pra quem eu devo?</h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <CardPrazoMedio titulo="Prazo médio de recebimento (PMR)" dias={pmr.dias} quantidadeBaixas={pmr.quantidadeBaixas} />
@@ -94,11 +94,11 @@ export default async function PaginaIndicadores() {
         </div>
       </section>
 
-      <section className="rounded-2xl border border-border bg-card p-6">
+      <section className="rounded-2xl bg-card shadow-card p-6">
         <h2 className="mb-4 font-heading text-base font-bold text-foreground">Como me pagam?</h2>
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <TopCategoriasDonut titulo="Distribuição por forma de pagamento (últimos 6 meses)" linhas={donutFormaPagamento} />
-          <div className="rounded-2xl border border-border bg-card p-5">
+          <div className="rounded-2xl bg-card shadow-card p-5">
             <h3 className="mb-4 font-heading text-sm font-bold text-foreground">Atraso médio por forma</h3>
             {distribuicaoFormaPagamento.length === 0 ? (
               <p className="text-sm text-muted-foreground">Nenhuma baixa no período.</p>
@@ -145,7 +145,7 @@ function CardSaldoProjetado({ saldoAtual, projecoes, limiar }: SaldoProjetado) {
 
 function CardPrazoMedio({ titulo, dias, quantidadeBaixas }: { titulo: string; dias: number; quantidadeBaixas: number }) {
   return (
-    <div className="rounded-2xl border border-border bg-card p-5">
+    <div className="rounded-2xl bg-card shadow-card p-5">
       <p className="mb-1 text-xs font-semibold text-muted-foreground">{titulo}</p>
       <p className={cn("text-2xl font-bold tabular-nums", dias > 0 ? "text-[#B23A2E]" : "text-[#157F6B]")}>
         {dias >= 0 ? "+" : ""}

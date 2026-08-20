@@ -52,7 +52,7 @@ export default async function PaginaEquipe() {
 
       <section>
         <h2 className="mb-3 text-xs font-bold uppercase tracking-wide text-muted-foreground">Membros</h2>
-        <div className="overflow-hidden rounded-2xl border border-border bg-card">
+        <div className="overflow-hidden rounded-2xl bg-card shadow-card">
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-transparent">

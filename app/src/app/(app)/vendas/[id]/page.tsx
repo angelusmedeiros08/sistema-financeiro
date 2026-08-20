@@ -100,7 +100,7 @@ export default async function PaginaVenda({ params }: { params: Promise<{ id: st
         </div>
       </div>
 
-      <div className="rounded-2xl border border-border bg-card p-5">
+      <div className="rounded-2xl bg-card shadow-card p-5">
         <dl className="grid gap-3 sm:grid-cols-2">
           <div>
             <dt className="text-xs text-muted-foreground">Cliente</dt>
@@ -119,7 +119,7 @@ export default async function PaginaVenda({ params }: { params: Promise<{ id: st
         </dl>
       </div>
 
-      <div className="rounded-2xl border border-border bg-card p-5">
+      <div className="rounded-2xl bg-card shadow-card p-5">
         <h2 className="mb-3 text-xs font-bold uppercase tracking-wide text-muted-foreground">Itens</h2>
         <div className="space-y-1.5">
           {venda.itens.map((item) => (

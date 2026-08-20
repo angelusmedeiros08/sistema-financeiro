@@ -94,7 +94,7 @@ export function VendaForm({
 
   return (
     <form action={formAction} className="flex flex-col gap-5">
-      <div className="rounded-2xl border border-border bg-card p-5">
+      <div className="rounded-2xl bg-card shadow-card p-5">
         <h2 className="mb-3 text-xs font-bold uppercase tracking-wide text-muted-foreground">Dados da venda</h2>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <div className="space-y-1.5 lg:col-span-2">
@@ -153,7 +153,7 @@ export function VendaForm({
         </div>
       </div>
 
-      <div className="rounded-2xl border border-border bg-card p-5">
+      <div className="rounded-2xl bg-card shadow-card p-5">
         <h2 className="mb-3 text-xs font-bold uppercase tracking-wide text-muted-foreground">Itens</h2>
         <div className="space-y-2">
           {itens.map((item, indice) => (

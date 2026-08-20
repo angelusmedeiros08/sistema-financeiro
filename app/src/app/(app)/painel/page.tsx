@@ -31,59 +31,63 @@ export default async function PaginaPainel() {
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h1 className="text-xl font-bold tracking-tight text-foreground">Painel financeiro</h1>
-        <p className="text-sm capitalize text-muted-foreground">{hoje}</p>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="font-heading text-2xl font-bold tracking-tight text-foreground">Painel financeiro</h1>
+          <p className="text-sm capitalize text-muted-foreground">{hoje}</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button asChild size="sm" className="rounded-full">
+            <Link href="/despesas">Nova despesa</Link>
+          </Button>
+          <Button asChild size="sm" variant="outline" className="rounded-full">
+            <Link href="/receitas">Nova receita</Link>
+          </Button>
+          <Button asChild size="sm" variant="outline" className="rounded-full">
+            <Link href="/clientes/novo">Novo cliente</Link>
+          </Button>
+          <Button asChild size="sm" variant="outline" className="rounded-full">
+            <Link href="/vendas/nova">Nova venda</Link>
+          </Button>
+        </div>
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        <Button asChild size="sm" className="rounded-full">
-          <Link href="/despesas">Nova despesa</Link>
-        </Button>
-        <Button asChild size="sm" variant="outline" className="rounded-full">
-          <Link href="/receitas">Nova receita</Link>
-        </Button>
-        <Button asChild size="sm" variant="outline" className="rounded-full">
-          <Link href="/clientes/novo">Novo cliente</Link>
-        </Button>
-        <Button asChild size="sm" variant="outline" className="rounded-full">
-          <Link href="/vendas/nova">Nova venda</Link>
-        </Button>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
+        <div className="lg:col-span-5">
+          <StatCard
+            variant="hero"
+            label="Saldo em caixa"
+            valor={formatarMoeda(dados.saldoEmCaixa)}
+            serie={dados.saldoSerieSeisMeses}
+          />
+        </div>
+        <div className="lg:col-span-7">
+          <StatCard
+            variant={dados.resultadoDoMes >= 0 ? "teal" : "coral"}
+            label="Resultado do mês"
+            valor={formatarMoeda(dados.resultadoDoMes)}
+            detalhe="Receitas menos despesas no mês corrente, por competência"
+            delta={dados.resultadoDeltaPercentual}
+            serie={dados.fluxo.map((f) => f.resultado)}
+          />
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <StatCard
-          variant="hero"
-          label="Saldo em caixa"
-          valor={formatarMoeda(dados.saldoEmCaixa)}
-        />
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard
           variant="teal"
           label="A receber (30 dias)"
           valor={formatarMoeda(dados.aReceber.total)}
-          detalhe={`Vencido: ${formatarMoeda(dados.vencidosReceber.vencidoTotal)} · Vence hoje: ${formatarMoeda(dados.vencidosReceber.venceHojeTotal)}`}
+          detalhe={`Vencido: ${formatarMoeda(dados.vencidosReceber.vencidoTotal)}`}
         />
-        <StatCard
-          variant="teal"
-          label="Recebido (mês)"
-          valor={formatarMoeda(dados.recebidoDoMes)}
-        />
+        <StatCard variant="teal" label="Recebido (mês)" valor={formatarMoeda(dados.recebidoDoMes)} />
         <StatCard
           variant="ambar"
           label="A pagar (30 dias)"
           valor={formatarMoeda(dados.aPagar.total)}
-          detalhe={`Vencido: ${formatarMoeda(dados.vencidosPagar.vencidoTotal)} · Vence hoje: ${formatarMoeda(dados.vencidosPagar.venceHojeTotal)}`}
+          detalhe={`Vencido: ${formatarMoeda(dados.vencidosPagar.vencidoTotal)}`}
         />
-        <StatCard
-          variant="sage"
-          label="Pago (mês)"
-          valor={formatarMoeda(dados.pagoDoMes)}
-        />
-        <StatCard
-          variant="coral"
-          label="Resultado do mês"
-          valor={formatarMoeda(dados.resultadoDoMes)}
-        />
+        <StatCard variant="sage" label="Pago (mês)" valor={formatarMoeda(dados.pagoDoMes)} />
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -94,14 +98,14 @@ export default async function PaginaPainel() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.3fr_1fr]">
-        <div className="rounded-2xl border border-border bg-card p-5">
+        <div className="rounded-2xl bg-card p-5 shadow-card">
           <h2 className="mb-4 font-heading text-sm font-bold text-foreground">
             Fluxo de caixa (últimos 6 meses)
           </h2>
           <FluxoChart dados={dados.fluxo} />
         </div>
 
-        <div className="rounded-2xl border border-border bg-card p-5">
+        <div className="rounded-2xl bg-card p-5 shadow-card">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="font-heading text-sm font-bold text-foreground">Lançamentos recentes</h2>
             <Button asChild variant="ghost" size="sm" className="h-7 text-xs">

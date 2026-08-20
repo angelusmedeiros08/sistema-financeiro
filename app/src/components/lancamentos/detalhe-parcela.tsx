@@ -190,7 +190,7 @@ export function DetalheParcela({
         </div>
       </div>
 
-      <section className="rounded-2xl border border-border bg-card p-5">
+      <section className="rounded-2xl bg-card shadow-card p-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <h1 className="text-xl font-bold tracking-tight text-foreground">{parcela.descricao}</h1>
@@ -267,7 +267,7 @@ export function DetalheParcela({
             Nenhum pagamento registrado ainda.
           </p>
         ) : (
-          <div className="overflow-hidden rounded-2xl border border-border bg-card">
+          <div className="overflow-hidden rounded-2xl bg-card shadow-card">
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
@@ -292,7 +292,7 @@ export function DetalheParcela({
       {parcela.renegociacoes.length > 0 && (
         <section>
           <h2 className="mb-3 text-xs font-bold uppercase tracking-wide text-muted-foreground">Histórico de renegociação</h2>
-          <div className="overflow-hidden rounded-2xl border border-border bg-card divide-y divide-border">
+          <div className="overflow-hidden rounded-2xl bg-card shadow-card divide-y divide-border">
             {parcela.renegociacoes.map((r) => (
               <div key={r.id} className="p-4 text-sm">
                 <p className="font-medium text-foreground">

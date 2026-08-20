@@ -145,7 +145,7 @@ export function PassoRevisao({
   }
 
   return (
-    <div className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-6">
+    <div className="flex flex-col gap-4 rounded-2xl bg-card shadow-card p-6">
       <div>
         <h2 className="text-sm font-bold text-foreground">3. Confira cada linha antes de importar</h2>
         <p className="mt-1 text-sm text-muted-foreground">Corrija nome, perfil ou documento direto na grade — não precisa reenviar o arquivo.</p>

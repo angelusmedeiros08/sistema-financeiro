@@ -110,12 +110,12 @@ export default async function PaginaRelatoriosVisaoGeral({
       {/* Cada gráfico na sua própria linha, largura cheia — dividir a tela
           em 2 colunas espremia a cascata (23 linhas reais) até virar
           ilegível, mesmo motivo já corrigido no DRE dedicado. */}
-      <div className="rounded-2xl border border-border bg-card p-5">
+      <div className="rounded-2xl bg-card shadow-card p-5">
         <h2 className="mb-4 font-heading text-sm font-bold text-foreground">Fluxo de caixa</h2>
         <FluxoChart dados={fluxoParaGrafico} />
       </div>
 
-      <div className="rounded-2xl border border-border bg-card p-5">
+      <div className="rounded-2xl bg-card shadow-card p-5">
         <h2 className="mb-4 font-heading text-sm font-bold text-foreground">DRE em cascata</h2>
         <WaterfallDre linhas={dre} altura={360} />
       </div>

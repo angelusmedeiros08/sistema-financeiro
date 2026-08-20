@@ -40,7 +40,7 @@ export function IndicadorGauge({
   const cor = corDaZona(percentualClamp, invertido);
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-4">
+    <div className="rounded-2xl bg-card shadow-card p-4">
       <div className="mb-2 flex items-baseline justify-between gap-2">
         <span className="text-xs font-semibold text-muted-foreground">{rotulo}</span>
         <span className="text-base font-bold tabular-nums" style={{ color: cor }}>

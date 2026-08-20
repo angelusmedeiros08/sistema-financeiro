@@ -13,7 +13,7 @@ export function AgingBarras({ titulo, dados }: { titulo: string; dados: AgingRes
   const maior = Math.max(...faixas.map((f) => f.total), 1);
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-5">
+    <div className="rounded-2xl bg-card shadow-card p-5">
       <div className="mb-4 flex items-center justify-between">
         <h2 className="font-heading text-sm font-bold text-foreground">{titulo}</h2>
         <span className="text-sm font-bold tabular-nums text-[#B23A2E]">{formatarMoeda(dados.totalVencido)}</span>

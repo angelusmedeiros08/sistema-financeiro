@@ -28,7 +28,7 @@ export default async function PaginaRelatoriosDespesas({
       <RelatoriosSubNav />
       <RelatoriosControles {...params} />
 
-      <div className="rounded-2xl border border-border bg-card p-5">
+      <div className="rounded-2xl bg-card shadow-card p-5">
         <h2 className="mb-1 font-heading text-sm font-bold text-foreground">Análise de despesas (curva ABC)</h2>
         <p className="mb-4 text-xs text-muted-foreground">
           Categorias ordenadas do maior para o menor gasto, com participação e acumulado. Identifica quais poucas

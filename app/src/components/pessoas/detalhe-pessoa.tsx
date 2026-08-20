@@ -27,7 +27,7 @@ export function DetalhePessoa({
         <span className="text-foreground">{pessoa.nome}</span>
       </div>
 
-      <section className="rounded-2xl border border-border bg-card p-5">
+      <section className="rounded-2xl bg-card shadow-card p-5">
         <h1 className="mb-5 text-xl font-bold tracking-tight text-foreground">Dados cadastrais</h1>
         <PessoaForm modo="editar" pessoa={pessoa} camposPersonalizados={camposPersonalizados} acao={atualizarPessoaAction} />
       </section>

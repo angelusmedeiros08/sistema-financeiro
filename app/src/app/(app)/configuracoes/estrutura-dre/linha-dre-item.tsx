@@ -62,7 +62,7 @@ export function LinhaDreItem({
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-4">
+    <div className="rounded-2xl bg-card shadow-card p-4">
       <div className="flex items-center gap-3">
         <div className="flex flex-col">
           <button

@@ -176,7 +176,7 @@ export function PassoEntidades({
   }
 
   return (
-    <div className="flex flex-col gap-6 rounded-2xl border border-border bg-card p-6">
+    <div className="flex flex-col gap-6 rounded-2xl bg-card shadow-card p-6">
       <div>
         <h2 className="text-sm font-bold text-foreground">3. Revise categorias, centros de custo, pessoas e formas de pagamento</h2>
         <p className="mt-1 text-sm text-muted-foreground">

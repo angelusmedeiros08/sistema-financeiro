@@ -59,7 +59,7 @@ function FaixasAVencer({
   const maior = Math.max(...faixas.map((f) => f.total), 1);
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-5">
+    <div className="rounded-2xl bg-card shadow-card p-5">
       <div className="mb-4 flex items-center justify-between">
         <h2 className="font-heading text-sm font-bold text-foreground">{titulo}</h2>
         <span className="text-sm font-bold tabular-nums text-foreground">{formatarMoeda(dados.totalAVencer)}</span>
@@ -94,7 +94,7 @@ function TabelaParticipantes({
   linhas: Awaited<ReturnType<typeof buscarAgingPorParticipante>>;
 }) {
   return (
-    <div className="overflow-hidden rounded-2xl border border-border bg-card">
+    <div className="overflow-hidden rounded-2xl bg-card shadow-card">
       <h2 className="p-5 pb-0 font-heading text-sm font-bold text-foreground">{titulo}</h2>
       {linhas.length === 0 ? (
         <p className="p-5 text-sm text-muted-foreground">Nada em aberto.</p>

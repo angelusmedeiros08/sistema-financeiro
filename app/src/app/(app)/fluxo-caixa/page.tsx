@@ -76,7 +76,7 @@ async function FluxoDiario({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="rounded-2xl border border-border bg-card p-5">
+      <div className="rounded-2xl bg-card shadow-card p-5">
         <h2 className="mb-4 font-heading text-sm font-bold text-foreground">Entradas × Saídas</h2>
         <ComparativoBarras
           dados={pontos.map((p) => ({ chave: p.chave, entradas: p.entradas, saidas: -p.saidas }))}
@@ -88,7 +88,7 @@ async function FluxoDiario({
         />
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-border bg-card">
+      <div className="overflow-hidden rounded-2xl bg-card shadow-card">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border text-left text-xs font-bold uppercase tracking-wide text-muted-foreground">
@@ -144,7 +144,7 @@ async function FluxoPrevistoRealizado({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="rounded-2xl border border-border bg-card p-5">
+      <div className="rounded-2xl bg-card shadow-card p-5">
         <h2 className="mb-4 font-heading text-sm font-bold text-foreground">Vencimento previsto × Pagamento realizado</h2>
         <ComparativoBarras
           dados={pontos}
@@ -156,7 +156,7 @@ async function FluxoPrevistoRealizado({
         />
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-border bg-card">
+      <div className="overflow-hidden rounded-2xl bg-card shadow-card">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border text-left text-xs font-bold uppercase tracking-wide text-muted-foreground">

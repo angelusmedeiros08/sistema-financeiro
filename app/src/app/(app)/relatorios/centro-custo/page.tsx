@@ -27,7 +27,7 @@ export default async function PaginaRelatoriosCentroCusto({
       <RelatoriosSubNav />
       <RelatoriosControles {...params} />
 
-      <div className="rounded-2xl border border-border bg-card p-5">
+      <div className="rounded-2xl bg-card shadow-card p-5">
         <h2 className="mb-4 font-heading text-sm font-bold text-foreground">Resultado por centro de custo</h2>
 
         {linhas.length === 0 ? (

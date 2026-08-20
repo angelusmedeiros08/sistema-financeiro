@@ -75,7 +75,7 @@ export function TabelaRegras({
   return (
     <div className="flex flex-col gap-2">
       {erro && <p className="text-sm text-destructive">{erro}</p>}
-      <div className="overflow-hidden rounded-2xl border border-border bg-card">
+      <div className="overflow-hidden rounded-2xl bg-card shadow-card">
         <Table>
           <TableHeader>
             <TableRow className="hover:bg-transparent">

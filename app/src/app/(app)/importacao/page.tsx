@@ -44,7 +44,7 @@ export default async function PaginaImportacao() {
           const conteudo = (
             <div
               className={cn(
-                "flex h-full flex-col gap-3 rounded-2xl border border-border bg-card p-5 transition-colors",
+                "flex h-full flex-col gap-3 rounded-2xl bg-card shadow-card p-5 transition-colors",
                 card.href ? "hover:border-primary/40 hover:bg-muted/30" : "opacity-60",
               )}
             >

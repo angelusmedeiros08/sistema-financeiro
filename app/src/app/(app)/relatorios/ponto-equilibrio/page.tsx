@@ -110,15 +110,15 @@ export default async function PaginaRelatoriosPontoEquilibrio({
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="rounded-2xl border border-border bg-card p-5">
+        <div className="rounded-2xl bg-card shadow-card p-5">
           <p className="mb-1 text-xs font-semibold text-muted-foreground">Ponto de equilíbrio (mês atual)</p>
           <p className="text-xl font-bold tabular-nums text-foreground">{formatarMoeda(pontoAtual.pontoEquilibrio)}</p>
         </div>
-        <div className="rounded-2xl border border-border bg-card p-5">
+        <div className="rounded-2xl bg-card shadow-card p-5">
           <p className="mb-1 text-xs font-semibold text-muted-foreground">Margem de contribuição</p>
           <p className="text-xl font-bold tabular-nums text-[#157F6B]">{formatarPercentual(pontoAtual.margemContribuicaoPercentual)}</p>
         </div>
-        <div className="rounded-2xl border border-border bg-card p-5">
+        <div className="rounded-2xl bg-card shadow-card p-5">
           <p className="mb-1 text-xs font-semibold text-muted-foreground">Margem de segurança</p>
           <p className={cn("text-xl font-bold tabular-nums", margemDeSeguranca >= 0 ? "text-[#157F6B]" : "text-[#B23A2E]")}>
             {formatarMoeda(margemDeSeguranca)}
@@ -127,7 +127,7 @@ export default async function PaginaRelatoriosPontoEquilibrio({
         </div>
       </div>
 
-      <div className="rounded-2xl border border-border bg-card p-6">
+      <div className="rounded-2xl bg-card shadow-card p-6">
         <h2 className="mb-1 font-heading text-base font-bold text-foreground">Evolução no ano ({ano})</h2>
         <p className="mb-5 text-xs text-muted-foreground">
           Ponto de equilíbrio em R$ e margem de contribuição em %, mês a mês. PE = Custos fixos ÷ MC%, calculada sobre{" "}

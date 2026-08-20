@@ -98,7 +98,7 @@ async function AbaCadastro({
         </Link>
       </div>
 
-      <div className="rounded-2xl border border-border bg-card p-6">
+      <div className="rounded-2xl bg-card shadow-card p-6">
         {linhas.length === 0 ? (
           <p className="text-sm text-muted-foreground">Nenhuma categoria cadastrada ainda.</p>
         ) : (
@@ -159,12 +159,12 @@ async function AbaComparativo({
         </div>
       </div>
 
-      <div className="rounded-2xl border border-border bg-card p-6">
+      <div className="rounded-2xl bg-card shadow-card p-6">
         <h2 className="mb-4 font-heading text-base font-bold text-foreground">Receitas</h2>
         <OrcadoRealizadoBarras linhas={receitas} />
       </div>
 
-      <div className="rounded-2xl border border-border bg-card p-6">
+      <div className="rounded-2xl bg-card shadow-card p-6">
         <h2 className="mb-4 font-heading text-base font-bold text-foreground">Despesas</h2>
         <OrcadoRealizadoBarras linhas={despesas} />
       </div>

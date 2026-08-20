@@ -33,7 +33,7 @@ export function ConvidarForm({ clientes }: { clientes: { id: string; nome: strin
     <form
       key={chaveFormulario}
       action={formAction}
-      className="grid gap-3 rounded-2xl border border-border bg-card p-5 sm:grid-cols-[1fr_220px_auto]"
+      className="grid gap-3 rounded-2xl bg-card shadow-card p-5 sm:grid-cols-[1fr_220px_auto]"
     >
       <div className="space-y-1.5">
         <Label htmlFor="email">E-mail</Label>

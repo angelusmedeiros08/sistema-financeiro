@@ -23,7 +23,7 @@ export default async function PaginaNovoFornecedor() {
         <span className="text-foreground">Novo</span>
       </div>
 
-      <div className="rounded-2xl border border-border bg-card p-5">
+      <div className="rounded-2xl bg-card shadow-card p-5">
         <h1 className="mb-5 text-xl font-bold tracking-tight text-foreground">Novo fornecedor</h1>
         <PessoaForm modo="criar" perfilPadrao="FORNECEDOR" camposPersonalizados={campos} acao={criarPessoaAction} />
       </div>

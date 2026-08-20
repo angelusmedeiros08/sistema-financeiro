@@ -22,7 +22,7 @@ export function TabelaEventos({ eventos, textoVazio }: { eventos: EventoLinha[];
   }
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-border bg-card">
+    <div className="overflow-hidden rounded-2xl bg-card shadow-card">
       <Table>
         <TableHeader>
           <TableRow className="hover:bg-transparent">

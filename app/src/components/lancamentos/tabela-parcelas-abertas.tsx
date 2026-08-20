@@ -39,7 +39,7 @@ export function TabelaParcelasAbertas({
   const hojeISO = new Date().toISOString().slice(0, 10);
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-border bg-card">
+    <div className="overflow-hidden rounded-2xl bg-card shadow-card">
       <Table>
         <TableHeader>
           <TableRow className="hover:bg-transparent">

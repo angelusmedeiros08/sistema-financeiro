@@ -186,6 +186,25 @@ async function obterEventosRecentes(supabase: Cliente, tenantId: string, pessoaI
 // pelo portal do cliente pra mostrar só os próprios lançamentos. Saldo em
 // caixa fica de fora do filtro de propósito: é uma dimensão do caixa da
 // empresa inteira, não tem "saldo em caixa de uma pessoa".
+// Reconstrói o saldo em caixa ao final de cada mês passado a partir do saldo
+// atual: saldo(mês i) = saldo atual - soma dos resultados dos meses depois
+// de i. Não é estimativa — é o mesmo número que o ledger daria se fosse
+// consultado naquela data, só que sem reabrir partidas mês a mês.
+function reconstruirSerieSaldo(saldoAtual: number, fluxo: PontoFluxo[]): number[] {
+  const serie: number[] = [];
+  let acumulado = saldoAtual;
+  for (let i = fluxo.length - 1; i >= 0; i--) {
+    serie.unshift(acumulado);
+    acumulado -= fluxo[i].resultado;
+  }
+  return serie;
+}
+
+function deltaPercentual(atual: number, anterior: number): number | undefined {
+  if (anterior === 0) return undefined;
+  return ((atual - anterior) / Math.abs(anterior)) * 100;
+}
+
 export async function obterDadosPainel(supabase: Cliente, tenantId: string, pessoaId?: string) {
   const [saldoEmCaixa, aReceber, aPagar, resultadoDoMes, fluxo, eventosRecentes, vencidosReceber, vencidosPagar, recebidoPago] = await Promise.all([
     obterSaldoEmCaixa(supabase, tenantId),
@@ -199,6 +218,8 @@ export async function obterDadosPainel(supabase: Cliente, tenantId: string, pess
     obterRecebidoPagoDoMes(supabase, tenantId, pessoaId),
   ]);
 
+  const resultadoMesAnterior = fluxo.length >= 2 ? fluxo[fluxo.length - 2].resultado : undefined;
+
   return {
     saldoEmCaixa,
     aReceber,
@@ -210,5 +231,7 @@ export async function obterDadosPainel(supabase: Cliente, tenantId: string, pess
     vencidosPagar,
     recebidoDoMes: recebidoPago.recebido,
     pagoDoMes: recebidoPago.pago,
+    saldoSerieSeisMeses: reconstruirSerieSaldo(saldoEmCaixa, fluxo),
+    resultadoDeltaPercentual: resultadoMesAnterior !== undefined ? deltaPercentual(resultadoDoMes, resultadoMesAnterior) : undefined,
   };
 }

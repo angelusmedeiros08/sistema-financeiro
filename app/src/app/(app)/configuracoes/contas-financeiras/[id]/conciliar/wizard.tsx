@@ -115,7 +115,7 @@ export function WizardConciliacao({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="rounded-2xl border border-border bg-card p-6">
+      <div className="rounded-2xl bg-card shadow-card p-6">
         <div className="flex items-center justify-between gap-4">
           <div>
             <h2 className="text-sm font-bold text-foreground">Importar extrato</h2>

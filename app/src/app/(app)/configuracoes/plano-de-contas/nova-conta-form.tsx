@@ -34,7 +34,7 @@ export function NovaContaForm({ contas }: { contas: ContaContabilComNivel[] }) {
   }, estadoInicial);
 
   return (
-    <form ref={formRef} action={formAction} className="rounded-2xl border border-border bg-card p-5">
+    <form ref={formRef} action={formAction} className="rounded-2xl bg-card shadow-card p-5">
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
         <div className="space-y-1.5">
           <Label htmlFor="codigo">Código</Label>

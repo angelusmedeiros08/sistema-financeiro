@@ -75,7 +75,7 @@ export default async function PaginaVendas({ searchParams }: { searchParams: Pro
           Nenhuma venda nessa situação.
         </p>
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-border bg-card">
+        <div className="overflow-hidden rounded-2xl bg-card shadow-card">
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-transparent">

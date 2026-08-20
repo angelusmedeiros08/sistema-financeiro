@@ -87,7 +87,7 @@ async function AbaContas({ tenantId, supabase }: { tenantId: string; supabase: A
             Nenhuma conta financeira cadastrada ainda.
           </p>
         ) : (
-          <div className="overflow-hidden rounded-2xl border border-border bg-card">
+          <div className="overflow-hidden rounded-2xl bg-card shadow-card">
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
@@ -174,7 +174,7 @@ async function VisaoGeralContasFinanceiras({ tenantId, supabase }: { tenantId: s
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {contas.map((c) => (
-            <div key={c.contaFinanceiraId} className="rounded-2xl border border-border bg-card p-5">
+            <div key={c.contaFinanceiraId} className="rounded-2xl bg-card shadow-card p-5">
               <div className="mb-3 flex items-center justify-between">
                 <h2 className="font-heading text-sm font-bold text-foreground">{c.nome}</h2>
                 <span className="text-lg font-bold tabular-nums text-foreground">{formatarMoeda(c.saldoAcumulado)}</span>

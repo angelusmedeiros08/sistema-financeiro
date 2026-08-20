@@ -117,7 +117,7 @@ export function PassoResultado({ linhas, nomeArquivo, onReiniciar }: { linhas: L
 
   if (fase === "erro-fatal") {
     return (
-      <div className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-6">
+      <div className="flex flex-col gap-4 rounded-2xl bg-card shadow-card p-6">
         <p className="text-sm text-destructive">Não foi possível iniciar a importação: {erroFatal}</p>
         <Button type="button" variant="outline" onClick={onReiniciar}>
           Voltar
@@ -127,7 +127,7 @@ export function PassoResultado({ linhas, nomeArquivo, onReiniciar }: { linhas: L
   }
 
   return (
-    <div className="flex flex-col gap-6 rounded-2xl border border-border bg-card p-6">
+    <div className="flex flex-col gap-6 rounded-2xl bg-card shadow-card p-6">
       <div className="flex items-start justify-between gap-4">
         <div>
           <h2 className="text-sm font-bold text-foreground">4. Importando</h2>

@@ -71,7 +71,7 @@ export default async function PaginaFormasPagamento({
             Nenhuma forma de pagamento {filtro === "inativos" ? "inativa" : "cadastrada"} ainda.
           </p>
         ) : (
-          <div className="overflow-hidden rounded-2xl border border-border bg-card">
+          <div className="overflow-hidden rounded-2xl bg-card shadow-card">
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">

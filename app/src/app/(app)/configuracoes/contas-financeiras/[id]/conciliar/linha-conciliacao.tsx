@@ -135,7 +135,7 @@ export function LinhaConciliacaoCard({
   const categoriasDoTipo = categorias.filter((c) => c.tipo === (linha.tipo === "CREDITO" ? "RECEITA" : "DESPESA"));
 
   return (
-    <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4">
+    <div className="flex flex-col gap-3 rounded-2xl bg-card shadow-card p-4">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <div className="flex items-center gap-2">
