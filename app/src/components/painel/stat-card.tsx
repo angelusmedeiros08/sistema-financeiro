@@ -3,7 +3,7 @@ import { ArrowUpRight, ArrowDownRight } from "@phosphor-icons/react/dist/ssr";
 import { cn } from "@/lib/utils";
 import { Sparkline } from "./sparkline";
 
-const cartaoVariantes = cva("group/stat relative flex flex-col gap-2.5 overflow-hidden rounded-2xl p-5", {
+const cartaoVariantes = cva("group/stat relative flex flex-col gap-3 overflow-hidden rounded-2xl p-5", {
   variants: {
     variant: {
       hero: "bg-gradient-to-br from-[#D8583A] to-[#A87C1F] text-white shadow-card",
@@ -11,26 +11,24 @@ const cartaoVariantes = cva("group/stat relative flex flex-col gap-2.5 overflow-
       coral: "bg-card text-card-foreground shadow-card",
       ambar: "bg-card text-card-foreground shadow-card",
       teal: "bg-card text-card-foreground shadow-card",
+      roxo: "bg-card text-card-foreground shadow-card",
+      azul: "bg-card text-card-foreground shadow-card",
     },
   },
   defaultVariants: { variant: "sage" },
 });
 
-const corAccent: Record<string, string> = {
-  hero: "",
-  sage: "#7A8B5C",
+const corChip: Record<string, string> = {
+  hero: "rgba(255,255,255,0.22)",
+  sage: "#8CB84A",
   coral: "#B23A2E",
-  ambar: "#C98A1F",
-  teal: "#157F6B",
+  ambar: "#E3A62F",
+  teal: "#0FA37E",
+  roxo: "#B45FC7",
+  azul: "#4C7DF0",
 };
 
-const corRotulo: Record<string, string> = {
-  hero: "text-white/80",
-  sage: "text-[#7A8B5C]",
-  coral: "text-[#B23A2E]",
-  ambar: "text-[#C98A1F]",
-  teal: "text-[#157F6B]",
-};
+type IconType = React.ComponentType<{ size?: number; weight?: "regular" | "bold" | "fill"; className?: string }>;
 
 type StatCardProps = VariantProps<typeof cartaoVariantes> & {
   label: string;
@@ -38,26 +36,34 @@ type StatCardProps = VariantProps<typeof cartaoVariantes> & {
   detalhe?: string;
   delta?: number;
   serie?: number[];
+  icon?: IconType;
 };
 
-export function StatCard({ label, valor, detalhe, variant, delta, serie }: StatCardProps) {
+export function StatCard({ label, valor, detalhe, variant, delta, serie, icon: Icon }: StatCardProps) {
   const v = variant ?? "sage";
   const deltaPositivo = typeof delta === "number" && delta >= 0;
-  const corDelta = v === "hero" ? "text-white" : deltaPositivo ? "text-[#157F6B]" : "text-[#B23A2E]";
-  const corSpark = v === "hero" ? "#ffffff" : deltaPositivo ? "#157F6B" : "#B23A2E";
+  const corDelta = v === "hero" ? "text-white" : deltaPositivo ? "text-[#0FA37E]" : "text-[#B23A2E]";
+  const corSpark = v === "hero" ? "#ffffff" : deltaPositivo ? "#0FA37E" : "#B23A2E";
 
   return (
     <div className={cn(cartaoVariantes({ variant }))}>
-      {v !== "hero" && (
-        <span
-          aria-hidden
-          className="absolute inset-x-0 top-0 h-[3px]"
-          style={{ background: corAccent[v] }}
-        />
-      )}
-
-      <div className="flex items-start justify-between gap-2">
-        <span className={cn("text-[11px] font-bold uppercase tracking-wider", corRotulo[v])}>{label}</span>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2.5">
+          {Icon && (
+            <span
+              className={cn(
+                "flex size-8 shrink-0 items-center justify-center rounded-lg",
+                v === "hero" ? "text-white" : "text-white",
+              )}
+              style={{ background: corChip[v] }}
+            >
+              <Icon size={16} weight="bold" />
+            </span>
+          )}
+          <span className={cn("text-[11px] font-bold uppercase tracking-wider", v === "hero" ? "text-white/80" : "text-muted-foreground")}>
+            {label}
+          </span>
+        </div>
         {typeof delta === "number" && (
           <span className={cn("flex items-center gap-0.5 text-xs font-bold tabular-nums", corDelta)}>
             {deltaPositivo ? <ArrowUpRight size={13} weight="bold" /> : <ArrowDownRight size={13} weight="bold" />}

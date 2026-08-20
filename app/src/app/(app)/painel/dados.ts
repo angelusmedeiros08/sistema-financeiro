@@ -205,8 +205,28 @@ function deltaPercentual(atual: number, anterior: number): number | undefined {
   return ((atual - anterior) / Math.abs(anterior)) * 100;
 }
 
+export type PrimeirosPassos = {
+  contaFinanceira: boolean;
+  cliente: boolean;
+  lancamento: boolean;
+};
+
+async function obterPrimeirosPassos(supabase: Cliente, tenantId: string): Promise<PrimeirosPassos> {
+  const [contas, clientes, lancamentos] = await Promise.all([
+    supabase.from("contas_financeiras").select("id", { count: "exact", head: true }).eq("tenant_id", tenantId),
+    supabase.from("pessoas").select("id", { count: "exact", head: true }).eq("tenant_id", tenantId).contains("perfis", ["CLIENTE"]),
+    supabase.from("eventos_financeiros").select("id", { count: "exact", head: true }).eq("tenant_id", tenantId),
+  ]);
+
+  return {
+    contaFinanceira: (contas.count ?? 0) > 0,
+    cliente: (clientes.count ?? 0) > 0,
+    lancamento: (lancamentos.count ?? 0) > 0,
+  };
+}
+
 export async function obterDadosPainel(supabase: Cliente, tenantId: string, pessoaId?: string) {
-  const [saldoEmCaixa, aReceber, aPagar, resultadoDoMes, fluxo, eventosRecentes, vencidosReceber, vencidosPagar, recebidoPago] = await Promise.all([
+  const [saldoEmCaixa, aReceber, aPagar, resultadoDoMes, fluxo, eventosRecentes, vencidosReceber, vencidosPagar, recebidoPago, primeirosPassos] = await Promise.all([
     obterSaldoEmCaixa(supabase, tenantId),
     obterPendentesPorTipo(supabase, tenantId, "RECEITA", pessoaId),
     obterPendentesPorTipo(supabase, tenantId, "DESPESA", pessoaId),
@@ -216,6 +236,7 @@ export async function obterDadosPainel(supabase: Cliente, tenantId: string, pess
     buscarResumoVencimentos(supabase, { tenantId, tipo: "RECEITA", pessoaId }),
     buscarResumoVencimentos(supabase, { tenantId, tipo: "DESPESA", pessoaId }),
     obterRecebidoPagoDoMes(supabase, tenantId, pessoaId),
+    obterPrimeirosPassos(supabase, tenantId),
   ]);
 
   const resultadoMesAnterior = fluxo.length >= 2 ? fluxo[fluxo.length - 2].resultado : undefined;
@@ -233,5 +254,6 @@ export async function obterDadosPainel(supabase: Cliente, tenantId: string, pess
     pagoDoMes: recebidoPago.pago,
     saldoSerieSeisMeses: reconstruirSerieSaldo(saldoEmCaixa, fluxo),
     resultadoDeltaPercentual: resultadoMesAnterior !== undefined ? deltaPercentual(resultadoDoMes, resultadoMesAnterior) : undefined,
+    primeirosPassos,
   };
 }

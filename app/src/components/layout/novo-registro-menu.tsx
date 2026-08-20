@@ -45,9 +45,9 @@ export function NovoRegistroMenu() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button size="sm" className="gap-1.5">
+        <Button size="sm" className="shrink-0 gap-1.5 px-2 sm:px-2.5">
           <Plus size={15} weight="bold" />
-          Novo registro
+          <span className="hidden sm:inline">Novo registro</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
