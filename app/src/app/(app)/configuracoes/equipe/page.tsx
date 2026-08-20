@@ -8,14 +8,7 @@ import { ConfiguracoesSubNav } from "../sub-nav";
 import { ConvidarForm } from "./convidar-form";
 import { AcessoToggleButton } from "./acesso-toggle-button";
 import { CancelarConviteButton } from "./cancelar-convite-button";
-
-const ROTULO_PAPEL: Record<string, string> = {
-  admin: "Admin",
-  financeiro_senior: "Financeiro sênior",
-  financeiro_junior: "Financeiro júnior",
-  contador: "Contador",
-  cliente_portal: "Cliente (portal)",
-};
+import { ROTULO_PAPEL } from "@/lib/tenant/rotulos";
 
 export default async function PaginaEquipe() {
   const contexto = await obterUsuarioETenantAtual();

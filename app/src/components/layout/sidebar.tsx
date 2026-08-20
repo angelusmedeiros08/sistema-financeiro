@@ -117,7 +117,7 @@ function BotaoEstrela({ ativo, onToggle }: { ativo: boolean; onToggle: () => voi
       title={ativo ? "Remover dos favoritos" : "Adicionar aos favoritos"}
       className={cn(
         "shrink-0 rounded-md p-1 transition-opacity",
-        ativo ? "text-[#C99A3B] opacity-100" : "text-sidebar-foreground/40 opacity-0 hover:text-[#C99A3B] group-hover/item:opacity-100 focus-visible:opacity-100",
+        ativo ? "text-[#C99A3B] opacity-100" : "text-muted-foreground/50 opacity-0 hover:text-[#C99A3B] group-hover/item:opacity-100 focus-visible:opacity-100",
       )}
     >
       <Star size={13} weight={ativo ? "fill" : "regular"} />
@@ -211,7 +211,7 @@ export function SidebarConteudo({ emailUsuario, emSheet = false }: { emailUsuari
           <button
             type="button"
             onClick={() => setGrupoAberto(null)}
-            className="mb-1 flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm font-semibold text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent/60 hover:text-white"
+            className="mb-1 flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           >
             <CaretLeft size={15} />
             {itemDoGrupo.label}
@@ -226,7 +226,7 @@ export function SidebarConteudo({ emailUsuario, emSheet = false }: { emailUsuari
                   href={sub.href}
                   className={cn(
                     "flex-1 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors",
-                    ativo ? "bg-sidebar-accent text-white" : "text-sidebar-foreground/70 hover:bg-sidebar-accent/60 hover:text-white",
+                    ativo ? "bg-muted font-semibold text-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground",
                   )}
                 >
                   {sub.label}
@@ -245,7 +245,7 @@ export function SidebarConteudo({ emailUsuario, emSheet = false }: { emailUsuari
       <nav className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">
         {itensFavoritados.length > 0 && (
           <div className="flex flex-col gap-0.5">
-            <span className="px-2.5 text-[10px] font-bold uppercase tracking-wide text-sidebar-foreground/40">
+            <span className="px-2.5 text-[10px] font-bold uppercase tracking-wide text-muted-foreground/70">
               Favoritos
             </span>
             {itensFavoritados.map((fav) => {
@@ -256,7 +256,7 @@ export function SidebarConteudo({ emailUsuario, emSheet = false }: { emailUsuari
                     href={fav.href}
                     className={cn(
                       "flex-1 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors",
-                      ativo ? "bg-sidebar-accent text-white" : "text-sidebar-foreground/70 hover:bg-sidebar-accent/60 hover:text-white",
+                      ativo ? "bg-muted font-semibold text-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground",
                     )}
                   >
                     {fav.label}
@@ -281,12 +281,12 @@ export function SidebarConteudo({ emailUsuario, emSheet = false }: { emailUsuari
                 return (
                   <div
                     key={item.href}
-                    className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium text-sidebar-foreground/35"
+                    className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium text-muted-foreground/50"
                     title="Em breve"
                   >
                     <Icon size={17} weight="regular" />
                     <span className="flex-1">{item.label}</span>
-                    <span className="rounded-full bg-white/8 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide">
+                    <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide">
                       em breve
                     </span>
                   </div>
@@ -301,7 +301,7 @@ export function SidebarConteudo({ emailUsuario, emSheet = false }: { emailUsuari
                     onClick={() => setGrupoAberto(item.href)}
                     className={cn(
                       "flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-semibold transition-colors",
-                      ativo ? "bg-sidebar-accent text-white" : "text-sidebar-foreground/70 hover:bg-sidebar-accent/60 hover:text-white",
+                      ativo ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground",
                     )}
                   >
                     <Icon size={17} weight={ativo ? "bold" : "regular"} />
@@ -317,7 +317,7 @@ export function SidebarConteudo({ emailUsuario, emSheet = false }: { emailUsuari
                     href={item.href}
                     className={cn(
                       "flex flex-1 items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-semibold transition-colors",
-                      ativo ? "bg-sidebar-accent text-white" : "text-sidebar-foreground/70 hover:bg-sidebar-accent/60 hover:text-white",
+                      ativo ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground",
                     )}
                   >
                     <Icon size={17} weight={ativo ? "bold" : "regular"} />
@@ -331,7 +331,7 @@ export function SidebarConteudo({ emailUsuario, emSheet = false }: { emailUsuari
             return (
               <div key={item.href}>
                 {mostrarCabecalho && (
-                  <span className="mt-3 mb-1 block px-2.5 text-[10px] font-bold uppercase tracking-wide text-sidebar-foreground/35">
+                  <span className="mt-3 mb-1 block px-2.5 text-[10px] font-bold uppercase tracking-wide text-muted-foreground/70">
                     {item.secao}
                   </span>
                 )}
@@ -346,8 +346,11 @@ export function SidebarConteudo({ emailUsuario, emSheet = false }: { emailUsuari
 
   if (emSheet) {
     return (
-      <div className="flex h-full min-h-0 flex-col gap-6 bg-sidebar px-4 py-6 text-sidebar-foreground">
-        <div className="shrink-0 px-2">
+      <div className="flex h-full min-h-0 flex-col gap-6 bg-card px-4 py-6 text-foreground">
+        <div className="flex shrink-0 items-center gap-2.5 px-2">
+          <span className="flex size-6 items-center justify-center rounded-md bg-gradient-to-br from-[#D8583A] to-[#A87C1F] font-heading text-[11px] font-bold text-white">
+            N
+          </span>
           <span className="font-heading text-[15px] font-bold tracking-tight">Núcleo</span>
         </div>
         {renderLista()}
@@ -367,7 +370,7 @@ export function SidebarConteudo({ emailUsuario, emSheet = false }: { emailUsuari
         onBlur={aoPerderFoco}
       >
         {/* Rail: sempre visível, ícones apenas — fica no fluxo normal (nunca some), reserva o espaço fixo do layout. */}
-        <div className="flex h-full flex-col items-center gap-1 border-r border-sidebar-border bg-sidebar px-2 py-6 text-sidebar-foreground">
+        <div className="flex h-full flex-col items-center gap-1 border-r border-border bg-card px-2 py-6 text-foreground">
           <div className="mb-5 flex size-9 shrink-0 items-center justify-center">
             <span className="flex size-6 items-center justify-center rounded-md bg-gradient-to-br from-[#D8583A] to-[#A87C1F] font-heading text-[11px] font-bold text-white">
               N
@@ -383,7 +386,7 @@ export function SidebarConteudo({ emailUsuario, emSheet = false }: { emailUsuari
                 <div
                   key={item.href}
                   title={`${item.label} (em breve)`}
-                  className="flex size-9 shrink-0 items-center justify-center rounded-lg text-sidebar-foreground/25"
+                  className="flex size-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground/40"
                 >
                   <Icon size={18} weight="regular" />
                 </div>
@@ -397,7 +400,7 @@ export function SidebarConteudo({ emailUsuario, emSheet = false }: { emailUsuari
                   title={item.label}
                   className={cn(
                     "flex size-9 shrink-0 items-center justify-center rounded-lg transition-colors",
-                    ativo ? "bg-sidebar-accent text-white" : "text-sidebar-foreground/60",
+                    ativo ? "bg-muted text-foreground" : "text-muted-foreground",
                   )}
                 >
                   <span className="sr-only">{item.label}</span>
@@ -413,7 +416,7 @@ export function SidebarConteudo({ emailUsuario, emSheet = false }: { emailUsuari
                 title={item.label}
                 className={cn(
                   "flex size-9 shrink-0 items-center justify-center rounded-lg transition-colors",
-                  ativo ? "bg-sidebar-accent text-white" : "text-sidebar-foreground/60 hover:bg-sidebar-accent/60 hover:text-white",
+                  ativo ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground",
                 )}
               >
                 <span className="sr-only">{item.label}</span>
@@ -426,11 +429,11 @@ export function SidebarConteudo({ emailUsuario, emSheet = false }: { emailUsuari
         {/* Overlay: some sobre o conteúdo ao passar o mouse/focar, nunca reflui o layout por baixo. */}
         <div
           className={cn(
-            "fixed inset-y-0 left-0 z-40 w-[260px] shadow-2xl transition-[opacity,transform] duration-150",
+            "fixed inset-y-0 left-0 z-40 w-[260px] border-r border-border shadow-2xl transition-[opacity,transform] duration-150",
             aberta ? "pointer-events-auto translate-x-0 opacity-100" : "pointer-events-none -translate-x-2 opacity-0",
           )}
         >
-          <div className="flex h-full min-h-0 flex-col gap-6 bg-sidebar px-4 py-6 text-sidebar-foreground">
+          <div className="flex h-full min-h-0 flex-col gap-6 bg-card px-4 py-6 text-foreground">
             <div className="flex shrink-0 items-center gap-2.5 px-2">
               <span className="flex size-6 items-center justify-center rounded-md bg-gradient-to-br from-[#D8583A] to-[#A87C1F] font-heading text-[11px] font-bold text-white">
                 N

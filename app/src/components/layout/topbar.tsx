@@ -1,13 +1,31 @@
-import { List, SignOut } from "@phosphor-icons/react/dist/ssr";
+import Link from "next/link";
+import { List, SignOut, UserCircle } from "@phosphor-icons/react/dist/ssr";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { SidebarConteudo } from "./sidebar";
 import { ThemeToggle } from "./theme-toggle";
 import { CommandPaletteBusca } from "./command-palette-busca";
 import { NovoRegistroMenu } from "./novo-registro-menu";
+import { NotificacoesMenu, type NotificacaoAlerta } from "./notificacoes-menu";
 import { sair } from "@/app/(auth)/actions";
 
-export function Topbar({ tenantNome, email }: { tenantNome: string; email: string }) {
+export function Topbar({
+  tenantNome,
+  nome,
+  notificacoes,
+}: {
+  tenantNome: string;
+  nome: string;
+  notificacoes: NotificacaoAlerta[];
+}) {
   return (
     <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-border bg-card px-4 lg:px-8">
       <Sheet>
@@ -17,7 +35,7 @@ export function Topbar({ tenantNome, email }: { tenantNome: string; email: strin
             <span className="sr-only">Abrir menu</span>
           </Button>
         </SheetTrigger>
-        <SheetContent side="left" className="w-60 border-r-0 bg-sidebar p-0 text-sidebar-foreground [&_button]:text-sidebar-foreground">
+        <SheetContent side="left" className="w-60 p-0">
           <SheetTitle className="sr-only">Menu de navegação</SheetTitle>
           <SidebarConteudo emSheet />
         </SheetContent>
@@ -35,17 +53,43 @@ export function Topbar({ tenantNome, email }: { tenantNome: string; email: strin
         <p className="truncate text-sm font-semibold text-foreground">{tenantNome}</p>
       </div>
 
-      <div className="flex items-center gap-2.5">
+      <div className="flex items-center gap-1.5">
         <NovoRegistroMenu />
-        <span className="hidden text-sm text-muted-foreground xl:inline">{tenantNome}</span>
-        <span className="hidden text-sm text-muted-foreground sm:inline">{email}</span>
+        <NotificacoesMenu notificacoes={notificacoes} />
         <ThemeToggle />
-        <form action={sair}>
-          <Button variant="ghost" size="icon" type="submit" title="Sair">
-            <SignOut size={19} />
-            <span className="sr-only">Sair</span>
-          </Button>
-        </form>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              className="ml-1 flex size-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#D8583A] to-[#A87C1F] text-sm font-bold text-white transition-opacity hover:opacity-90"
+              title={nome}
+            >
+              {nome.charAt(0).toUpperCase()}
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuLabel className="flex flex-col gap-0.5">
+              <span className="truncate font-semibold text-foreground">{nome}</span>
+              <span className="truncate text-xs font-normal text-muted-foreground">{tenantNome}</span>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem asChild>
+              <Link href="/perfil" className="gap-2">
+                <UserCircle size={15} />
+                Ver perfil
+              </Link>
+            </DropdownMenuItem>
+            <form action={sair}>
+              <DropdownMenuItem asChild>
+                <button type="submit" className="w-full gap-2 text-left">
+                  <SignOut size={15} />
+                  Sair
+                </button>
+              </DropdownMenuItem>
+            </form>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </header>
   );
