@@ -1,4 +1,4 @@
-import type { Cliente } from "./regime";
+import type { Cliente, MovimentoLinha } from "./regime";
 import { buscarMovimento } from "./regime";
 
 export type ProjecaoSaldo = { dias: number; saldo: number; ruptura: boolean };
@@ -71,4 +71,64 @@ export async function buscarSaldoProjetado(supabase: Cliente, tenantId: string):
   });
 
   return { saldoAtual, projecoes, limiar };
+}
+
+export type PontoSerieSaldo = { dias: number; realizado: number | null; projetado: number | null };
+
+const PASSADO_DIAS = [-28, -21, -14, -7, 0] as const;
+const FUTURO_DIAS = [0, 10, 20, 30, 40, 50, 60] as const;
+
+function saldoNoDia(movimentos: MovimentoLinha[], saldoAtual: number, hojeIso: string, dias: number): number {
+  if (dias >= 0) return saldoAtual;
+  const dataLimite = somarDias(hojeIso, dias);
+  const somaDepois = movimentos
+    .filter((m) => m.data > dataLimite)
+    .reduce((soma, m) => soma + (m.tipo === "RECEITA" ? m.valor : -m.valor), 0);
+  return saldoAtual - somaDepois;
+}
+
+// Série pro gráfico de linha (realizado sólido até hoje + projetado
+// tracejado depois) — padrão Mercury/QuickBooks confirmado na pesquisa,
+// diferente do card D+7/D+30/D+60 (que continua existindo à parte, é o
+// resumo pontual pro alerta por e-mail). "realizado" e "projetado" viram
+// duas séries do mesmo gráfico, com o ponto de hoje presente nas duas
+// (mesmo valor) pra a linha conectar sem buraco no meio.
+export async function buscarSerieSaldoProjetado(supabase: Cliente, tenantId: string): Promise<{ pontos: PontoSerieSaldo[]; limiar: number }> {
+  const hojeIso = new Date().toISOString().slice(0, 10);
+  const inicioHistorico = somarDias(hojeIso, PASSADO_DIAS[0]);
+  const fimProjecao = somarDias(hojeIso, FUTURO_DIAS[FUTURO_DIAS.length - 1]);
+
+  const [contas, tenant, movimentoHistorico, movimentoAteHoje, receitasAbertas, despesasAbertas] = await Promise.all([
+    supabase.from("contas_financeiras").select("saldo_inicial").eq("tenant_id", tenantId).eq("ativo", true),
+    supabase.from("tenants").select("limiar_saldo_minimo_alerta").eq("id", tenantId).single(),
+    buscarMovimento(supabase, { tenantId, regime: "realizado", dataInicio: inicioHistorico, dataFim: hojeIso }),
+    buscarMovimento(supabase, { tenantId, regime: "realizado", dataInicio: "1900-01-01", dataFim: hojeIso }),
+    buscarParcelasAbertas(supabase, tenantId, "RECEITA", fimProjecao, hojeIso),
+    buscarParcelasAbertas(supabase, tenantId, "DESPESA", fimProjecao, hojeIso),
+  ]);
+
+  const saldoInicialTotal = (contas.data ?? []).reduce((soma, conta) => soma + Number(conta.saldo_inicial), 0);
+  const movimentoLiquido = movimentoAteHoje.reduce((soma, linha) => soma + (linha.tipo === "RECEITA" ? linha.valor : -linha.valor), 0);
+  const saldoAtual = saldoInicialTotal + movimentoLiquido;
+  const limiar = Number(tenant.data?.limiar_saldo_minimo_alerta ?? 0);
+
+  // Hoje (dias=0) é um único ponto com realizado E projetado preenchidos —
+  // é o que faz as duas linhas se encontrarem no mesmo lugar em vez de
+  // deixar um buraco entre "onde o sólido para" e "onde o tracejado começa".
+  const pontosPassado: PontoSerieSaldo[] = PASSADO_DIAS.filter((d) => d !== 0).map((dias) => ({
+    dias,
+    realizado: saldoNoDia(movimentoHistorico, saldoAtual, hojeIso, dias),
+    projetado: null,
+  }));
+
+  const pontosFuturo: PontoSerieSaldo[] = FUTURO_DIAS.filter((d) => d !== 0).map((dias) => {
+    const limite = somarDias(hojeIso, dias);
+    const receitasPrevistas = receitasAbertas.filter((p) => p.data_vencimento <= limite).reduce((soma, p) => soma + saldoResidual(p), 0);
+    const despesasPrevistas = despesasAbertas.filter((p) => p.data_vencimento <= limite).reduce((soma, p) => soma + saldoResidual(p), 0);
+    return { dias, realizado: null, projetado: saldoAtual + receitasPrevistas - despesasPrevistas };
+  });
+
+  const pontoHoje: PontoSerieSaldo = { dias: 0, realizado: saldoAtual, projetado: saldoAtual };
+
+  return { pontos: [...pontosPassado, pontoHoje, ...pontosFuturo], limiar };
 }

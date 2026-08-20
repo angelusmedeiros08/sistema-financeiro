@@ -7,7 +7,8 @@ import { buscarVariacaoCategorias } from "@/lib/relatorios/variacao-categorias";
 import { buscarPMR, buscarPMP } from "@/lib/relatorios/prazos-medios";
 import { buscarAging } from "@/lib/relatorios/aging";
 import { buscarDistribuicaoFormaPagamento } from "@/lib/relatorios/distribuicao-forma-pagamento";
-import { buscarSaldoProjetado, type SaldoProjetado } from "@/lib/relatorios/saldo-projetado";
+import { buscarSaldoProjetado, buscarSerieSaldoProjetado, type SaldoProjetado, type PontoSerieSaldo } from "@/lib/relatorios/saldo-projetado";
+import { SaldoProjetadoChart } from "@/components/relatorios/saldo-projetado-chart";
 import { TopCategoriasDonut } from "@/components/relatorios/top-categorias-donut";
 import { AgingBarras } from "@/components/relatorios/aging-barras";
 import { BadgeRiscoConcentracao } from "@/components/relatorios/badge-risco-concentracao";
@@ -22,8 +23,9 @@ export default async function PaginaIndicadores() {
 
   const supabase = await createClient();
 
-  const [saldoProjetado, concentracao, variacaoReceitas, variacaoDespesas, pmr, pmp, agingReceber, agingPagar, distribuicaoFormaPagamento] = await Promise.all([
+  const [saldoProjetado, serieSaldo, concentracao, variacaoReceitas, variacaoDespesas, pmr, pmp, agingReceber, agingPagar, distribuicaoFormaPagamento] = await Promise.all([
     buscarSaldoProjetado(supabase, tenantId),
+    buscarSerieSaldoProjetado(supabase, tenantId),
     buscarConcentracaoReceita(supabase, { tenantId }),
     buscarVariacaoCategorias(supabase, { tenantId, tipo: "RECEITA" }),
     buscarVariacaoCategorias(supabase, { tenantId, tipo: "DESPESA" }),
@@ -63,7 +65,7 @@ export default async function PaginaIndicadores() {
           <h2 className="font-heading text-base font-bold text-foreground">Estou ficando sem caixa?</h2>
           {projecaoD7?.ruptura && <BadgeRupturaSaldo saldoD7={projecaoD7.saldo} />}
         </div>
-        <CardSaldoProjetado {...saldoProjetado} />
+        <CardSaldoProjetado {...saldoProjetado} pontos={serieSaldo.pontos} />
       </section>
 
       <section className="rounded-2xl bg-card shadow-card p-6">
@@ -123,14 +125,23 @@ export default async function PaginaIndicadores() {
   );
 }
 
-function CardSaldoProjetado({ saldoAtual, projecoes, limiar }: SaldoProjetado) {
+function CardSaldoProjetado({ saldoAtual, projecoes, limiar, pontos }: SaldoProjetado & { pontos: PontoSerieSaldo[] }) {
   return (
     <div className="rounded-xl border border-border p-4">
-      <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+      <div className="mb-1 flex flex-wrap items-baseline justify-between gap-2">
         <h3 className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Saldo atual</h3>
         <span className="text-lg font-bold tabular-nums text-foreground">{formatarMoeda(saldoAtual)}</span>
       </div>
-      <div className="grid grid-cols-3 gap-3">
+      <div className="mb-2 flex items-center gap-4 text-[11px] font-medium text-muted-foreground">
+        <span className="flex items-center gap-1.5">
+          <span className="h-[2px] w-4 rounded-full bg-[#0FA37E]" /> Realizado
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="h-[2px] w-4 rounded-full bg-[#4C7DF0]" style={{ backgroundImage: "repeating-linear-gradient(90deg,#4C7DF0 0 4px,transparent 4px 7px)" }} /> Projetado
+        </span>
+      </div>
+      <SaldoProjetadoChart pontos={pontos} limiar={limiar} />
+      <div className="mt-3 grid grid-cols-3 gap-3">
         {projecoes.map((p) => (
           <div key={p.dias} className={cn("rounded-xl p-3", p.ruptura ? "bg-[#B23A2E]/8" : "bg-muted/40")}>
             <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">D+{p.dias}</p>
