@@ -1,15 +1,13 @@
 "use client";
 
-import { Arc } from "@visx/shape";
+import { RadialBar, RadialBarChart } from "recharts";
 import { formatarPercentual } from "@/lib/formatacao";
 import { Sparkline } from "@/components/painel/sparkline";
 
-// Zonas fixas (vermelho/âmbar/verde) — "invertido" troca qual direção é
-// boa: %Realizado é melhor quanto MAIOR, %Pago em atraso é melhor quanto
-// MENOR. Arco de 180° via @visx/shape (Arc), lado a lado com uma
-// mini-tendência dos últimos períodos — padrão confirmado nas referências
-// mandadas pelo usuário (cards de gauge colorido + sparkline juntos, não
-// o indicador isolado sem contexto de evolução).
+// Anel completo via Recharts RadialBarChart (não semicírculo desenhado à
+// mão) — o formato de gauge que aparece em praticamente toda referência
+// comercial mandada pelo usuário, com a mini-tendência dos últimos
+// períodos ao lado, não o indicador isolado sem contexto de evolução.
 const ZONAS_PADRAO = [
   { ate: 0.4, cor: "#B23A2E" },
   { ate: 0.7, cor: "#E3A62F" },
@@ -27,11 +25,6 @@ function corDaZona(valor: number, invertido: boolean): string {
   return (zonas.find((z) => valor <= z.ate) ?? zonas[zonas.length - 1]).cor;
 }
 
-const RAIO_EXTERNO = 42;
-const ESPESSURA = 9;
-const ANGULO_INICIO = -Math.PI / 2;
-const ANGULO_FIM = Math.PI / 2;
-
 export function IndicadorGauge({
   rotulo,
   valor,
@@ -45,33 +38,37 @@ export function IndicadorGauge({
 }) {
   const percentualClamp = Math.max(0, Math.min(1, valor));
   const cor = corDaZona(percentualClamp, invertido);
-  const anguloValor = ANGULO_INICIO + (ANGULO_FIM - ANGULO_INICIO) * percentualClamp;
   const temSerie = serie && serie.length > 1;
+  const dadosAnel = [{ valor: percentualClamp * 100, fill: cor }];
 
   return (
     <div className="flex items-center gap-3 rounded-2xl bg-card p-4 shadow-card">
-      <svg width={88} height={52} viewBox="-48 -48 96 56" className="shrink-0">
-        <Arc
-          startAngle={ANGULO_INICIO}
-          endAngle={ANGULO_FIM}
-          innerRadius={RAIO_EXTERNO - ESPESSURA}
-          outerRadius={RAIO_EXTERNO}
-          cornerRadius={4}
-          fill="var(--muted)"
-        />
-        <Arc
-          startAngle={ANGULO_INICIO}
-          endAngle={anguloValor}
-          innerRadius={RAIO_EXTERNO - ESPESSURA}
-          outerRadius={RAIO_EXTERNO}
-          cornerRadius={4}
-          fill={cor}
-          style={{ transition: "fill 0.4s ease" }}
-        />
-        <text x={0} y={-2} textAnchor="middle" fontSize={16} fontWeight={700} fill="var(--foreground)" className="tabular-nums">
+      <div className="relative flex size-16 shrink-0 items-center justify-center">
+        <RadialBarChart
+          width={64}
+          height={64}
+          cx="50%"
+          cy="50%"
+          innerRadius="72%"
+          outerRadius="100%"
+          barSize={7}
+          data={dadosAnel}
+          startAngle={90}
+          endAngle={-270}
+        >
+          <RadialBar
+            background={{ fill: "var(--muted)" }}
+            dataKey="valor"
+            cornerRadius={8}
+            isAnimationActive
+            animationDuration={700}
+            animationEasing="ease-out"
+          />
+        </RadialBarChart>
+        <span className="pointer-events-none absolute text-[13px] font-bold tabular-nums text-foreground">
           {formatarPercentual(percentualClamp)}
-        </text>
-      </svg>
+        </span>
+      </div>
 
       <div className="min-w-0 flex-1">
         <span className="block text-xs font-semibold text-muted-foreground">{rotulo}</span>

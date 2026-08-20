@@ -58,7 +58,7 @@ export default async function PaginaRelatoriosVisaoGeral({
   const projecaoD7 = saldoProjetado.projecoes.find((p) => p.dias === 7);
 
   const resultado = dre.at(-1)?.valorAcumulado ?? 0;
-  const fluxoParaGrafico = fluxo.map((p) => ({ mes: p.chave, resultado: p.saldoPeriodo, resultadoAnoAnterior: null }));
+  const fluxoParaGrafico = fluxo.map((p) => ({ mes: p.chave, receitas: p.entradas, despesas: p.saidas }));
 
   return (
     <div className="flex w-full flex-col gap-6">

@@ -82,7 +82,7 @@ export default async function PaginaPainel() {
                 valor={formatarMoeda(dados.resultadoDoMes)}
                 detalhe="Receitas menos despesas no mês corrente, por competência"
                 delta={dados.resultadoDeltaPercentual}
-                serie={dados.fluxo.map((f) => f.resultado)}
+                serie={dados.fluxo.map((f) => f.receitas - f.despesas)}
               />
             </MotionCard>
           </div>

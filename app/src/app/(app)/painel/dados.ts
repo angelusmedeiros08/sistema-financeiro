@@ -116,67 +116,47 @@ async function obterRecebidoPagoDoMes(supabase: Cliente, tenantId: string, pesso
   );
 }
 
-export type PontoFluxo = { mes: string; resultado: number; resultadoAnoAnterior: number | null };
+export type PontoFluxo = { mes: string; receitas: number; despesas: number };
 
-async function somarPorMes(
-  supabase: Cliente,
-  tenantId: string,
-  dataInicioIso: string,
-  chaves: string[],
-  pessoaId?: string,
-): Promise<Map<string, number>> {
-  let query = supabase
-    .from("eventos_financeiros")
-    .select("tipo, valor_total, data_competencia")
-    .eq("tenant_id", tenantId)
-    .gte("data_competencia", dataInicioIso);
-
-  if (pessoaId) query = query.eq("pessoa_id", pessoaId);
-
-  const { data } = await query;
-
-  const porMes = new Map<string, number>(chaves.map((c) => [c, 0]));
-  for (const evento of data ?? []) {
-    const chave = evento.data_competencia.slice(0, 7);
-    if (!porMes.has(chave)) continue;
-    const delta = evento.tipo === "RECEITA" ? Number(evento.valor_total) : -Number(evento.valor_total);
-    porMes.set(chave, (porMes.get(chave) ?? 0) + delta);
-  }
-  return porMes;
-}
-
-// Ano anterior (mesmos meses, 12 meses atrás) vira uma linha-fantasma ao
-// lado do resultado atual no gráfico de fluxo de caixa — padrão visto em
-// quase toda referência comercial mandada pelo usuário (linha cinza do
-// período anterior atrás da linha/barra colorida do período atual). Só
-// entra no ponto se houver ao menos 1 evento no mês correspondente do ano
-// passado — tenant novo sem histórico não mostra uma linha fantasma de
-// zeros enganosa.
+// Receita e despesa como duas séries separadas (não só o líquido) —
+// padrão visto em toda referência comercial mandada pelo usuário
+// (FiraCast, FinEz: duas áreas sobrepostas, uma por fluxo bruto, não uma
+// barra de resultado líquido). "resultado" de qualquer ponto = receitas -
+// despesas, derivado onde precisar, não guardado solto.
 async function obterFluxoUltimosMeses(
   supabase: Cliente,
   tenantId: string,
   quantidadeMeses: number,
   pessoaId?: string,
 ): Promise<PontoFluxo[]> {
-  const chavesAtuais: string[] = [];
-  const chavesAnoAnterior: string[] = [];
+  let query = supabase
+    .from("eventos_financeiros")
+    .select("tipo, valor_total, data_competencia")
+    .eq("tenant_id", tenantId)
+    .gte("data_competencia", inicioDoMes(-(quantidadeMeses - 1)));
+
+  if (pessoaId) query = query.eq("pessoa_id", pessoaId);
+
+  const { data } = await query;
+
+  const porMes = new Map<string, { receitas: number; despesas: number }>();
   for (let i = quantidadeMeses - 1; i >= 0; i--) {
-    chavesAtuais.push(inicioDoMes(-i).slice(0, 7));
-    chavesAnoAnterior.push(inicioDoMes(-i - 12).slice(0, 7));
+    porMes.set(inicioDoMes(-i).slice(0, 7), { receitas: 0, despesas: 0 });
   }
 
-  const [porMesAtual, porMesAnoAnterior] = await Promise.all([
-    somarPorMes(supabase, tenantId, inicioDoMes(-(quantidadeMeses - 1)), chavesAtuais, pessoaId),
-    somarPorMes(supabase, tenantId, inicioDoMes(-(quantidadeMeses - 1) - 12), chavesAnoAnterior, pessoaId),
-  ]);
+  for (const evento of data ?? []) {
+    const chave = evento.data_competencia.slice(0, 7);
+    const bucket = porMes.get(chave);
+    if (!bucket) continue;
+    if (evento.tipo === "RECEITA") bucket.receitas += Number(evento.valor_total);
+    else bucket.despesas += Number(evento.valor_total);
+  }
 
-  const houveAnoAnterior = Array.from(porMesAnoAnterior.values()).some((v) => v !== 0);
   const nomesMes = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
-
-  return chavesAtuais.map((chave, i) => ({
+  return Array.from(porMes.entries()).map(([chave, { receitas, despesas }]) => ({
     mes: nomesMes[Number(chave.slice(5, 7)) - 1],
-    resultado: porMesAtual.get(chave) ?? 0,
-    resultadoAnoAnterior: houveAnoAnterior ? (porMesAnoAnterior.get(chavesAnoAnterior[i]) ?? 0) : null,
+    receitas,
+    despesas,
   }));
 }
 
@@ -224,7 +204,7 @@ function reconstruirSerieSaldo(saldoAtual: number, fluxo: PontoFluxo[]): number[
   let acumulado = saldoAtual;
   for (let i = fluxo.length - 1; i >= 0; i--) {
     serie.unshift(acumulado);
-    acumulado -= fluxo[i].resultado;
+    acumulado -= fluxo[i].receitas - fluxo[i].despesas;
   }
   return serie;
 }
@@ -268,7 +248,8 @@ export async function obterDadosPainel(supabase: Cliente, tenantId: string, pess
     obterPrimeirosPassos(supabase, tenantId),
   ]);
 
-  const resultadoMesAnterior = fluxo.length >= 2 ? fluxo[fluxo.length - 2].resultado : undefined;
+  const penultimoPonto = fluxo.length >= 2 ? fluxo[fluxo.length - 2] : undefined;
+  const resultadoMesAnterior = penultimoPonto ? penultimoPonto.receitas - penultimoPonto.despesas : undefined;
 
   return {
     saldoEmCaixa,

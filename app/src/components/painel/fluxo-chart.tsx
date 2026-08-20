@@ -1,26 +1,29 @@
 "use client";
 
-import { Bar, CartesianGrid, Cell, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis } from "recharts";
+import { Area, CartesianGrid, ComposedChart, Legend, ResponsiveContainer, Tooltip, XAxis } from "recharts";
 import type { PontoFluxo } from "@/app/(app)/painel/dados";
 import { formatarMoeda } from "@/lib/formatacao";
 import { TooltipEscuro } from "@/components/relatorios/tooltip-escuro";
 
+// Duas áreas sobrepostas (receitas × despesas), não uma barra de líquido —
+// padrão confirmado em toda referência comercial mandada pelo usuário
+// (FiraCast, FinEz: duas séries de fluxo bruto, curva suave, área
+// preenchida com opacidade baixa por baixo da linha).
 export function FluxoChart({ dados }: { dados: PontoFluxo[] }) {
-  const semMovimento = dados.every((d) => d.resultado === 0);
-  const temAnoAnterior = dados.some((d) => d.resultadoAnoAnterior !== null);
+  const semMovimento = dados.every((d) => d.receitas === 0 && d.despesas === 0);
 
   return (
     <div className="relative">
-      <ResponsiveContainer width="100%" height={180}>
-        <ComposedChart data={dados} margin={{ top: 4, right: 4, left: 4, bottom: 0 }}>
+      <ResponsiveContainer width="100%" height={220}>
+        <ComposedChart data={dados} margin={{ top: 8, right: 4, left: 4, bottom: 0 }}>
           <defs>
-            <linearGradient id="fluxoPositivo" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#1FBE99" />
-              <stop offset="100%" stopColor="#0B7A5C" />
+            <linearGradient id="areaReceitas" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#0FA37E" stopOpacity={0.32} />
+              <stop offset="100%" stopColor="#0FA37E" stopOpacity={0} />
             </linearGradient>
-            <linearGradient id="fluxoNegativo" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#D8583A" />
-              <stop offset="100%" stopColor="#8F2E24" />
+            <linearGradient id="areaDespesas" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#B23A2E" stopOpacity={0.22} />
+              <stop offset="100%" stopColor="#B23A2E" stopOpacity={0} />
             </linearGradient>
           </defs>
           <CartesianGrid vertical={false} stroke="var(--border)" />
@@ -31,34 +34,34 @@ export function FluxoChart({ dados }: { dados: PontoFluxo[] }) {
             tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}
           />
           <Tooltip
-            cursor={{ fill: "var(--muted)" }}
-            content={
-              <TooltipEscuro
-                labelFormatter={() => ""}
-                valueFormatter={(valor) => formatarMoeda(valor)}
-              />
-            }
+            cursor={{ stroke: "var(--muted-foreground)", strokeDasharray: "3 3", strokeWidth: 1 }}
+            content={<TooltipEscuro labelFormatter={(mes) => String(mes)} valueFormatter={(valor) => formatarMoeda(valor)} />}
           />
-          <Bar dataKey="resultado" name="Este período" radius={[6, 6, 6, 6]} maxBarSize={34} animationDuration={550}>
-            {dados.map((d, i) => (
-              <Cell key={i} fill={d.resultado >= 0 ? "url(#fluxoPositivo)" : "url(#fluxoNegativo)"} />
-            ))}
-          </Bar>
-          {temAnoAnterior && (
-            <Line
-              type="monotone"
-              dataKey="resultadoAnoAnterior"
-              name="Mesmo período, ano anterior"
-              stroke="var(--muted-foreground)"
-              strokeWidth={1.75}
-              strokeDasharray="4 3"
-              dot={false}
-              activeDot={{ r: 4, stroke: "var(--card)", strokeWidth: 2 }}
-              connectNulls
-              isAnimationActive
-              animationDuration={550}
-            />
-          )}
+          <Legend wrapperStyle={{ fontSize: 12 }} iconType="circle" iconSize={8} />
+          <Area
+            type="monotone"
+            dataKey="receitas"
+            name="Receitas"
+            stroke="#0FA37E"
+            strokeWidth={2.25}
+            fill="url(#areaReceitas)"
+            dot={{ r: 3, fill: "#0FA37E", strokeWidth: 0 }}
+            activeDot={{ r: 5, stroke: "var(--card)", strokeWidth: 2 }}
+            isAnimationActive
+            animationDuration={650}
+          />
+          <Area
+            type="monotone"
+            dataKey="despesas"
+            name="Despesas"
+            stroke="#B23A2E"
+            strokeWidth={2.25}
+            fill="url(#areaDespesas)"
+            dot={{ r: 3, fill: "#B23A2E", strokeWidth: 0 }}
+            activeDot={{ r: 5, stroke: "var(--card)", strokeWidth: 2 }}
+            isAnimationActive
+            animationDuration={650}
+          />
         </ComposedChart>
       </ResponsiveContainer>
       {semMovimento && (
