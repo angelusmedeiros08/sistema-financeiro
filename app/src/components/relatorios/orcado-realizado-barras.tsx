@@ -17,7 +17,7 @@ export function OrcadoRealizadoBarras({ linhas }: { linhas: LinhaOrcadoRealizado
     <div className="flex flex-col gap-4">
       {linhas.map((linha) => {
         const estourou = linha.tipo === "DESPESA" ? linha.desvioPercentual > 0 : linha.desvioPercentual < 0;
-        const corDesvio = linha.desvioPercentual === 0 ? "text-muted-foreground" : estourou ? "text-[#B23A2E]" : "text-[#157F6B]";
+        const corDesvio = linha.desvioPercentual === 0 ? "text-muted-foreground" : estourou ? "text-[#B23A2E]" : "text-[#0FA37E]";
 
         return (
           <div key={linha.categoriaId}>
@@ -32,7 +32,10 @@ export function OrcadoRealizadoBarras({ linhas }: { linhas: LinhaOrcadoRealizado
               <div className="flex items-center gap-2">
                 <span className="w-16 shrink-0 text-[10px] text-muted-foreground">Previsto</span>
                 <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
-                  <div className="h-full rounded-full bg-muted-foreground/40" style={{ width: `${(linha.totalPrevisto / maior) * 100}%` }} />
+                  <div
+                    className="h-full rounded-full bg-[#E3A62F]/50 transition-[width] duration-500 ease-out"
+                    style={{ width: `${(linha.totalPrevisto / maior) * 100}%` }}
+                  />
                 </div>
                 <span className="w-16 shrink-0 text-right text-[10px] tabular-nums text-muted-foreground">{formatarNumeroCompacto(linha.totalPrevisto)}</span>
               </div>
@@ -40,8 +43,8 @@ export function OrcadoRealizadoBarras({ linhas }: { linhas: LinhaOrcadoRealizado
                 <span className="w-16 shrink-0 text-[10px] text-muted-foreground">Realizado</span>
                 <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
                   <div
-                    className="h-full rounded-full"
-                    style={{ width: `${(linha.totalRealizado / maior) * 100}%`, background: linha.tipo === "RECEITA" ? "#157F6B" : "#7A8B5C" }}
+                    className="h-full rounded-full transition-[width] duration-500 ease-out"
+                    style={{ width: `${(linha.totalRealizado / maior) * 100}%`, background: linha.tipo === "RECEITA" ? "#0FA37E" : "#4C7DF0" }}
                   />
                 </div>
                 <span className="w-16 shrink-0 text-right text-[10px] font-semibold tabular-nums text-foreground">

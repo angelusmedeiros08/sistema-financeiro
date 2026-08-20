@@ -1,13 +1,18 @@
+"use client";
+
+import { useState } from "react";
 import { Pie } from "@visx/shape";
 import { Group } from "@visx/group";
+import { useTooltip, useTooltipInPortal, defaultStyles } from "@visx/tooltip";
+import { localPoint } from "@visx/event";
 import { formatarMoeda, formatarNumeroCompacto, formatarPercentual } from "@/lib/formatacao";
 import type { LinhaAnaliseCategoria } from "@/lib/relatorios/analise-despesas";
 
 // Rosca com até 5 fatias + "Outras" agregando o resto — estilo validado no
 // companion de brainstorming (preferido a ranking em barra e a treemap).
 // Motor de desenho é @visx/shape (Pie) em vez de strokeDasharray calculado
-// à mão — mesmo resultado visual, mas sem a trigonometria manual, e abre
-// caminho pra tooltip por fatia no futuro sem reescrever o componente.
+// à mão. Tooltip por fatia via @visx/tooltip (hover realça a fatia e some
+// as demais, sincronizado com a legenda ao lado).
 const PALETA = ["#0FA37E", "#E3A62F", "#4C7DF0", "#B45FC7", "#8CB84A", "#EF6F9A"];
 const RAIO = 70;
 const ESPESSURA = 28;
@@ -26,9 +31,29 @@ function agregarFatias(linhas: LinhaAnaliseCategoria[]): Fatia[] {
   return fatias;
 }
 
+const estiloTooltip = {
+  ...defaultStyles,
+  background: "var(--popover)",
+  color: "var(--popover-foreground)",
+  border: "1px solid var(--border)",
+  borderRadius: "0.625rem",
+  padding: "8px 12px",
+  fontSize: 12,
+  boxShadow: "0 8px 20px rgba(0,0,0,0.14)",
+};
+
 export function TopCategoriasDonut({ titulo, linhas }: { titulo: string; linhas: LinhaAnaliseCategoria[] }) {
   const fatias = agregarFatias(linhas);
   const total = fatias.reduce((soma, f) => soma + f.total, 0);
+  const [hoverIndice, setHoverIndice] = useState<number | null>(null);
+
+  const { tooltipData, tooltipLeft, tooltipTop, tooltipOpen, showTooltip, hideTooltip } = useTooltip<Fatia>();
+  const { containerRef, TooltipInPortal } = useTooltipInPortal({ scroll: true, detectBounds: true });
+
+  function aoFecharHover() {
+    setHoverIndice(null);
+    hideTooltip();
+  }
 
   return (
     <div className="rounded-2xl bg-card shadow-card p-5">
@@ -37,11 +62,27 @@ export function TopCategoriasDonut({ titulo, linhas }: { titulo: string; linhas:
       {total === 0 ? (
         <p className="text-sm text-muted-foreground">Nenhuma movimentação no período selecionado.</p>
       ) : (
-        <div className="flex flex-wrap items-center gap-6">
+        <div ref={containerRef} className="relative flex flex-wrap items-center gap-6">
           <svg viewBox="0 0 200 200" width="170" height="170" className="shrink-0">
             <Group top={100} left={100}>
               <Pie data={fatias} pieValue={(f) => f.total} outerRadius={RAIO} innerRadius={RAIO - ESPESSURA} padAngle={0.012}>
-                {(pie) => pie.arcs.map((arc) => <path key={arc.data.rotulo} d={pie.path(arc) ?? undefined} fill={arc.data.cor} />)}
+                {(pie) =>
+                  pie.arcs.map((arc, i) => (
+                    <path
+                      key={arc.data.rotulo}
+                      d={pie.path(arc) ?? undefined}
+                      fill={arc.data.cor}
+                      opacity={hoverIndice === null || hoverIndice === i ? 1 : 0.35}
+                      style={{ transition: "opacity 0.15s ease", cursor: "pointer" }}
+                      onMouseMove={(e) => {
+                        const coords = localPoint(e) ?? { x: 0, y: 0 };
+                        setHoverIndice(i);
+                        showTooltip({ tooltipData: arc.data, tooltipLeft: coords.x, tooltipTop: coords.y });
+                      }}
+                      onMouseLeave={aoFecharHover}
+                    />
+                  ))
+                }
               </Pie>
             </Group>
             <text x="100" y="96" textAnchor="middle" className="fill-foreground" fontSize="19" fontWeight="700">
@@ -53,8 +94,13 @@ export function TopCategoriasDonut({ titulo, linhas }: { titulo: string; linhas:
           </svg>
 
           <ul className="flex min-w-40 flex-1 flex-col gap-2">
-            {fatias.map((fatia) => (
-              <li key={fatia.rotulo} className="flex items-center gap-2 text-xs">
+            {fatias.map((fatia, i) => (
+              <li
+                key={fatia.rotulo}
+                onMouseEnter={() => setHoverIndice(i)}
+                onMouseLeave={aoFecharHover}
+                className={"flex cursor-default items-center gap-2 rounded-md px-1 py-0.5 text-xs transition-colors " + (hoverIndice === i ? "bg-muted" : "")}
+              >
                 <span className="size-2.5 shrink-0 rounded-full" style={{ background: fatia.cor }} />
                 <span className="flex-1 truncate text-muted-foreground">{fatia.rotulo}</span>
                 <span className="shrink-0 font-semibold tabular-nums text-foreground">{formatarMoeda(fatia.total)}</span>
@@ -62,6 +108,15 @@ export function TopCategoriasDonut({ titulo, linhas }: { titulo: string; linhas:
               </li>
             ))}
           </ul>
+
+          {tooltipOpen && tooltipData && (
+            <TooltipInPortal left={tooltipLeft} top={tooltipTop} style={estiloTooltip}>
+              <div className="font-semibold">{tooltipData.rotulo}</div>
+              <div className="text-muted-foreground">
+                {formatarMoeda(tooltipData.total)} · {formatarPercentual(tooltipData.total / total)}
+              </div>
+            </TooltipInPortal>
+          )}
         </div>
       )}
     </div>

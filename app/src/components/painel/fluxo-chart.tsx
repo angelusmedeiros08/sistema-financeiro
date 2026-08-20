@@ -11,6 +11,16 @@ export function FluxoChart({ dados }: { dados: PontoFluxo[] }) {
     <div className="relative">
       <ResponsiveContainer width="100%" height={180}>
         <BarChart data={dados} margin={{ top: 4, right: 4, left: 4, bottom: 0 }}>
+          <defs>
+            <linearGradient id="fluxoPositivo" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#1FBE99" />
+              <stop offset="100%" stopColor="#0B7A5C" />
+            </linearGradient>
+            <linearGradient id="fluxoNegativo" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#D8583A" />
+              <stop offset="100%" stopColor="#8F2E24" />
+            </linearGradient>
+          </defs>
           <CartesianGrid vertical={false} stroke="var(--border)" />
           <XAxis
             dataKey="mes"
@@ -29,9 +39,9 @@ export function FluxoChart({ dados }: { dados: PontoFluxo[] }) {
             formatter={(value) => formatarMoeda(Number(value))}
             labelFormatter={() => ""}
           />
-          <Bar dataKey="resultado" radius={[6, 6, 6, 6]} maxBarSize={34}>
+          <Bar dataKey="resultado" radius={[6, 6, 6, 6]} maxBarSize={34} animationDuration={550}>
             {dados.map((d, i) => (
-              <Cell key={i} fill={d.resultado >= 0 ? "#157F6B" : "#B23A2E"} />
+              <Cell key={i} fill={d.resultado >= 0 ? "url(#fluxoPositivo)" : "url(#fluxoNegativo)"} />
             ))}
           </Bar>
         </BarChart>

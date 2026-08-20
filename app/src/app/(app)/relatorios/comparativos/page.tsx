@@ -70,8 +70,8 @@ export default async function PaginaRelatoriosComparativos({
               dados={pontos}
               eixoX="chave"
               series={[
-                { chave: "atual", nome: "Período", cor: "#7A8B5C" },
-                { chave: "comparacao", nome: config.colunaComparacao, cor: "#157F6B" },
+                { chave: "atual", nome: "Período", cor: "#4C7DF0" },
+                { chave: "comparacao", nome: config.colunaComparacao, cor: "#B45FC7" },
               ]}
             />
 

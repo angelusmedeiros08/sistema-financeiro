@@ -1,18 +1,22 @@
+"use client";
+
+import { Arc } from "@visx/shape";
 import { formatarPercentual } from "@/lib/formatacao";
 
 // Zonas fixas (vermelho/âmbar/verde) — "invertido" troca qual direção é
 // boa: %Realizado é melhor quanto MAIOR, %Pago em atraso é melhor quanto
-// MENOR. Estilo validado no companion de brainstorming (medidor linear
-// com zonas), preferido a velocímetro circular.
+// MENOR. Arco de 180° via @visx/shape (Arc) — evolução do medidor linear
+// original pro padrão de gauge circular que a pesquisa aponta como mais
+// comercial (Mercury/Stripe), mantendo as mesmas zonas de cor.
 const ZONAS_PADRAO = [
   { ate: 0.4, cor: "#B23A2E" },
-  { ate: 0.7, cor: "#C98A1F" },
-  { ate: 1, cor: "#157F6B" },
+  { ate: 0.7, cor: "#E3A62F" },
+  { ate: 1, cor: "#0FA37E" },
 ] as const;
 
 const ZONAS_INVERTIDAS = [
-  { ate: 0.3, cor: "#157F6B" },
-  { ate: 0.65, cor: "#C98A1F" },
+  { ate: 0.3, cor: "#0FA37E" },
+  { ate: 0.65, cor: "#E3A62F" },
   { ate: 1, cor: "#B23A2E" },
 ] as const;
 
@@ -21,11 +25,10 @@ function corDaZona(valor: number, invertido: boolean): string {
   return (zonas.find((z) => valor <= z.ate) ?? zonas[zonas.length - 1]).cor;
 }
 
-function fundoDasZonas(invertido: boolean): string {
-  const zonas = invertido ? ZONAS_INVERTIDAS : ZONAS_PADRAO;
-  const [z1, z2, z3] = zonas;
-  return `linear-gradient(90deg, ${z1.cor} 0 ${z1.ate * 100}%, ${z2.cor} ${z1.ate * 100}% ${z2.ate * 100}%, ${z3.cor} ${z2.ate * 100}% 100%)`;
-}
+const RAIO_EXTERNO = 42;
+const ESPESSURA = 9;
+const ANGULO_INICIO = -Math.PI / 2;
+const ANGULO_FIM = Math.PI / 2;
 
 export function IndicadorGauge({
   rotulo,
@@ -38,22 +41,33 @@ export function IndicadorGauge({
 }) {
   const percentualClamp = Math.max(0, Math.min(1, valor));
   const cor = corDaZona(percentualClamp, invertido);
+  const anguloValor = ANGULO_INICIO + (ANGULO_FIM - ANGULO_INICIO) * percentualClamp;
 
   return (
-    <div className="rounded-2xl bg-card shadow-card p-4">
-      <div className="mb-2 flex items-baseline justify-between gap-2">
-        <span className="text-xs font-semibold text-muted-foreground">{rotulo}</span>
-        <span className="text-base font-bold tabular-nums" style={{ color: cor }}>
-          {formatarPercentual(percentualClamp)}
-        </span>
-      </div>
-      <div className="relative h-2.5 w-full overflow-hidden rounded-full">
-        <div className="absolute inset-0 rounded-full" style={{ background: fundoDasZonas(invertido), opacity: 0.28 }} />
-        <div
-          className="absolute inset-y-0 left-0 rounded-full"
-          style={{ width: `${percentualClamp * 100}%`, background: cor }}
+    <div className="flex flex-col items-center rounded-2xl bg-card p-4 shadow-card">
+      <span className="mb-1 self-start text-xs font-semibold text-muted-foreground">{rotulo}</span>
+      <svg width="100%" height={62} viewBox="-48 -48 96 56" className="max-w-[180px]">
+        <Arc
+          startAngle={ANGULO_INICIO}
+          endAngle={ANGULO_FIM}
+          innerRadius={RAIO_EXTERNO - ESPESSURA}
+          outerRadius={RAIO_EXTERNO}
+          cornerRadius={4}
+          fill="var(--muted)"
         />
-      </div>
+        <Arc
+          startAngle={ANGULO_INICIO}
+          endAngle={anguloValor}
+          innerRadius={RAIO_EXTERNO - ESPESSURA}
+          outerRadius={RAIO_EXTERNO}
+          cornerRadius={4}
+          fill={cor}
+          style={{ transition: "fill 0.4s ease" }}
+        />
+        <text x={0} y={-2} textAnchor="middle" fontSize={17} fontWeight={700} fill="var(--foreground)" className="tabular-nums">
+          {formatarPercentual(percentualClamp)}
+        </text>
+      </svg>
     </div>
   );
 }

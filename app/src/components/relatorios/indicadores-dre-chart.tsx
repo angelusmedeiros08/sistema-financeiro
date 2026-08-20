@@ -5,10 +5,10 @@ import type { IndicadorMensal } from "@/lib/relatorios/dre";
 import { formatarPercentual } from "@/lib/formatacao";
 
 const SERIES = [
-  { chave: "mc", nome: "Margem de contribuição", cor: "#157F6B" },
-  { chave: "margemBruta", nome: "Margem bruta", cor: "#7A8B5C" },
-  { chave: "ebitda", nome: "EBITDA", cor: "#C98A1F" },
-  { chave: "margemLiquida", nome: "Margem líquida", cor: "#B23A2E" },
+  { chave: "mc", nome: "Margem de contribuição", cor: "#0FA37E" },
+  { chave: "margemBruta", nome: "Margem bruta", cor: "#4C7DF0" },
+  { chave: "ebitda", nome: "EBITDA", cor: "#E3A62F" },
+  { chave: "margemLiquida", nome: "Margem líquida", cor: "#B45FC7" },
 ] as const;
 
 // Série mensal de indicadores — todos % sobre a receita líquida, derivados
@@ -48,9 +48,10 @@ export function IndicadoresDreChart({ dados, altura = 220 }: { dados: IndicadorM
               dataKey={serie.chave}
               name={serie.nome}
               stroke={serie.cor}
-              strokeWidth={2}
+              strokeWidth={2.25}
               dot={{ r: 3, fill: serie.cor, strokeWidth: 0 }}
               activeDot={{ r: 5 }}
+              animationDuration={600}
             />
           ))}
         </LineChart>

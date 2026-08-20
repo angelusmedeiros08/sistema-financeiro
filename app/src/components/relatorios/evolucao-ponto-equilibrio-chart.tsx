@@ -47,20 +47,22 @@ export function EvolucaoPontoEquilibrioChart({ dados, altura = 320 }: { dados: P
             type="monotone"
             dataKey="pontoEquilibrio"
             name="Ponto de equilíbrio"
-            stroke="#7A8B5C"
-            strokeWidth={2}
-            dot={{ r: 3, fill: "#7A8B5C", strokeWidth: 0 }}
+            stroke="#4C7DF0"
+            strokeWidth={2.25}
+            dot={{ r: 3, fill: "#4C7DF0", strokeWidth: 0 }}
             activeDot={{ r: 5 }}
+            animationDuration={600}
           />
           <Line
             yAxisId="mc"
             type="monotone"
             dataKey="margemContribuicaoPercentual"
             name="Margem de contribuição %"
-            stroke="#157F6B"
-            strokeWidth={2}
-            dot={{ r: 3, fill: "#157F6B", strokeWidth: 0 }}
+            stroke="#0FA37E"
+            strokeWidth={2.25}
+            dot={{ r: 3, fill: "#0FA37E", strokeWidth: 0 }}
             activeDot={{ r: 5 }}
+            animationDuration={600}
           />
         </LineChart>
       </ResponsiveContainer>
