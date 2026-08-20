@@ -3,6 +3,7 @@
 import { Area, CartesianGrid, ComposedChart, Legend, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import type { PontoEvolucaoPE } from "@/lib/relatorios/ponto-equilibrio";
 import { formatarMoeda, formatarNumeroCompacto, formatarPercentual } from "@/lib/formatacao";
+import { TooltipEscuro } from "./tooltip-escuro";
 
 // Duas séries de escalas bem diferentes (R$ vs. %) — dois eixos Y, mesmo
 // padrão de tooltip/grade do resto de Relatórios.
@@ -39,13 +40,12 @@ export function EvolucaoPontoEquilibrioChart({ dados, altura = 320 }: { dados: P
             width={48}
           />
           <Tooltip
-            contentStyle={{
-              background: "var(--popover)",
-              border: "1px solid var(--border)",
-              borderRadius: "0.625rem",
-              fontSize: 12,
-            }}
-            formatter={(value, nome) => (nome === "Margem de contribuição %" ? formatarPercentual(Number(value)) : formatarMoeda(Number(value)))}
+            cursor={{ stroke: "var(--muted-foreground)", strokeDasharray: "3 3", strokeWidth: 1 }}
+            content={
+              <TooltipEscuro
+                valueFormatter={(valor, nome) => (nome === "Margem de contribuição %" ? formatarPercentual(valor) : formatarMoeda(valor))}
+              />
+            }
           />
           <Legend wrapperStyle={{ fontSize: 12 }} />
           <Area
@@ -57,7 +57,7 @@ export function EvolucaoPontoEquilibrioChart({ dados, altura = 320 }: { dados: P
             strokeWidth={2.25}
             fill="url(#areaPontoEquilibrio)"
             dot={{ r: 3, fill: "#4C7DF0", strokeWidth: 0 }}
-            activeDot={{ r: 5 }}
+            activeDot={{ r: 5, stroke: "var(--card)", strokeWidth: 2 }}
             animationDuration={600}
           />
           <Line
@@ -68,7 +68,7 @@ export function EvolucaoPontoEquilibrioChart({ dados, altura = 320 }: { dados: P
             stroke="#0FA37E"
             strokeWidth={2.25}
             dot={{ r: 3, fill: "#0FA37E", strokeWidth: 0 }}
-            activeDot={{ r: 5 }}
+            activeDot={{ r: 5, stroke: "var(--card)", strokeWidth: 2 }}
             animationDuration={600}
           />
         </ComposedChart>

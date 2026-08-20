@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { formatarMoeda } from "@/lib/formatacao";
 import { cn } from "@/lib/utils";
 import { ROTULO_STATUS_PARCELA, COR_STATUS_PARCELA } from "@/lib/status-parcela";
-import { buscarIndicadoresRealizacao, mesAtual } from "@/lib/relatorios/indicadores-gauge";
+import { buscarIndicadoresRealizacao, buscarSerieIndicadoresRealizacao, mesAtual } from "@/lib/relatorios/indicadores-gauge";
 
 function tempoRelativo(dataIso: string): string {
   return formatDistanceToNowStrict(new Date(dataIso + "T00:00:00"), { addSuffix: true, locale: ptBR });
@@ -29,10 +29,12 @@ export default async function PaginaPainel() {
 
   const supabase = await createClient();
   const { inicio: mesInicio, fim: mesFim } = mesAtual();
-  const [dados, indicadoresCAR, indicadoresCAP] = await Promise.all([
+  const [dados, indicadoresCAR, indicadoresCAP, serieCAR, serieCAP] = await Promise.all([
     obterDadosPainel(supabase, contexto.tenantId),
     buscarIndicadoresRealizacao(supabase, { tenantId: contexto.tenantId, tipo: "RECEITA", mesInicio, mesFim }),
     buscarIndicadoresRealizacao(supabase, { tenantId: contexto.tenantId, tipo: "DESPESA", mesInicio, mesFim }),
+    buscarSerieIndicadoresRealizacao(supabase, { tenantId: contexto.tenantId, tipo: "RECEITA", meses: 6 }),
+    buscarSerieIndicadoresRealizacao(supabase, { tenantId: contexto.tenantId, tipo: "DESPESA", meses: 6 }),
   ]);
 
   const hoje = new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" });
@@ -114,10 +116,28 @@ export default async function PaginaPainel() {
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <IndicadorGauge rotulo="% Realizado de contas a receber" valor={indicadoresCAR.percentualRealizado} />
-          <IndicadorGauge rotulo="% Realizado de contas a pagar" valor={indicadoresCAP.percentualRealizado} />
-          <IndicadorGauge rotulo="% Pago em atraso (a receber)" valor={indicadoresCAR.percentualPagoEmAtraso} invertido />
-          <IndicadorGauge rotulo="% Pago em atraso (a pagar)" valor={indicadoresCAP.percentualPagoEmAtraso} invertido />
+          <IndicadorGauge
+            rotulo="% Realizado de contas a receber"
+            valor={indicadoresCAR.percentualRealizado}
+            serie={serieCAR.map((p) => p.percentualRealizado)}
+          />
+          <IndicadorGauge
+            rotulo="% Realizado de contas a pagar"
+            valor={indicadoresCAP.percentualRealizado}
+            serie={serieCAP.map((p) => p.percentualRealizado)}
+          />
+          <IndicadorGauge
+            rotulo="% Pago em atraso (a receber)"
+            valor={indicadoresCAR.percentualPagoEmAtraso}
+            invertido
+            serie={serieCAR.map((p) => p.percentualPagoEmAtraso)}
+          />
+          <IndicadorGauge
+            rotulo="% Pago em atraso (a pagar)"
+            valor={indicadoresCAP.percentualPagoEmAtraso}
+            invertido
+            serie={serieCAP.map((p) => p.percentualPagoEmAtraso)}
+          />
         </div>
 
         <div className="rounded-2xl bg-card p-5 shadow-card">

@@ -51,3 +51,49 @@ export async function buscarIndicadoresRealizacao(
     percentualPagoEmAtraso: pago > 0 ? pagoEmAtraso / pago : 0,
   };
 }
+
+export type PontoIndicadorRealizacao = { mes: string } & IndicadoresRealizacao;
+
+// Mesma leitura de buscarIndicadoresRealizacao, mas numa janela de N meses
+// buscada de uma vez só (não N queries) e agrupada por mês de vencimento —
+// alimenta a mini-tendência ao lado do arco de cada gauge.
+export async function buscarSerieIndicadoresRealizacao(
+  supabase: Cliente,
+  params: { tenantId: string; tipo: "RECEITA" | "DESPESA"; meses: number },
+): Promise<PontoIndicadorRealizacao[]> {
+  const hoje = new Date();
+  const inicioJanela = new Date(Date.UTC(hoje.getUTCFullYear(), hoje.getUTCMonth() - (params.meses - 1), 1));
+  const fimJanela = new Date(Date.UTC(hoje.getUTCFullYear(), hoje.getUTCMonth() + 1, 0));
+
+  const { data } = await supabase
+    .from("parcelas")
+    .select("valor, data_vencimento, eventos_financeiros!inner(tipo), baixas(valor_pago, data_pagamento, estornado_em)")
+    .eq("tenant_id", params.tenantId)
+    .eq("eventos_financeiros.tipo", params.tipo)
+    .gte("data_vencimento", inicioJanela.toISOString().slice(0, 10))
+    .lte("data_vencimento", fimJanela.toISOString().slice(0, 10));
+
+  const buckets = new Map<string, { total: number; pago: number; pagoEmAtraso: number }>();
+  for (let i = params.meses - 1; i >= 0; i--) {
+    const chave = new Date(Date.UTC(hoje.getUTCFullYear(), hoje.getUTCMonth() - i, 1)).toISOString().slice(0, 7);
+    buckets.set(chave, { total: 0, pago: 0, pagoEmAtraso: 0 });
+  }
+
+  for (const parcela of data ?? []) {
+    const bucket = buckets.get(parcela.data_vencimento.slice(0, 7));
+    if (!bucket) continue;
+    bucket.total += Number(parcela.valor);
+    for (const baixa of parcela.baixas ?? []) {
+      if (baixa.estornado_em) continue;
+      const valorPago = Number(baixa.valor_pago);
+      bucket.pago += valorPago;
+      if (baixa.data_pagamento > parcela.data_vencimento) bucket.pagoEmAtraso += valorPago;
+    }
+  }
+
+  return Array.from(buckets.entries()).map(([mes, b]) => ({
+    mes,
+    percentualRealizado: b.total > 0 ? b.pago / b.total : 0,
+    percentualPagoEmAtraso: b.pago > 0 ? b.pagoEmAtraso / b.pago : 0,
+  }));
+}

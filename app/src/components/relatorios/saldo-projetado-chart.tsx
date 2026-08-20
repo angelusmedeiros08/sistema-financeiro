@@ -3,6 +3,7 @@
 import { Line, LineChart, CartesianGrid, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import type { PontoSerieSaldo } from "@/lib/relatorios/saldo-projetado";
 import { formatarMoeda, formatarNumeroCompacto } from "@/lib/formatacao";
+import { TooltipEscuro } from "./tooltip-escuro";
 
 function rotuloDias(dias: number): string {
   if (dias === 0) return "Hoje";
@@ -29,14 +30,13 @@ export function SaldoProjetadoChart({ pontos, limiar }: { pontos: PontoSerieSald
           tick={{ fill: "var(--muted-foreground)", fontSize: 11 }}
         />
         <Tooltip
-          labelFormatter={(dias) => rotuloDias(Number(dias))}
-          formatter={(valor) => formatarMoeda(Number(valor))}
-          contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: "0.625rem", fontSize: 12 }}
+          cursor={{ stroke: "var(--muted-foreground)", strokeDasharray: "3 3", strokeWidth: 1 }}
+          content={<TooltipEscuro labelFormatter={(dias) => rotuloDias(Number(dias))} valueFormatter={(valor) => formatarMoeda(valor)} />}
         />
         <ReferenceLine x={0} stroke="var(--muted-foreground)" strokeDasharray="3 3" />
         {limiar > 0 && <ReferenceLine y={limiar} stroke="#B23A2E" strokeDasharray="4 2" label={{ value: "Colchão mínimo", position: "insideTopLeft", fill: "#B23A2E", fontSize: 10 }} />}
-        <Line type="monotone" dataKey="realizado" stroke="#0FA37E" strokeWidth={2.25} dot={{ r: 3, fill: "#0FA37E" }} connectNulls={false} isAnimationActive animationDuration={600} />
-        <Line type="monotone" dataKey="projetado" stroke="#4C7DF0" strokeWidth={2.25} strokeDasharray="5 4" dot={{ r: 3, fill: "#4C7DF0" }} connectNulls={false} isAnimationActive animationDuration={600} />
+        <Line type="monotone" dataKey="realizado" name="Realizado" stroke="#0FA37E" strokeWidth={2.25} dot={{ r: 3, fill: "#0FA37E" }} activeDot={{ r: 5, stroke: "var(--card)", strokeWidth: 2 }} connectNulls={false} isAnimationActive animationDuration={600} />
+        <Line type="monotone" dataKey="projetado" name="Projetado" stroke="#4C7DF0" strokeWidth={2.25} strokeDasharray="5 4" dot={{ r: 3, fill: "#4C7DF0" }} activeDot={{ r: 5, stroke: "var(--card)", strokeWidth: 2 }} connectNulls={false} isAnimationActive animationDuration={600} />
       </LineChart>
     </ResponsiveContainer>
   );

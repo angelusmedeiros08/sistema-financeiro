@@ -6,7 +6,7 @@ import { buscarDRE } from "@/lib/relatorios/dre";
 import { buscarFluxoCaixaGrade } from "@/lib/relatorios/fluxo-caixa";
 import { buscarPontoEquilibrio } from "@/lib/relatorios/ponto-equilibrio";
 import { buscarAging, buscarResumoVencimentos } from "@/lib/relatorios/aging";
-import { buscarIndicadoresRealizacao, mesAtual } from "@/lib/relatorios/indicadores-gauge";
+import { buscarIndicadoresRealizacao, buscarSerieIndicadoresRealizacao, mesAtual } from "@/lib/relatorios/indicadores-gauge";
 import { buscarAnaliseCategorias } from "@/lib/relatorios/analise-despesas";
 import { buscarConcentracaoReceita } from "@/lib/relatorios/concentracao-receita";
 import { buscarSaldoProjetado } from "@/lib/relatorios/saldo-projetado";
@@ -36,7 +36,7 @@ export default async function PaginaRelatoriosVisaoGeral({
 
   const { inicio: mesInicio, fim: mesFim } = mesAtual();
 
-  const [dre, fluxo, pontoEquilibrio, agingReceita, agingDespesa, resumoReceber, resumoPagar, indicadoresCAR, indicadoresCAP, topReceitas, topDespesas, concentracao, saldoProjetado] =
+  const [dre, fluxo, pontoEquilibrio, agingReceita, agingDespesa, resumoReceber, resumoPagar, indicadoresCAR, indicadoresCAP, serieCAR, serieCAP, topReceitas, topDespesas, concentracao, saldoProjetado] =
     await Promise.all([
       buscarDRE(supabase, { tenantId, ...params }),
       buscarFluxoCaixaGrade(supabase, { tenantId, ...params }),
@@ -47,6 +47,8 @@ export default async function PaginaRelatoriosVisaoGeral({
       buscarResumoVencimentos(supabase, { tenantId, tipo: "DESPESA" }),
       buscarIndicadoresRealizacao(supabase, { tenantId, tipo: "RECEITA", mesInicio, mesFim }),
       buscarIndicadoresRealizacao(supabase, { tenantId, tipo: "DESPESA", mesInicio, mesFim }),
+      buscarSerieIndicadoresRealizacao(supabase, { tenantId, tipo: "RECEITA", meses: 6 }),
+      buscarSerieIndicadoresRealizacao(supabase, { tenantId, tipo: "DESPESA", meses: 6 }),
       buscarAnaliseCategorias(supabase, { tenantId, ...params, tipo: "RECEITA" }),
       buscarAnaliseCategorias(supabase, { tenantId, ...params, tipo: "DESPESA" }),
       buscarConcentracaoReceita(supabase, { tenantId }),
@@ -56,7 +58,7 @@ export default async function PaginaRelatoriosVisaoGeral({
   const projecaoD7 = saldoProjetado.projecoes.find((p) => p.dias === 7);
 
   const resultado = dre.at(-1)?.valorAcumulado ?? 0;
-  const fluxoParaGrafico = fluxo.map((p) => ({ mes: p.chave, resultado: p.saldoPeriodo }));
+  const fluxoParaGrafico = fluxo.map((p) => ({ mes: p.chave, resultado: p.saldoPeriodo, resultadoAnoAnterior: null }));
 
   return (
     <div className="flex w-full flex-col gap-6">
@@ -101,10 +103,28 @@ export default async function PaginaRelatoriosVisaoGeral({
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <IndicadorGauge rotulo="% Realizado de contas a receber" valor={indicadoresCAR.percentualRealizado} />
-        <IndicadorGauge rotulo="% Realizado de contas a pagar" valor={indicadoresCAP.percentualRealizado} />
-        <IndicadorGauge rotulo="% Pago em atraso (a receber)" valor={indicadoresCAR.percentualPagoEmAtraso} invertido />
-        <IndicadorGauge rotulo="% Pago em atraso (a pagar)" valor={indicadoresCAP.percentualPagoEmAtraso} invertido />
+        <IndicadorGauge
+          rotulo="% Realizado de contas a receber"
+          valor={indicadoresCAR.percentualRealizado}
+          serie={serieCAR.map((p) => p.percentualRealizado)}
+        />
+        <IndicadorGauge
+          rotulo="% Realizado de contas a pagar"
+          valor={indicadoresCAP.percentualRealizado}
+          serie={serieCAP.map((p) => p.percentualRealizado)}
+        />
+        <IndicadorGauge
+          rotulo="% Pago em atraso (a receber)"
+          valor={indicadoresCAR.percentualPagoEmAtraso}
+          invertido
+          serie={serieCAR.map((p) => p.percentualPagoEmAtraso)}
+        />
+        <IndicadorGauge
+          rotulo="% Pago em atraso (a pagar)"
+          valor={indicadoresCAP.percentualPagoEmAtraso}
+          invertido
+          serie={serieCAP.map((p) => p.percentualPagoEmAtraso)}
+        />
       </div>
 
       {/* Cada gráfico na sua própria linha, largura cheia — dividir a tela

@@ -3,6 +3,7 @@
 import { Area, CartesianGrid, ComposedChart, Legend, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import type { IndicadorMensal } from "@/lib/relatorios/dre";
 import { formatarPercentual } from "@/lib/formatacao";
+import { TooltipEscuro } from "./tooltip-escuro";
 
 const SERIES = [
   { chave: "mc", nome: "Margem de contribuição", cor: "#0FA37E" },
@@ -38,13 +39,8 @@ export function IndicadoresDreChart({ dados, altura = 220 }: { dados: IndicadorM
             width={52}
           />
           <Tooltip
-            contentStyle={{
-              background: "var(--popover)",
-              border: "1px solid var(--border)",
-              borderRadius: "0.625rem",
-              fontSize: 12,
-            }}
-            formatter={(value) => formatarPercentual(Number(value))}
+            cursor={{ stroke: "var(--muted-foreground)", strokeDasharray: "3 3", strokeWidth: 1 }}
+            content={<TooltipEscuro valueFormatter={(valor) => formatarPercentual(valor)} />}
           />
           <Legend wrapperStyle={{ fontSize: 12 }} />
           {SERIES.map((serie) =>
@@ -58,7 +54,7 @@ export function IndicadoresDreChart({ dados, altura = 220 }: { dados: IndicadorM
                 strokeWidth={2.25}
                 fill="url(#areaMargemContribuicao)"
                 dot={{ r: 3, fill: serie.cor, strokeWidth: 0 }}
-                activeDot={{ r: 5 }}
+                activeDot={{ r: 5, stroke: "var(--card)", strokeWidth: 2 }}
                 animationDuration={600}
               />
             ) : (
@@ -70,7 +66,7 @@ export function IndicadoresDreChart({ dados, altura = 220 }: { dados: IndicadorM
                 stroke={serie.cor}
                 strokeWidth={2.25}
                 dot={{ r: 3, fill: serie.cor, strokeWidth: 0 }}
-                activeDot={{ r: 5 }}
+                activeDot={{ r: 5, stroke: "var(--card)", strokeWidth: 2 }}
                 animationDuration={600}
               />
             ),
