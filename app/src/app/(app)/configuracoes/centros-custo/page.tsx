@@ -6,6 +6,7 @@ import { NovoCentroCustoForm } from "./novo-centro-custo-form";
 import { ToggleAtivoButton } from "./toggle-ativo-button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { EstadoVazio } from "@/components/ui/estado-vazio";
 import { TagCategoria } from "@/components/ui/tag-categoria";
 import { cn } from "@/lib/utils";
 import { ConfiguracoesSubNav } from "../sub-nav";
@@ -68,9 +69,9 @@ export default async function PaginaCentrosCusto({
         </div>
 
         {!centros || centros.length === 0 ? (
-          <p className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-            Nenhum centro de custo {filtro === "inativos" ? "inativo" : "cadastrado"} ainda.
-          </p>
+          <EstadoVazio
+            texto={`Nenhum centro de custo ${filtro === "inativos" ? "inativo" : "cadastrado"} ainda.`}
+          />
         ) : (
           <div className="overflow-hidden rounded-2xl bg-card shadow-card">
             <Table>

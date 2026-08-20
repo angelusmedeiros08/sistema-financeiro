@@ -4,6 +4,7 @@ import { createClient } from "@/utils/supabase/server";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
 import { listarCategorias } from "@/lib/contabil/categorias";
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { EstadoVazio } from "@/components/ui/estado-vazio";
 import { cn } from "@/lib/utils";
 import { ConfiguracoesSubNav } from "../sub-nav";
 import { NovaCategoriaForm } from "./nova-categoria-form";
@@ -69,9 +70,7 @@ export default async function PaginaCategorias({
       <section>
         <h2 className="mb-3 text-xs font-bold uppercase tracking-wide text-muted-foreground">Cadastradas</h2>
         {categorias.length === 0 ? (
-          <p className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-            Nenhuma categoria de {tipo === "RECEITA" ? "receita" : "despesa"} ainda.
-          </p>
+          <EstadoVazio texto={`Nenhuma categoria de ${tipo === "RECEITA" ? "receita" : "despesa"} ainda.`} />
         ) : (
           <div className="overflow-hidden rounded-2xl bg-card shadow-card">
             <Table>

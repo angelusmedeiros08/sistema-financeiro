@@ -4,6 +4,7 @@ import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
 import { listarCamposPersonalizados } from "@/lib/pessoas/buscar-pessoa";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { EstadoVazio } from "@/components/ui/estado-vazio";
 import { cn } from "@/lib/utils";
 import { ConfiguracoesSubNav } from "../sub-nav";
 import { NovoCampoForm } from "./novo-campo-form";
@@ -45,9 +46,7 @@ export default async function PaginaCamposPersonalizados() {
       <section>
         <h2 className="mb-3 text-xs font-bold uppercase tracking-wide text-muted-foreground">Cadastrados</h2>
         {campos.length === 0 ? (
-          <p className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-            Nenhum campo personalizado cadastrado ainda.
-          </p>
+          <EstadoVazio texto="Nenhum campo personalizado cadastrado ainda." />
         ) : (
           <div className="overflow-hidden rounded-2xl bg-card shadow-card">
             <Table>

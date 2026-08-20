@@ -4,6 +4,7 @@ import { ArrowLeft } from "@phosphor-icons/react/dist/ssr";
 import { createClient } from "@/utils/supabase/server";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
 import { buscarEntidadesExistentes } from "@/lib/importacao/resolucao";
+import { EstadoVazio } from "@/components/ui/estado-vazio";
 import { ImportarPlanilhaWizard } from "./wizard";
 
 export default async function PaginaImportarPlanilha() {
@@ -26,9 +27,7 @@ export default async function PaginaImportarPlanilha() {
       <h1 className="text-xl font-bold tracking-tight text-foreground">Importar planilha</h1>
 
       {!contasFinanceiras || contasFinanceiras.length === 0 ? (
-        <p className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-          Cadastre uma conta financeira antes de importar — a importação precisa de uma conta pra registrar as baixas automáticas.
-        </p>
+        <EstadoVazio texto="Cadastre uma conta financeira antes de importar — a importação precisa de uma conta pra registrar as baixas automáticas." />
       ) : (
         <ImportarPlanilhaWizard contasFinanceiras={contasFinanceiras} entidadesExistentesIniciais={entidadesExistentes} />
       )}

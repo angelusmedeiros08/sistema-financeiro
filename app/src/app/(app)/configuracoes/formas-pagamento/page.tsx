@@ -6,6 +6,7 @@ import { NovaFormaPagamentoForm } from "./nova-forma-pagamento-form";
 import { ToggleAtivoButton } from "./toggle-ativo-button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { EstadoVazio } from "@/components/ui/estado-vazio";
 import { cn } from "@/lib/utils";
 import { ConfiguracoesSubNav } from "../sub-nav";
 
@@ -67,9 +68,9 @@ export default async function PaginaFormasPagamento({
         </div>
 
         {!formas || formas.length === 0 ? (
-          <p className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-            Nenhuma forma de pagamento {filtro === "inativos" ? "inativa" : "cadastrada"} ainda.
-          </p>
+          <EstadoVazio
+            texto={`Nenhuma forma de pagamento ${filtro === "inativos" ? "inativa" : "cadastrada"} ainda.`}
+          />
         ) : (
           <div className="overflow-hidden rounded-2xl bg-card shadow-card">
             <Table>

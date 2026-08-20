@@ -1,5 +1,6 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { EstadoVazio } from "@/components/ui/estado-vazio";
 import { TagCategoria } from "@/components/ui/tag-categoria";
 import { formatarMoeda } from "@/lib/formatacao";
 import { ROTULO_STATUS_PARCELA, COR_STATUS_PARCELA } from "@/lib/status-parcela";
@@ -15,11 +16,7 @@ type EventoLinha = {
 
 export function TabelaEventos({ eventos, textoVazio }: { eventos: EventoLinha[]; textoVazio: string }) {
   if (eventos.length === 0) {
-    return (
-      <p className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-        {textoVazio}
-      </p>
-    );
+    return <EstadoVazio texto={textoVazio} />;
   }
 
   return (

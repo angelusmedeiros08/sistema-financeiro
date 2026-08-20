@@ -6,6 +6,7 @@ import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
 import { listarVendas } from "@/lib/vendas/vendas";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { EstadoVazio } from "@/components/ui/estado-vazio";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatarMoeda } from "@/lib/formatacao";
 import { formatarDataIsoParaBR } from "@/lib/importacao/locale-br";
@@ -71,9 +72,7 @@ export default async function PaginaVendas({ searchParams }: { searchParams: Pro
       </div>
 
       {vendas.length === 0 ? (
-        <p className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-          Nenhuma venda nessa situação.
-        </p>
+        <EstadoVazio texto="Nenhuma venda nessa situação." />
       ) : (
         <div className="overflow-hidden rounded-2xl bg-card shadow-card">
           <Table>

@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
 import { listarLinhasDreConfig } from "@/lib/relatorios/dre";
+import { EstadoVazio } from "@/components/ui/estado-vazio";
 import { ConfiguracoesSubNav } from "../sub-nav";
 import { NovaLinhaDreForm } from "./nova-linha-form";
 import { LinhaDreItem } from "./linha-dre-item";
@@ -47,9 +48,7 @@ export default async function PaginaEstruturaDre() {
         <h2 className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Linhas cadastradas</h2>
 
         {linhas.length === 0 ? (
-          <p className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-            Nenhuma linha de DRE cadastrada ainda.
-          </p>
+          <EstadoVazio texto="Nenhuma linha de DRE cadastrada ainda." />
         ) : (
           linhas.map((linha, i) => (
             <LinhaDreItem

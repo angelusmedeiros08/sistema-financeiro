@@ -5,6 +5,13 @@ import { EnderecosSecao } from "./enderecos-secao";
 import { ContatosSecao } from "./contatos-secao";
 import { TabelaEventos } from "@/components/lancamentos/tabela-eventos";
 import { atualizarPessoaAction } from "@/lib/pessoas/pessoas-actions";
+import { corPorNome } from "@/lib/cor-por-nome";
+
+const ROTULO_PERFIL: Record<string, string> = {
+  CLIENTE: "Cliente",
+  FORNECEDOR: "Fornecedor",
+  TRANSPORTADORA: "Transportadora",
+};
 
 export function DetalhePessoa({
   pessoa,
@@ -27,8 +34,34 @@ export function DetalhePessoa({
         <span className="text-foreground">{pessoa.nome}</span>
       </div>
 
+      <div className="flex items-center gap-3">
+        <span
+          className="flex size-11 shrink-0 items-center justify-center rounded-full text-base font-bold text-white"
+          style={{ background: corPorNome(pessoa.nome).texto }}
+        >
+          {pessoa.nome.charAt(0).toUpperCase()}
+        </span>
+        <div className="min-w-0">
+          <h1 className="truncate text-xl font-bold tracking-tight text-foreground">{pessoa.nome}</h1>
+          <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+            {pessoa.documento && <span>{pessoa.documento}</span>}
+            {pessoa.email && (
+              <>
+                {pessoa.documento && <span>·</span>}
+                <span>{pessoa.email}</span>
+              </>
+            )}
+            {pessoa.perfis.map((perfil) => (
+              <span key={perfil} className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-foreground">
+                {ROTULO_PERFIL[perfil] ?? perfil}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+
       <section className="rounded-2xl bg-card shadow-card p-5">
-        <h1 className="mb-5 text-xl font-bold tracking-tight text-foreground">Dados cadastrais</h1>
+        <h2 className="mb-5 font-heading text-sm font-bold text-foreground">Dados cadastrais</h2>
         <PessoaForm modo="editar" pessoa={pessoa} camposPersonalizados={camposPersonalizados} acao={atualizarPessoaAction} />
       </section>
 

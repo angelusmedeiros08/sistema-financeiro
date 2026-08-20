@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { DotsThree } from "@phosphor-icons/react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { EstadoVazio } from "@/components/ui/estado-vazio";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   DropdownMenu,
@@ -263,9 +264,7 @@ export function DetalheParcela({
       <section>
         <h2 className="mb-3 text-xs font-bold uppercase tracking-wide text-muted-foreground">Pagamentos</h2>
         {parcela.baixas.length === 0 ? (
-          <p className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-            Nenhum pagamento registrado ainda.
-          </p>
+          <EstadoVazio texto="Nenhum pagamento registrado ainda." />
         ) : (
           <div className="overflow-hidden rounded-2xl bg-card shadow-card">
             <Table>

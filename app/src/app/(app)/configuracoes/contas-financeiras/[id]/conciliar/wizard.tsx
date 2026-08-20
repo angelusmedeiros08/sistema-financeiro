@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { CheckCircle, FileText, Spinner, UploadSimple } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
+import { EstadoVazio } from "@/components/ui/estado-vazio";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   parseArquivoExtrato,
@@ -199,9 +200,7 @@ export function WizardConciliacao({
       </div>
 
       {linhas.length === 0 ? (
-        <p className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-          Nenhuma linha pendente pra conciliar nessa conta.
-        </p>
+        <EstadoVazio texto="Nenhuma linha pendente pra conciliar nessa conta." />
       ) : (
         <div className="flex flex-col gap-2">
           <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">{linhas.length} pendente(s)</p>

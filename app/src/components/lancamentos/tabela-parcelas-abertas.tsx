@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { EstadoVazio } from "@/components/ui/estado-vazio";
 import { formatarMoeda } from "@/lib/formatacao";
 import { ROTULO_STATUS_PARCELA, COR_STATUS_PARCELA } from "@/lib/status-parcela";
 import { cn } from "@/lib/utils";
@@ -29,11 +30,7 @@ export function TabelaParcelasAbertas({
   caminhoBase: "contas-a-pagar" | "contas-a-receber";
 }) {
   if (parcelas.length === 0) {
-    return (
-      <p className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-        {textoVazio}
-      </p>
-    );
+    return <EstadoVazio texto={textoVazio} />;
   }
 
   const hojeISO = new Date().toISOString().slice(0, 10);

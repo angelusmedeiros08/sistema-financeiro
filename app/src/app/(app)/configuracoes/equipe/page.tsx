@@ -9,6 +9,7 @@ import { ConvidarForm } from "./convidar-form";
 import { AcessoToggleButton } from "./acesso-toggle-button";
 import { CancelarConviteButton } from "./cancelar-convite-button";
 import { ROTULO_PAPEL } from "@/lib/tenant/rotulos";
+import { corPorNome } from "@/lib/cor-por-nome";
 
 export default async function PaginaEquipe() {
   const contexto = await obterUsuarioETenantAtual();
@@ -68,7 +69,17 @@ export default async function PaginaEquipe() {
                 const pendente = !m.senha_definida;
                 return (
                   <TableRow key={m.usuario_id}>
-                    <TableCell className="font-medium text-foreground">{m.usuarios?.nome ?? "-"}</TableCell>
+                    <TableCell className="font-medium text-foreground">
+                      <div className="flex items-center gap-2.5">
+                        <span
+                          className="flex size-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
+                          style={{ background: corPorNome(m.usuarios?.nome ?? m.usuarios?.email ?? "?").texto }}
+                        >
+                          {(m.usuarios?.nome ?? m.usuarios?.email ?? "?").charAt(0).toUpperCase()}
+                        </span>
+                        {m.usuarios?.nome ?? "-"}
+                      </div>
+                    </TableCell>
                     <TableCell className="text-muted-foreground">{m.usuarios?.email ?? "-"}</TableCell>
                     <TableCell className="text-muted-foreground">{ROTULO_PAPEL[m.papel] ?? m.papel}</TableCell>
                     <TableCell>
@@ -76,9 +87,9 @@ export default async function PaginaEquipe() {
                         className={cn(
                           "border-none font-semibold",
                           pendente
-                            ? "bg-amber-500/12 text-amber-700"
+                            ? "bg-[#E3A62F]/15 text-[#B4691E]"
                             : m.ativo
-                              ? "bg-[#157F6B]/12 text-[#0F5F50]"
+                              ? "bg-[#0FA37E]/12 text-[#0F5F50]"
                               : "bg-muted text-muted-foreground",
                         )}
                       >

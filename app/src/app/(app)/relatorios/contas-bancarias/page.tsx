@@ -6,6 +6,7 @@ import { buscarContasBancarias } from "@/lib/relatorios/contas-bancarias";
 import { RelatoriosSubNav } from "../sub-nav";
 import { RelatoriosControles } from "../controles";
 import { StatCard } from "@/components/painel/stat-card";
+import { EstadoVazio } from "@/components/ui/estado-vazio";
 import { formatarMoeda, formatarNumeroCompacto } from "@/lib/formatacao";
 import { cn } from "@/lib/utils";
 
@@ -31,9 +32,7 @@ export default async function PaginaRelatoriosContasBancarias({
       <StatCard variant="hero" label="Saldo total em contas ativas" valor={formatarMoeda(saldoTotal)} />
 
       {contas.length === 0 ? (
-        <p className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-          Nenhuma conta financeira ativa cadastrada.
-        </p>
+        <EstadoVazio texto="Nenhuma conta financeira ativa cadastrada." />
       ) : (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           {contas.map((c) => (

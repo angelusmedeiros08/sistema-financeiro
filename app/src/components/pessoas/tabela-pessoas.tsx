@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { EstadoVazio } from "@/components/ui/estado-vazio";
+import { corPorNome } from "@/lib/cor-por-nome";
 import type { LinhaPessoa } from "@/lib/pessoas/buscar-pessoa";
 
 export function TabelaPessoas({
@@ -12,11 +14,7 @@ export function TabelaPessoas({
   textoVazio: string;
 }) {
   if (pessoas.length === 0) {
-    return (
-      <p className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-        {textoVazio}
-      </p>
-    );
+    return <EstadoVazio texto={textoVazio} />;
   }
 
   return (
@@ -35,7 +33,13 @@ export function TabelaPessoas({
           {pessoas.map((p) => (
             <TableRow key={p.id} className="cursor-pointer">
               <TableCell className="p-0">
-                <Link href={`/${caminhoBase}/${p.id}`} className="block px-4 py-2.5 font-medium text-foreground">
+                <Link href={`/${caminhoBase}/${p.id}`} className="flex items-center gap-2.5 px-4 py-2.5 font-medium text-foreground">
+                  <span
+                    className="flex size-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
+                    style={{ background: corPorNome(p.nome).texto }}
+                  >
+                    {p.nome.charAt(0).toUpperCase()}
+                  </span>
                   {p.nome}
                 </Link>
               </TableCell>

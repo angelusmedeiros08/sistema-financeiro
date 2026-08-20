@@ -3,6 +3,7 @@ import { createClient } from "@/utils/supabase/server";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
 import { listarProdutosServicos } from "@/lib/produtos-servicos/produtos-servicos";
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { EstadoVazio } from "@/components/ui/estado-vazio";
 import { NovoProdutoServicoForm } from "./novo-produto-servico-form";
 import { ProdutoServicoLinha } from "./produto-servico-linha";
 
@@ -27,9 +28,7 @@ export default async function PaginaProdutosServicos() {
       <section>
         <h2 className="mb-3 text-xs font-bold uppercase tracking-wide text-muted-foreground">Novo item</h2>
         {categoriasReceita.length === 0 ? (
-          <p className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-            Cadastre ao menos uma categoria de receita em Configurações → Categorias antes de criar um produto ou serviço.
-          </p>
+          <EstadoVazio texto="Cadastre ao menos uma categoria de receita em Configurações → Categorias antes de criar um produto ou serviço." />
         ) : (
           <NovoProdutoServicoForm categoriasReceita={categoriasReceita} />
         )}
@@ -38,9 +37,7 @@ export default async function PaginaProdutosServicos() {
       <section>
         <h2 className="mb-3 text-xs font-bold uppercase tracking-wide text-muted-foreground">Cadastrados</h2>
         {produtosServicos.length === 0 ? (
-          <p className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-            Nenhum produto ou serviço ainda.
-          </p>
+          <EstadoVazio texto="Nenhum produto ou serviço ainda." />
         ) : (
           <div className="overflow-hidden rounded-2xl bg-card shadow-card">
             <Table>

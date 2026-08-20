@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Check, PencilSimple, Spinner, Trash, X } from "@phosphor-icons/react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { EstadoVazio } from "@/components/ui/estado-vazio";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { RegraCategorizacao } from "@/lib/conciliacao/regras";
@@ -66,9 +67,7 @@ export function TabelaRegras({
 
   if (regras.length === 0) {
     return (
-      <p className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-        Nenhuma regra ainda. Elas nascem sozinhas quando você categoriza um lançamento na tela de conciliação.
-      </p>
+      <EstadoVazio texto="Nenhuma regra ainda. Elas nascem sozinhas quando você categoriza um lançamento na tela de conciliação." />
     );
   }
 

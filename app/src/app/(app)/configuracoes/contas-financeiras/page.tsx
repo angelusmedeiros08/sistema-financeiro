@@ -10,6 +10,7 @@ import { ToggleAtivoContaButton } from "./toggle-ativo-button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { EstadoVazio } from "@/components/ui/estado-vazio";
 import { StatCard } from "@/components/painel/stat-card";
 import { formatarMoeda } from "@/lib/formatacao";
 import { cn } from "@/lib/utils";
@@ -83,9 +84,7 @@ async function AbaContas({ tenantId, supabase }: { tenantId: string; supabase: A
         <h2 className="mb-3 text-xs font-bold uppercase tracking-wide text-muted-foreground">Cadastradas</h2>
 
         {!contas || contas.length === 0 ? (
-          <p className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-            Nenhuma conta financeira cadastrada ainda.
-          </p>
+          <EstadoVazio texto="Nenhuma conta financeira cadastrada ainda." />
         ) : (
           <div className="overflow-hidden rounded-2xl bg-card shadow-card">
             <Table>
@@ -168,9 +167,7 @@ async function VisaoGeralContasFinanceiras({ tenantId, supabase }: { tenantId: s
       </div>
 
       {contas.length === 0 ? (
-        <p className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-          Nenhuma conta financeira ativa.
-        </p>
+        <EstadoVazio texto="Nenhuma conta financeira ativa." />
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {contas.map((c) => (
