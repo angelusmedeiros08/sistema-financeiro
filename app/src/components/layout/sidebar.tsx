@@ -363,7 +363,7 @@ export function SidebarConteudo({ emailUsuario, emSheet = false }: { emailUsuari
       <div
         ref={railRef}
         tabIndex={-1}
-        className="sticky top-0 z-40 h-screen w-[60px] outline-none"
+        className="fixed inset-y-0 left-0 z-40 h-screen w-[60px] outline-none"
         onMouseEnter={agendarAbrir}
         onMouseLeave={agendarFechar}
         onFocus={aoFocar}
