@@ -1,15 +1,16 @@
 "use client";
 
-import { RadialBar, RadialBarChart } from "recharts";
+import { Pie } from "@visx/shape";
+import { Group } from "@visx/group";
 import { formatarMesAbreviado, formatarPercentual } from "@/lib/formatacao";
 import { Sparkline } from "@/components/painel/sparkline";
 
-// Arco + rótulo + mini-tendência lado a lado numa única linha — a mesma
-// composição do card "arc-progress" que o usuário mandou de referência
-// (anel à esquerda, texto no meio, gráfico de tendência com eixo à
-// direita), não peças empilhadas verticalmente feito bloco solto em cima
-// de outro. Precisa de card mais largo pra caber (ver grid-cols-2 nas
-// páginas que usam isso, não grid-cols-4).
+// Motor trocado de Recharts (RadialBarChart) pra @visx/shape (Pie) — o
+// mesmo motor já usado no donut de categorias (top-categorias-donut.tsx),
+// não o mesmo componente só com traço mais grosso. Rosca em 2 fatias
+// (realizado + resto) com gap entre elas e pontas arredondadas, sem
+// número dentro do anel — o percentual vira item de legenda (bolinha +
+// número em negrito) do lado, no mesmo padrão da referência Taskcore.
 const ZONAS_PADRAO = [
   { ate: 0.4, cor: "#B23A2E" },
   { ate: 0.7, cor: "#E3A62F" },
@@ -27,6 +28,9 @@ function corDaZona(valor: number, invertido: boolean): string {
   return (zonas.find((z) => valor <= z.ate) ?? zonas[zonas.length - 1]).cor;
 }
 
+const RAIO = 32;
+const ESPESSURA = 13;
+
 export type PontoSerieGauge = { mes: string; valor: number };
 
 export function IndicadorGauge({
@@ -43,40 +47,49 @@ export function IndicadorGauge({
   const percentualClamp = Math.max(0, Math.min(1, valor));
   const cor = corDaZona(percentualClamp, invertido);
   const temSerie = serie && serie.length > 1;
-  const dadosAnel = [{ valor: percentualClamp * 100, fill: cor }];
+
+  const fatias = [
+    { chave: "valor", total: percentualClamp, cor },
+    { chave: "resto", total: 1 - percentualClamp, cor: "var(--muted)" },
+  ];
 
   return (
     <div className="flex items-center gap-4 rounded-2xl bg-card p-4 shadow-card">
-      {/* Donut grosso (traço ~40% do raio) igual à referência Taskcore —
-          nada de anel fino tipo "gauge de carro". innerRadius em % (sem
-          barSize) deixa o traço proporcional ao tamanho do anel. */}
-      <div className="relative flex size-[88px] shrink-0 items-center justify-center">
-        <RadialBarChart
-          width={88}
-          height={88}
-          cx="50%"
-          cy="50%"
-          innerRadius="58%"
-          outerRadius="100%"
-          data={dadosAnel}
-          startAngle={90}
-          endAngle={-270}
-        >
-          <RadialBar
-            background={{ fill: "var(--muted)" }}
-            dataKey="valor"
-            cornerRadius={99}
-            isAnimationActive
-            animationDuration={700}
-            animationEasing="ease-out"
-          />
-        </RadialBarChart>
-        <span className="pointer-events-none absolute text-sm font-bold tabular-nums text-foreground">
-          {formatarPercentual(percentualClamp)}
-        </span>
-      </div>
+      <svg width={72} height={72} className="shrink-0">
+        <Group top={36} left={36}>
+          <Pie
+            data={fatias}
+            pieValue={(f) => f.total}
+            pieSort={null}
+            pieSortValues={null}
+            outerRadius={RAIO}
+            innerRadius={RAIO - ESPESSURA}
+            cornerRadius={5}
+            padAngle={0.05}
+            startAngle={-Math.PI / 2}
+            endAngle={(3 * Math.PI) / 2}
+          >
+            {(pie) =>
+              pie.arcs.map((arco) => (
+                <path
+                  key={arco.data.chave}
+                  d={pie.path(arco) ?? undefined}
+                  fill={arco.data.cor}
+                  style={{ transition: "d 0.4s ease-out" }}
+                />
+              ))
+            }
+          </Pie>
+        </Group>
+      </svg>
 
-      <span className="min-w-0 flex-1 text-sm font-semibold text-foreground">{rotulo}</span>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-1.5">
+          <span className="size-2 shrink-0 rounded-full" style={{ background: cor }} />
+          <span className="text-lg font-bold tabular-nums text-foreground">{formatarPercentual(percentualClamp)}</span>
+        </div>
+        <span className="mt-0.5 block text-xs font-medium text-muted-foreground">{rotulo}</span>
+      </div>
 
       {temSerie && (
         <div className="hidden w-28 shrink-0 sm:block">
