@@ -6,7 +6,7 @@ import { lerParametrosRelatorio } from "@/lib/relatorios/periodo";
 import { buscarFluxoCaixaGrade, buscarPrevistoRealizado } from "@/lib/relatorios/fluxo-caixa";
 import { RelatoriosControles } from "../relatorios/controles";
 import { ComparativoBarras } from "@/components/relatorios/comparativo-barras";
-import { formatarNumeroCompacto } from "@/lib/formatacao";
+import { FluxoDiarioTabela, FluxoPrevistoRealizadoTabela } from "@/components/relatorios/fluxo-caixa-tabelas";
 import { cn } from "@/lib/utils";
 
 const ABAS = [
@@ -88,40 +88,7 @@ async function FluxoDiario({
         />
       </div>
 
-      <div className="overflow-hidden rounded-2xl bg-card shadow-card">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border text-left text-xs font-bold uppercase tracking-wide text-muted-foreground">
-              <th className="p-3">Período</th>
-              <th className="p-3 text-right">Entradas</th>
-              <th className="p-3 text-right">Saídas</th>
-              <th className="p-3 text-right">Saldo do período</th>
-              <th className="p-3 text-right">Saldo acumulado</th>
-            </tr>
-          </thead>
-          <tbody>
-            {pontos.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="p-6 text-center text-muted-foreground">
-                  Sem movimentação no período selecionado.
-                </td>
-              </tr>
-            ) : (
-              pontos.map((p) => (
-                <tr key={p.chave} className="border-b border-border last:border-none">
-                  <td className="p-3 font-medium text-foreground">{p.chave}</td>
-                  <td className="p-3 text-right tabular-nums text-[#157F6B]">{formatarNumeroCompacto(p.entradas)}</td>
-                  <td className="p-3 text-right tabular-nums text-[#B23A2E]">{formatarNumeroCompacto(p.saidas)}</td>
-                  <td className={cn("p-3 text-right tabular-nums font-semibold", p.saldoPeriodo >= 0 ? "text-[#157F6B]" : "text-[#B23A2E]")}>
-                    {formatarNumeroCompacto(p.saldoPeriodo)}
-                  </td>
-                  <td className="p-3 text-right tabular-nums">{formatarNumeroCompacto(p.saldoAcumulado)}</td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+      <FluxoDiarioTabela pontos={pontos} />
     </div>
   );
 }
@@ -156,38 +123,7 @@ async function FluxoPrevistoRealizado({
         />
       </div>
 
-      <div className="overflow-hidden rounded-2xl bg-card shadow-card">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border text-left text-xs font-bold uppercase tracking-wide text-muted-foreground">
-              <th className="p-3">Período</th>
-              <th className="p-3 text-right">Previsto</th>
-              <th className="p-3 text-right">Realizado</th>
-              <th className="p-3 text-right">Variação</th>
-            </tr>
-          </thead>
-          <tbody>
-            {pontos.length === 0 ? (
-              <tr>
-                <td colSpan={4} className="p-6 text-center text-muted-foreground">
-                  Sem movimentação no período selecionado.
-                </td>
-              </tr>
-            ) : (
-              pontos.map((p) => (
-                <tr key={p.chave} className="border-b border-border last:border-none">
-                  <td className="p-3 font-medium text-foreground">{p.chave}</td>
-                  <td className="p-3 text-right tabular-nums text-[#E3A62F]">{formatarNumeroCompacto(p.previsto)}</td>
-                  <td className="p-3 text-right tabular-nums text-[#157F6B]">{formatarNumeroCompacto(p.realizado)}</td>
-                  <td className={cn("p-3 text-right tabular-nums font-semibold", p.variacao >= 0 ? "text-[#157F6B]" : "text-[#B23A2E]")}>
-                    {formatarNumeroCompacto(p.variacao)}
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+      <FluxoPrevistoRealizadoTabela pontos={pontos} />
     </div>
   );
 }
