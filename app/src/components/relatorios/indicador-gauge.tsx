@@ -42,16 +42,21 @@ export function IndicadorGauge({
   const dadosAnel = [{ valor: percentualClamp * 100, fill: cor }];
 
   return (
-    <div className="flex items-center gap-3 rounded-2xl bg-card p-4 shadow-card">
-      <div className="relative flex size-16 shrink-0 items-center justify-center">
+    <div className="flex flex-col gap-3 rounded-2xl p-4 shadow-card" style={{ background: `color-mix(in srgb, ${cor} 8%, var(--card))` }}>
+      <span className="text-xs font-semibold text-muted-foreground">{rotulo}</span>
+
+      {/* Anel de 96px com furo interno de ~71px — texto tipo "100,0%" em
+          18px bold cabe com folga; em 64px o furo (≈39px) era menor que o
+          próprio texto e os dígitos vazavam por cima do traço colorido. */}
+      <div className="relative mx-auto flex size-24 shrink-0 items-center justify-center">
         <RadialBarChart
-          width={64}
-          height={64}
+          width={96}
+          height={96}
           cx="50%"
           cy="50%"
-          innerRadius="72%"
+          innerRadius="74%"
           outerRadius="100%"
-          barSize={7}
+          barSize={9}
           data={dadosAnel}
           startAngle={90}
           endAngle={-270}
@@ -65,19 +70,16 @@ export function IndicadorGauge({
             animationEasing="ease-out"
           />
         </RadialBarChart>
-        <span className="pointer-events-none absolute text-[13px] font-bold tabular-nums text-foreground">
+        <span className="pointer-events-none absolute text-lg font-bold tabular-nums text-foreground">
           {formatarPercentual(percentualClamp)}
         </span>
       </div>
 
-      <div className="min-w-0 flex-1">
-        <span className="block text-xs font-semibold text-muted-foreground">{rotulo}</span>
-        {temSerie && (
-          <div className="-mx-1 mt-1.5 h-6">
-            <Sparkline dados={serie} cor={cor} />
-          </div>
-        )}
-      </div>
+      {temSerie && (
+        <div className="-mx-1 h-7">
+          <Sparkline dados={serie} cor={cor} />
+        </div>
+      )}
     </div>
   );
 }
