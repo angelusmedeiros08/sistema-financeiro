@@ -9,12 +9,10 @@ Essa spec cobre **todo elemento gráfico do sistema, sem exceção** — gráfic
 
 ## Parte 0 — Tipografia
 
-Par completo trocado, ambos da Fontshare (mesma fundição, desenhadas pra combinar):
+- **Display/headline/número grande**: `Cabinet Grotesk` → **Satoshi** (Fontshare). Decidido em comparação ao vivo (Satoshi × General Sans × Geist × Cabinet Grotesk, aplicadas em KPI card + tabela real). Mesma fonte usada pela Bling (fintech brasileira) segundo o mapeamento de referências original. Afeta título de página, `card-title`, valor de KPI (`StatCard`), número dos gauges — qualquer lugar que hoje usa `--font-display`.
+- **Corpo/UI/tabela**: `Public Sans` → **Plus Jakarta Sans** (Google Fonts). Passou primeiro por General Sans (Fontshare, par "de casa" da Satoshi), mas o usuário pediu explicitamente a fonte da Conta Azul. Pesquisa confirmou que a fonte real deles, **Ping Pong**, é proprietária e exclusiva — encomendada pelo próprio type designer (Fábio Haag), sem licença pra terceiros a preço nenhum. A parente mais próxima, **Margem** (mesmo criador, mesmo traço humanista+geométrico), existe mas é paga (US$150–250, fabiohaagtype.com) — não tem versão gratuita completa. Diante disso, o usuário escolheu buscar uma alternativa gratuita com o mesmo espírito em vez de comprar a Margem. Comparadas 4 opções (Plus Jakarta Sans, Onest, Nunito Sans, Figtree) com frases reais em português lado a lado no companion visual — **Plus Jakarta Sans** venceu: geométrica-humanista, "a" de andar único, hoje a mais adotada em produto fintech/SaaS entre as 4. Afeta `--font-body`: tabela, formulário, rótulo, texto de UI em geral.
 
-- **Display/headline/número grande**: `Cabinet Grotesk` → **Satoshi**. Decidido em comparação ao vivo (Satoshi × General Sans × Geist × Cabinet Grotesk, aplicadas em KPI card + tabela real). Mesma fonte usada pela Bling (fintech brasileira) segundo o mapeamento de referências original. Afeta título de página, `card-title`, valor de KPI (`StatCard`), número dos gauges — qualquer lugar que hoje usa `--font-display`.
-- **Corpo/UI/tabela**: `Public Sans` → **General Sans**. Comparação em zoom (número + palavra ampliados) mostrou diferença genuinamente sutil entre as 4 opções testadas — recomendei manter Public Sans por não valer o retrabalho (toca toda tabela/formulário) pra um ganho quase imperceptível, mas o usuário decidiu trocar mesmo assim, escolhendo o par "de casa" com a Satoshi. Afeta `--font-body`: tabela, formulário, rótulo, texto de UI em geral.
-
-**Pendente de implementação:** baixar os pesos de Satoshi + General Sans via Fontshare API, trocar em `app/src/app/fonts` + `layout.tsx` (mesmo mecanismo `next/font/local` self-hospedado já usado).
+**Pendente de implementação:** baixar os pesos de Satoshi (Fontshare API) + Plus Jakarta Sans (Google Fonts), trocar em `app/src/app/fonts` + `layout.tsx` (mesmo mecanismo `next/font/local` self-hospedado já usado — Plus Jakarta Sans precisa ser baixada como arquivo estático já que não é servida pela Fontshare).
 
 ## Parte 1 — Gráficos (já implementado nesta sessão)
 
