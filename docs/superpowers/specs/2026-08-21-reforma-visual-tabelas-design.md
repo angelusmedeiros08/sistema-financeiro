@@ -7,6 +7,12 @@
 
 Essa spec cobre **todo elemento gráfico do sistema, sem exceção** — gráficos de dados (linha, área, barra, donut, gauge, sankey) e tabelas. A parte de gráficos já foi implementada e testada ao longo desta sessão (fora do companion visual, iterada direto com o usuário via captura de tela real do app); essa seção documenta o que foi feito e confirma que segue o mesmo padrão de rigor exigido aqui. A parte de tabelas foi inteiramente desenhada no companion visual antes de qualquer código, seguindo `/brainstorming` + `/frontend-design` do jeito que ficou definido como ordem fixa do projeto.
 
+## Parte 0 — Tipografia de display
+
+Fonte de corpo/UI/tabela (**Public Sans**) não muda. Fonte de display/headline/número-grande troca de **Cabinet Grotesk** pra **Satoshi** (Fontshare, mesma fundição/mecanismo de distribuição, mesmo padrão técnico de auto-hospedagem via `next/font/local` já usado) — decidido em comparação ao vivo no companion visual (Satoshi × General Sans × Geist × Cabinet Grotesk, aplicadas em KPI card + tabela real). Satoshi é a mesma fonte usada pela Bling (fintech brasileira) segundo o mapeamento de referências original. Afeta título de página, `card-title`, valor de KPI (`StatCard`), número dos gauges — qualquer lugar que hoje usa `--font-display`.
+
+**Pendente de implementação:** baixar os pesos da Satoshi via Fontshare API, trocar em `app/src/app/fonts` + `layout.tsx`.
+
 ## Parte 1 — Gráficos (já implementado nesta sessão)
 
 Todo gráfico do sistema foi migrado de Recharts (removido do `package.json`) pra um motor real, sem tema visual importado — `@visx/shape` (headless, mesmo princípio do TanStack Table na parte de tabelas) pra linha/área/barra/donut/gauge, e ECharts só pro único diagrama que nenhum dos dois faz (Sankey, fluxo direcionado com conservação de nó).
@@ -24,13 +30,13 @@ Todo gráfico do sistema foi migrado de Recharts (removido do `package.json`) pr
 | 9 | `ComparativoLinhaAnotada` | Linha + linha-fantasma + rótulo de variação flutuante | Comparativos | `@visx/shape` + `@visx/annotation` |
 | 10 | `SankeyFluxoCaixa` | Composição do fluxo (receita → despesas/saldo), rótulo truncado + rolagem em telas estreitas | DFC | ECharts (única exceção ao visx — nenhuma alternativa headless resolve conservação de fluxo) |
 | 11 | `Sparkline` | Tendência compacta, sem eixo | StatCard, dentro do gauge | `@visx/shape` |
-| 12 | `TrilhoBarra` | Trilho de barra em SVG (largura %, sem medir container em JS) | Aging, Orçado×Realizado, Centro de custo, Curva ABC de despesas | SVG puro |
+| 12 | `TrilhoBarra` | Trilho de barra em SVG, **v2 aprovado**: gradiente na cor de preenchimento, marcador de ponta com anel branco (mesmo padrão do `activeDot`), marcas de escala em 25/50/75%, tooltip escuro ao passar o mouse | Aging, Orçado×Realizado, Centro de custo, Curva ABC de despesas | SVG puro (vira client component pro tooltip) |
 
 Bugs reais corrigidos durante essa migração (confirmados por medição de DOM, não só inspeção visual): número do gauge vazando do furo do anel, legenda invisível por clipping do `ParentSize`, barra some com série 100% negativa, total da rosca vazando pra fora em tenant com valor alto, rótulo/eixo do waterfall colidindo em DRE com muitas linhas, eixo Y vazando margem em 2 gráficos, rótulo de categoria do Sankey vazando o card, `TrilhoBarra` empurrando valor pra fora do card (mesma causa-raiz do bug do StatCard: `shrink-0` em vez de `min-w-0` num filho flex com largura "preferida" grande).
 
 **Pendência conhecida:** correção de token — `--positivo` (#157f6b) e `--chart-1` (#0fa37e) são cores diferentes de propósito; algumas correções anteriores usaram `#0fa37e` em texto de tabela achando que era "hex antigo", quando na verdade `--positivo` era o token correto. Precisa de auditoria nos arquivos já tocados (`centro-custo/page.tsx`, `dfc/page.tsx`).
 
-**Não há maquete pendente de aprovação nos gráficos** — todos foram validados em tela real (screenshot do app rodando) ao longo da sessão. Se o usuário quiser revisar algum especificamente antes de seguir, isso é feito por página, não precisa de nova rodada de maquete pra todos.
+Revisão final feita via galeria no companion visual (todos os 12 juntos) — 11 aprovados como estavam (testados em tela real ao longo da sessão), 1 (`TrilhoBarra`) voltou pra mais uma rodada de maquete e saiu com a v2 acima. Nenhum outro pendente; se surgir mais algum durante a implementação, revisão é feita por componente, não precisa de nova rodada pra todos.
 
 ## Parte 2 — Tabelas (desenhado no companion visual, aprovado, ainda não implementado)
 
