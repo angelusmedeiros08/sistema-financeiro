@@ -72,7 +72,9 @@ export function StatCard({ label, valor, detalhe, variant, delta, serie, icon: I
         )}
       </div>
 
-      <span className="font-heading text-[26px] font-bold leading-none tracking-tight tabular-nums">{valor}</span>
+      <span className="min-w-0 break-words font-heading text-2xl font-bold leading-tight tracking-tight tabular-nums sm:text-[26px]">
+        {valor}
+      </span>
 
       {detalhe && (
         <span className={cn("text-xs font-medium", v === "hero" ? "text-white/80" : "text-muted-foreground")}>
