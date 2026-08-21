@@ -40,21 +40,17 @@ Cada um recebe dados e definição de coluna via `criarColunaMatriz`/`criarColun
 
 _Teste:_ rota temporária com dado mockado (`(app)/teste-tabelas-temp`, removida depois de validar) cobrindo os cenários de maior risco — coluna fixa com scroll horizontal, super-header, linha de subtotal/final, as 4 cores de badge, AV%, chip de delta, ordenação por clique, paginação, busca global. Tudo verificado via inspeção de DOM (classe aplicada, offset de pin, resultado de sort/filtro/paginação) e sem erro de console.
 
-_Depende de:_ Fatia 1 (os componentes já nascem com a tipografia final, evita retrabalho).
-_Teste:_ uma tela de exemplo isolada (pode ser uma rota temporária ou Storybook-like dentro do próprio companion de brainstorming) com dado mockado, cobrindo: coluna fixa com scroll, linha de subtotal, badge de cada cor de status, ordenação por clique, paginação. Essa é a fatia de maior risco técnico do plano — vale gastar tempo aqui pra não repetir erro de layout 30 vezes depois.
-
 ## Fatia 5 — Arquétipo 1 nas 3 páginas de matriz densa
 
-Uma página por vez, nesta ordem (mais complexa primeiro, pra validar o componente da Fatia 4 sob a pior condição cedo):
+**Concluída.** As 3 migraram, nesta ordem: DRE → DFC → Orçamento.
 
-1. **DRE** (`relatorios/dre/page.tsx`) — até ~38 colunas mensais + linha configurável por tenant, é o caso mais exigente de scroll horizontal e pinning.
-2. **DFC** (`relatorios/dfc/page.tsx`)
-3. **Orçamento** (`orcamento/grade-orcamento.tsx`)
+Achado que corrigiu a premissa do plano: o "~38 colunas" era a **DFC** (3 sub-colunas Prev./Real./Var. por mês), não a DRE (12 colunas simples, 1 por mês). Cada página revelou uma exigência real diferente do motor:
 
-Cada uma: trocar o `<table>` cru pelo `tabela-matriz.tsx`, mapear dado existente pro formato de coluna TanStack, remover CSS/HTML de tabela manual que fica órfão.
+- **DRE** (`relatorios/dre/page.tsx`, wrapper `dre-matriz-tabela.tsx`): caso "de manual" — 1 grupo (ano) cobrindo 12 colunas de mês. Achado: não existe `tipoCalc` "final" no schema — a linha de resultado (ex. "Lucro / Prejuízo Final") é só a última linha `SUBTOTAL` da lista configurável por tenant; calculado em runtime (último índice com `tipoCalc !== "FOLHA"`). `SUBTOTAL_ALTERNATIVO`/`RESULTADO_NAO_OPERACIONAL` perderam o tom sage/dourado que tinham no `<table>` antigo — viram "subtotal" genérico (o arquétipo aprovado só tem 3 tipos de linha). Registrado como possível melhoria.
+- **DFC** (`relatorios/dfc/page.tsx`, wrapper `dfc-matriz-tabela.tsx`): estrutura **plana** (4 linhas, sem hierarquia) e 12 grupos de mês (não 1) com 3 folhas cada. Forçou 2 mudanças no motor (`tabela-matriz.tsx`): `idColunaMesAtual` (id único) virou `ehColunaMesAtual(id) => boolean` (destacar 3 colunas por mês, não 1); legenda de rodapé passou a só mostrar o selo de cor que realmente aparece nos dados (Subtotal/Final/Mês atual), calculado a partir de `data`+`obterTipoLinha` — a DFC não tem subtotal nenhum, mostrar aquele selo seria enganoso.
+- **Orçamento** (`orcamento/grade-orcamento.tsx`): não é relatório read-only, é **grid editável** (input por célula, autosave onBlur, copiar Jan→ano, status salvando/salvo/erro por linha) — só a versão desktop migrou, a mobile (accordion, resolve um problema de alvo de toque de 44px) ficou intacta. Ordenação desligada de propósito (reordenar no meio de uma edição é risco novo que o grid antigo nunca teve). Expôs um **bug real no motor**: cabeçalho tratava "linha de profundidade 0" como sinônimo de "cabeçalho de grupo" — funciona por coincidência quando a tabela SEMPRE tem grupo (DRE/DFC), quebra numa tabela sem grupo nenhum (a única linha de cabeçalho é ao mesmo tempo profundidade 0 e folha). Corrigido pra checar `header.column.columns.length > 0` (tem filho de verdade), não a posição da linha — confirmado que DRE/DFC continuaram corretas depois.
 
-_Depende de:_ Fatia 4.
-_Teste por página, antes de seguir pra próxima:_ abrir no navegador com tenant real (não mock), conferir coluna fixa + scroll horizontal, mês corrente destacado, subtotal/resultado com a cor certa, AV%, sort, e rodar a mesma checagem de overlap por DOM já usada nos bugs de gráfico desta sessão (números não podem colidir/vazar em nenhuma largura de tela).
+_Teste por página:_ tenant real (não mock) — coluna fixa + scroll horizontal, mês corrente, subtotal/final/AV%, sort, edição de célula real (Orçamento, revertida depois pra não sujar o banco), checagem de overflow por `getBoundingClientRect()`, sem erro de console em nenhuma.
 
 ## Fatia 6 — Arquétipo 2 nas 5 páginas de relatório com `<table>` crua
 
