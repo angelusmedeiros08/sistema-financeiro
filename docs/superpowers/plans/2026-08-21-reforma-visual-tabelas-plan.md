@@ -29,12 +29,16 @@ _Teste:_ os 4 consumidores reais — `aging-barras.tsx`, `orcado-realizado-barra
 
 ## Fatia 4 — Motor de tabela (fundação, sem tela ainda)
 
-Instalar `@tanstack/react-table` (`pnpm add @tanstack/react-table`). Construir, em `src/components/tabela/`, as duas peças reutilizáveis que toda página vai consumir depois — **sem migrar nenhuma página ainda**:
+**Concluída.** `@tanstack/react-table` instalado — v9.1.2, que por sua vez **não é a API v8** que a maior parte da documentação/treino descreve (registro explícito de feature via `tableFeatures()`, `useTable`/`createTableHook` em vez de `useReactTable`, `column.getStart('left')` virou `getStart('start')`). Resolvido lendo os skills que o próprio pacote traz em `node_modules/@tanstack/react-table/skills/` (mesmo padrão do aviso em `app/AGENTS.md` pro Next.js desta versão) em vez de supor a API antiga.
 
-- `tabela-matriz.tsx` (Arquétipo 1): wrapper de `useReactTable` com column pinning (`#` + "Linha"), super-header de ano, destaque de mês corrente, estilo de linha de subtotal/resultado por `meta` de linha, coluna AV% com mini-barra, chips de delta opcionais, sort por header, legenda de rodapé, scroll horizontal com sombra nas colunas fixas.
-- `tabela-lista.tsx` (Arquétipo 2): wrapper de `useReactTable` com célula de ícone+texto de 2 linhas, badge de status com bolinha, coluna de valor tabular-nums colorida por sinal, sort por header, paginação de rodapé, menu de ação via `DropdownMenu`.
+Criados em `src/components/tabela/`, via `createTableHook` (uma fábrica só, reused pelas duas):
 
-Cada um recebe dados e definição de coluna já no formato TanStack — a página que consome só declara `columns` e passa `data`.
+- `tabela-matriz.tsx` (Arquétipo 1): column pinning real (`#` + "Linha"), super-header de ano via grupo de coluna nativo do TanStack, destaque de mês corrente, linha de subtotal/final com friso lateral colorido (sem lavar a linha inteira), coluna AV% com mini-barra, chip de delta opcional, sort por header, legenda de rodapé, scroll horizontal com sombra nas colunas fixas.
+- `tabela-lista.tsx` (Arquétipo 2): célula de ícone+texto de 2 linhas, badge de status com bolinha (mesma paleta de `lib/status-parcela.ts`), valor tabular-nums colorido por sinal, busca global funcional, sort por header, paginação de rodapé, menu de ação via `DropdownMenu`.
+
+Cada um recebe dados e definição de coluna via `criarColunaMatriz`/`criarColunaLista` (helper tipado exportado do próprio arquivo, já ligado às features certas) — a página que consome só declara `columns` e passa `data`.
+
+_Teste:_ rota temporária com dado mockado (`(app)/teste-tabelas-temp`, removida depois de validar) cobrindo os cenários de maior risco — coluna fixa com scroll horizontal, super-header, linha de subtotal/final, as 4 cores de badge, AV%, chip de delta, ordenação por clique, paginação, busca global. Tudo verificado via inspeção de DOM (classe aplicada, offset de pin, resultado de sort/filtro/paginação) e sem erro de console.
 
 _Depende de:_ Fatia 1 (os componentes já nascem com a tipografia final, evita retrabalho).
 _Teste:_ uma tela de exemplo isolada (pode ser uma rota temporária ou Storybook-like dentro do próprio companion de brainstorming) com dado mockado, cobrindo: coluna fixa com scroll, linha de subtotal, badge de cada cor de status, ordenação por clique, paginação. Essa é a fatia de maior risco técnico do plano — vale gastar tempo aqui pra não repetir erro de layout 30 vezes depois.
