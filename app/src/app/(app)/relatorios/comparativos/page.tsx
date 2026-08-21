@@ -7,7 +7,7 @@ import { buscarAnaliseComparativa, type TipoAnaliseComparativa } from "@/lib/rel
 import { RelatoriosSubNav } from "../sub-nav";
 import { RelatoriosControles } from "../controles";
 import { ComparativoLinhaAnotada } from "@/components/relatorios/comparativo-linha-anotada";
-import { formatarNumeroCompacto, formatarPercentual } from "@/lib/formatacao";
+import { ComparativosTabela } from "@/components/relatorios/comparativos-tabela";
 import { cn } from "@/lib/utils";
 
 const TIPOS: { valor: TipoAnaliseComparativa; rotulo: string; colunaComparacao: string }[] = [
@@ -59,42 +59,26 @@ export default async function PaginaRelatoriosComparativos({
         ))}
       </div>
 
-      <div className="rounded-2xl bg-card shadow-card p-5">
-        <h2 className="mb-4 font-heading text-sm font-bold text-foreground">{config.rotulo}</h2>
-
-        {pontos.length === 0 ? (
+      {pontos.length === 0 ? (
+        <div className="rounded-2xl bg-card shadow-card p-5">
+          <h2 className="mb-4 font-heading text-sm font-bold text-foreground">{config.rotulo}</h2>
           <p className="text-sm text-muted-foreground">Sem movimentação suficiente no período para comparar.</p>
-        ) : (
-          <>
+        </div>
+      ) : (
+        <>
+          <div className="rounded-2xl bg-card shadow-card p-5">
+            <h2 className="mb-4 font-heading text-sm font-bold text-foreground">{config.rotulo}</h2>
             <ComparativoLinhaAnotada pontos={pontos} nomeComparacao={config.colunaComparacao} mostrarAnotacao={tipoAtivo !== "YTD"} />
+          </div>
 
-            <table className="mt-4 w-full text-sm">
-              <thead>
-                <tr className="border-b border-border text-left text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                  <th className="py-2">Período</th>
-                  <th className="py-2 text-right">Resultado</th>
-                  <th className="py-2 text-right">{config.colunaComparacao}</th>
-                  {tipoAtivo !== "YTD" && <th className="py-2 text-right">Variação</th>}
-                </tr>
-              </thead>
-              <tbody>
-                {pontos.map((p) => (
-                  <tr key={p.chave} className="border-b border-border last:border-none">
-                    <td className="py-2.5 font-medium text-foreground">{p.chave}</td>
-                    <td className="py-2.5 text-right tabular-nums">{formatarNumeroCompacto(p.atual)}</td>
-                    <td className="py-2.5 text-right tabular-nums text-muted-foreground">{formatarNumeroCompacto(p.comparacao)}</td>
-                    {tipoAtivo !== "YTD" && (
-                      <td className={cn("py-2.5 text-right tabular-nums font-semibold", p.variacaoPercentual >= 0 ? "text-[#157F6B]" : "text-[#B23A2E]")}>
-                        {formatarPercentual(p.variacaoPercentual)}
-                      </td>
-                    )}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </>
-        )}
-      </div>
+          <ComparativosTabela
+            titulo={config.rotulo}
+            pontos={pontos}
+            colunaComparacao={config.colunaComparacao}
+            mostrarVariacao={tipoAtivo !== "YTD"}
+          />
+        </>
+      )}
     </div>
   );
 }
