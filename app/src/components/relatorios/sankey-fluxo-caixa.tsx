@@ -20,6 +20,17 @@ type ParametroTooltip = {
   data: { source?: string; target?: string; value?: number };
 };
 
+const MAX_CARACTERES_ROTULO = 24;
+
+// Nome de categoria é dado do tenant, comprimento arbitrário — sem
+// truncar, um nome tipo "Benefícios (VT/VR/Plano de Saúde)" vaza pra
+// fora do card em telas mais estreitas (confirmado visualmente em
+// 900px de largura). Nome completo continua no tooltip ao passar o
+// mouse, só o rótulo fixo no diagrama é que corta.
+function truncarRotulo(nome: string): string {
+  return nome.length > MAX_CARACTERES_ROTULO ? `${nome.slice(0, MAX_CARACTERES_ROTULO - 1)}…` : nome;
+}
+
 // Sankey via ECharts — biblioteca nova no stack, entra só pra isso porque
 // nem Recharts nem @visx/shape têm um motor de fluxo direcionado com
 // conservação de nós; @nivo tem, mas fragmentaria o stack por só um
@@ -65,16 +76,28 @@ export function SankeyFluxoCaixa({ fluxo }: { fluxo: FluxoSankey }) {
     series: [
       {
         type: "sankey",
+        left: "18%",
+        right: "18%",
         emphasis: { focus: "adjacency" },
         nodeGap: 16,
         nodeWidth: 14,
         lineStyle: { color: "gradient", opacity: 0.22, curveness: 0.5 },
-        label: { color: corTexto, fontSize: 11, fontWeight: 600 },
+        label: { color: corTexto, fontSize: 11, fontWeight: 600, formatter: (p: { name: string }) => truncarRotulo(p.name) },
         data: fluxo.nos.map((n, i) => ({ name: n.nome, itemStyle: { color: corDoNo(n.nome, i), borderWidth: 0 } })),
         links: fluxo.links.map((l) => ({ source: l.origem, target: l.destino, value: l.valor })),
       },
     ],
   };
 
-  return <ReactECharts option={option} style={{ height: 380 }} notMerge />;
+  return (
+    // 3 colunas de nó + rótulo de cada lado precisam de espaço mínimo —
+    // sem isso, no mobile o diagrama espreme até vazar por cima da borda
+    // do card (confirmado visualmente em 375px). Rolagem horizontal em
+    // vez de comprimir, mesmo padrão já usado no waterfall da DRE.
+    <div className="overflow-x-auto">
+      <div style={{ minWidth: 560 }}>
+        <ReactECharts option={option} style={{ height: 380 }} notMerge />
+      </div>
+    </div>
+  );
 }
