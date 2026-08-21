@@ -1,13 +1,147 @@
 "use client";
 
-import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis } from "recharts";
+import { scaleBand, scaleLinear } from "@visx/scale";
+import { BarGroup } from "@visx/shape";
+import { Group } from "@visx/group";
+import { AxisBottom } from "@visx/axis";
+import { GridRows } from "@visx/grid";
+import { ParentSize } from "@visx/responsive";
+import { useTooltip, useTooltipInPortal, defaultStyles } from "@visx/tooltip";
+import { localPoint } from "@visx/event";
 import { formatarMoeda } from "@/lib/formatacao";
-import { TooltipEscuro } from "@/components/relatorios/tooltip-escuro";
 
 export type SerieComparativo = { chave: string; nome: string; cor: string };
 
-// Barras agrupadas genéricas — hoje só Previsto×Realizado (Fluxo de Caixa);
-// Análises Comparativas usa ComparativoLinhaAnotada (linha+anotação).
+const MARGEM = { top: 12, right: 8, bottom: 24, left: 8 };
+
+const estiloTooltip = {
+  ...defaultStyles,
+  background: "#1A1D1F",
+  color: "#fff",
+  border: "none",
+  borderRadius: "0.625rem",
+  padding: "8px 12px",
+  fontSize: 12,
+  boxShadow: "0 8px 20px rgba(0,0,0,0.2)",
+};
+
+type TooltipDado = { rotuloEixo: string; serie: SerieComparativo; valor: number };
+
+// Motor trocado de Recharts (BarChart) pra @visx/shape (BarGroup) —
+// mesmas barras agrupadas com pontas arredondadas, mesmo tooltip escuro,
+// consistente com o resto dos gráficos já migrados.
+function GraficoInterno({
+  dados,
+  eixoX,
+  series,
+  largura,
+  altura,
+}: {
+  dados: Record<string, number | string>[];
+  eixoX: string;
+  series: SerieComparativo[];
+  largura: number;
+  altura: number;
+}) {
+  const chaves = series.map((s) => s.chave);
+  const { tooltipData, tooltipLeft, tooltipTop, tooltipOpen, showTooltip, hideTooltip } = useTooltip<TooltipDado>();
+  const { containerRef, TooltipInPortal } = useTooltipInPortal({ scroll: true, detectBounds: true });
+
+  const larguraInterna = Math.max(largura - MARGEM.left - MARGEM.right, 10);
+  const alturaInterna = Math.max(altura - MARGEM.top - MARGEM.bottom, 10);
+
+  const dadosComChave = dados.map((d) => ({ ...d, rotuloEixo: String(d[eixoX]) }));
+  const x0Scale = scaleBand<string>({ domain: dadosComChave.map((d) => d.rotuloEixo), range: [0, larguraInterna], padding: 0.3 });
+  const x1Scale = scaleBand<string>({ domain: chaves, range: [0, x0Scale.bandwidth()], padding: 0.15 });
+  const todosValores = dados.flatMap((d) => chaves.map((k) => Number(d[k] ?? 0)));
+  const yScale = scaleLinear<number>({
+    domain: [Math.min(0, ...todosValores), Math.max(0, ...todosValores, 1)],
+    range: [alturaInterna, 0],
+    nice: true,
+  });
+
+  return (
+    <div ref={containerRef} className="relative">
+      <svg width={largura} height={altura}>
+        <Group left={MARGEM.left} top={MARGEM.top}>
+          <GridRows scale={yScale} width={larguraInterna} stroke="var(--border)" />
+
+          <BarGroup
+            data={dadosComChave}
+            keys={chaves}
+            height={alturaInterna}
+            x0={(d) => d.rotuloEixo}
+            x0Scale={x0Scale}
+            x1Scale={x1Scale}
+            yScale={yScale}
+            color={(chave) => series.find((s) => s.chave === chave)?.cor ?? "var(--muted-foreground)"}
+          >
+            {(barGroups) =>
+              barGroups.map((barGroup) => (
+                <Group key={`grupo-${barGroup.index}`} left={barGroup.x0}>
+                  {barGroup.bars.map((bar) => {
+                    // bar.y/bar.height do BarGroup assumem baseline no
+                    // fundo do gráfico (height - yScale(valor)) — só bate
+                    // pra valores sempre positivos. Recalcula em cima do
+                    // yScale direto (linha do zero, não o fundo do SVG)
+                    // pra series negativas (ex.: despesas) renderizarem.
+                    const yZero = yScale(0);
+                    const yValor = yScale(bar.value);
+                    const y = Math.min(yZero, yValor);
+                    const altura = Math.abs(yZero - yValor);
+                    return (
+                      <rect
+                        key={bar.key}
+                        x={bar.x}
+                        y={y}
+                        width={bar.width}
+                        height={altura}
+                        fill={bar.color}
+                        rx={3}
+                        style={{ cursor: "pointer", transition: "opacity 0.15s ease" }}
+                        onMouseMove={(evento) => {
+                          const coords = localPoint(evento) ?? { x: 0, y: 0 };
+                          const serie = series.find((s) => s.chave === bar.key);
+                          if (!serie) return;
+                          showTooltip({
+                            tooltipData: { rotuloEixo: dadosComChave[barGroup.index].rotuloEixo, serie, valor: bar.value },
+                            tooltipLeft: coords.x,
+                            tooltipTop: coords.y,
+                          });
+                        }}
+                        onMouseLeave={hideTooltip}
+                      />
+                    );
+                  })}
+                </Group>
+              ))
+            }
+          </BarGroup>
+
+          <AxisBottom
+            top={alturaInterna}
+            scale={x0Scale}
+            tickLabelProps={() => ({ fill: "var(--muted-foreground)", fontSize: 11, textAnchor: "middle" })}
+            hideAxisLine
+            tickStroke="var(--border)"
+          />
+        </Group>
+      </svg>
+
+      {tooltipOpen && tooltipData && (
+        <TooltipInPortal left={tooltipLeft} top={tooltipTop} style={estiloTooltip}>
+          <div className="mb-1 font-semibold text-white/60">{tooltipData.rotuloEixo}</div>
+          <div className="flex items-center gap-2">
+            <span className="size-2 rounded-full" style={{ background: tooltipData.serie.cor }} />
+            <span className="text-white/70">{tooltipData.serie.nome}</span>
+            <span className="ml-auto font-bold tabular-nums">{formatarMoeda(tooltipData.valor)}</span>
+          </div>
+        </TooltipInPortal>
+      )}
+    </div>
+  );
+}
+
 export function ComparativoBarras({
   dados,
   eixoX,
@@ -20,19 +154,20 @@ export function ComparativoBarras({
   altura?: number;
 }) {
   return (
-    <ResponsiveContainer width="100%" height={altura}>
-      <BarChart data={dados} margin={{ top: 4, right: 4, left: 4, bottom: 0 }}>
-        <CartesianGrid vertical={false} stroke="var(--border)" />
-        <XAxis dataKey={eixoX} axisLine={false} tickLine={false} tick={{ fill: "var(--muted-foreground)", fontSize: 11 }} />
-        <Tooltip
-          cursor={{ fill: "var(--muted)" }}
-          content={<TooltipEscuro labelFormatter={(chave) => String(chave)} valueFormatter={(valor) => formatarMoeda(valor)} />}
-        />
-        <Legend wrapperStyle={{ fontSize: 12 }} />
-        {series.map((serie) => (
-          <Bar key={serie.chave} dataKey={serie.chave} name={serie.nome} fill={serie.cor} radius={[4, 4, 0, 0]} maxBarSize={28} />
+    <div>
+      <div style={{ height: altura }}>
+        <ParentSize>
+          {({ width }) => (width > 0 ? <GraficoInterno dados={dados} eixoX={eixoX} series={series} largura={width} altura={altura} /> : null)}
+        </ParentSize>
+      </div>
+      <div className="mt-1 flex flex-wrap items-center gap-4 text-[11px] font-medium text-muted-foreground">
+        {series.map((s) => (
+          <span key={s.chave} className="flex items-center gap-1.5">
+            <span className="size-2 rounded-full" style={{ background: s.cor }} />
+            {s.nome}
+          </span>
         ))}
-      </BarChart>
-    </ResponsiveContainer>
+      </div>
+    </div>
   );
 }

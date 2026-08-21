@@ -116,15 +116,6 @@ function GraficoInterno({ dados, largura, altura }: { dados: PontoFluxo[]; largu
         </Group>
       </svg>
 
-      <div className="mt-1 flex items-center gap-4 text-[11px] font-medium text-muted-foreground">
-        <span className="flex items-center gap-1.5">
-          <span className="size-2 rounded-full bg-[#0FA37E]" /> Receitas
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="size-2 rounded-full bg-[#B23A2E]" /> Despesas
-        </span>
-      </div>
-
       {tooltipOpen && tooltipData && (
         <TooltipInPortal left={tooltipLeft} top={tooltipTop} style={estiloTooltip}>
           <div className="mb-1 font-semibold text-white/60">{tooltipData.mes}</div>
@@ -150,13 +141,28 @@ export function FluxoChart({ dados }: { dados: PontoFluxo[] }) {
   const semMovimento = dados.every((d) => d.receitas === 0 && d.despesas === 0);
 
   return (
-    <div className="relative" style={{ height: 220 }}>
-      <ParentSize>{({ width }) => (width > 0 ? <GraficoInterno dados={dados} largura={width} altura={220} /> : null)}</ParentSize>
-      {semMovimento && (
-        <p className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">
-          Ainda sem movimentação suficiente para o gráfico.
-        </p>
-      )}
+    <div>
+      {/* Legenda fica FORA do ParentSize de propósito: o wrapper interno
+          dele é position:absolute + overflow:hidden do tamanho exato do
+          container, então qualquer coisa renderizada depois do <svg> ali
+          dentro (a legenda, no caso) fica cortada em silêncio — sem erro,
+          sem warning, só some. */}
+      <div className="relative" style={{ height: 220 }}>
+        <ParentSize>{({ width }) => (width > 0 ? <GraficoInterno dados={dados} largura={width} altura={220} /> : null)}</ParentSize>
+        {semMovimento && (
+          <p className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">
+            Ainda sem movimentação suficiente para o gráfico.
+          </p>
+        )}
+      </div>
+      <div className="mt-1 flex items-center gap-4 text-[11px] font-medium text-muted-foreground">
+        <span className="flex items-center gap-1.5">
+          <span className="size-2 rounded-full bg-[#0FA37E]" /> Receitas
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="size-2 rounded-full bg-[#B23A2E]" /> Despesas
+        </span>
+      </div>
     </div>
   );
 }

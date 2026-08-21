@@ -135,19 +135,6 @@ function GraficoInterno({
         </Group>
       </svg>
 
-      <div className="mt-1 flex items-center gap-4 text-[11px] font-medium text-muted-foreground">
-        <span className="flex items-center gap-1.5">
-          <span className="h-[2px] w-4 rounded-full bg-[#4C7DF0]" /> Período
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span
-            className="h-[2px] w-4 rounded-full bg-muted-foreground"
-            style={{ backgroundImage: "repeating-linear-gradient(90deg,var(--muted-foreground) 0 4px,transparent 4px 7px)" }}
-          />
-          {nomeComparacao}
-        </span>
-      </div>
-
       {tooltipOpen && tooltipData && (
         <TooltipInPortal left={tooltipLeft} top={tooltipTop} style={estiloTooltip}>
           <div className="mb-1 font-semibold text-white/60">{tooltipData.chave}</div>
@@ -181,14 +168,32 @@ export function ComparativoLinhaAnotada({
   altura?: number;
 }) {
   return (
-    <div style={{ height: altura }}>
-      <ParentSize>
-        {({ width }) =>
-          width > 0 ? (
-            <GraficoInterno pontos={pontos} nomeComparacao={nomeComparacao} mostrarAnotacao={mostrarAnotacao} largura={width} altura={altura} />
-          ) : null
-        }
-      </ParentSize>
+    <div>
+      {/* Legenda fora do ParentSize: o wrapper interno dele é
+          position:absolute + overflow:hidden do tamanho exato do
+          container, então qualquer coisa depois do <svg> ali dentro fica
+          cortada em silêncio. */}
+      <div style={{ height: altura }}>
+        <ParentSize>
+          {({ width }) =>
+            width > 0 ? (
+              <GraficoInterno pontos={pontos} nomeComparacao={nomeComparacao} mostrarAnotacao={mostrarAnotacao} largura={width} altura={altura} />
+            ) : null
+          }
+        </ParentSize>
+      </div>
+      <div className="mt-1 flex items-center gap-4 text-[11px] font-medium text-muted-foreground">
+        <span className="flex items-center gap-1.5">
+          <span className="h-[2px] w-4 rounded-full bg-[#4C7DF0]" /> Período
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span
+            className="h-[2px] w-4 rounded-full bg-muted-foreground"
+            style={{ backgroundImage: "repeating-linear-gradient(90deg,var(--muted-foreground) 0 4px,transparent 4px 7px)" }}
+          />
+          {nomeComparacao}
+        </span>
+      </div>
     </div>
   );
 }
