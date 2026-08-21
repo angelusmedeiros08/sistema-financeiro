@@ -41,8 +41,8 @@ export default async function PaginaRelatoriosCentroCusto({
               {linhas.map((l) => (
                 <div key={l.centroCustoId} className="flex items-center gap-3">
                   <span className="w-40 shrink-0 truncate text-xs font-medium text-foreground">{l.nome}</span>
-                  <TrilhoBarra valorPercentual={Math.abs(l.saldo) / maiorSaldoAbsoluto} cor={l.saldo >= 0 ? "#0FA37E" : "#B23A2E"} />
-                  <span className={cn("w-28 shrink-0 text-right text-xs font-semibold tabular-nums", l.saldo >= 0 ? "text-[#0FA37E]" : "text-[#B23A2E]")}>
+                  <TrilhoBarra valorPercentual={Math.abs(l.saldo) / maiorSaldoAbsoluto} cor={l.saldo >= 0 ? "#157F6B" : "#B23A2E"} />
+                  <span className={cn("w-28 shrink-0 text-right text-xs font-semibold tabular-nums", l.saldo >= 0 ? "text-[#157F6B]" : "text-[#B23A2E]")}>
                     {formatarMoeda(l.saldo)}
                   </span>
                 </div>
@@ -63,9 +63,9 @@ export default async function PaginaRelatoriosCentroCusto({
                 {linhas.map((l) => (
                   <tr key={l.centroCustoId} className="border-b border-border last:border-none">
                     <td className="py-2.5 font-medium text-foreground">{l.nome}</td>
-                    <td className="py-2.5 text-right tabular-nums text-[#0FA37E]">{formatarNumeroCompacto(l.entradas)}</td>
+                    <td className="py-2.5 text-right tabular-nums text-[#157F6B]">{formatarNumeroCompacto(l.entradas)}</td>
                     <td className="py-2.5 text-right tabular-nums text-[#B23A2E]">{formatarNumeroCompacto(l.saidas)}</td>
-                    <td className={cn("py-2.5 text-right tabular-nums font-semibold", l.saldo >= 0 ? "text-[#0FA37E]" : "text-[#B23A2E]")}>
+                    <td className={cn("py-2.5 text-right tabular-nums font-semibold", l.saldo >= 0 ? "text-[#157F6B]" : "text-[#B23A2E]")}>
                       {formatarNumeroCompacto(l.saldo)}
                     </td>
                     <td className="py-2.5 text-right tabular-nums text-muted-foreground">{formatarPercentual(l.margemPercentual)}</td>

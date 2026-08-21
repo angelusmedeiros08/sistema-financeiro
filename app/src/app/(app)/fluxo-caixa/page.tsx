@@ -82,7 +82,7 @@ async function FluxoDiario({
           dados={pontos.map((p) => ({ chave: p.chave, entradas: p.entradas, saidas: -p.saidas }))}
           eixoX="chave"
           series={[
-            { chave: "entradas", nome: "Entradas", cor: "#0FA37E" },
+            { chave: "entradas", nome: "Entradas", cor: "#157F6B" },
             { chave: "saidas", nome: "Saídas", cor: "#B23A2E" },
           ]}
         />
@@ -110,9 +110,9 @@ async function FluxoDiario({
               pontos.map((p) => (
                 <tr key={p.chave} className="border-b border-border last:border-none">
                   <td className="p-3 font-medium text-foreground">{p.chave}</td>
-                  <td className="p-3 text-right tabular-nums text-[#0FA37E]">{formatarNumeroCompacto(p.entradas)}</td>
+                  <td className="p-3 text-right tabular-nums text-[#157F6B]">{formatarNumeroCompacto(p.entradas)}</td>
                   <td className="p-3 text-right tabular-nums text-[#B23A2E]">{formatarNumeroCompacto(p.saidas)}</td>
-                  <td className={cn("p-3 text-right tabular-nums font-semibold", p.saldoPeriodo >= 0 ? "text-[#0FA37E]" : "text-[#B23A2E]")}>
+                  <td className={cn("p-3 text-right tabular-nums font-semibold", p.saldoPeriodo >= 0 ? "text-[#157F6B]" : "text-[#B23A2E]")}>
                     {formatarNumeroCompacto(p.saldoPeriodo)}
                   </td>
                   <td className="p-3 text-right tabular-nums">{formatarNumeroCompacto(p.saldoAcumulado)}</td>
@@ -151,7 +151,7 @@ async function FluxoPrevistoRealizado({
           eixoX="chave"
           series={[
             { chave: "previsto", nome: "Previsto", cor: "#E3A62F" },
-            { chave: "realizado", nome: "Realizado", cor: "#0FA37E" },
+            { chave: "realizado", nome: "Realizado", cor: "#157F6B" },
           ]}
         />
       </div>
@@ -178,8 +178,8 @@ async function FluxoPrevistoRealizado({
                 <tr key={p.chave} className="border-b border-border last:border-none">
                   <td className="p-3 font-medium text-foreground">{p.chave}</td>
                   <td className="p-3 text-right tabular-nums text-[#E3A62F]">{formatarNumeroCompacto(p.previsto)}</td>
-                  <td className="p-3 text-right tabular-nums text-[#0FA37E]">{formatarNumeroCompacto(p.realizado)}</td>
-                  <td className={cn("p-3 text-right tabular-nums font-semibold", p.variacao >= 0 ? "text-[#0FA37E]" : "text-[#B23A2E]")}>
+                  <td className="p-3 text-right tabular-nums text-[#157F6B]">{formatarNumeroCompacto(p.realizado)}</td>
+                  <td className={cn("p-3 text-right tabular-nums font-semibold", p.variacao >= 0 ? "text-[#157F6B]" : "text-[#B23A2E]")}>
                     {formatarNumeroCompacto(p.variacao)}
                   </td>
                 </tr>

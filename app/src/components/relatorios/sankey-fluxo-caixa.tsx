@@ -52,7 +52,7 @@ export function SankeyFluxoCaixa({ fluxo }: { fluxo: FluxoSankey }) {
 
   function corDoNo(nome: string, indice: number): string {
     if (nome === NO_RECEITA_TOTAL) return "#4C7DF0";
-    if (nome === NO_SALDO) return "#0FA37E";
+    if (nome === NO_SALDO) return "#157F6B";
     if (nome === NO_DEFICIT) return "#B23A2E";
     return indice < indiceCentral
       ? PALETA_RECEITA[indice % PALETA_RECEITA.length]

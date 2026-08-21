@@ -65,8 +65,8 @@ function GraficoInterno({ dados, largura, altura }: { dados: PontoFluxo[]; largu
       <svg width={largura} height={altura}>
         <defs>
           <linearGradient id="fluxoReceitas" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#0FA37E" stopOpacity={0.32} />
-            <stop offset="100%" stopColor="#0FA37E" stopOpacity={0} />
+            <stop offset="0%" stopColor="#157F6B" stopOpacity={0.32} />
+            <stop offset="100%" stopColor="#157F6B" stopOpacity={0} />
           </linearGradient>
           <linearGradient id="fluxoDespesas" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="#B23A2E" stopOpacity={0.2} />
@@ -94,12 +94,12 @@ function GraficoInterno({ dados, largura, altura }: { dados: PontoFluxo[]; largu
             fill="url(#fluxoReceitas)"
             curve={curveMonotoneX}
           />
-          <LinePath data={dados} x={(d) => xScale(d.mes) ?? 0} y={(d) => yScale(d.receitas)} stroke="#0FA37E" strokeWidth={2.25} curve={curveMonotoneX} />
+          <LinePath data={dados} x={(d) => xScale(d.mes) ?? 0} y={(d) => yScale(d.receitas)} stroke="#157F6B" strokeWidth={2.25} curve={curveMonotoneX} />
 
           {xHover !== null && pontoHover && (
             <>
               <Line from={{ x: xHover, y: 0 }} to={{ x: xHover, y: alturaInterna }} stroke="var(--muted-foreground)" strokeWidth={1} strokeDasharray="3 3" />
-              <circle cx={xHover} cy={yScale(pontoHover.receitas)} r={4} fill="#0FA37E" stroke="var(--card)" strokeWidth={2} />
+              <circle cx={xHover} cy={yScale(pontoHover.receitas)} r={4} fill="#157F6B" stroke="var(--card)" strokeWidth={2} />
               <circle cx={xHover} cy={yScale(pontoHover.despesas)} r={4} fill="#B23A2E" stroke="var(--card)" strokeWidth={2} />
             </>
           )}
@@ -121,7 +121,7 @@ function GraficoInterno({ dados, largura, altura }: { dados: PontoFluxo[]; largu
           <div className="mb-1 font-semibold text-white/60">{tooltipData.mes}</div>
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-2">
-              <span className="size-2 rounded-full bg-[#0FA37E]" />
+              <span className="size-2 rounded-full bg-[#157F6B]" />
               <span className="text-white/70">Receitas</span>
               <span className="ml-auto font-bold tabular-nums">{formatarMoeda(tooltipData.receitas)}</span>
             </div>
@@ -157,7 +157,7 @@ export function FluxoChart({ dados }: { dados: PontoFluxo[] }) {
       </div>
       <div className="mt-1 flex items-center gap-4 text-[11px] font-medium text-muted-foreground">
         <span className="flex items-center gap-1.5">
-          <span className="size-2 rounded-full bg-[#0FA37E]" /> Receitas
+          <span className="size-2 rounded-full bg-[#157F6B]" /> Receitas
         </span>
         <span className="flex items-center gap-1.5">
           <span className="size-2 rounded-full bg-[#B23A2E]" /> Despesas

@@ -14,7 +14,7 @@ import type { IndicadorMensal } from "@/lib/relatorios/dre";
 import { formatarPercentual } from "@/lib/formatacao";
 
 const SERIES = [
-  { chave: "mc", nome: "Margem de contribuição", cor: "#0FA37E" },
+  { chave: "mc", nome: "Margem de contribuição", cor: "#157F6B" },
   { chave: "margemBruta", nome: "Margem bruta", cor: "#4C7DF0" },
   { chave: "ebitda", nome: "EBITDA", cor: "#E3A62F" },
   { chave: "margemLiquida", nome: "Margem líquida", cor: "#B45FC7" },
@@ -69,8 +69,8 @@ function GraficoInterno({ dados, largura, altura }: { dados: IndicadorMensal[]; 
       <svg width={largura} height={altura}>
         <defs>
           <linearGradient id="areaMargemContribuicao" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#0FA37E" stopOpacity={0.25} />
-            <stop offset="100%" stopColor="#0FA37E" stopOpacity={0} />
+            <stop offset="0%" stopColor="#157F6B" stopOpacity={0.25} />
+            <stop offset="100%" stopColor="#157F6B" stopOpacity={0} />
           </linearGradient>
         </defs>
         <Group left={MARGEM.left} top={MARGEM.top}>

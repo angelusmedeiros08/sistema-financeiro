@@ -33,7 +33,7 @@ export function PrimeirosPassosCard({ passos }: { passos: PrimeirosPassos }) {
                 )}
               >
                 {feito ? (
-                  <CheckCircle size={18} weight="fill" className="shrink-0 text-[#0FA37E]" />
+                  <CheckCircle size={18} weight="fill" className="shrink-0 text-[#157F6B]" />
                 ) : (
                   <Circle size={18} className="shrink-0 text-border" />
                 )}

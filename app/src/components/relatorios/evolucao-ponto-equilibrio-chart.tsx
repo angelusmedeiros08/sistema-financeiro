@@ -92,7 +92,7 @@ function GraficoInterno({ dados, largura, altura }: { dados: PontoEvolucaoPE[]; 
             data={dados}
             x={(d) => xScale(d.chave) ?? 0}
             y={(d) => yScaleMc(d.margemContribuicaoPercentual)}
-            stroke="#0FA37E"
+            stroke="#157F6B"
             strokeWidth={2.25}
             curve={curveMonotoneX}
           />
@@ -101,7 +101,7 @@ function GraficoInterno({ dados, largura, altura }: { dados: PontoEvolucaoPE[]; 
             <>
               <Line from={{ x: xHover, y: 0 }} to={{ x: xHover, y: alturaInterna }} stroke="var(--muted-foreground)" strokeWidth={1} strokeDasharray="3 3" />
               <circle cx={xHover} cy={yScalePE(pontoHover.pontoEquilibrio)} r={4} fill="#4C7DF0" stroke="var(--card)" strokeWidth={2} />
-              <circle cx={xHover} cy={yScaleMc(pontoHover.margemContribuicaoPercentual)} r={4} fill="#0FA37E" stroke="var(--card)" strokeWidth={2} />
+              <circle cx={xHover} cy={yScaleMc(pontoHover.margemContribuicaoPercentual)} r={4} fill="#157F6B" stroke="var(--card)" strokeWidth={2} />
             </>
           )}
 
@@ -142,7 +142,7 @@ function GraficoInterno({ dados, largura, altura }: { dados: PontoEvolucaoPE[]; 
               <span className="ml-auto font-bold tabular-nums">{formatarMoeda(tooltipData.pontoEquilibrio)}</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="size-2 rounded-full bg-[#0FA37E]" />
+              <span className="size-2 rounded-full bg-[#157F6B]" />
               <span className="text-white/70">Margem de contribuição %</span>
               <span className="ml-auto font-bold tabular-nums">{formatarPercentual(tooltipData.margemContribuicaoPercentual)}</span>
             </div>
@@ -171,7 +171,7 @@ export function EvolucaoPontoEquilibrioChart({ dados, altura = 320 }: { dados: P
           <span className="size-2 rounded-full bg-[#4C7DF0]" /> Ponto de equilíbrio
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="size-2 rounded-full bg-[#0FA37E]" /> Margem de contribuição %
+          <span className="size-2 rounded-full bg-[#157F6B]" /> Margem de contribuição %
         </span>
       </div>
     </div>

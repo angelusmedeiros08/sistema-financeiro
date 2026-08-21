@@ -14,11 +14,11 @@ import { Sparkline } from "@/components/painel/sparkline";
 const ZONAS_PADRAO = [
   { ate: 0.4, cor: "#B23A2E" },
   { ate: 0.7, cor: "#E3A62F" },
-  { ate: 1, cor: "#0FA37E" },
+  { ate: 1, cor: "#157F6B" },
 ] as const;
 
 const ZONAS_INVERTIDAS = [
-  { ate: 0.3, cor: "#0FA37E" },
+  { ate: 0.3, cor: "#157F6B" },
   { ate: 0.65, cor: "#E3A62F" },
   { ate: 1, cor: "#B23A2E" },
 ] as const;

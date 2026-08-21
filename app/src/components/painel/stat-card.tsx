@@ -42,8 +42,8 @@ type StatCardProps = VariantProps<typeof cartaoVariantes> & {
 export function StatCard({ label, valor, detalhe, variant, delta, serie, icon: Icon }: StatCardProps) {
   const v = variant ?? "sage";
   const deltaPositivo = typeof delta === "number" && delta >= 0;
-  const corDelta = v === "hero" ? "text-white" : deltaPositivo ? "text-[#0FA37E]" : "text-[#B23A2E]";
-  const corSpark = v === "hero" ? "#ffffff" : deltaPositivo ? "#0FA37E" : "#B23A2E";
+  const corDelta = v === "hero" ? "text-white" : deltaPositivo ? "text-[#157F6B]" : "text-[#B23A2E]";
+  const corSpark = v === "hero" ? "#ffffff" : deltaPositivo ? "#157F6B" : "#B23A2E";
 
   return (
     <div className={cn(cartaoVariantes({ variant }))}>

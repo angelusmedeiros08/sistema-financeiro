@@ -105,7 +105,7 @@ function GraficoInterno({ pontos, limiar, largura, altura }: { pontos: PontoSeri
             defined={(p) => p.realizado !== null}
             x={(p) => xScale(p.dias)}
             y={(p) => yScale(p.realizado ?? 0)}
-            stroke="#0FA37E"
+            stroke="#157F6B"
             strokeWidth={2.25}
             curve={curveMonotoneX}
           />
@@ -123,7 +123,7 @@ function GraficoInterno({ pontos, limiar, largura, altura }: { pontos: PontoSeri
           {xHover !== null && pontoHover && (
             <>
               <Line from={{ x: xHover, y: 0 }} to={{ x: xHover, y: alturaInterna }} stroke="var(--muted-foreground)" strokeWidth={1} strokeDasharray="3 3" />
-              {pontoHover.realizado !== null && <circle cx={xHover} cy={yScale(pontoHover.realizado)} r={4} fill="#0FA37E" stroke="var(--card)" strokeWidth={2} />}
+              {pontoHover.realizado !== null && <circle cx={xHover} cy={yScale(pontoHover.realizado)} r={4} fill="#157F6B" stroke="var(--card)" strokeWidth={2} />}
               {pontoHover.projetado !== null && <circle cx={xHover} cy={yScale(pontoHover.projetado)} r={4} fill="#4C7DF0" stroke="var(--card)" strokeWidth={2} />}
             </>
           )}
@@ -154,7 +154,7 @@ function GraficoInterno({ pontos, limiar, largura, altura }: { pontos: PontoSeri
           <div className="flex flex-col gap-1">
             {tooltipData.realizado !== null && (
               <div className="flex items-center gap-2">
-                <span className="size-2 rounded-full bg-[#0FA37E]" />
+                <span className="size-2 rounded-full bg-[#157F6B]" />
                 <span className="text-white/70">Realizado</span>
                 <span className="ml-auto font-bold tabular-nums">{formatarMoeda(tooltipData.realizado)}</span>
               </div>
@@ -181,7 +181,7 @@ export function SaldoProjetadoChart({ pontos, limiar }: { pontos: PontoSerieSald
       </div>
       <div className="mt-1 flex items-center gap-4 text-[11px] font-medium text-muted-foreground">
         <span className="flex items-center gap-1.5">
-          <span className="h-[2px] w-4 rounded-full bg-[#0FA37E]" /> Realizado
+          <span className="h-[2px] w-4 rounded-full bg-[#157F6B]" /> Realizado
         </span>
         <span className="flex items-center gap-1.5">
           <span className="h-[2px] w-4 rounded-full" style={{ backgroundImage: "repeating-linear-gradient(90deg,#4C7DF0 0 4px,transparent 4px 7px)" }} />

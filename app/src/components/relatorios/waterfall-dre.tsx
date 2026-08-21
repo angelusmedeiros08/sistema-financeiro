@@ -40,7 +40,7 @@ function montarBarras(linhas: LinhaWaterfall[]): BarraWaterfall[] {
         baixo: Math.min(inicio, acumulado),
         alto: Math.max(inicio, acumulado),
         valorReal: linha.valorDireto,
-        cor: linha.valorDireto >= 0 ? "#0FA37E" : "#B23A2E",
+        cor: linha.valorDireto >= 0 ? "#157F6B" : "#B23A2E",
         nivelConector: acumulado,
       };
     }

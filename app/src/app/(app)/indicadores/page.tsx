@@ -134,7 +134,7 @@ function CardSaldoProjetado({ saldoAtual, projecoes, limiar, pontos }: SaldoProj
       </div>
       <div className="mb-2 flex items-center gap-4 text-[11px] font-medium text-muted-foreground">
         <span className="flex items-center gap-1.5">
-          <span className="h-[2px] w-4 rounded-full bg-[#0FA37E]" /> Realizado
+          <span className="h-[2px] w-4 rounded-full bg-[#157F6B]" /> Realizado
         </span>
         <span className="flex items-center gap-1.5">
           <span className="h-[2px] w-4 rounded-full bg-[#4C7DF0]" style={{ backgroundImage: "repeating-linear-gradient(90deg,#4C7DF0 0 4px,transparent 4px 7px)" }} /> Projetado
