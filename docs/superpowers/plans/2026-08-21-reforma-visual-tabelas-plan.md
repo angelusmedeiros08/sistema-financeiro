@@ -21,10 +21,11 @@ _Teste:_ comparar visualmente `/relatorios/centro-custo` e `/relatorios/dfc` ant
 
 ## Fatia 3 — TrilhoBarra v2
 
-Reescrever `trilho-barra.tsx` como client component: gradiente linear no preenchimento (mesmo padrão de `FluxoChart`/`Sparkline`), marcador circular de ponta com anel branco, marcas de escala em 25/50/75%, tooltip escuro no hover com valor exato. Referência visual: `.superpowers/brainstorm/1669-1787340149/content/trilho-barra-v2.html` (mockup aprovado, não é fonte de verdade de código).
+**Concluída.** Reescrito `trilho-barra.tsx`: gradiente linear no preenchimento (mesmo padrão de `FluxoChart`/`IndicadoresDreChart`), marcador circular de ponta com anel branco, marcas de escala em 25/50/75%, tooltip escuro no hover com valor exato (nova prop `valorFormatado`). Referência visual: `.superpowers/brainstorm/1669-1787340149/content/trilho-barra-v2.html`.
 
-_Depende de:_ nada.
-_Teste:_ os 4 consumidores reais — `aging-barras.tsx`, `orcado-realizado-barras.tsx`, `centro-custo/page.tsx`, `despesas/page.tsx` — abrir cada página, passar mouse sobre a barra, conferir tooltip e que nada vaza do card (mesma verificação por `getBoundingClientRect()` já usada nos bugs anteriores desta sessão).
+Não virou client component como o plano original previa — o hover resolve com `group-hover` do Tailwind (CSS puro), sem estado nem listener de mouse; `useId()` (evita colisão de `<linearGradient>` entre barras da mesma lista) também roda em server component.
+
+_Teste:_ os 4 consumidores reais — `aging-barras.tsx`, `orcado-realizado-barras.tsx`, `centro-custo/page.tsx`, `despesas/page.tsx` — verificados via inspeção DOM (gradiente, marcador, tooltip com valor real, `getBoundingClientRect()` sem overflow) e sem erro de console.
 
 ## Fatia 4 — Motor de tabela (fundação, sem tela ainda)
 
