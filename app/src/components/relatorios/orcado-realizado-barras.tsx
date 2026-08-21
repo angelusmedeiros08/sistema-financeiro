@@ -1,5 +1,5 @@
 import type { LinhaOrcadoRealizado } from "@/lib/orcamento/orcamento";
-import { formatarNumeroCompacto, formatarPercentual } from "@/lib/formatacao";
+import { formatarMoeda, formatarNumeroCompacto, formatarPercentual } from "@/lib/formatacao";
 import { cn } from "@/lib/utils";
 import { TrilhoBarra } from "./trilho-barra";
 
@@ -32,7 +32,11 @@ export function OrcadoRealizadoBarras({ linhas }: { linhas: LinhaOrcadoRealizado
             <div className="flex flex-col gap-1">
               <div className="flex items-center gap-2">
                 <span className="w-16 shrink-0 text-[10px] text-muted-foreground">Previsto</span>
-                <TrilhoBarra valorPercentual={linha.totalPrevisto / maior} cor="color-mix(in srgb, #E3A62F 50%, transparent)" />
+                <TrilhoBarra
+                  valorPercentual={linha.totalPrevisto / maior}
+                  cor="color-mix(in srgb, #E3A62F 50%, transparent)"
+                  valorFormatado={formatarMoeda(linha.totalPrevisto)}
+                />
                 <span className="w-16 shrink-0 text-right text-[10px] tabular-nums text-muted-foreground">{formatarNumeroCompacto(linha.totalPrevisto)}</span>
               </div>
               <div className="flex items-center gap-2">
@@ -40,6 +44,7 @@ export function OrcadoRealizadoBarras({ linhas }: { linhas: LinhaOrcadoRealizado
                 <TrilhoBarra
                   valorPercentual={linha.totalRealizado / maior}
                   cor={linha.tipo === "RECEITA" ? "#0FA37E" : "#4C7DF0"}
+                  valorFormatado={formatarMoeda(linha.totalRealizado)}
                 />
                 <span className="w-16 shrink-0 text-right text-[10px] font-semibold tabular-nums text-foreground">
                   {formatarNumeroCompacto(linha.totalRealizado)}

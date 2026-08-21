@@ -27,7 +27,11 @@ export function AgingBarras({ titulo, dados }: { titulo: string; dados: AgingRes
           {faixas.map((faixa, i) => (
             <div key={faixa.rotulo} className="flex items-center gap-3">
               <span className="w-24 shrink-0 text-xs text-muted-foreground">{faixa.rotulo}</span>
-              <TrilhoBarra valorPercentual={faixa.total / maior} cor={CORES_SEVERIDADE[i % CORES_SEVERIDADE.length]} />
+              <TrilhoBarra
+                valorPercentual={faixa.total / maior}
+                cor={CORES_SEVERIDADE[i % CORES_SEVERIDADE.length]}
+                valorFormatado={formatarMoeda(faixa.total)}
+              />
               <span className="w-20 shrink-0 text-right text-xs font-semibold tabular-nums text-foreground">
                 {formatarNumeroCompacto(faixa.total)}
               </span>

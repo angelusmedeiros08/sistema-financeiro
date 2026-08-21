@@ -7,7 +7,7 @@ import { RelatoriosSubNav } from "../sub-nav";
 import { RelatoriosControles } from "../controles";
 import { Badge } from "@/components/ui/badge";
 import { TrilhoBarra } from "@/components/relatorios/trilho-barra";
-import { formatarNumeroCompacto, formatarPercentual } from "@/lib/formatacao";
+import { formatarMoeda, formatarNumeroCompacto, formatarPercentual } from "@/lib/formatacao";
 import { cn } from "@/lib/utils";
 
 export default async function PaginaRelatoriosDespesas({
@@ -56,7 +56,7 @@ export default async function PaginaRelatoriosDespesas({
                     <div className="flex flex-col gap-1">
                       <span className="font-medium text-foreground">{l.categoriaNome}</span>
                       <div className="w-full max-w-40">
-                        <TrilhoBarra valorPercentual={l.total / maior} cor="#B23A2E" espessura={5} />
+                        <TrilhoBarra valorPercentual={l.total / maior} cor="#B23A2E" espessura={5} valorFormatado={formatarMoeda(l.total)} />
                       </div>
                     </div>
                   </td>

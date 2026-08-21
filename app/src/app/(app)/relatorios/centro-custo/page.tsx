@@ -41,7 +41,11 @@ export default async function PaginaRelatoriosCentroCusto({
               {linhas.map((l) => (
                 <div key={l.centroCustoId} className="flex items-center gap-3">
                   <span className="w-40 shrink-0 truncate text-xs font-medium text-foreground">{l.nome}</span>
-                  <TrilhoBarra valorPercentual={Math.abs(l.saldo) / maiorSaldoAbsoluto} cor={l.saldo >= 0 ? "#157F6B" : "#B23A2E"} />
+                  <TrilhoBarra
+                    valorPercentual={Math.abs(l.saldo) / maiorSaldoAbsoluto}
+                    cor={l.saldo >= 0 ? "#157F6B" : "#B23A2E"}
+                    valorFormatado={formatarMoeda(l.saldo)}
+                  />
                   <span className={cn("w-28 shrink-0 text-right text-xs font-semibold tabular-nums", l.saldo >= 0 ? "text-[#157F6B]" : "text-[#B23A2E]")}>
                     {formatarMoeda(l.saldo)}
                   </span>
