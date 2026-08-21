@@ -101,8 +101,12 @@ interface TabelaMatrizProps<TData extends Record<string, any>> {
   columns: ColunaMatriz<TData>[];
   /** Ids das colunas fixas à esquerda, na ordem — ex: `["numero", "linha"]`. */
   idsColunasFixas: string[];
-  /** Id da coluna do mês corrente, se houver — ganha tint + underline terracota. */
-  idColunaMesAtual?: string;
+  /**
+   * Quais colunas contam como "mês corrente" (ganham tint + underline
+   * terracota) — predicado em vez de um id único porque nem toda matriz tem
+   * 1 coluna por mês: a DFC tem 3 (Prev./Real./Var.) por mês, por exemplo.
+   */
+  ehColunaMesAtual?: (idColuna: string) => boolean;
   obterTipoLinha?: (linha: TData) => TipoLinhaMatriz | undefined;
   /** Rodapé explicando as cores — desligue só se a tela já tiver uma legenda própria. */
   legenda?: boolean;
@@ -113,7 +117,7 @@ export function TabelaMatriz<TData extends Record<string, any>>({
   data,
   columns,
   idsColunasFixas,
-  idColunaMesAtual,
+  ehColunaMesAtual,
   obterTipoLinha,
   legenda = true,
 }: TabelaMatrizProps<TData>) {
@@ -128,6 +132,8 @@ export function TabelaMatriz<TData extends Record<string, any>>({
 
   const idUltimaColunaFixa = idsColunasFixas[idsColunasFixas.length - 1];
   const idPrimeiraColunaFixa = idsColunasFixas[0];
+  const temSubtotal = obterTipoLinha ? data.some((l) => obterTipoLinha(l) === "subtotal") : false;
+  const temFinal = obterTipoLinha ? data.some((l) => obterTipoLinha(l) === "final") : false;
 
   return (
     <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-card">
@@ -147,7 +153,7 @@ export function TabelaMatriz<TData extends Record<string, any>>({
                   const pinado = header.column.getIsPinned();
                   const ultimaFixa = header.column.id === idUltimaColunaFixa;
                   const primeiraFixa = header.column.id === idPrimeiraColunaFixa;
-                  const mesAtual = header.column.id === idColunaMesAtual;
+                  const mesAtual = ehColunaMesAtual?.(header.column.id) ?? false;
                   const numerica = header.column.columnDef.meta?.numerica;
                   const podeOrdenar = header.column.getCanSort();
                   const ordenacao = header.column.getIsSorted();
@@ -202,7 +208,7 @@ export function TabelaMatriz<TData extends Record<string, any>>({
                     const pinado = cell.column.getIsPinned();
                     const ultimaFixa = cell.column.id === idUltimaColunaFixa;
                     const primeiraFixa = cell.column.id === idPrimeiraColunaFixa;
-                    const mesAtual = cell.column.id === idColunaMesAtual;
+                    const mesAtual = ehColunaMesAtual?.(cell.column.id) ?? false;
                     const numerica = cell.column.columnDef.meta?.numerica;
                     const totalizador = cell.column.columnDef.meta?.totalizador;
 
@@ -244,15 +250,19 @@ export function TabelaMatriz<TData extends Record<string, any>>({
         </table>
       </div>
 
-      {legenda && (
+      {legenda && (temSubtotal || temFinal || !!ehColunaMesAtual) && (
         <div className="flex flex-wrap items-center gap-4.5 border-t border-border bg-[#fbfaf8] px-4.5 py-3 text-[11px] text-muted-foreground">
-          <span className="flex items-center gap-1.5">
-            <span className="size-2.5 rounded-[3px]" style={{ background: "#157F6B" }} /> Subtotal
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="size-2.5 rounded-[3px]" style={{ background: "#D8583A" }} /> Resultado final
-          </span>
-          {idColunaMesAtual && (
+          {temSubtotal && (
+            <span className="flex items-center gap-1.5">
+              <span className="size-2.5 rounded-[3px]" style={{ background: "#157F6B" }} /> Subtotal
+            </span>
+          )}
+          {temFinal && (
+            <span className="flex items-center gap-1.5">
+              <span className="size-2.5 rounded-[3px]" style={{ background: "#D8583A" }} /> Resultado final
+            </span>
+          )}
+          {ehColunaMesAtual && (
             <span className="flex items-center gap-1.5">
               <span className="size-2.5 rounded-[3px] border border-border" style={{ background: "#fdf6f3" }} /> Mês atual
             </span>

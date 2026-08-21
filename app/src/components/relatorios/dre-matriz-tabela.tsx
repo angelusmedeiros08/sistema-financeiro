@@ -70,7 +70,7 @@ export function DreMatrizTabela({ linhas, ano }: { linhas: LinhaDreMatriz[]; ano
   );
 
   const anoAtual = new Date().getFullYear();
-  const idColunaMesAtual = ano === anoAtual ? IDS_MES[new Date().getMonth()] : undefined;
+  const idMesAtual = ano === anoAtual ? IDS_MES[new Date().getMonth()] : undefined;
 
   return (
     <TabelaMatriz
@@ -78,7 +78,7 @@ export function DreMatrizTabela({ linhas, ano }: { linhas: LinhaDreMatriz[]; ano
       data={dados}
       columns={colunas}
       idsColunasFixas={["numero", "linha"]}
-      idColunaMesAtual={idColunaMesAtual}
+      ehColunaMesAtual={idMesAtual ? (id) => id === idMesAtual : undefined}
       obterTipoLinha={(linha) => linha.tipoLinha}
     />
   );
