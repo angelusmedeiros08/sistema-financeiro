@@ -6,7 +6,8 @@ import { buscarCentroCusto } from "@/lib/relatorios/centro-custo";
 import { RelatoriosSubNav } from "../sub-nav";
 import { RelatoriosControles } from "../controles";
 import { TrilhoBarra } from "@/components/relatorios/trilho-barra";
-import { formatarMoeda, formatarNumeroCompacto, formatarPercentual } from "@/lib/formatacao";
+import { CentroCustoTabela } from "@/components/relatorios/centro-custo-tabela";
+import { formatarMoeda } from "@/lib/formatacao";
 import { cn } from "@/lib/utils";
 
 export default async function PaginaRelatoriosCentroCusto({
@@ -28,58 +29,28 @@ export default async function PaginaRelatoriosCentroCusto({
       <RelatoriosSubNav />
       <RelatoriosControles {...params} />
 
-      <div className="rounded-2xl bg-card shadow-card p-5">
-        <h2 className="mb-4 font-heading text-sm font-bold text-foreground">Resultado por centro de custo</h2>
-
-        {linhas.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            Nenhum lançamento rateado por centro de custo no período selecionado.
-          </p>
-        ) : (
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col gap-2.5">
-              {linhas.map((l) => (
-                <div key={l.centroCustoId} className="flex items-center gap-3">
-                  <span className="w-40 shrink-0 truncate text-xs font-medium text-foreground">{l.nome}</span>
-                  <TrilhoBarra
-                    valorPercentual={Math.abs(l.saldo) / maiorSaldoAbsoluto}
-                    cor={l.saldo >= 0 ? "#157F6B" : "#B23A2E"}
-                    valorFormatado={formatarMoeda(l.saldo)}
-                  />
-                  <span className={cn("w-28 shrink-0 text-right text-xs font-semibold tabular-nums", l.saldo >= 0 ? "text-[#157F6B]" : "text-[#B23A2E]")}>
-                    {formatarMoeda(l.saldo)}
-                  </span>
-                </div>
-              ))}
-            </div>
-
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border text-left text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                  <th className="py-2">Centro de custo</th>
-                  <th className="py-2 text-right">Entradas</th>
-                  <th className="py-2 text-right">Saídas</th>
-                  <th className="py-2 text-right">Saldo</th>
-                  <th className="py-2 text-right">Margem</th>
-                </tr>
-              </thead>
-              <tbody>
-                {linhas.map((l) => (
-                  <tr key={l.centroCustoId} className="border-b border-border last:border-none">
-                    <td className="py-2.5 font-medium text-foreground">{l.nome}</td>
-                    <td className="py-2.5 text-right tabular-nums text-[#157F6B]">{formatarNumeroCompacto(l.entradas)}</td>
-                    <td className="py-2.5 text-right tabular-nums text-[#B23A2E]">{formatarNumeroCompacto(l.saidas)}</td>
-                    <td className={cn("py-2.5 text-right tabular-nums font-semibold", l.saldo >= 0 ? "text-[#157F6B]" : "text-[#B23A2E]")}>
-                      {formatarNumeroCompacto(l.saldo)}
-                    </td>
-                    <td className="py-2.5 text-right tabular-nums text-muted-foreground">{formatarPercentual(l.margemPercentual)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      {linhas.length > 0 && (
+        <div className="rounded-2xl bg-card shadow-card p-5">
+          <h2 className="mb-4 font-heading text-sm font-bold text-foreground">Resultado por centro de custo</h2>
+          <div className="flex flex-col gap-2.5">
+            {linhas.map((l) => (
+              <div key={l.centroCustoId} className="flex items-center gap-3">
+                <span className="w-40 shrink-0 truncate text-xs font-medium text-foreground">{l.nome}</span>
+                <TrilhoBarra
+                  valorPercentual={Math.abs(l.saldo) / maiorSaldoAbsoluto}
+                  cor={l.saldo >= 0 ? "#157F6B" : "#B23A2E"}
+                  valorFormatado={formatarMoeda(l.saldo)}
+                />
+                <span className={cn("w-28 shrink-0 text-right text-xs font-semibold tabular-nums", l.saldo >= 0 ? "text-[#157F6B]" : "text-[#B23A2E]")}>
+                  {formatarMoeda(l.saldo)}
+                </span>
+              </div>
+            ))}
           </div>
-        )}
-      </div>
+        </div>
+      )}
+
+      <CentroCustoTabela linhas={linhas} />
     </div>
   );
 }
