@@ -5,7 +5,7 @@ import { Pie } from "@visx/shape";
 import { Group } from "@visx/group";
 import { useTooltip, useTooltipInPortal, defaultStyles } from "@visx/tooltip";
 import { localPoint } from "@visx/event";
-import { formatarMoeda, formatarNumeroCompacto, formatarPercentual } from "@/lib/formatacao";
+import { formatarMoeda, formatarNumeroAbreviado, formatarPercentual } from "@/lib/formatacao";
 import type { LinhaAnaliseCategoria } from "@/lib/relatorios/analise-despesas";
 
 // Rosca com até 5 fatias + "Outras" agregando o resto — estilo validado no
@@ -85,8 +85,12 @@ export function TopCategoriasDonut({ titulo, linhas }: { titulo: string; linhas:
                 }
               </Pie>
             </Group>
-            <text x="100" y="96" textAnchor="middle" className="fill-foreground" fontSize="19" fontWeight="700">
-              {formatarNumeroCompacto(total)}
+            {/* formatarNumeroAbreviado (não formatarNumeroCompacto) de propósito
+                — o furo da rosca tem ~84 unidades de diâmetro, um total tipo
+                "201.849.780,50" (sem abreviar) vaza muito pra fora disso;
+                abreviado ("201,8 mi") sempre cabe, não importa a magnitude. */}
+            <text x="100" y="96" textAnchor="middle" className="fill-foreground" fontSize="17" fontWeight="700">
+              {formatarNumeroAbreviado(total)}
             </text>
             <text x="100" y="116" textAnchor="middle" className="fill-muted-foreground" fontSize="11">
               total

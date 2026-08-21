@@ -10,7 +10,7 @@ import { GridRows } from "@visx/grid";
 import { useTooltip, useTooltipInPortal, defaultStyles } from "@visx/tooltip";
 import { localPoint } from "@visx/event";
 import type { Database } from "@/utils/supabase/database.types";
-import { formatarMoeda, formatarNumeroCompacto } from "@/lib/formatacao";
+import { formatarMoeda, formatarNumeroAbreviado } from "@/lib/formatacao";
 
 type LinhaWaterfall = { rotulo: string; tipoCalc: Database["public"]["Enums"]["tipo_linha_dre"]; valorDireto: number };
 
@@ -159,7 +159,7 @@ function GraficoInterno({ barras, largura, altura }: { barras: BarraWaterfall[];
                   fill="var(--muted-foreground)"
                   pointerEvents="none"
                 >
-                  {formatarNumeroCompacto(barra.valorReal)}
+                  {formatarNumeroAbreviado(barra.valorReal)}
                 </text>
               </Group>
             );
@@ -173,9 +173,9 @@ function GraficoInterno({ barras, largura, altura }: { barras: BarraWaterfall[];
               fill: "var(--muted-foreground)",
               fontSize: 10.5,
               textAnchor: "end",
-              angle: -40,
+              angle: -55,
               dy: "0.3em",
-              dx: "-0.5em",
+              dx: "-0.3em",
             })}
             hideAxisLine
             tickStroke="var(--border)"
@@ -193,6 +193,13 @@ function GraficoInterno({ barras, largura, altura }: { barras: BarraWaterfall[];
   );
 }
 
+// Piso de largura por barra — sem isso, uma DRE com muitas linhas (a
+// estrutura é configurável por tenant) espreme o bandwidth até o rótulo
+// flutuante de valor e o rótulo do eixo colidirem uns com os outros
+// (confirmado: 15+ linhas já colidia comprimido na largura do card). Com
+// o piso, o gráfico passa a rolar horizontalmente em vez de comprimir.
+const LARGURA_MIN_POR_BARRA = 68;
+
 export function WaterfallDre({ linhas, altura = 420 }: { linhas: LinhaWaterfall[]; altura?: number }) {
   const barras = montarBarras(linhas);
   const semDado = linhas.length === 0 || linhas.every((l) => l.valorDireto === 0);
@@ -204,7 +211,17 @@ export function WaterfallDre({ linhas, altura = 420 }: { linhas: LinhaWaterfall[
           Sem movimentação no período selecionado.
         </p>
       ) : (
-        <ParentSize>{({ width }) => (width > 0 ? <GraficoInterno barras={barras} largura={width} altura={altura} /> : null)}</ParentSize>
+        <ParentSize>
+          {({ width }) => {
+            if (width <= 0) return null;
+            const larguraNecessaria = Math.max(width, barras.length * LARGURA_MIN_POR_BARRA + MARGEM.left + MARGEM.right);
+            return (
+              <div className="h-full overflow-x-auto">
+                <GraficoInterno barras={barras} largura={larguraNecessaria} altura={altura} />
+              </div>
+            );
+          }}
+        </ParentSize>
       )}
     </div>
   );

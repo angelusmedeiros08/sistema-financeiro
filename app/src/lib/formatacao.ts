@@ -31,6 +31,20 @@ export function formatarNumeroCompacto(valor: number): string {
   return formatadorNumero.format(valor);
 }
 
+// Abreviado com sufixo (mil/mi/bi) — só pra rótulo dentro de forma de
+// tamanho fixo (centro de rosca, dentro de anel), onde formatarNumeroCompacto
+// (sem abreviação nenhuma) pode virar uma string arbitrariamente longa e
+// vazar pra fora do espaço disponível. Tamanho sempre limitado (~8
+// caracteres), não importa a magnitude do valor.
+export function formatarNumeroAbreviado(valor: number): string {
+  const abs = Math.abs(valor);
+  const opcoes = { maximumFractionDigits: 1, minimumFractionDigits: 0 };
+  if (abs >= 1_000_000_000) return `${(valor / 1_000_000_000).toLocaleString("pt-BR", opcoes)} bi`;
+  if (abs >= 1_000_000) return `${(valor / 1_000_000).toLocaleString("pt-BR", opcoes)} mi`;
+  if (abs >= 1_000) return `${(valor / 1_000).toLocaleString("pt-BR", opcoes)} mil`;
+  return valor.toLocaleString("pt-BR", { maximumFractionDigits: 0 });
+}
+
 const NOMES_MES_ABREVIADO = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
 
 // Recebe uma chave "AAAA-MM" (o que as buscas de série mensal já devolvem)
