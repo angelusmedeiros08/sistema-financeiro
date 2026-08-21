@@ -4,6 +4,7 @@ import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
 import { buscarAging, buscarAgingPorParticipante } from "@/lib/relatorios/aging";
 import { RelatoriosSubNav } from "../sub-nav";
 import { AgingBarras } from "@/components/relatorios/aging-barras";
+import { AgingParticipantesTabela } from "@/components/relatorios/aging-participantes-tabela";
 import { formatarMoeda, formatarNumeroCompacto } from "@/lib/formatacao";
 
 export default async function PaginaRelatoriosAging() {
@@ -39,8 +40,8 @@ export default async function PaginaRelatoriosAging() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <TabelaParticipantes titulo="Maiores devedores (a receber)" linhas={participantesReceita} />
-        <TabelaParticipantes titulo="Maiores credores (a pagar)" linhas={participantesDespesa} />
+        <AgingParticipantesTabela titulo="Maiores devedores (a receber)" linhas={participantesReceita} />
+        <AgingParticipantesTabela titulo="Maiores credores (a pagar)" linhas={participantesDespesa} />
       </div>
     </div>
   );
@@ -81,44 +82,6 @@ function FaixasAVencer({
             </div>
           ))}
         </div>
-      )}
-    </div>
-  );
-}
-
-function TabelaParticipantes({
-  titulo,
-  linhas,
-}: {
-  titulo: string;
-  linhas: Awaited<ReturnType<typeof buscarAgingPorParticipante>>;
-}) {
-  return (
-    <div className="overflow-hidden rounded-2xl bg-card shadow-card">
-      <h2 className="p-5 pb-0 font-heading text-sm font-bold text-foreground">{titulo}</h2>
-      {linhas.length === 0 ? (
-        <p className="p-5 text-sm text-muted-foreground">Nada em aberto.</p>
-      ) : (
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border text-left text-xs font-bold uppercase tracking-wide text-muted-foreground">
-              <th className="p-3">Cliente/Fornecedor</th>
-              <th className="p-3 text-right">Em aberto</th>
-              <th className="p-3 text-right">Atraso máx.</th>
-            </tr>
-          </thead>
-          <tbody>
-            {linhas.slice(0, 10).map((p) => (
-              <tr key={p.pessoaId ?? p.nome} className="border-b border-border last:border-none">
-                <td className="p-3 font-medium text-foreground">{p.nome}</td>
-                <td className="p-3 text-right tabular-nums">{formatarNumeroCompacto(p.totalEmAberto)}</td>
-                <td className="p-3 text-right tabular-nums text-muted-foreground">
-                  {p.diasDeAtrasoMaximo > 0 ? `${p.diasDeAtrasoMaximo} dias` : "em dia"}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
       )}
     </div>
   );

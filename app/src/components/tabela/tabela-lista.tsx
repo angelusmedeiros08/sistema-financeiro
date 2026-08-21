@@ -129,6 +129,10 @@ interface TabelaListaProps<TData extends Record<string, any>> {
   columns: ColunaLista<TData>[];
   buscaPlaceholder?: string;
   tamanhoPagina?: number;
+  /** Desliga a caixa de busca — pra listas curtas e fixas (ex: "Top 10") onde ela só ocupa espaço. */
+  busca?: boolean;
+  /** Mensagem quando `data` já chega vazio (não é o caso de busca sem resultado, que sempre mostra "Nada encontrado"). */
+  textoVazio?: string;
   /** Itens do DropdownMenu de ação por linha — se omitido, a coluna de ação some. */
   acoes?: (linha: TData) => ReactNode;
 }
@@ -139,6 +143,8 @@ export function TabelaLista<TData extends Record<string, any>>({
   columns,
   buscaPlaceholder = "Buscar…",
   tamanhoPagina = 10,
+  busca = true,
+  textoVazio = "Nada encontrado.",
   acoes,
 }: TabelaListaProps<TData>) {
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -188,15 +194,17 @@ export function TabelaLista<TData extends Record<string, any>>({
             {totalFiltrado} {totalFiltrado === 1 ? "registro" : "registros"}
           </span>
         </div>
-        <div className="relative w-[180px]">
-          <MagnifyingGlass size={14} className="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={globalFilter}
-            onChange={(evento) => setGlobalFilter(evento.target.value)}
-            placeholder={buscaPlaceholder}
-            className="h-8 pl-8 text-xs"
-          />
-        </div>
+        {busca && (
+          <div className="relative w-[180px]">
+            <MagnifyingGlass size={14} className="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={globalFilter}
+              onChange={(evento) => setGlobalFilter(evento.target.value)}
+              placeholder={buscaPlaceholder}
+              className="h-8 pl-8 text-xs"
+            />
+          </div>
+        )}
       </div>
 
       <div className="overflow-x-auto">
@@ -235,7 +243,7 @@ export function TabelaLista<TData extends Record<string, any>>({
             {linhas.length === 0 ? (
               <tr>
                 <td colSpan={colunasFinais.length} className="p-8 text-center text-sm text-muted-foreground">
-                  Nada encontrado.
+                  {data.length === 0 ? textoVazio : "Nada encontrado."}
                 </td>
               </tr>
             ) : (
