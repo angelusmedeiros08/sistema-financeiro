@@ -54,18 +54,18 @@ _Teste por página:_ tenant real (não mock) — coluna fixa + scroll horizontal
 
 ## Fatia 6 — Arquétipo 2 nas 5 páginas de relatório com `<table>` crua
 
-Ordem por complexidade de dado (mais simples primeiro):
+**Concluída.** As 5, nesta ordem: Aging → Centro de Custo → Despesas → Comparativos → Fluxo de Caixa.
 
-1. **Aging** (`relatorios/aging/page.tsx`)
-2. **Centro de Custo** (`relatorios/centro-custo/page.tsx`)
-3. **Análise de Despesas** (`relatorios/despesas/page.tsx`)
-4. **Comparativos** (`relatorios/comparativos/page.tsx`)
-5. **Fluxo de Caixa** (`fluxo-caixa/page.tsx`)
+Antes de começar, um levantamento das 5 páginas corrigiu a premissa original do plano: "ícone real por categoria (paleta por hash, glifos estilo Phosphor)" não existe em lugar nenhum do app — o que existe é **cor por hash do nome** (`corPorNome`/`PontoCategoria`/`TagCategoria` em `lib/cor-por-nome.ts` e `components/ui/tag-categoria.tsx`), já usado em Pessoas/Equipe/tags de categoria. Categoria e centro de custo são nomes livres definidos pelo tenant — não dá pra mapear um glifo de verdade sem chutar. Ícone (glifo) só faz sentido pra linha que representa uma *entidade com tipo conhecido* (ex: cliente/fornecedor); mesmo assim, o app já resolve isso com **avatar de iniciais + `corPorNome`** (mesmo padrão de Pessoas/Equipe), não um ícone de biblioteca.
 
-Cada uma: trocar `<table>` cru pelo `tabela-lista.tsx`, adicionar ícone real por categoria (paleta por hash, glifos estilo Phosphor bold/rounded — reaproveitar se algum já existir no projeto, criar só o que faltar), badge de status onde a página tiver conceito de status.
+Resultado por página:
+- **Aging**: linha é pessoa/empresa → avatar de iniciais (`corPorNome`). Sem paginação nem busca (é ranking "Top 10" por desenho, não cadastro completo) — motivou a prop `busca` no motor (`tabela-lista.tsx`) pra desligar a caixa de busca em listas curtas e fixas, e `textoVazio` pra mensagem customizada.
+- **Centro de Custo**: sem ícone (não é entidade tipada). Achado: Entradas/Saídas usam **cor fixa** (categoria de fluxo — "Saídas" é sempre vermelho, não por ser negativo), só Saldo usa `ValorLista` (cor por sinal de verdade) — usar sign-based nos dois primeiros coloriria Saídas de verde por engano.
+- **Despesas**: bolinha `PontoCategoria` (não ícone). "Tipo" (Fixo/Variável) é classificação, não status — `Badge` simples do shadcn, não o `BadgeStatusLista` do motor (que tem bolinha de status, semântica diferente).
+- **Comparativos**: sem ícone/badge (linha é período). Número de colunas muda por aba (YTD não tem Variação) — resolvido montando `columns` condicionalmente via `useMemo`.
+- **Fluxo de Caixa**: 2 tabelas com formato de dado diferente (Diário/Previsto×Realizado) em abas — 2 componentes de coluna distintos, mesma regra de cor fixa vs `ValorLista` do Centro de Custo.
 
-_Depende de:_ Fatia 4. Pode rodar em paralelo com a Fatia 5 (arquétipos diferentes, sem dependência entre si) se preferir paralelizar, mas dentro de cada arquétipo manter a ordem sequencial acima.
-_Teste por página:_ mesmo padrão da Fatia 5 — dado real do tenant, paginação funcionando, badge com a cor certa por status, menu de ação abrindo as opções certas.
+_Teste por página:_ dado real do tenant, contagem de linha/coluna certa, cores corretas, sem overflow (`getBoundingClientRect`, excluindo a área de scroll horizontal esperada), sem erro de console em nenhuma.
 
 ## Fatia 7 — Migração das 23 tabelas shadcn existentes pro Arquétipo 2 completo
 
