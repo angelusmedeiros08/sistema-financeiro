@@ -2,15 +2,13 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
-import { buscarDREMatriz, buscarDREIndicadores, type LinhaDreMatriz } from "@/lib/relatorios/dre";
+import { buscarDREMatriz, buscarDREIndicadores } from "@/lib/relatorios/dre";
 import type { Regime } from "@/lib/relatorios/regime";
 import { RelatoriosSubNav } from "../sub-nav";
 import { WaterfallDre } from "@/components/relatorios/waterfall-dre";
 import { IndicadoresDreChart } from "@/components/relatorios/indicadores-dre-chart";
-import { formatarNumeroCompacto, formatarPercentual } from "@/lib/formatacao";
+import { DreMatrizTabela } from "@/components/relatorios/dre-matriz-tabela";
 import { cn } from "@/lib/utils";
-
-const NOMES_MES = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 
 const REGIMES: { valor: Regime; rotulo: string }[] = [
   { valor: "competencia", rotulo: "Competência" },
@@ -23,13 +21,6 @@ const ABAS = [
   { valor: "cascata", rotulo: "Cascata" },
   { valor: "indicadores", rotulo: "Indicadores" },
 ] as const;
-
-const CLASSE_LINHA: Record<LinhaDreMatriz["tipoCalc"], string> = {
-  FOLHA: "text-muted-foreground",
-  SUBTOTAL: "bg-muted/40 font-bold",
-  SUBTOTAL_ALTERNATIVO: "bg-[#7A8B5C]/8 font-bold",
-  RESULTADO_NAO_OPERACIONAL: "bg-[#C98A1F]/8 font-bold",
-};
 
 export default async function PaginaRelatoriosDre({
   searchParams,
@@ -138,9 +129,8 @@ export default async function PaginaRelatoriosDre({
       )}
 
       {aba === "matriz" && (
-        <div className="rounded-2xl bg-card shadow-card p-6">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="font-heading text-base font-bold text-foreground">DRE: Demonstrativo de Resultado</h2>
+        <div className="flex flex-col gap-3">
+          <div className="flex justify-end">
             <Link
               href={href({ detalhe: detalhado ? "0" : "1" })}
               className="rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground hover:bg-muted/70"
@@ -150,48 +140,11 @@ export default async function PaginaRelatoriosDre({
           </div>
 
           {linhasVisiveis.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Nenhuma linha de DRE configurada ainda.</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="border-b border-border text-left text-[10.5px] font-bold uppercase tracking-wide text-muted-foreground">
-                    <th className="sticky left-0 z-10 w-44 bg-card py-1.5 pr-2">Linha</th>
-                    {NOMES_MES.map((mes) => (
-                      <th key={mes} className="py-1.5 px-1.5 text-right">
-                        {mes}
-                      </th>
-                    ))}
-                    <th className="py-1.5 px-1.5 text-right">Total</th>
-                    <th className="py-1.5 pl-1.5 text-right">AV%</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {linhasVisiveis.map((linha) => (
-                    <tr key={linha.id} className={cn("border-b border-border last:border-none", CLASSE_LINHA[linha.tipoCalc])}>
-                      <td
-                        title={linha.rotulo}
-                        className={cn(
-                          "sticky left-0 z-10 w-44 truncate bg-card py-1.5 pr-2",
-                          linha.tipoCalc === "FOLHA" && "pl-3 font-normal",
-                        )}
-                      >
-                        {linha.rotulo}
-                      </td>
-                      {linha.meses.map((valor, i) => (
-                        <td key={i} className="py-1.5 px-1.5 text-right tabular-nums">
-                          {formatarNumeroCompacto(valor)}
-                        </td>
-                      ))}
-                      <td className={cn("py-1.5 px-1.5 text-right tabular-nums font-semibold", linha.total >= 0 ? "text-[#157F6B]" : "text-[#B23A2E]")}>
-                        {formatarNumeroCompacto(linha.total)}
-                      </td>
-                      <td className="py-1.5 pl-1.5 text-right tabular-nums text-muted-foreground">{formatarPercentual(linha.avPercentual)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="rounded-2xl bg-card shadow-card p-6">
+              <p className="text-sm text-muted-foreground">Nenhuma linha de DRE configurada ainda.</p>
             </div>
+          ) : (
+            <DreMatrizTabela linhas={linhasVisiveis} ano={ano} />
           )}
         </div>
       )}
