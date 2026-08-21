@@ -1,5 +1,6 @@
 import type { Cliente, MovimentoLinha } from "./regime";
 import { buscarMovimento, valorComSinal } from "./regime";
+import { buscarAnaliseCategorias } from "./analise-despesas";
 import type { Database } from "@/utils/supabase/database.types";
 
 type IdDfcLinhaDre = Database["public"]["Enums"]["id_dfc_linha_dre"];
@@ -105,4 +106,65 @@ export async function buscarDFCMatriz(supabase: Cliente, params: { tenantId: str
   });
 
   return linhasResultado;
+}
+
+export type NoSankey = { nome: string };
+export type LinkSankey = { origem: string; destino: string; valor: number };
+export type FluxoSankey = { nos: NoSankey[]; links: LinkSankey[] };
+
+const MAX_CATEGORIAS_SANKEY = 5;
+const NO_RECEITA_TOTAL = "Receita realizada";
+const NO_SALDO = "Saldo do período";
+const NO_DEFICIT = "Déficit do período";
+
+// Composição do caixa que a matriz da DFC não mostra: de onde a receita veio
+// e pra onde ela foi — categorias de receita convergindo num nó central,
+// esse nó se abrindo nas categorias de despesa + o que sobrou (ou faltou)
+// no fim. Complementar à matriz por atividade, não substituto (Seção 5 da
+// pesquisa de referências visuais).
+export async function buscarFluxoSankey(supabase: Cliente, params: { tenantId: string; ano: number }): Promise<FluxoSankey> {
+  const dataInicio = `${params.ano}-01-01`;
+  const dataFim = `${params.ano}-12-31`;
+
+  const [receitas, despesas] = await Promise.all([
+    buscarAnaliseCategorias(supabase, { tenantId: params.tenantId, regime: "realizado", dataInicio, dataFim, tipo: "RECEITA" }),
+    buscarAnaliseCategorias(supabase, { tenantId: params.tenantId, regime: "realizado", dataInicio, dataFim, tipo: "DESPESA" }),
+  ]);
+
+  function agruparTopN(linhas: typeof receitas, rotuloResto: string) {
+    const ordenadas = [...linhas].filter((l) => l.total > 0).sort((a, b) => b.total - a.total);
+    const principais = ordenadas.slice(0, MAX_CATEGORIAS_SANKEY);
+    const resto = ordenadas.slice(MAX_CATEGORIAS_SANKEY).reduce((soma, l) => soma + l.total, 0);
+    const grupos = principais.map((l) => ({ nome: l.categoriaNome, valor: l.total }));
+    if (resto > 0) grupos.push({ nome: rotuloResto, valor: resto });
+    return grupos;
+  }
+
+  const gruposReceita = agruparTopN(receitas, "Outras receitas");
+  const gruposDespesa = agruparTopN(despesas, "Outras despesas");
+
+  const totalReceitas = gruposReceita.reduce((s, g) => s + g.valor, 0);
+  const totalDespesas = gruposDespesa.reduce((s, g) => s + g.valor, 0);
+  const resultado = totalReceitas - totalDespesas;
+
+  const nos: NoSankey[] = [...gruposReceita.map((g) => ({ nome: g.nome })), { nome: NO_RECEITA_TOTAL }, ...gruposDespesa.map((g) => ({ nome: g.nome }))];
+
+  const links: LinkSankey[] = [
+    ...gruposReceita.map((g) => ({ origem: g.nome, destino: NO_RECEITA_TOTAL, valor: g.valor })),
+    ...gruposDespesa.map((g) => ({ origem: NO_RECEITA_TOTAL, destino: g.nome, valor: g.valor })),
+  ];
+
+  if (resultado > 0) {
+    nos.push({ nome: NO_SALDO });
+    links.push({ origem: NO_RECEITA_TOTAL, destino: NO_SALDO, valor: resultado });
+  } else if (resultado < 0) {
+    // Despesa maior que receita: o déficit entra como fonte adicional pro
+    // nó central (não como destino) — senão a soma de saída de "Receita
+    // realizada" (despesas) fica maior que a soma de entrada (receitas),
+    // o que quebra a conservação de fluxo que dá sentido ao Sankey.
+    nos.push({ nome: NO_DEFICIT });
+    links.push({ origem: NO_DEFICIT, destino: NO_RECEITA_TOTAL, valor: Math.abs(resultado) });
+  }
+
+  return { nos, links };
 }

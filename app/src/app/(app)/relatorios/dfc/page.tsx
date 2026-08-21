@@ -3,8 +3,9 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
-import { buscarDFCMatriz } from "@/lib/relatorios/dfc";
+import { buscarDFCMatriz, buscarFluxoSankey } from "@/lib/relatorios/dfc";
 import { RelatoriosSubNav } from "../sub-nav";
+import { SankeyFluxoCaixa } from "@/components/relatorios/sankey-fluxo-caixa";
 import { formatarNumeroCompacto } from "@/lib/formatacao";
 import { cn } from "@/lib/utils";
 
@@ -22,7 +23,10 @@ export default async function PaginaRelatoriosDfc({
   const ano = Number(sp.ano) || new Date().getFullYear();
 
   const supabase = await createClient();
-  const linhas = await buscarDFCMatriz(supabase, { tenantId: contexto.tenantId, ano });
+  const [linhas, fluxoSankey] = await Promise.all([
+    buscarDFCMatriz(supabase, { tenantId: contexto.tenantId, ano }),
+    buscarFluxoSankey(supabase, { tenantId: contexto.tenantId, ano }),
+  ]);
 
   function href(overrides: Record<string, string>) {
     const p = new URLSearchParams(Object.entries(sp).filter(([, v]) => v !== undefined) as [string, string][]);
@@ -52,6 +56,14 @@ export default async function PaginaRelatoriosDfc({
             ›
           </Link>
         </div>
+      </div>
+
+      <div className="rounded-2xl bg-card shadow-card p-6">
+        <div className="mb-4">
+          <h2 className="font-heading text-base font-bold text-foreground">Composição do fluxo de caixa realizado</h2>
+          <p className="text-xs text-muted-foreground">De onde a receita veio e pra onde ela foi no ano — o que a matriz abaixo, por atividade, não mostra.</p>
+        </div>
+        <SankeyFluxoCaixa fluxo={fluxoSankey} />
       </div>
 
       <div className="rounded-2xl bg-card shadow-card p-6">
@@ -107,7 +119,7 @@ export default async function PaginaRelatoriosDfc({
                             {formatarNumeroCompacto(previsto)}
                           </td>
                           <td className="py-1.5 px-1 text-right tabular-nums">{formatarNumeroCompacto(realizado)}</td>
-                          <td className={cn("py-1.5 px-1 text-right tabular-nums", variacao >= 0 ? "text-[#157F6B]" : "text-[#B23A2E]")}>
+                          <td className={cn("py-1.5 px-1 text-right tabular-nums", variacao >= 0 ? "text-[#0FA37E]" : "text-[#B23A2E]")}>
                             {formatarNumeroCompacto(variacao)}
                           </td>
                         </Fragment>
@@ -117,7 +129,7 @@ export default async function PaginaRelatoriosDfc({
                       {formatarNumeroCompacto(linha.totalPrevisto)}
                     </td>
                     <td className="py-1.5 px-1 text-right tabular-nums font-semibold">{formatarNumeroCompacto(linha.totalRealizado)}</td>
-                    <td className={cn("py-1.5 px-1 text-right tabular-nums font-semibold", variacaoTotal >= 0 ? "text-[#157F6B]" : "text-[#B23A2E]")}>
+                    <td className={cn("py-1.5 px-1 text-right tabular-nums font-semibold", variacaoTotal >= 0 ? "text-[#0FA37E]" : "text-[#B23A2E]")}>
                       {formatarNumeroCompacto(variacaoTotal)}
                     </td>
                   </tr>
