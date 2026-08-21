@@ -5,8 +5,10 @@ import { CaretDown } from "@phosphor-icons/react";
 import type { LinhaGradeOrcamento } from "@/lib/orcamento/orcamento";
 import { definirValorOrcamentoAction, copiarValorParaRestoDoAnoAction } from "@/lib/orcamento/orcamento-actions";
 import { cn } from "@/lib/utils";
+import { TabelaMatriz, criarColunaMatriz } from "@/components/tabela/tabela-matriz";
 
 const NOMES_MES = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+const IDS_MES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
 
 function formatarEdicao(valor: number): string {
   return valor === 0 ? "" : valor.toFixed(2).replace(".", ",");
@@ -17,8 +19,17 @@ function parseValor(texto: string): number {
   return Number.isFinite(numero) && numero >= 0 ? numero : 0;
 }
 
+type LinhaComNumero = LinhaGradeOrcamento & { numero: number };
+const helper = criarColunaMatriz<LinhaComNumero>();
+
 // Grade categoria × 12 meses com autosave por célula (onBlur) — mesmo
-// padrão de coluna fixa/tabela compacta já validado na Matriz do DRE.
+// padrão de coluna fixa/tabela compacta da Matriz do DRE/DFC (TabelaMatriz,
+// src/components/tabela/tabela-matriz.tsx), só que com célula editável em
+// vez de valor calculado. Ordenação por header fica desligada de propósito
+// aqui: reordenar linhas no meio de uma edição é uma superfície de risco
+// nova (input perder referência/foco) que o grid antigo nunca teve e que o
+// desenho aprovado não cobriu — não é regressão, é o comportamento de
+// sempre, só herdando o resto do arquétipo (coluna fixa, mês atual, Total).
 // "Copiar Jan pro resto do ano" pede confirmação só quando algum mês de
 // destino já tem valor diferente de zero (evita sobrescrever sem querer).
 export function GradeOrcamento({ ano, linhas }: { ano: number; linhas: LinhaGradeOrcamento[] }) {
@@ -152,78 +163,93 @@ export function GradeOrcamento({ ano, linhas }: { ano: number; linhas: LinhaGrad
     const linhasDoTipo = linhas.filter((l) => l.tipo === tipo);
     if (linhasDoTipo.length === 0) return null;
 
+    const dados: LinhaComNumero[] = linhasDoTipo.map((linha, i) => ({ ...linha, numero: i + 1 }));
+
+    const colunas = helper.columns([
+      helper.accessor("numero", { id: "numero", header: "#", size: 30, enableSorting: false }),
+      helper.accessor("categoriaNome", {
+        id: "categoria",
+        header: "Categoria",
+        size: 170,
+        enableSorting: false,
+        cell: (info) => {
+          const linha = info.row.original;
+          const status = statusPorCategoria.get(linha.categoriaId);
+          return (
+            <span className="truncate" title={linha.categoriaNome}>
+              {linha.categoriaNome}
+              {status && (
+                <span className={cn("ml-1.5 text-[9px] font-normal", status === "erro" ? "text-[#B23A2E]" : "text-muted-foreground")}>
+                  {status === "salvando" ? "salvando…" : status === "erro" ? "erro" : "salvo"}
+                </span>
+              )}
+            </span>
+          );
+        },
+      }),
+      ...IDS_MES.map((id, i) =>
+        helper.display({
+          id,
+          header: NOMES_MES[i],
+          size: 76,
+          meta: { numerica: true },
+          cell: (info) => {
+            const linha = info.row.original;
+            const mes = i + 1;
+            return (
+              <input
+                type="text"
+                inputMode="decimal"
+                defaultValue={formatarEdicao(valores.get(chave(linha.categoriaId, mes)) ?? 0)}
+                placeholder="-"
+                className="w-full rounded-md border border-border/60 bg-muted/40 px-2 py-1.5 text-right tabular-nums text-foreground outline-none placeholder:text-muted-foreground/50 focus:border-primary focus:bg-card"
+                onBlur={(e) => {
+                  const valor = parseValor(e.target.value);
+                  if (valor !== (valores.get(chave(linha.categoriaId, mes)) ?? 0)) {
+                    salvarCelula(linha.categoriaId, mes, valor);
+                  }
+                }}
+              />
+            );
+          },
+        }),
+      ),
+      helper.accessor((linha) => totalAno(linha.categoriaId), {
+        id: "total",
+        header: "Total",
+        size: 90,
+        meta: { numerica: true, totalizador: true },
+        enableSorting: false,
+        cell: (info) => <span>R$ {formatarEdicao(info.getValue()) || "0,00"}</span>,
+      }),
+      helper.display({
+        id: "acao",
+        header: "",
+        cell: (info) => (
+          <button
+            type="button"
+            onClick={() => copiarParaRestoDoAno(info.row.original.categoriaId)}
+            className="whitespace-nowrap rounded-full bg-muted px-2 py-1 text-[10px] font-medium text-muted-foreground hover:bg-muted/70"
+            title="Copia o valor de Janeiro pros outros 11 meses"
+          >
+            Jan → ano
+          </button>
+        ),
+      }),
+    ]);
+
+    const anoAtual = new Date().getFullYear();
+    const idMesAtual = ano === anoAtual ? IDS_MES[new Date().getMonth()] : undefined;
+
     return (
       <div className="mb-6 last:mb-0">
-        <h3 className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">{titulo}</h3>
-        <div className="overflow-x-auto">
-          <table className="w-full table-fixed border-separate border-spacing-0 text-xs">
-            <colgroup>
-              <col className="w-44" />
-              {NOMES_MES.map((mes) => (
-                <col key={mes} className="w-[72px]" />
-              ))}
-              <col className="w-24" />
-            </colgroup>
-            <thead>
-              <tr className="text-left text-[10.5px] font-bold uppercase tracking-wide text-muted-foreground">
-                <th className="sticky left-0 z-10 border-b border-border bg-card py-2 pr-2">Categoria</th>
-                {NOMES_MES.map((mes) => (
-                  <th key={mes} className="border-b border-border py-2 px-1.5 text-right">
-                    {mes}
-                  </th>
-                ))}
-                <th className="border-b border-border py-2 pl-2"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {linhasDoTipo.map((linha) => {
-                const status = statusPorCategoria.get(linha.categoriaId);
-                return (
-                  <tr key={linha.categoriaId}>
-                    <td
-                      className="sticky left-0 z-10 truncate border-b border-border bg-card py-2 pr-2 font-medium text-foreground"
-                      title={linha.categoriaNome}
-                    >
-                      {linha.categoriaNome}
-                      {status && (
-                        <span className={cn("ml-1.5 text-[9px] font-normal", status === "erro" ? "text-[#B23A2E]" : "text-muted-foreground")}>
-                          {status === "salvando" ? "salvando…" : status === "erro" ? "erro" : "salvo"}
-                        </span>
-                      )}
-                    </td>
-                    {linha.celulas.map((celula) => (
-                      <td key={celula.mes} className="border-b border-border py-1.5 px-1.5">
-                        <input
-                          type="text"
-                          inputMode="decimal"
-                          defaultValue={formatarEdicao(valores.get(chave(linha.categoriaId, celula.mes)) ?? 0)}
-                          placeholder="-"
-                          className="w-full rounded-md border border-border/60 bg-muted/40 px-2 py-1.5 text-right tabular-nums text-foreground outline-none placeholder:text-muted-foreground/50 focus:border-primary focus:bg-card"
-                          onBlur={(e) => {
-                            const valor = parseValor(e.target.value);
-                            if (valor !== (valores.get(chave(linha.categoriaId, celula.mes)) ?? 0)) {
-                              salvarCelula(linha.categoriaId, celula.mes, valor);
-                            }
-                          }}
-                        />
-                      </td>
-                    ))}
-                    <td className="border-b border-border py-1.5 pl-2">
-                      <button
-                        type="button"
-                        onClick={() => copiarParaRestoDoAno(linha.categoriaId)}
-                        className="whitespace-nowrap rounded-full bg-muted px-2 py-1 text-[10px] font-medium text-muted-foreground hover:bg-muted/70"
-                        title="Copia o valor de Janeiro pros outros 11 meses"
-                      >
-                        Jan → ano
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        <TabelaMatriz
+          titulo={titulo}
+          data={dados}
+          columns={colunas}
+          idsColunasFixas={["numero", "categoria"]}
+          ehColunaMesAtual={idMesAtual ? (id) => id === idMesAtual : undefined}
+        />
       </div>
     );
   }

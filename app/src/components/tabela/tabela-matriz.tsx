@@ -147,7 +147,7 @@ export function TabelaMatriz<TData extends Record<string, any>>({
       <div className="overflow-x-auto">
         <table className="w-max min-w-full border-separate border-spacing-0 text-[12.5px]">
           <thead>
-            {table.getHeaderGroups().map((headerGroup, profundidade) => (
+            {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {
                   const pinado = header.column.getIsPinned();
@@ -157,7 +157,12 @@ export function TabelaMatriz<TData extends Record<string, any>>({
                   const numerica = header.column.columnDef.meta?.numerica;
                   const podeOrdenar = header.column.getCanSort();
                   const ordenacao = header.column.getIsSorted();
-                  const ehGrupo = profundidade === 0;
+                  // Nem toda matriz agrupa coluna (Orçamento é totalmente
+                  // "chata", sem super-header) — checar se ESTE header tem
+                  // filho de verdade, não a profundidade da linha, senão
+                  // uma tabela sem grupo nenhum trata sua única linha de
+                  // cabeçalho (profundidade 0) como se fosse grupo.
+                  const ehGrupo = header.column.columns.length > 0;
 
                   return (
                     <th
