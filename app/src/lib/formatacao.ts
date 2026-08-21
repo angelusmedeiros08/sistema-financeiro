@@ -31,6 +31,15 @@ export function formatarNumeroCompacto(valor: number): string {
   return formatadorNumero.format(valor);
 }
 
+const NOMES_MES_ABREVIADO = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+
+// Recebe uma chave "AAAA-MM" (o que as buscas de série mensal já devolvem)
+// e devolve a abreviação em português — usado nos eixos das mini-tendências
+// junto dos gauges.
+export function formatarMesAbreviado(chaveAnoMes: string): string {
+  return NOMES_MES_ABREVIADO[Number(chaveAnoMes.slice(5, 7)) - 1] ?? chaveAnoMes;
+}
+
 export function formatarDataCurta(isoDate: string): string {
   return new Date(isoDate + "T00:00:00").toLocaleDateString("pt-BR", {
     day: "2-digit",

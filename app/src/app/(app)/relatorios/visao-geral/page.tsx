@@ -102,28 +102,28 @@ export default async function PaginaRelatoriosVisaoGeral({
         />
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <IndicadorGauge
           rotulo="% Realizado de contas a receber"
           valor={indicadoresCAR.percentualRealizado}
-          serie={serieCAR.map((p) => p.percentualRealizado)}
+          serie={serieCAR.map((p) => ({ mes: p.mes, valor: p.percentualRealizado }))}
         />
         <IndicadorGauge
           rotulo="% Realizado de contas a pagar"
           valor={indicadoresCAP.percentualRealizado}
-          serie={serieCAP.map((p) => p.percentualRealizado)}
+          serie={serieCAP.map((p) => ({ mes: p.mes, valor: p.percentualRealizado }))}
         />
         <IndicadorGauge
           rotulo="% Pago em atraso (a receber)"
           valor={indicadoresCAR.percentualPagoEmAtraso}
           invertido
-          serie={serieCAR.map((p) => p.percentualPagoEmAtraso)}
+          serie={serieCAR.map((p) => ({ mes: p.mes, valor: p.percentualPagoEmAtraso }))}
         />
         <IndicadorGauge
           rotulo="% Pago em atraso (a pagar)"
           valor={indicadoresCAP.percentualPagoEmAtraso}
           invertido
-          serie={serieCAP.map((p) => p.percentualPagoEmAtraso)}
+          serie={serieCAP.map((p) => ({ mes: p.mes, valor: p.percentualPagoEmAtraso }))}
         />
       </div>
 

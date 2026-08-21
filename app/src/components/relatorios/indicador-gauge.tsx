@@ -1,13 +1,15 @@
 "use client";
 
 import { RadialBar, RadialBarChart } from "recharts";
-import { formatarPercentual } from "@/lib/formatacao";
+import { formatarMesAbreviado, formatarPercentual } from "@/lib/formatacao";
 import { Sparkline } from "@/components/painel/sparkline";
 
-// Anel completo via Recharts RadialBarChart (não semicírculo desenhado à
-// mão) — o formato de gauge que aparece em praticamente toda referência
-// comercial mandada pelo usuário, com a mini-tendência dos últimos
-// períodos ao lado, não o indicador isolado sem contexto de evolução.
+// Arco + rótulo + mini-tendência lado a lado numa única linha — a mesma
+// composição do card "arc-progress" que o usuário mandou de referência
+// (anel à esquerda, texto no meio, gráfico de tendência com eixo à
+// direita), não peças empilhadas verticalmente feito bloco solto em cima
+// de outro. Precisa de card mais largo pra caber (ver grid-cols-2 nas
+// páginas que usam isso, não grid-cols-4).
 const ZONAS_PADRAO = [
   { ate: 0.4, cor: "#B23A2E" },
   { ate: 0.7, cor: "#E3A62F" },
@@ -25,6 +27,8 @@ function corDaZona(valor: number, invertido: boolean): string {
   return (zonas.find((z) => valor <= z.ate) ?? zonas[zonas.length - 1]).cor;
 }
 
+export type PontoSerieGauge = { mes: string; valor: number };
+
 export function IndicadorGauge({
   rotulo,
   valor,
@@ -34,7 +38,7 @@ export function IndicadorGauge({
   rotulo: string;
   valor: number;
   invertido?: boolean;
-  serie?: number[];
+  serie?: PontoSerieGauge[];
 }) {
   const percentualClamp = Math.max(0, Math.min(1, valor));
   const cor = corDaZona(percentualClamp, invertido);
@@ -42,21 +46,18 @@ export function IndicadorGauge({
   const dadosAnel = [{ valor: percentualClamp * 100, fill: cor }];
 
   return (
-    <div className="flex flex-col gap-3 rounded-2xl p-4 shadow-card" style={{ background: `color-mix(in srgb, ${cor} 8%, var(--card))` }}>
-      <span className="text-xs font-semibold text-muted-foreground">{rotulo}</span>
-
-      {/* Anel de 96px com furo interno de ~71px — texto tipo "100,0%" em
-          18px bold cabe com folga; em 64px o furo (≈39px) era menor que o
-          próprio texto e os dígitos vazavam por cima do traço colorido. */}
-      <div className="relative mx-auto flex size-24 shrink-0 items-center justify-center">
+    <div className="flex items-center gap-4 rounded-2xl bg-card p-4 shadow-card">
+      {/* Donut grosso (traço ~40% do raio) igual à referência Taskcore —
+          nada de anel fino tipo "gauge de carro". innerRadius em % (sem
+          barSize) deixa o traço proporcional ao tamanho do anel. */}
+      <div className="relative flex size-[88px] shrink-0 items-center justify-center">
         <RadialBarChart
-          width={96}
-          height={96}
+          width={88}
+          height={88}
           cx="50%"
           cy="50%"
-          innerRadius="74%"
+          innerRadius="58%"
           outerRadius="100%"
-          barSize={9}
           data={dadosAnel}
           startAngle={90}
           endAngle={-270}
@@ -64,20 +65,28 @@ export function IndicadorGauge({
           <RadialBar
             background={{ fill: "var(--muted)" }}
             dataKey="valor"
-            cornerRadius={8}
+            cornerRadius={99}
             isAnimationActive
             animationDuration={700}
             animationEasing="ease-out"
           />
         </RadialBarChart>
-        <span className="pointer-events-none absolute text-lg font-bold tabular-nums text-foreground">
+        <span className="pointer-events-none absolute text-sm font-bold tabular-nums text-foreground">
           {formatarPercentual(percentualClamp)}
         </span>
       </div>
 
+      <span className="min-w-0 flex-1 text-sm font-semibold text-foreground">{rotulo}</span>
+
       {temSerie && (
-        <div className="-mx-1 h-7">
-          <Sparkline dados={serie} cor={cor} />
+        <div className="hidden w-28 shrink-0 sm:block">
+          <div className="h-10">
+            <Sparkline dados={serie.map((p) => p.valor)} cor={cor} />
+          </div>
+          <div className="mt-1 flex justify-between text-[10px] font-medium text-muted-foreground">
+            <span>{formatarMesAbreviado(serie[0].mes)}</span>
+            <span>{formatarMesAbreviado(serie[serie.length - 1].mes)}</span>
+          </div>
         </div>
       )}
     </div>
