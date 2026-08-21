@@ -12,6 +12,7 @@
     "@phosphor-icons/react": "^2.1.10",
     "@supabase/ssr": "^0.12.4",
     "@supabase/supabase-js": "^2.112.3",
+    "@tanstack/react-table": "^9.1.2",
     "@visx/annotation": "^4.0.0",
     "@visx/axis": "^4.0.0",
     "@visx/curve": "^4.0.0",
