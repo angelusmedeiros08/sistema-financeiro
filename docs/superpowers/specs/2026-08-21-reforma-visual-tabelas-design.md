@@ -7,11 +7,14 @@
 
 Essa spec cobre **todo elemento gráfico do sistema, sem exceção** — gráficos de dados (linha, área, barra, donut, gauge, sankey) e tabelas. A parte de gráficos já foi implementada e testada ao longo desta sessão (fora do companion visual, iterada direto com o usuário via captura de tela real do app); essa seção documenta o que foi feito e confirma que segue o mesmo padrão de rigor exigido aqui. A parte de tabelas foi inteiramente desenhada no companion visual antes de qualquer código, seguindo `/brainstorming` + `/frontend-design` do jeito que ficou definido como ordem fixa do projeto.
 
-## Parte 0 — Tipografia de display
+## Parte 0 — Tipografia
 
-Fonte de corpo/UI/tabela (**Public Sans**) não muda. Fonte de display/headline/número-grande troca de **Cabinet Grotesk** pra **Satoshi** (Fontshare, mesma fundição/mecanismo de distribuição, mesmo padrão técnico de auto-hospedagem via `next/font/local` já usado) — decidido em comparação ao vivo no companion visual (Satoshi × General Sans × Geist × Cabinet Grotesk, aplicadas em KPI card + tabela real). Satoshi é a mesma fonte usada pela Bling (fintech brasileira) segundo o mapeamento de referências original. Afeta título de página, `card-title`, valor de KPI (`StatCard`), número dos gauges — qualquer lugar que hoje usa `--font-display`.
+Par completo trocado, ambos da Fontshare (mesma fundição, desenhadas pra combinar):
 
-**Pendente de implementação:** baixar os pesos da Satoshi via Fontshare API, trocar em `app/src/app/fonts` + `layout.tsx`.
+- **Display/headline/número grande**: `Cabinet Grotesk` → **Satoshi**. Decidido em comparação ao vivo (Satoshi × General Sans × Geist × Cabinet Grotesk, aplicadas em KPI card + tabela real). Mesma fonte usada pela Bling (fintech brasileira) segundo o mapeamento de referências original. Afeta título de página, `card-title`, valor de KPI (`StatCard`), número dos gauges — qualquer lugar que hoje usa `--font-display`.
+- **Corpo/UI/tabela**: `Public Sans` → **General Sans**. Comparação em zoom (número + palavra ampliados) mostrou diferença genuinamente sutil entre as 4 opções testadas — recomendei manter Public Sans por não valer o retrabalho (toca toda tabela/formulário) pra um ganho quase imperceptível, mas o usuário decidiu trocar mesmo assim, escolhendo o par "de casa" com a Satoshi. Afeta `--font-body`: tabela, formulário, rótulo, texto de UI em geral.
+
+**Pendente de implementação:** baixar os pesos de Satoshi + General Sans via Fontshare API, trocar em `app/src/app/fonts` + `layout.tsx` (mesmo mecanismo `next/font/local` self-hospedado já usado).
 
 ## Parte 1 — Gráficos (já implementado nesta sessão)
 
