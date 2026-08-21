@@ -1,6 +1,7 @@
 import type { LinhaOrcadoRealizado } from "@/lib/orcamento/orcamento";
 import { formatarNumeroCompacto, formatarPercentual } from "@/lib/formatacao";
 import { cn } from "@/lib/utils";
+import { TrilhoBarra } from "./trilho-barra";
 
 // Previsto (cinza) e realizado (colorido) lado a lado por categoria, mesma
 // escala — desvio positivo é ruim pra despesa (gastou mais que o
@@ -31,22 +32,15 @@ export function OrcadoRealizadoBarras({ linhas }: { linhas: LinhaOrcadoRealizado
             <div className="flex flex-col gap-1">
               <div className="flex items-center gap-2">
                 <span className="w-16 shrink-0 text-[10px] text-muted-foreground">Previsto</span>
-                <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
-                  <div
-                    className="h-full rounded-full bg-[#E3A62F]/50 transition-[width] duration-500 ease-out"
-                    style={{ width: `${(linha.totalPrevisto / maior) * 100}%` }}
-                  />
-                </div>
+                <TrilhoBarra valorPercentual={linha.totalPrevisto / maior} cor="color-mix(in srgb, #E3A62F 50%, transparent)" />
                 <span className="w-16 shrink-0 text-right text-[10px] tabular-nums text-muted-foreground">{formatarNumeroCompacto(linha.totalPrevisto)}</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="w-16 shrink-0 text-[10px] text-muted-foreground">Realizado</span>
-                <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
-                  <div
-                    className="h-full rounded-full transition-[width] duration-500 ease-out"
-                    style={{ width: `${(linha.totalRealizado / maior) * 100}%`, background: linha.tipo === "RECEITA" ? "#0FA37E" : "#4C7DF0" }}
-                  />
-                </div>
+                <TrilhoBarra
+                  valorPercentual={linha.totalRealizado / maior}
+                  cor={linha.tipo === "RECEITA" ? "#0FA37E" : "#4C7DF0"}
+                />
                 <span className="w-16 shrink-0 text-right text-[10px] font-semibold tabular-nums text-foreground">
                   {formatarNumeroCompacto(linha.totalRealizado)}
                 </span>

@@ -1,5 +1,6 @@
 import { formatarMoeda, formatarNumeroCompacto } from "@/lib/formatacao";
 import type { AgingResultado } from "@/lib/relatorios/aging";
+import { TrilhoBarra } from "./trilho-barra";
 
 // Barra horizontal com gradiente de severidade âmbar→vermelho (Seção 4.3 do
 // spec) — usada resumida na Visão geral e por extenso no Aging Analítico.
@@ -26,12 +27,7 @@ export function AgingBarras({ titulo, dados }: { titulo: string; dados: AgingRes
           {faixas.map((faixa, i) => (
             <div key={faixa.rotulo} className="flex items-center gap-3">
               <span className="w-24 shrink-0 text-xs text-muted-foreground">{faixa.rotulo}</span>
-              <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
-                <div
-                  className="h-full rounded-full"
-                  style={{ width: `${Math.max(4, (faixa.total / maior) * 100)}%`, background: CORES_SEVERIDADE[i % CORES_SEVERIDADE.length] }}
-                />
-              </div>
+              <TrilhoBarra valorPercentual={faixa.total / maior} cor={CORES_SEVERIDADE[i % CORES_SEVERIDADE.length]} />
               <span className="w-20 shrink-0 text-right text-xs font-semibold tabular-nums text-foreground">
                 {formatarNumeroCompacto(faixa.total)}
               </span>

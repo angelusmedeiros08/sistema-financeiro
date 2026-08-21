@@ -6,6 +6,7 @@ import { buscarAnaliseCategorias } from "@/lib/relatorios/analise-despesas";
 import { RelatoriosSubNav } from "../sub-nav";
 import { RelatoriosControles } from "../controles";
 import { Badge } from "@/components/ui/badge";
+import { TrilhoBarra } from "@/components/relatorios/trilho-barra";
 import { formatarNumeroCompacto, formatarPercentual } from "@/lib/formatacao";
 import { cn } from "@/lib/utils";
 
@@ -54,8 +55,8 @@ export default async function PaginaRelatoriosDespesas({
                   <td className="py-2.5">
                     <div className="flex flex-col gap-1">
                       <span className="font-medium text-foreground">{l.categoriaNome}</span>
-                      <div className="h-1.5 w-full max-w-40 overflow-hidden rounded-full bg-muted">
-                        <div className="h-full rounded-full bg-[#B23A2E]" style={{ width: `${(l.total / maior) * 100}%` }} />
+                      <div className="w-full max-w-40">
+                        <TrilhoBarra valorPercentual={l.total / maior} cor="#B23A2E" espessura={5} />
                       </div>
                     </div>
                   </td>
