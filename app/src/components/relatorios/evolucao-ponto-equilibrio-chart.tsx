@@ -11,7 +11,7 @@ import { GridRows } from "@visx/grid";
 import { useTooltip, useTooltipInPortal, defaultStyles } from "@visx/tooltip";
 import { localPoint } from "@visx/event";
 import type { PontoEvolucaoPE } from "@/lib/relatorios/ponto-equilibrio";
-import { formatarMoeda, formatarNumeroCompacto, formatarPercentual } from "@/lib/formatacao";
+import { formatarMoeda, formatarNumeroAbreviado, formatarPercentual } from "@/lib/formatacao";
 
 const MARGEM = { top: 16, right: 48, bottom: 24, left: 56 };
 
@@ -107,7 +107,7 @@ function GraficoInterno({ dados, largura, altura }: { dados: PontoEvolucaoPE[]; 
 
           <AxisLeft
             scale={yScalePE}
-            tickFormat={(v) => formatarNumeroCompacto(Number(v))}
+            tickFormat={(v) => formatarNumeroAbreviado(Number(v))}
             tickLabelProps={() => ({ fill: "var(--muted-foreground)", fontSize: 11, textAnchor: "end", dx: -4, dy: 4 })}
             hideAxisLine
             hideTicks

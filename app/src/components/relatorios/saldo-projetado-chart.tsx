@@ -11,7 +11,7 @@ import { GridRows } from "@visx/grid";
 import { useTooltip, useTooltipInPortal, defaultStyles } from "@visx/tooltip";
 import { localPoint } from "@visx/event";
 import type { PontoSerieSaldo } from "@/lib/relatorios/saldo-projetado";
-import { formatarMoeda, formatarNumeroCompacto } from "@/lib/formatacao";
+import { formatarMoeda, formatarNumeroAbreviado } from "@/lib/formatacao";
 
 const MARGEM = { top: 20, right: 12, bottom: 24, left: 52 };
 
@@ -130,7 +130,7 @@ function GraficoInterno({ pontos, limiar, largura, altura }: { pontos: PontoSeri
 
           <AxisLeft
             scale={yScale}
-            tickFormat={(v) => formatarNumeroCompacto(Number(v))}
+            tickFormat={(v) => formatarNumeroAbreviado(Number(v))}
             tickLabelProps={() => ({ fill: "var(--muted-foreground)", fontSize: 11, textAnchor: "end", dx: -4, dy: 4 })}
             hideAxisLine
             hideTicks
