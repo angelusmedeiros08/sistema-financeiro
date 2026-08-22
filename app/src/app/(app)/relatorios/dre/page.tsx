@@ -5,10 +5,10 @@ import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
 import { buscarDREMatriz, buscarDREIndicadores } from "@/lib/relatorios/dre";
 import type { Regime } from "@/lib/relatorios/regime";
 import { RelatoriosSubNav } from "../sub-nav";
+import { DreControles } from "./dre-controles";
 import { WaterfallDre } from "@/components/relatorios/waterfall-dre";
 import { IndicadoresDreChart } from "@/components/relatorios/indicadores-dre-chart";
 import { DreMatrizTabela } from "@/components/relatorios/dre-matriz-tabela";
-import { cn } from "@/lib/utils";
 
 const REGIMES: { valor: Regime; rotulo: string }[] = [
   { valor: "competencia", rotulo: "Competência" },
@@ -60,54 +60,11 @@ export default async function PaginaRelatoriosDre({
 
       <RelatoriosSubNav />
 
-      <div className="flex flex-wrap items-center gap-x-6 gap-y-3 rounded-xl border border-border bg-card px-4 py-3">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold text-muted-foreground">Regime</span>
-          <div className="flex gap-1">
-            {REGIMES.map((r) => (
-              <Link key={r.valor} href={href({ regime: r.valor })}>
-                <span
-                  className={cn(
-                    "rounded-full px-2.5 py-1 text-xs font-medium",
-                    regime === r.valor ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted",
-                  )}
-                >
-                  {r.rotulo}
-                </span>
-              </Link>
-            ))}
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold text-muted-foreground">Ano</span>
-          <Link href={href({ ano: String(ano - 1) })} className="rounded-full px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-muted">
-            ‹
-          </Link>
-          <span className="text-sm font-bold tabular-nums text-foreground">{ano}</span>
-          <Link href={href({ ano: String(ano + 1) })} className="rounded-full px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-muted">
-            ›
-          </Link>
-        </div>
-      </div>
-
-      {/* Sub-módulo do DRE: cada visualização vive na sua própria aba, com o
-          canvas inteiro pra ela — 23 linhas reais não cabem legíveis
-          dividindo espaço com outras duas seções na mesma tela. */}
-      <div className="flex gap-1">
-        {ABAS.map((a) => (
-          <Link
-            key={a.valor}
-            href={href({ aba: a.valor })}
-            className={cn(
-              "rounded-full px-3 py-1.5 text-xs font-medium",
-              aba === a.valor ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted",
-            )}
-          >
-            {a.rotulo}
-          </Link>
-        ))}
-      </div>
+      {/* Regime é filtro de dado, o seletor de visão (Matriz/Cascata/
+          Indicadores) é modo de exibição — cada visualização vive na sua
+          própria aba, com o canvas inteiro pra ela (23 linhas reais não
+          cabem legíveis dividindo espaço com outras duas seções). */}
+      <DreControles regime={regime} ano={ano} aba={aba} />
 
       {aba === "indicadores" && (
         <div className="rounded-2xl bg-card shadow-card p-6">

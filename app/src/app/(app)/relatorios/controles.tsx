@@ -1,12 +1,12 @@
 "use client";
 
-import { forwardRef, useState } from "react";
+import { useState } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { CalendarBlank, CaretDown, Check, Clock } from "@phosphor-icons/react/dist/ssr";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuCheckboxItem } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { GatilhoFiltro } from "@/components/relatorios/gatilho-filtro";
 import type { Regime, Granularidade } from "@/lib/relatorios/regime";
 
 const REGIMES: { valor: Regime; rotulo: string }[] = [
@@ -28,35 +28,13 @@ function formatarDataCurta(iso: string): string {
   return `${dia}/${mes}/${ano}`;
 }
 
-// Gatilho compacto — só mostra o valor escolhido, resto fica no menu. Antes
-// disso Regime (3) e Visão (5) somavam 8 opções sempre expostas na mesma
-// linha, competindo visualmente com a sub-nav logo acima (mesma pill
+// Regime/Visão usam o GatilhoFiltro compartilhado (components/relatorios/
+// gatilho-filtro.tsx) — só mostra o valor escolhido, resto fica no menu.
+// Antes disso Regime (3) e Visão (5) somavam 8 opções sempre expostas na
+// mesma linha, competindo visualmente com a sub-nav logo acima (mesma pill
 // laranja preenchida nas duas linhas). Decisão tomada no companion visual,
 // 3ª rodada de mockup desta sessão (chat, não tem spec própria).
-// Radix `asChild` (DropdownMenuTrigger/PopoverTrigger) clona o filho direto
-// e mescla onClick/aria-expanded/data-state/ref nele via Slot — um
-// componente que não repassa `...props` e não encaminha `ref` quebra isso
-// em silêncio (renderiza normal, só não abre nada no clique).
-const GatilhoFiltro = forwardRef<HTMLButtonElement, React.ComponentPropsWithoutRef<"button"> & { icone: React.ComponentType<{ size?: number; className?: string }>; rotulo?: string; valor: string }>(
-  ({ icone: Icone, rotulo, valor, className, ...props }, ref) => (
-    <button
-      ref={ref}
-      type="button"
-      className={cn(
-        "group/gatilho flex items-center gap-1.5 rounded-[10px] border border-border bg-card px-3 py-[7px] text-xs shadow-[0_1px_2px_rgba(26,29,31,0.03)] transition-colors hover:border-primary data-[state=open]:border-primary data-[state=open]:shadow-[0_0_0_3px_rgba(216,88,58,0.12)]",
-        className,
-      )}
-      {...props}
-    >
-      <Icone size={13} className="shrink-0 text-muted-foreground" />
-      {rotulo && <span className="font-semibold text-muted-foreground">{rotulo}</span>}
-      <span className="font-bold text-foreground">{valor}</span>
-      <CaretDown size={11} className="shrink-0 text-muted-foreground transition-transform group-data-[state=open]/gatilho:rotate-180" />
-    </button>
-  ),
-);
-GatilhoFiltro.displayName = "GatilhoFiltro";
-
+//
 // Controle global de Regime/Granularidade/Período da seção de Relatórios —
 // grava tudo na querystring (Seção 3.3 do spec), então cada troca navega
 // com os outros parâmetros preservados. O período usa dois campos de data
