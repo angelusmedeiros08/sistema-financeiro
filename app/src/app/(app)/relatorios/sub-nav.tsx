@@ -61,7 +61,7 @@ export function RelatoriosSubNav() {
               !solo && (grupoAtivo ? "bg-primary/8" : "bg-muted/60"),
             )}
           >
-            <span className={cn("px-0.5 text-[9.5px] font-bold tracking-wider uppercase", grupoAtivo ? "text-[#c1502f]" : "text-muted-foreground")}>
+            <span className={cn("px-0.5 text-[9.5px] font-bold tracking-wider uppercase", grupoAtivo ? "text-primary" : "text-muted-foreground")}>
               {grupo.rotulo}
             </span>
             <div className="flex flex-wrap gap-1.5">
