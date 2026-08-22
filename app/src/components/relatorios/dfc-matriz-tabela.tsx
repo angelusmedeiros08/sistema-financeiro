@@ -45,18 +45,21 @@ function colunasDoMes(idMes: string, nomeMes: string, indiceMes: number) {
         id: `${idMes}_previsto`,
         header: "Prev.",
         meta: { numerica: true },
+        enableSorting: false,
         cell: (info) => celulaPrevisto(info.getValue()),
       }),
       helper.accessor((linha) => linha.mesesRealizado[indiceMes], {
         id: `${idMes}_realizado`,
         header: "Real.",
         meta: { numerica: true },
+        enableSorting: false,
         cell: (info) => formatarNumeroCompacto(info.getValue()),
       }),
       helper.accessor((linha) => linha.mesesRealizado[indiceMes] - linha.mesesPrevisto[indiceMes], {
         id: `${idMes}_variacao`,
         header: "Var.",
         meta: { numerica: true },
+        enableSorting: false,
         cell: (info) => <ValorMatriz valor={info.getValue()} formatado={formatarNumeroCompacto(info.getValue())} />,
       }),
     ]),
@@ -70,9 +73,12 @@ export function DfcMatrizTabela({ linhas, ano }: { linhas: LinhaDfcMatriz[]; ano
 
   const colunas = useMemo(
     () =>
+      // Sem ordenação de propósito (mesmo motivo da DRE): a ordem de linha
+      // é a estrutura da DFC (atividades → geração de caixa), não dado
+      // arbitrário — ordenar quebra a leitura do demonstrativo.
       helper.columns([
-        helper.accessor("numero", { id: "numero", header: "#", size: 34 }),
-        helper.accessor("rotulo", { id: "linha", header: "Atividade", size: 210 }),
+        helper.accessor("numero", { id: "numero", header: "#", size: 34, enableSorting: false }),
+        helper.accessor("rotulo", { id: "linha", header: "Atividade", size: 210, enableSorting: false }),
         ...colunasMensais,
         helper.group({
           id: "grupo_total",
@@ -82,18 +88,21 @@ export function DfcMatrizTabela({ linhas, ano }: { linhas: LinhaDfcMatriz[]; ano
               id: "total_previsto",
               header: "Prev.",
               meta: { numerica: true, totalizador: true },
+              enableSorting: false,
               cell: (info) => celulaPrevisto(info.getValue()),
             }),
             helper.accessor("totalRealizado", {
               id: "total_realizado",
               header: "Real.",
               meta: { numerica: true, totalizador: true },
+              enableSorting: false,
               cell: (info) => formatarNumeroCompacto(info.getValue()),
             }),
             helper.accessor((linha) => linha.totalRealizado - linha.totalPrevisto, {
               id: "total_variacao",
               header: "Var.",
               meta: { numerica: true, totalizador: true },
+              enableSorting: false,
               cell: (info) => <ValorMatriz valor={info.getValue()} formatado={formatarNumeroCompacto(info.getValue())} />,
             }),
           ]),

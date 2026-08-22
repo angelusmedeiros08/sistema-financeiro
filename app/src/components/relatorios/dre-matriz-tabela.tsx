@@ -38,6 +38,7 @@ const colunasMensais = helper.columns(
       id,
       header: NOMES_MES[i],
       meta: { numerica: true },
+      enableSorting: false,
       cell: (info) => <ValorMatriz valor={info.getValue()} formatado={formatarNumeroCompacto(info.getValue())} />,
     }),
   ),
@@ -49,13 +50,21 @@ export function DreMatrizTabela({ linhas, ano }: { linhas: LinhaDreMatriz[]; ano
   const colunas = useMemo(
     () =>
       helper.columns([
-        helper.accessor("numero", { id: "numero", header: "#", size: 34 }),
-        helper.accessor("rotulo", { id: "linha", header: "Linha", size: 190 }),
+        // Sem ordenação em nenhuma coluna de propósito: a ordem da linha
+        // NÃO é um dado arbitrário aqui, é a própria estrutura contábil da
+        // DRE (receita → custos → subtotal → EBITDA → resultado final).
+        // Ordenar por "Linha" (alfabético) ou por um mês quebra a leitura
+        // do demonstrativo — achado real do usuário vendo o sistema, não é
+        // regressão do arquétipo em si (a matriz de Orçamento já tinha essa
+        // mesma decisão, mas por outro motivo).
+        helper.accessor("numero", { id: "numero", header: "#", size: 34, enableSorting: false }),
+        helper.accessor("rotulo", { id: "linha", header: "Linha", size: 190, enableSorting: false }),
         helper.group({ id: "meses", header: `📅 ${ano}`, columns: colunasMensais }),
         helper.accessor("total", {
           id: "total",
           header: "Total",
           meta: { numerica: true, totalizador: true },
+          enableSorting: false,
           cell: (info) => <ValorMatriz valor={info.getValue()} formatado={formatarNumeroCompacto(info.getValue())} />,
         }),
         helper.accessor("avPercentual", {
