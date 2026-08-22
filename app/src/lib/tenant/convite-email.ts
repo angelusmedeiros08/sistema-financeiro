@@ -23,7 +23,19 @@ export async function enviarEmailConvite(params: {
   linkAceite: string;
 }): Promise<{ sucesso: true } | { erro: string }> {
   const config = criarTransportadorBrevo();
-  if ("erro" in config) return config;
+  if ("erro" in config) {
+    // Fora de produção, SMTP real (Brevo) não costuma estar configurado —
+    // sem esse desvio, ninguém consegue testar o fluxo de convite
+    // localmente sem credencial de verdade. O convite em si (conta de auth
+    // + vínculo com o tenant) já foi criado antes desta chamada; só o
+    // envio do e-mail é pulado, com o link impresso no console pra copiar
+    // e colar manualmente.
+    if (process.env.NODE_ENV !== "production") {
+      console.warn(`[convite-email] SMTP não configurado — link de aceite pra ${params.email}:\n${params.linkAceite}`);
+      return { sucesso: true };
+    }
+    return config;
+  }
   const { transportador, remetente } = config;
 
   const rotuloPapel = ROTULO_PAPEL[params.papel] ?? params.papel;
