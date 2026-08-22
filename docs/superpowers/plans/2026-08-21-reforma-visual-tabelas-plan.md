@@ -52,6 +52,21 @@ Achado que corrigiu a premissa do plano: o "~38 colunas" era a **DFC** (3 sub-co
 
 _Teste por página:_ tenant real (não mock) — coluna fixa + scroll horizontal, mês corrente, subtotal/final/AV%, sort, edição de célula real (Orçamento, revertida depois pra não sujar o banco), checagem de overflow por `getBoundingClientRect()`, sem erro de console em nenhuma.
 
+### Correção pós-hoc — fidelidade de planilha
+
+**Concluída (2026-08-22).** Não fazia parte do plano original — achado do usuário vendo o sistema real depois da Fatia 5 já concluída, não do arquétipo aprovado nos mockups. Duas rodadas de feedback:
+
+1. **Ordenação por clique quebrava a ordem contábil.** `enableSorting` do TanStack vem `true` por padrão; só a coluna AV% da DRE tinha sido desligada explicitamente. Clicar em "Linha" ordenava alfabeticamente e embaralhava EBITDA/Lucro Final pra fora da posição correta. Corrigido: `enableSorting: false` em toda coluna de DRE e DFC (Orçamento já tinha, por outro motivo — ver Fatia 5).
+2. **A matriz tinha se afastado demais da `<table>` crua original.** Pedido explícito: "quero como estava antes, só que com ajustes visuais". Três mudanças, nas 3 páginas de matriz densa:
+   - Removida a coluna "#" (nunca existiu na tabela crua — só "Linha"/"Categoria" era fixa). `idsColunasFixas` passou a ter 1 item só nas 3 páginas.
+   - Removida a faixa de ano (`📅 2026`) acima dos meses na DRE — ela nunca teve 2 linhas de cabeçalho; isso é estrutural só da DFC (3 sub-colunas Prev./Real./Var. por mês, group real, mantido).
+   - Bordas de grade tipo Excel em toda célula (`border-r border-b` em cada `<th>`/`<td>`, `border-separate` + `border-spacing-0`), não só linha separadora entre subtotal e o resto.
+   - Barra de rolagem horizontal restilizada (fina, `scrollbar-color`/`::-webkit-scrollbar`) — a padrão do sistema operacional destoava do resto do design.
+
+   Remover a coluna "#" reduziu `idsColunasFixas` pra 1 item em todas as 3 tabelas, o que expôs um **bug real no motor**: com só 1 coluna fixa, ela é simultaneamente "primeira fixa" e "última fixa", e duas barras decorativas absolutas (acento de hover + friso de subtotal/final) caíam empilhadas no mesmo `left:0`. Corrigido suprimindo o acento de hover quando o friso de subtotal/final já está presente. Confirmado via DOM (`firstCellBars: 1`, sem duplicata) nas 3 páginas — inclusive Orçamento, que não tem linha "subtotal"/"final" nenhuma, então era o caso de maior risco de regressão.
+
+_Teste:_ DRE, DFC e Orçamento revisitadas — sort desligado confirmado por página, 1 barra decorativa por linha fixada (não 2), bordas de grade presentes em toda célula (`border-right`/`border-bottom` computados = 1px), sem coluna "#", sem faixa de ano fora da DFC, scrollbar customizada aplicada, sem erro de console em nenhuma.
+
 ## Fatia 6 — Arquétipo 2 nas 5 páginas de relatório com `<table>` crua
 
 **Concluída.** As 5, nesta ordem: Aging → Centro de Custo → Despesas → Comparativos → Fluxo de Caixa.
