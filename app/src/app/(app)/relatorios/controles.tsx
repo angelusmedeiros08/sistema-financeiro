@@ -1,8 +1,11 @@
 "use client";
 
-import Link from "next/link";
+import { forwardRef, useState } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { CalendarBlank, CaretDown, Check, Clock } from "@phosphor-icons/react/dist/ssr";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuCheckboxItem } from "@/components/ui/dropdown-menu";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { Regime, Granularidade } from "@/lib/relatorios/regime";
 
@@ -20,24 +23,45 @@ const GRANULARIDADES: { valor: Granularidade; rotulo: string }[] = [
   { valor: "ano", rotulo: "Ano" },
 ];
 
-function Pilula({ ativo, children }: { ativo: boolean; children: React.ReactNode }) {
-  return (
-    <span
-      className={cn(
-        "rounded-full px-2.5 py-1 text-xs font-medium transition-colors",
-        ativo ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted",
-      )}
-    >
-      {children}
-    </span>
-  );
+function formatarDataCurta(iso: string): string {
+  const [ano, mes, dia] = iso.split("-");
+  return `${dia}/${mes}/${ano}`;
 }
 
+// Gatilho compacto — só mostra o valor escolhido, resto fica no menu. Antes
+// disso Regime (3) e Visão (5) somavam 8 opções sempre expostas na mesma
+// linha, competindo visualmente com a sub-nav logo acima (mesma pill
+// laranja preenchida nas duas linhas). Decisão tomada no companion visual,
+// 3ª rodada de mockup desta sessão (chat, não tem spec própria).
+// Radix `asChild` (DropdownMenuTrigger/PopoverTrigger) clona o filho direto
+// e mescla onClick/aria-expanded/data-state/ref nele via Slot — um
+// componente que não repassa `...props` e não encaminha `ref` quebra isso
+// em silêncio (renderiza normal, só não abre nada no clique).
+const GatilhoFiltro = forwardRef<HTMLButtonElement, React.ComponentPropsWithoutRef<"button"> & { icone: React.ComponentType<{ size?: number; className?: string }>; rotulo?: string; valor: string }>(
+  ({ icone: Icone, rotulo, valor, className, ...props }, ref) => (
+    <button
+      ref={ref}
+      type="button"
+      className={cn(
+        "group/gatilho flex items-center gap-1.5 rounded-[10px] border border-border bg-card px-3 py-[7px] text-xs shadow-[0_1px_2px_rgba(26,29,31,0.03)] transition-colors hover:border-primary data-[state=open]:border-primary data-[state=open]:shadow-[0_0_0_3px_rgba(216,88,58,0.12)]",
+        className,
+      )}
+      {...props}
+    >
+      <Icone size={13} className="shrink-0 text-muted-foreground" />
+      {rotulo && <span className="font-semibold text-muted-foreground">{rotulo}</span>}
+      <span className="font-bold text-foreground">{valor}</span>
+      <CaretDown size={11} className="shrink-0 text-muted-foreground transition-transform group-data-[state=open]/gatilho:rotate-180" />
+    </button>
+  ),
+);
+GatilhoFiltro.displayName = "GatilhoFiltro";
+
 // Controle global de Regime/Granularidade/Período da seção de Relatórios —
-// grava tudo na querystring (Seção 3.3 do spec), então cada troca é só um
-// link com os outros parâmetros preservados. O período usa dois campos de
-// data porque várias leituras (comparativos, evolução do ponto de
-// equilíbrio) precisam de uma janela livre, não só "o mês atual".
+// grava tudo na querystring (Seção 3.3 do spec), então cada troca navega
+// com os outros parâmetros preservados. O período usa dois campos de data
+// porque várias leituras (comparativos, evolução do ponto de equilíbrio)
+// precisam de uma janela livre, não só "o mês atual".
 export function RelatoriosControles({
   regime,
   granularidade,
@@ -54,11 +78,12 @@ export function RelatoriosControles({
   const searchParams = useSearchParams();
   const [inicio, setInicio] = useState(dataInicio);
   const [fim, setFim] = useState(dataFim);
+  const [periodoAberto, setPeriodoAberto] = useState(false);
 
-  function hrefCom(chave: string, valor: string) {
+  function navegarCom(chave: string, valor: string) {
     const params = new URLSearchParams(searchParams.toString());
     params.set(chave, valor);
-    return `${pathname}?${params.toString()}`;
+    router.push(`${pathname}?${params.toString()}`);
   }
 
   function aplicarPeriodo() {
@@ -66,55 +91,81 @@ export function RelatoriosControles({
     params.set("data_inicio", inicio);
     params.set("data_fim", fim);
     router.push(`${pathname}?${params.toString()}`);
+    setPeriodoAberto(false);
   }
 
+  const rotuloRegime = REGIMES.find((r) => r.valor === regime)?.rotulo ?? regime;
+  const rotuloGranularidade = GRANULARIDADES.find((g) => g.valor === granularidade)?.rotulo ?? granularidade;
+
   return (
-    <div className="flex flex-wrap items-center gap-x-6 gap-y-3 rounded-xl border border-border bg-card px-4 py-3">
-      <div className="flex items-center gap-2">
-        <span className="text-xs font-semibold text-muted-foreground">Regime</span>
-        <div className="flex gap-1">
+    <div className="flex flex-wrap items-center gap-2">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <GatilhoFiltro icone={Clock} rotulo="Regime" valor={rotuloRegime} />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="w-56">
           {REGIMES.map((r) => (
-            <Link key={r.valor} href={hrefCom("regime", r.valor)}>
-              <Pilula ativo={regime === r.valor}>{r.rotulo}</Pilula>
-            </Link>
+            <DropdownMenuCheckboxItem key={r.valor} checked={regime === r.valor} onSelect={() => navegarCom("regime", r.valor)}>
+              {r.rotulo}
+            </DropdownMenuCheckboxItem>
           ))}
-        </div>
-      </div>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
-      <div className="flex items-center gap-2">
-        <span className="text-xs font-semibold text-muted-foreground">Visão</span>
-        <div className="flex gap-1">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <GatilhoFiltro icone={CalendarBlank} rotulo="Visão" valor={rotuloGranularidade} />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="w-40">
           {GRANULARIDADES.map((g) => (
-            <Link key={g.valor} href={hrefCom("granularidade", g.valor)}>
-              <Pilula ativo={granularidade === g.valor}>{g.rotulo}</Pilula>
-            </Link>
+            <DropdownMenuCheckboxItem key={g.valor} checked={granularidade === g.valor} onSelect={() => navegarCom("granularidade", g.valor)}>
+              {g.rotulo}
+            </DropdownMenuCheckboxItem>
           ))}
-        </div>
-      </div>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
-      <div className="flex items-center gap-2">
-        <span className="text-xs font-semibold text-muted-foreground">Período</span>
-        <input
-          type="date"
-          value={inicio}
-          onChange={(e) => setInicio(e.target.value)}
-          className="rounded-lg border border-input bg-transparent px-2 py-1 text-xs"
-        />
-        <span className="text-xs text-muted-foreground">até</span>
-        <input
-          type="date"
-          value={fim}
-          onChange={(e) => setFim(e.target.value)}
-          className="rounded-lg border border-input bg-transparent px-2 py-1 text-xs"
-        />
-        <button
-          type="button"
-          onClick={aplicarPeriodo}
-          className="rounded-lg bg-primary px-2.5 py-1 text-xs font-semibold text-primary-foreground hover:opacity-90"
-        >
-          Aplicar
-        </button>
-      </div>
+      <Popover open={periodoAberto} onOpenChange={setPeriodoAberto}>
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            className="group/gatilho flex items-center gap-1.5 rounded-[10px] border border-border bg-card px-3 py-[7px] text-xs shadow-[0_1px_2px_rgba(26,29,31,0.03)] transition-colors hover:border-primary data-[state=open]:border-primary data-[state=open]:shadow-[0_0_0_3px_rgba(216,88,58,0.12)]"
+          >
+            <CalendarBlank size={13} className="shrink-0 text-muted-foreground" />
+            <span className="font-bold tabular-nums text-foreground">{formatarDataCurta(dataInicio)}</span>
+            <span className="text-muted-foreground">→</span>
+            <span className="font-bold tabular-nums text-foreground">{formatarDataCurta(dataFim)}</span>
+            <CaretDown size={11} className="shrink-0 text-muted-foreground transition-transform group-data-[state=open]/gatilho:rotate-180" />
+          </button>
+        </PopoverTrigger>
+        <PopoverContent align="start" className="w-auto">
+          <div className="flex items-end gap-2">
+            <label className="flex flex-col gap-1">
+              <span className="text-[10px] font-bold tracking-wide text-muted-foreground uppercase">De</span>
+              <input
+                type="date"
+                value={inicio}
+                onChange={(e) => setInicio(e.target.value)}
+                className="rounded-[9px] border border-input bg-transparent px-2.5 py-1.5 text-xs outline-none focus:border-primary"
+              />
+            </label>
+            <span className="mb-2 text-muted-foreground">→</span>
+            <label className="flex flex-col gap-1">
+              <span className="text-[10px] font-bold tracking-wide text-muted-foreground uppercase">Até</span>
+              <input
+                type="date"
+                value={fim}
+                onChange={(e) => setFim(e.target.value)}
+                className="rounded-[9px] border border-input bg-transparent px-2.5 py-1.5 text-xs outline-none focus:border-primary"
+              />
+            </label>
+          </div>
+          <Button onClick={aplicarPeriodo} size="sm" className="mt-2.5 w-full gap-1.5">
+            <Check size={13} weight="bold" />
+            Aplicar período
+          </Button>
+        </PopoverContent>
+      </Popover>
     </div>
   );
 }
