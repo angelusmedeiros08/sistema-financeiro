@@ -17,6 +17,13 @@ const PALETA = ["#0FA37E", "#E3A62F", "#4C7DF0", "#B45FC7", "#8CB84A", "#EF6F9A"
 const RAIO = 70;
 const ESPESSURA = 28;
 const MAX_FATIAS_NOMEADAS = 5;
+// Piso de 2% do total pro ângulo do arco — mesma convenção do piso de
+// largura mínima do TrilhoBarra (usado em Aging/Orçado/CentroCusto). Sem
+// isso, uma categoria dominando o total (comum: folha de pagamento) deixa
+// as outras fatias com ângulo sub-pixel, invisíveis. Só o ÂNGULO é
+// inflado — valor e percentual mostrados no tooltip/legenda continuam os
+// reais, sem distorção.
+const FRACAO_MINIMA_FATIA = 0.02;
 
 type Fatia = { rotulo: string; total: number; cor: string };
 
@@ -65,7 +72,13 @@ export function TopCategoriasDonut({ titulo, linhas }: { titulo: string; linhas:
         <div ref={containerRef} className="relative flex flex-wrap items-center gap-6">
           <svg viewBox="0 0 200 200" width="170" height="170" className="shrink-0">
             <Group top={100} left={100}>
-              <Pie data={fatias} pieValue={(f) => f.total} outerRadius={RAIO} innerRadius={RAIO - ESPESSURA} padAngle={0.012}>
+              <Pie
+                data={fatias}
+                pieValue={(f) => Math.max(f.total, total * FRACAO_MINIMA_FATIA)}
+                outerRadius={RAIO}
+                innerRadius={RAIO - ESPESSURA}
+                padAngle={0.012}
+              >
                 {(pie) =>
                   pie.arcs.map((arc, i) => (
                     <path

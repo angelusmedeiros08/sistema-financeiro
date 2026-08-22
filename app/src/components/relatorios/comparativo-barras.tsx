@@ -85,10 +85,17 @@ function GraficoInterno({
                     // pra valores sempre positivos. Recalcula em cima do
                     // yScale direto (linha do zero, não o fundo do SVG)
                     // pra series negativas (ex.: despesas) renderizarem.
+                    //
+                    // Piso de 2px de altura pra valor não-zero — mesma
+                    // convenção de piso mínimo do TrilhoBarra. Sem isso, um
+                    // dia com valor bem fora da curva (ex.: um pagamento
+                    // avulso grande) comprime todo o resto da série a
+                    // altura sub-pixel, invisível.
                     const yZero = yScale(0);
                     const yValor = yScale(bar.value);
-                    const y = Math.min(yZero, yValor);
-                    const altura = Math.abs(yZero - yValor);
+                    const alturaReal = Math.abs(yZero - yValor);
+                    const altura = bar.value === 0 ? 0 : Math.max(alturaReal, 2);
+                    const y = bar.value >= 0 ? yZero - altura : yZero;
                     return (
                       <rect
                         key={bar.key}
