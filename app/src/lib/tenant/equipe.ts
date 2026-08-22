@@ -33,6 +33,46 @@ export async function convidarUsuario(
   const admin = createAdminClient();
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
+  // E-mail que já tem conta na plataforma (reconvite de alguém revogado, ou
+  // pessoa que já é membro de outro tenant): generateLink(type: "invite")
+  // rejeita e-mail já existente em auth.users (error_code email_exists) —
+  // achado real depois de revogar e tentar reconvidar o mesmo e-mail, o
+  // vínculo antigo em usuario_tenant fica órfão pra sempre (revogar só
+  // desativa o vínculo, não apaga a conta de auth). Não precisa de convite
+  // novo: a pessoa já tem senha, só reativa/cria o vínculo com o tenant
+  // direto, sem passar pelo fluxo de e-mail.
+  const { data: usuarioExistente } = await admin.from("usuarios").select("id").eq("email", params.email).maybeSingle();
+
+  if (usuarioExistente) {
+    const { data: vinculoExistente } = await supabase
+      .from("usuario_tenant")
+      .select("usuario_id")
+      .eq("usuario_id", usuarioExistente.id)
+      .eq("tenant_id", params.tenant_id)
+      .maybeSingle();
+
+    if (vinculoExistente) {
+      const { error: erroUpdate } = await supabase
+        .from("usuario_tenant")
+        .update({ papel: params.papel, ativo: true, pessoa_id: params.pessoa_id ?? null })
+        .eq("usuario_id", usuarioExistente.id)
+        .eq("tenant_id", params.tenant_id);
+
+      if (erroUpdate) return { erro: erroUpdate.message };
+      return { sucesso: true };
+    }
+
+    const { error: erroVinculo } = await supabase.from("usuario_tenant").insert({
+      usuario_id: usuarioExistente.id,
+      tenant_id: params.tenant_id,
+      papel: params.papel,
+      pessoa_id: params.pessoa_id ?? null,
+    });
+
+    if (erroVinculo) return { erro: erroVinculo.message };
+    return { sucesso: true };
+  }
+
   // generateLink() só cria o usuário e devolve o token — não manda e-mail
   // nenhum. Diferente de inviteUserByEmail(), que dispara o e-mail do
   // Supabase apontando direto pro endpoint de verificação dele (consumível
