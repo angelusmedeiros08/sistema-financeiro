@@ -6,6 +6,12 @@
 // que não pode atravessar a fronteira servidor→cliente como prop de um
 // Server Component — então a montagem das colunas mora aqui dentro, e a
 // página só passa o array de linhas já filtrado (serializável).
+//
+// Formato "planilha, como antes": sem coluna "#" (não existia na <table>
+// crua original, só "Linha"), sem super-header de ano acima dos meses
+// (a DRE nunca teve 2 linhas de cabeçalho — isso é coisa da DFC, que tem
+// mesmo motivo estrutural real: 3 sub-colunas por mês). Achado do usuário
+// vendo o sistema de verdade, não fazia parte do arquétipo original.
 import { useMemo } from "react";
 import { formatarNumeroCompacto } from "@/lib/formatacao";
 import type { LinhaDreMatriz } from "@/lib/relatorios/dre";
@@ -14,7 +20,7 @@ import { TabelaMatriz, criarColunaMatriz, ValorMatriz, CelulaAV, type TipoLinhaM
 const NOMES_MES = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 const IDS_MES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
 
-type LinhaMatrizDre = LinhaDreMatriz & { numero: number; tipoLinha: TipoLinhaMatriz };
+type LinhaMatrizDre = LinhaDreMatriz & { tipoLinha: TipoLinhaMatriz };
 
 // SUBTOTAL_ALTERNATIVO ("Lucro Bruto") e RESULTADO_NAO_OPERACIONAL viram
 // "subtotal" igual aos demais totalizadores — o arquétipo aprovado só tem 3
@@ -25,7 +31,6 @@ function paraLinhasMatriz(linhas: LinhaDreMatriz[]): LinhaMatrizDre[] {
   const idxUltimoTotal = linhas.map((l) => l.tipoCalc !== "FOLHA").lastIndexOf(true);
   return linhas.map((linha, i) => ({
     ...linha,
-    numero: i + 1,
     tipoLinha: linha.tipoCalc === "FOLHA" ? "detalhe" : i === idxUltimoTotal ? "final" : "subtotal",
   }));
 }
@@ -57,9 +62,8 @@ export function DreMatrizTabela({ linhas, ano }: { linhas: LinhaDreMatriz[]; ano
         // do demonstrativo — achado real do usuário vendo o sistema, não é
         // regressão do arquétipo em si (a matriz de Orçamento já tinha essa
         // mesma decisão, mas por outro motivo).
-        helper.accessor("numero", { id: "numero", header: "#", size: 34, enableSorting: false }),
         helper.accessor("rotulo", { id: "linha", header: "Linha", size: 190, enableSorting: false }),
-        helper.group({ id: "meses", header: `📅 ${ano}`, columns: colunasMensais }),
+        ...colunasMensais,
         helper.accessor("total", {
           id: "total",
           header: "Total",
@@ -75,7 +79,7 @@ export function DreMatrizTabela({ linhas, ano }: { linhas: LinhaDreMatriz[]; ano
           cell: (info) => <CelulaAV percentual={info.getValue()} negativo={info.getValue() < 0} />,
         }),
       ]),
-    [ano],
+    [],
   );
 
   const anoAtual = new Date().getFullYear();
@@ -86,7 +90,7 @@ export function DreMatrizTabela({ linhas, ano }: { linhas: LinhaDreMatriz[]; ano
       titulo={`DRE: Demonstrativo de Resultado (${ano})`}
       data={dados}
       columns={colunas}
-      idsColunasFixas={["numero", "linha"]}
+      idsColunasFixas={["linha"]}
       ehColunaMesAtual={idMesAtual ? (id) => id === idMesAtual : undefined}
       obterTipoLinha={(linha) => linha.tipoLinha}
     />

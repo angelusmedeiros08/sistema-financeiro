@@ -19,8 +19,7 @@ function parseValor(texto: string): number {
   return Number.isFinite(numero) && numero >= 0 ? numero : 0;
 }
 
-type LinhaComNumero = LinhaGradeOrcamento & { numero: number };
-const helper = criarColunaMatriz<LinhaComNumero>();
+const helper = criarColunaMatriz<LinhaGradeOrcamento>();
 
 // Grade categoria × 12 meses com autosave por célula (onBlur) — mesmo
 // padrão de coluna fixa/tabela compacta da Matriz do DRE/DFC (TabelaMatriz,
@@ -163,10 +162,7 @@ export function GradeOrcamento({ ano, linhas }: { ano: number; linhas: LinhaGrad
     const linhasDoTipo = linhas.filter((l) => l.tipo === tipo);
     if (linhasDoTipo.length === 0) return null;
 
-    const dados: LinhaComNumero[] = linhasDoTipo.map((linha, i) => ({ ...linha, numero: i + 1 }));
-
     const colunas = helper.columns([
-      helper.accessor("numero", { id: "numero", header: "#", size: 30, enableSorting: false }),
       helper.accessor("categoriaNome", {
         id: "categoria",
         header: "Categoria",
@@ -245,9 +241,9 @@ export function GradeOrcamento({ ano, linhas }: { ano: number; linhas: LinhaGrad
       <div className="mb-6 last:mb-0">
         <TabelaMatriz
           titulo={titulo}
-          data={dados}
+          data={linhasDoTipo}
           columns={colunas}
-          idsColunasFixas={["numero", "categoria"]}
+          idsColunasFixas={["categoria"]}
           ehColunaMesAtual={idMesAtual ? (id) => id === idMesAtual : undefined}
         />
       </div>

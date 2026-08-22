@@ -15,12 +15,11 @@ import { TabelaMatriz, criarColunaMatriz, ValorMatriz, type TipoLinhaMatriz } fr
 const NOMES_MES = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 const IDS_MES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
 
-type LinhaMatrizDfc = LinhaDfcMatriz & { numero: number; tipoLinha: TipoLinhaMatriz | undefined };
+type LinhaMatrizDfc = LinhaDfcMatriz & { tipoLinha: TipoLinhaMatriz | undefined };
 
 function paraLinhasMatriz(linhas: LinhaDfcMatriz[]): LinhaMatrizDfc[] {
-  return linhas.map((linha, i) => ({
+  return linhas.map((linha) => ({
     ...linha,
-    numero: i + 1,
     // Geração de caixa é a soma das 3 atividades acima — mesmo papel de
     // "linha final" que o arquétipo já trata (friso terracota + negrito
     // mais pesado). As 3 atividades em si não são "detalhe" de nada acima
@@ -77,7 +76,6 @@ export function DfcMatrizTabela({ linhas, ano }: { linhas: LinhaDfcMatriz[]; ano
       // é a estrutura da DFC (atividades → geração de caixa), não dado
       // arbitrário — ordenar quebra a leitura do demonstrativo.
       helper.columns([
-        helper.accessor("numero", { id: "numero", header: "#", size: 34, enableSorting: false }),
         helper.accessor("rotulo", { id: "linha", header: "Atividade", size: 210, enableSorting: false }),
         ...colunasMensais,
         helper.group({
@@ -119,7 +117,7 @@ export function DfcMatrizTabela({ linhas, ano }: { linhas: LinhaDfcMatriz[]; ano
       titulo={`DFC: Fluxo de Caixa por atividade (${ano})`}
       data={dados}
       columns={colunas}
-      idsColunasFixas={["numero", "linha"]}
+      idsColunasFixas={["linha"]}
       ehColunaMesAtual={idMesAtual ? (id) => id.startsWith(`${idMesAtual}_`) : undefined}
       obterTipoLinha={(linha) => linha.tipoLinha}
     />

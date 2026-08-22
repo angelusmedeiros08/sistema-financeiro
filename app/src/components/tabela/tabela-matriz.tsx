@@ -144,8 +144,16 @@ export function TabelaMatriz<TData extends Record<string, any>>({
         </div>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-max min-w-full border-separate border-spacing-0 text-[12.5px]">
+      <div
+        className={cn(
+          "overflow-x-auto",
+          "[scrollbar-color:var(--border)_transparent] [scrollbar-width:thin]",
+          "[&::-webkit-scrollbar]:h-2.5 [&::-webkit-scrollbar-track]:bg-transparent",
+          "[&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:border-2 [&::-webkit-scrollbar-thumb]:border-solid [&::-webkit-scrollbar-thumb]:border-transparent [&::-webkit-scrollbar-thumb]:bg-clip-padding [&::-webkit-scrollbar-thumb]:bg-border",
+          "hover:[&::-webkit-scrollbar-thumb]:bg-[#d8c9bc]",
+        )}
+      >
+        <table className="w-max min-w-full border-t border-l border-border border-separate border-spacing-0 text-[12.5px]">
           <thead>
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>
@@ -170,12 +178,12 @@ export function TabelaMatriz<TData extends Record<string, any>>({
                       colSpan={header.colSpan}
                       onClick={!ehGrupo ? header.column.getToggleSortingHandler() : undefined}
                       className={cn(
-                        "border-b-2 border-border bg-card px-4 text-right align-bottom font-bold tracking-wide text-muted-foreground uppercase",
-                        ehGrupo ? "border-b-0 pt-2.5 pb-0 text-[10px]" : "py-2.5 text-[10.5px]",
+                        "border-r border-b border-border bg-card px-4 text-right align-bottom font-bold tracking-wide text-muted-foreground uppercase",
+                        ehGrupo ? "pt-2.5 pb-0 text-[10px]" : "py-2.5 text-[10.5px]",
                         !numerica && !ehGrupo && "text-left",
                         podeOrdenar && !ehGrupo && "cursor-pointer select-none hover:text-foreground",
                         (pinado || primeiraFixa) && "sticky z-10 bg-card",
-                        ultimaFixa && "border-r border-border shadow-[6px_0_10px_-6px_rgba(0,0,0,0.12)]",
+                        ultimaFixa && "shadow-[6px_0_10px_-6px_rgba(0,0,0,0.12)]",
                         mesAtual && "text-[#c1502f]",
                         ordenacao && !ehGrupo && "text-primary hover:text-primary",
                       )}
@@ -221,20 +229,19 @@ export function TabelaMatriz<TData extends Record<string, any>>({
                       <td
                         key={cell.id}
                         className={cn(
-                          "px-4 py-2.5 text-right align-middle whitespace-nowrap tabular-nums transition-colors",
+                          "relative border-r border-b border-border px-4 py-2.5 text-right align-middle whitespace-nowrap tabular-nums transition-colors",
                           !numerica && "text-left font-medium text-foreground",
                           (pinado || primeiraFixa) && "sticky z-[1] bg-card group-hover:bg-[#fbfaf8]",
-                          ultimaFixa && "relative border-r border-border shadow-[6px_0_10px_-6px_rgba(0,0,0,0.12)]",
+                          ultimaFixa && "shadow-[6px_0_10px_-6px_rgba(0,0,0,0.12)]",
                           mesAtual && "bg-[#fdf6f3] group-hover:bg-[#fbf1ec]",
                           totalizador && "bg-[#fbfaf8] font-bold group-hover:bg-[#f5f3ee]",
                           tipo === "detalhe" && "text-muted-foreground",
                           tipo === "subtotal" && "font-bold text-foreground",
-                          tipo === "final" && "border-t border-border text-[13.5px] font-extrabold text-foreground",
-                          i === 0 && !pinado && "relative",
+                          tipo === "final" && "text-[13.5px] font-extrabold text-foreground",
                         )}
                         style={pinado ? { left: cell.column.getStart("start") } : undefined}
                       >
-                        {(i === 0 || primeiraFixa) && (
+                        {(i === 0 || primeiraFixa) && !(ultimaFixa && (tipo === "subtotal" || tipo === "final")) && (
                           <span className="absolute inset-y-0 left-0 w-[3px] scale-y-0 rounded-full bg-[#e5c3b6] transition-transform group-hover:scale-y-100" />
                         )}
                         {ultimaFixa && tipo === "detalhe" && <span className="inline-block w-2.5" aria-hidden />}
