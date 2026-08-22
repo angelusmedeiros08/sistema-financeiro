@@ -61,7 +61,7 @@ export type TipoLinhaMatriz = "detalhe" | "subtotal" | "final";
 
 /** Valor tabular-nums colorido por sinal — recebe o texto já formatado (ex: "–" pra zero). */
 export function ValorMatriz({ valor, formatado }: { valor: number; formatado: string }) {
-  return <span className={valor > 0 ? "text-[#157F6B]" : valor < 0 ? "text-[#B23A2E]" : "text-[#ddd9cc]"}>{formatado}</span>;
+  return <span className={valor > 0 ? "text-[#157F6B]" : valor < 0 ? "text-[#B23A2E]" : "text-muted-foreground/40"}>{formatado}</span>;
 }
 
 /** Coluna AV% — percentual de participação com mini-barra horizontal. */
@@ -150,7 +150,7 @@ export function TabelaMatriz<TData extends Record<string, any>>({
           "[scrollbar-color:var(--border)_transparent] [scrollbar-width:thin]",
           "[&::-webkit-scrollbar]:h-2.5 [&::-webkit-scrollbar-track]:bg-transparent",
           "[&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:border-2 [&::-webkit-scrollbar-thumb]:border-solid [&::-webkit-scrollbar-thumb]:border-transparent [&::-webkit-scrollbar-thumb]:bg-clip-padding [&::-webkit-scrollbar-thumb]:bg-border",
-          "hover:[&::-webkit-scrollbar-thumb]:bg-[#d8c9bc]",
+          "hover:[&::-webkit-scrollbar-thumb]:bg-muted-foreground/40",
         )}
       >
         <table className="w-max min-w-full border-t border-l border-border border-separate border-spacing-0 text-[12.5px]">
@@ -184,7 +184,7 @@ export function TabelaMatriz<TData extends Record<string, any>>({
                         podeOrdenar && !ehGrupo && "cursor-pointer select-none hover:text-foreground",
                         (pinado || primeiraFixa) && "sticky z-10 bg-card",
                         ultimaFixa && "shadow-[6px_0_10px_-6px_rgba(0,0,0,0.12)]",
-                        mesAtual && "text-[#c1502f]",
+                        mesAtual && "text-primary",
                         ordenacao && !ehGrupo && "text-primary hover:text-primary",
                       )}
                       style={pinado ? { left: header.column.getStart("start") } : undefined}
@@ -216,7 +216,7 @@ export function TabelaMatriz<TData extends Record<string, any>>({
             {table.getRowModel().rows.map((row) => {
               const tipo = obterTipoLinha?.(row.original);
               return (
-                <tr key={row.id} className="group border-b border-[#f0eee7] last:border-none">
+                <tr key={row.id} className="group border-b border-border last:border-none">
                   {row.getAllCells().map((cell, i) => {
                     const pinado = cell.column.getIsPinned();
                     const ultimaFixa = cell.column.id === idUltimaColunaFixa;
@@ -231,10 +231,10 @@ export function TabelaMatriz<TData extends Record<string, any>>({
                         className={cn(
                           "relative border-r border-b border-border px-4 py-2.5 text-right align-middle whitespace-nowrap tabular-nums transition-colors",
                           !numerica && "text-left font-medium text-foreground",
-                          (pinado || primeiraFixa) && "sticky z-[1] bg-card group-hover:bg-[#fbfaf8]",
+                          (pinado || primeiraFixa) && "sticky z-[1] bg-card group-hover:bg-muted/50",
                           ultimaFixa && "shadow-[6px_0_10px_-6px_rgba(0,0,0,0.12)]",
-                          mesAtual && "bg-[#fdf6f3] group-hover:bg-[#fbf1ec]",
-                          totalizador && "bg-[#fbfaf8] font-bold group-hover:bg-[#f5f3ee]",
+                          mesAtual && "bg-primary/8 group-hover:bg-primary/14",
+                          totalizador && "bg-muted/50 font-bold group-hover:bg-muted/70",
                           tipo === "detalhe" && "text-muted-foreground",
                           tipo === "subtotal" && "font-bold text-foreground",
                           tipo === "final" && "text-[13.5px] font-extrabold text-foreground",
@@ -242,7 +242,7 @@ export function TabelaMatriz<TData extends Record<string, any>>({
                         style={pinado ? { left: cell.column.getStart("start") } : undefined}
                       >
                         {(i === 0 || primeiraFixa) && !(ultimaFixa && (tipo === "subtotal" || tipo === "final")) && (
-                          <span className="absolute inset-y-0 left-0 w-[3px] scale-y-0 rounded-full bg-[#e5c3b6] transition-transform group-hover:scale-y-100" />
+                          <span className="absolute inset-y-0 left-0 w-[3px] scale-y-0 rounded-full bg-primary/50 transition-transform group-hover:scale-y-100" />
                         )}
                         {ultimaFixa && tipo === "detalhe" && <span className="inline-block w-2.5" aria-hidden />}
                         {ultimaFixa && (tipo === "subtotal" || tipo === "final") && (
@@ -263,7 +263,7 @@ export function TabelaMatriz<TData extends Record<string, any>>({
       </div>
 
       {legenda && (temSubtotal || temFinal || !!ehColunaMesAtual) && (
-        <div className="flex flex-wrap items-center gap-4.5 border-t border-border bg-[#fbfaf8] px-4.5 py-3 text-[11px] text-muted-foreground">
+        <div className="flex flex-wrap items-center gap-4.5 border-t border-border bg-muted/30 px-4.5 py-3 text-[11px] text-muted-foreground">
           {temSubtotal && (
             <span className="flex items-center gap-1.5">
               <span className="size-2.5 rounded-[3px]" style={{ background: "#157F6B" }} /> Subtotal
@@ -276,7 +276,7 @@ export function TabelaMatriz<TData extends Record<string, any>>({
           )}
           {ehColunaMesAtual && (
             <span className="flex items-center gap-1.5">
-              <span className="size-2.5 rounded-[3px] border border-border" style={{ background: "#fdf6f3" }} /> Mês atual
+              <span className="size-2.5 rounded-[3px] border border-border bg-primary/12" /> Mês atual
             </span>
           )}
         </div>

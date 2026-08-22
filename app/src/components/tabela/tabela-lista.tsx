@@ -248,7 +248,7 @@ export function TabelaLista<TData extends Record<string, any>>({
               </tr>
             ) : (
               linhas.map((row) => (
-                <tr key={row.id} className="group border-b border-[#f5f3ee] last:border-none hover:bg-[#fdfbf9]">
+                <tr key={row.id} className="group border-b border-border last:border-none hover:bg-muted/40">
                   {row.getAllCells().map((cell, i) => (
                     <td key={cell.id} className={cn("px-4.5 py-3.5 align-middle", cell.column.columnDef.meta?.numerica && "text-right", i === 0 && "relative")}>
                       {i === 0 && (
