@@ -2,11 +2,9 @@
 
 import { useState } from "react";
 import { ParentSize } from "@visx/responsive";
-import { scaleBand, scaleLinear } from "@visx/scale";
+import { scaleBand } from "@visx/scale";
 import { Bar, Line } from "@visx/shape";
 import { Group } from "@visx/group";
-import { AxisBottom } from "@visx/axis";
-import { GridRows } from "@visx/grid";
 import { useTooltip, useTooltipInPortal, defaultStyles } from "@visx/tooltip";
 import { localPoint } from "@visx/event";
 import type { Database } from "@/utils/supabase/database.types";
@@ -14,49 +12,113 @@ import { formatarMoeda, formatarNumeroAbreviado } from "@/lib/formatacao";
 
 type LinhaWaterfall = { rotulo: string; tipoCalc: Database["public"]["Enums"]["tipo_linha_dre"]; valorDireto: number };
 
+type TipoBarraWaterfall = "delta" | "checkpoint" | "final";
+
 type BarraWaterfall = {
   rotulo: string;
+  tipo: TipoBarraWaterfall;
   baixo: number;
   alto: number;
-  valorReal: number;
-  cor: string;
-  nivelConector: number;
+  // delta: a própria variação da linha. checkpoint/final: o acumulado até
+  // ali — os dois cabem no mesmo campo porque nunca são lidos ao mesmo
+  // tempo (o tipo já diz qual dos dois significados vale).
+  valorMostrado: number;
+  nivel: number;
 };
 
-// Waterfall de verdade via @visx/shape em vez do truque de "base invisível +
-// delta empilhado" do Recharts — dá controle total pra desenhar os
-// conectores tracejados entre barras (o nível acumulado "escorre" de uma
-// coluna pra outra) e o rótulo flutuante de valor acima/abaixo de cada
-// barra, os dois recursos que só compensavam migrar de lib por causa deles
-// (ver docs/pesquisa-referencias-visuais-reforma-design.md §5).
+// Waterfall via @visx/shape (Bar/Line/Group prontos, mas escala Y e eixo
+// são só matemática nossa — visx não tem escala não-linear com sinal nem
+// rótulo em 2 linhas prontos). Redesenho aprovado em mockup nesta sessão
+// (2026-08-22): motivo de cada decisão abaixo.
+//
+// Linha FOLHA com valor zero (categoria sem lançamento no período) some
+// do gráfico — antes toda linha da DRE virava barra, e é comum metade
+// ficar zerada, só poluindo com rótulo "0" flutuante e nome de eixo sem
+// necessidade. RESULTADO_NAO_OPERACIONAL nunca vira barra própria: é a
+// soma só do bloco de linhas FOLHA desde o marcador anterior (ver
+// calcularCascata em lib/relatorios/dre.ts), sempre redundante com as
+// duas linhas de detalhe (Receitas/Despesas não operacionais) logo acima
+// dela na cascata — e o motor antigo desenhava essa barra a partir do
+// valor local da linha em vez do acumulado, então ela flutuava perto do
+// zero, desconectada do nível de verdade da cascata (bug real, achado
+// junto com o redesenho).
 function montarBarras(linhas: LinhaWaterfall[]): BarraWaterfall[] {
+  const idxUltimoNaoFolha = linhas.map((l) => l.tipoCalc !== "FOLHA").lastIndexOf(true);
   let acumulado = 0;
-  return linhas.map((linha) => {
+  const barras: BarraWaterfall[] = [];
+
+  linhas.forEach((linha, i) => {
     if (linha.tipoCalc === "FOLHA") {
+      if (linha.valorDireto === 0) return;
       const inicio = acumulado;
       acumulado += linha.valorDireto;
-      return {
+      barras.push({
         rotulo: linha.rotulo,
+        tipo: "delta",
         baixo: Math.min(inicio, acumulado),
         alto: Math.max(inicio, acumulado),
-        valorReal: linha.valorDireto,
-        cor: linha.valorDireto >= 0 ? "#157F6B" : "#B23A2E",
-        nivelConector: acumulado,
-      };
+        valorMostrado: linha.valorDireto,
+        nivel: acumulado,
+      });
+      return;
     }
-    const cor = linha.tipoCalc === "RESULTADO_NAO_OPERACIONAL" ? "#E3A62F" : "#4C7DF0";
-    return {
+    if (linha.tipoCalc === "RESULTADO_NAO_OPERACIONAL") return;
+
+    barras.push({
       rotulo: linha.rotulo,
-      baixo: Math.min(0, linha.valorDireto),
-      alto: Math.max(0, linha.valorDireto),
-      valorReal: linha.valorDireto,
-      cor,
-      nivelConector: linha.valorDireto,
-    };
+      tipo: i === idxUltimoNaoFolha ? "final" : "checkpoint",
+      baixo: Math.min(0, acumulado),
+      alto: Math.max(0, acumulado),
+      valorMostrado: acumulado,
+      nivel: acumulado,
+    });
   });
+
+  return barras;
 }
 
-const MARGEM = { top: 28, right: 12, bottom: 110, left: 12 };
+// Raiz quadrada com sinal em vez de escala linear — sem isso, uma única
+// despesa bem maior que o resultado final (comum: custo fixo grande
+// contra margem apertada) engole quase toda a altura do gráfico e reduz
+// as barras de resultado a uma linha fina ilegível. Comprime a amplitude
+// mantendo ordem e sinal; o rótulo em cada barra sempre mostra o valor
+// real (não o comprimido), a leitura numérica exata não se perde.
+function transformarY(v: number): number {
+  return Math.sign(v) * Math.sqrt(Math.abs(v));
+}
+
+function quebrarRotulo(texto: string, maxCharsPorLinha: number): [string, string?] {
+  const palavras = texto.split(" ");
+  const linhas: string[] = [];
+  let atual = "";
+  for (const palavra of palavras) {
+    const tentativa = atual ? `${atual} ${palavra}` : palavra;
+    if (tentativa.length > maxCharsPorLinha && atual) {
+      linhas.push(atual);
+      atual = palavra;
+    } else {
+      atual = tentativa;
+    }
+  }
+  if (atual) linhas.push(atual);
+  if (linhas.length <= 2) return [linhas[0] ?? "", linhas[1]];
+  return [linhas[0], linhas.slice(1).join(" ")];
+}
+
+function corBarra(barra: BarraWaterfall): { fill: string; stroke: string; fillOpacity: number; strokeWidth: number } {
+  if (barra.tipo === "final") return { fill: "#D8583A", stroke: "#a8412a", fillOpacity: 1, strokeWidth: 2 };
+  const positivo = barra.valorMostrado >= 0;
+  if (barra.tipo === "checkpoint") {
+    return positivo
+      ? { fill: "#157F6B", stroke: "#0d5d4e", fillOpacity: 1, strokeWidth: 1.5 }
+      : { fill: "#B23A2E", stroke: "#8a2c22", fillOpacity: 1, strokeWidth: 1.5 };
+  }
+  return positivo
+    ? { fill: "#157F6B", stroke: "#157F6B", fillOpacity: 0.32, strokeWidth: 1 }
+    : { fill: "#B23A2E", stroke: "#B23A2E", fillOpacity: 0.32, strokeWidth: 1 };
+}
+
+const MARGEM = { top: 24, right: 12, bottom: 54, left: 12 };
 
 const estiloTooltip = {
   ...defaultStyles,
@@ -78,16 +140,19 @@ function GraficoInterno({ barras, largura, altura }: { barras: BarraWaterfall[];
   const alturaInterna = Math.max(altura - MARGEM.top - MARGEM.bottom, 10);
 
   const todosValores = barras.flatMap((b) => [b.baixo, b.alto, 0]);
-  const yScale = scaleLinear<number>({
-    domain: [Math.min(...todosValores), Math.max(...todosValores)],
-    range: [alturaInterna, 0],
-    nice: true,
-  });
+  const minV = Math.min(...todosValores);
+  const maxV = Math.max(...todosValores);
+  const minT = transformarY(minV);
+  const maxT = transformarY(maxV);
+  const y = (v: number) => (maxT === minT ? alturaInterna / 2 : alturaInterna - ((transformarY(v) - minT) / (maxT - minT)) * alturaInterna);
+
   const xScale = scaleBand<string>({
     domain: barras.map((b) => b.rotulo),
     range: [0, larguraInterna],
-    padding: 0.35,
+    padding: 0.28,
   });
+  const bw = xScale.bandwidth();
+  const maxCharsPorLinha = Math.max(7, Math.floor(bw / 5.6));
 
   function aoPassarMouse(evento: React.MouseEvent, barra: BarraWaterfall, indice: number) {
     const coords = localPoint(evento) ?? { x: 0, y: 0 };
@@ -104,89 +169,121 @@ function GraficoInterno({ barras, largura, altura }: { barras: BarraWaterfall[];
     <div ref={containerRef} className="relative">
       <svg width={largura} height={altura}>
         <Group left={MARGEM.left} top={MARGEM.top}>
-          <GridRows scale={yScale} width={larguraInterna} stroke="var(--border)" />
-          <Line
-            from={{ x: 0, y: yScale(0) }}
-            to={{ x: larguraInterna, y: yScale(0) }}
-            stroke="var(--border)"
-            strokeWidth={1}
-          />
+          {Array.from({ length: 5 }, (_, i) => minV + ((maxV - minV) / 4) * i).map((v, i) => (
+            <Line key={i} from={{ x: 0, y: y(v) }} to={{ x: larguraInterna, y: y(v) }} stroke="var(--border)" strokeWidth={1} />
+          ))}
+          <Line from={{ x: 0, y: y(0) }} to={{ x: larguraInterna, y: y(0) }} stroke="var(--border)" strokeWidth={1.5} />
 
           {barras.slice(0, -1).map((barra, i) => {
             const proxima = barras[i + 1];
-            const xFim = (xScale(barra.rotulo) ?? 0) + xScale.bandwidth();
+            const xFim = (xScale(barra.rotulo) ?? 0) + bw;
             const xInicio = xScale(proxima.rotulo) ?? 0;
-            const y = yScale(barra.nivelConector);
+            const yNivel = y(barra.nivel);
             return (
               <Line
                 key={`conector-${barra.rotulo}`}
-                from={{ x: xFim, y }}
-                to={{ x: xInicio, y }}
+                from={{ x: xFim, y: yNivel }}
+                to={{ x: xInicio, y: yNivel }}
                 stroke="var(--muted-foreground)"
                 strokeDasharray="3 3"
                 strokeWidth={1}
-                opacity={0.6}
+                opacity={0.55}
               />
             );
           })}
 
           {barras.map((barra, i) => {
             const x = xScale(barra.rotulo) ?? 0;
-            const y = yScale(barra.alto);
-            const h = Math.max(yScale(barra.baixo) - yScale(barra.alto), 1);
+            const yTop = y(barra.alto);
+            const h = Math.max(y(barra.baixo) - y(barra.alto), 2);
             const emHover = hoverIndice === i;
-            const rotuloAcimaOuAbaixo = barra.valorReal >= 0 ? y - 6 : y + h + 14;
+            const cor = corBarra(barra);
+            const cx = x + bw / 2;
+            const acimaDoZero = barra.valorMostrado >= 0;
+            const rotuloValor = formatarNumeroAbreviado(barra.valorMostrado);
+
             return (
               <Group key={barra.rotulo}>
                 <Bar
                   x={x}
-                  y={y}
-                  width={xScale.bandwidth()}
+                  y={yTop}
+                  width={bw}
                   height={h}
-                  fill={barra.cor}
-                  rx={4}
-                  opacity={hoverIndice === null || emHover ? 1 : 0.55}
-                  style={{ transition: "opacity 0.15s ease", cursor: "pointer" }}
+                  rx={5}
+                  fill={cor.fill}
+                  fillOpacity={hoverIndice === null || emHover ? cor.fillOpacity : cor.fillOpacity * 0.55}
+                  stroke={cor.stroke}
+                  strokeWidth={cor.strokeWidth}
+                  style={{ transition: "fill-opacity 0.15s ease", cursor: "pointer" }}
                   onMouseMove={(e) => aoPassarMouse(e, barra, i)}
                   onMouseLeave={aoSairMouse}
                 />
-                <text
-                  x={x + xScale.bandwidth() / 2}
-                  y={rotuloAcimaOuAbaixo}
-                  textAnchor="middle"
-                  fontSize={10}
-                  fontWeight={600}
-                  fill="var(--muted-foreground)"
-                  pointerEvents="none"
-                >
-                  {formatarNumeroAbreviado(barra.valorReal)}
-                </text>
+                {barra.tipo === "delta" ? (
+                  <text
+                    x={cx}
+                    y={acimaDoZero ? Math.max(yTop - 8, 12) : Math.min(yTop + h + 14, alturaInterna - 6)}
+                    textAnchor="middle"
+                    fontSize={10}
+                    fontWeight={700}
+                    fill="var(--muted-foreground)"
+                    pointerEvents="none"
+                  >
+                    {rotuloValor}
+                  </text>
+                ) : (
+                  <text
+                    x={cx}
+                    y={yTop + h / 2 + 3.5}
+                    textAnchor="middle"
+                    fontSize={10.5}
+                    fontWeight={800}
+                    fill="#ffffff"
+                    pointerEvents="none"
+                  >
+                    {rotuloValor}
+                  </text>
+                )}
               </Group>
             );
           })}
         </Group>
 
-        <Group left={MARGEM.left} top={MARGEM.top + alturaInterna}>
-          <AxisBottom
-            scale={xScale}
-            tickLabelProps={() => ({
-              fill: "var(--muted-foreground)",
-              fontSize: 10.5,
-              textAnchor: "end",
-              angle: -55,
-              dy: "0.3em",
-              dx: "-0.3em",
-            })}
-            hideAxisLine
-            tickStroke="var(--border)"
-          />
+        <Group left={MARGEM.left} top={MARGEM.top + alturaInterna + 14}>
+          {barras.map((barra, i) => {
+            const cx = (xScale(barra.rotulo) ?? 0) + bw / 2;
+            const [linha1, linha2] = quebrarRotulo(barra.rotulo, maxCharsPorLinha);
+            const destaque = barra.tipo !== "delta";
+            return (
+              <text
+                key={barra.rotulo}
+                x={cx}
+                y={0}
+                textAnchor="middle"
+                fontSize={10}
+                fontWeight={destaque ? 800 : 600}
+                fill={destaque ? "var(--foreground)" : "var(--muted-foreground)"}
+              >
+                <tspan x={cx} dy={0}>
+                  {linha1}
+                </tspan>
+                {linha2 && (
+                  <tspan x={cx} dy={12}>
+                    {linha2}
+                  </tspan>
+                )}
+              </text>
+            );
+          })}
         </Group>
       </svg>
 
       {tooltipOpen && tooltipData && (
         <TooltipInPortal left={tooltipLeft} top={tooltipTop} style={estiloTooltip}>
           <div className="font-semibold">{tooltipData.rotulo}</div>
-          <div className="text-muted-foreground">{formatarMoeda(tooltipData.valorReal)}</div>
+          <div className="text-muted-foreground">
+            {tooltipData.tipo === "delta" ? "Variação: " : "Acumulado: "}
+            {formatarMoeda(tooltipData.valorMostrado)}
+          </div>
         </TooltipInPortal>
       )}
     </div>
@@ -195,10 +292,9 @@ function GraficoInterno({ barras, largura, altura }: { barras: BarraWaterfall[];
 
 // Piso de largura por barra — sem isso, uma DRE com muitas linhas (a
 // estrutura é configurável por tenant) espreme o bandwidth até o rótulo
-// flutuante de valor e o rótulo do eixo colidirem uns com os outros
-// (confirmado: 15+ linhas já colidia comprimido na largura do card). Com
-// o piso, o gráfico passa a rolar horizontalmente em vez de comprimir.
-const LARGURA_MIN_POR_BARRA = 68;
+// de 2 linhas não caber. Com o piso, o gráfico passa a rolar
+// horizontalmente em vez de comprimir.
+const LARGURA_MIN_POR_BARRA = 80;
 
 export function WaterfallDre({ linhas, altura = 420 }: { linhas: LinhaWaterfall[]; altura?: number }) {
   const barras = montarBarras(linhas);
