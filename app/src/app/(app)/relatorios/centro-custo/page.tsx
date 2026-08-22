@@ -41,7 +41,7 @@ export default async function PaginaRelatoriosCentroCusto({
                   cor={l.saldo >= 0 ? "#157F6B" : "#B23A2E"}
                   valorFormatado={formatarMoeda(l.saldo)}
                 />
-                <span className={cn("w-28 shrink-0 text-right text-xs font-semibold tabular-nums", l.saldo >= 0 ? "text-[#157F6B]" : "text-[#B23A2E]")}>
+                <span className={cn("min-w-28 shrink-0 text-right text-xs font-semibold tabular-nums", l.saldo >= 0 ? "text-[#157F6B]" : "text-[#B23A2E]")}>
                   {formatarMoeda(l.saldo)}
                 </span>
               </div>

@@ -110,7 +110,7 @@ export default async function PaginaIndicadores() {
                   <li key={f.formaPagamentoId ?? "nao-informado"} className="flex items-center justify-between gap-3 text-sm">
                     <span className="flex-1 truncate text-foreground">{f.nome}</span>
                     <span className="shrink-0 tabular-nums text-muted-foreground">{formatarMoeda(f.valorTotal)}</span>
-                    <span className={cn("w-20 shrink-0 text-right text-xs font-semibold tabular-nums", f.atrasoMedioDias > 0 ? "text-[#B23A2E]" : "text-[#157F6B]")}>
+                    <span className={cn("min-w-20 shrink-0 text-right text-xs font-semibold tabular-nums", f.atrasoMedioDias > 0 ? "text-[#B23A2E]" : "text-[#157F6B]")}>
                       {f.atrasoMedioDias >= 0 ? "+" : ""}
                       {f.atrasoMedioDias.toFixed(1)}d
                     </span>

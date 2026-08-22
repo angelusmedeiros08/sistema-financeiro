@@ -76,7 +76,7 @@ function FaixasAVencer({
               <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
                 <div className="h-full rounded-full" style={{ width: `${Math.max(4, (faixa.total / maior) * 100)}%`, background: cor }} />
               </div>
-              <span className="w-20 shrink-0 text-right text-xs font-semibold tabular-nums text-foreground">
+              <span className="min-w-20 shrink-0 text-right text-xs font-semibold tabular-nums text-foreground">
                 {formatarNumeroCompacto(faixa.total)}
               </span>
             </div>

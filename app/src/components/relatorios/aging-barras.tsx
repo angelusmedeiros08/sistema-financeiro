@@ -32,7 +32,7 @@ export function AgingBarras({ titulo, dados }: { titulo: string; dados: AgingRes
                 cor={CORES_SEVERIDADE[i % CORES_SEVERIDADE.length]}
                 valorFormatado={formatarMoeda(faixa.total)}
               />
-              <span className="w-20 shrink-0 text-right text-xs font-semibold tabular-nums text-foreground">
+              <span className="min-w-20 shrink-0 text-right text-xs font-semibold tabular-nums text-foreground">
                 {formatarNumeroCompacto(faixa.total)}
               </span>
             </div>

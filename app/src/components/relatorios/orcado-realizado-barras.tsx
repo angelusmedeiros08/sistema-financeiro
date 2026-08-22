@@ -37,7 +37,7 @@ export function OrcadoRealizadoBarras({ linhas }: { linhas: LinhaOrcadoRealizado
                   cor="color-mix(in srgb, #E3A62F 50%, transparent)"
                   valorFormatado={formatarMoeda(linha.totalPrevisto)}
                 />
-                <span className="w-16 shrink-0 text-right text-[10px] tabular-nums text-muted-foreground">{formatarNumeroCompacto(linha.totalPrevisto)}</span>
+                <span className="min-w-16 shrink-0 text-right text-[10px] tabular-nums text-muted-foreground">{formatarNumeroCompacto(linha.totalPrevisto)}</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="w-16 shrink-0 text-[10px] text-muted-foreground">Realizado</span>
@@ -46,7 +46,7 @@ export function OrcadoRealizadoBarras({ linhas }: { linhas: LinhaOrcadoRealizado
                   cor={linha.tipo === "RECEITA" ? "#0FA37E" : "#4C7DF0"}
                   valorFormatado={formatarMoeda(linha.totalRealizado)}
                 />
-                <span className="w-16 shrink-0 text-right text-[10px] font-semibold tabular-nums text-foreground">
+                <span className="min-w-16 shrink-0 text-right text-[10px] font-semibold tabular-nums text-foreground">
                   {formatarNumeroCompacto(linha.totalRealizado)}
                 </span>
               </div>
