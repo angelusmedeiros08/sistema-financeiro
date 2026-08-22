@@ -141,7 +141,11 @@ function CardSaldoProjetado({ saldoAtual, projecoes, limiar, pontos }: SaldoProj
         </span>
       </div>
       <SaldoProjetadoChart pontos={pontos} limiar={limiar} />
-      <div className="mt-3 grid grid-cols-3 gap-3">
+      {/* grid-cols-3 fixo (sem responsivo) deixava "-R$ 19.940.003.522.480,50"
+          (tabular-nums, text-lg) sem espaço nenhum em 375px — texto de
+          célula vizinha se sobrepunha ao invés de quebrar linha, já que
+          grid não trunca/quebra sozinho. Empilha em 1 coluna até sm. */}
+      <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
         {projecoes.map((p) => (
           <div key={p.dias} className={cn("rounded-xl p-3", p.ruptura ? "bg-[#B23A2E]/8" : "bg-muted/40")}>
             <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">D+{p.dias}</p>

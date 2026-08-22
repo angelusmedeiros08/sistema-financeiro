@@ -41,7 +41,7 @@ export default async function PaginaRelatoriosContasBancarias({
                 <h2 className="font-heading text-sm font-bold text-foreground">{c.nome}</h2>
                 <span className="text-lg font-bold tabular-nums text-foreground">{formatarMoeda(c.saldoAcumulado)}</span>
               </div>
-              <div className="grid grid-cols-3 gap-3 border-t border-border pt-3 text-sm">
+              <div className="grid grid-cols-1 gap-3 border-t border-border pt-3 text-sm sm:grid-cols-3">
                 <div>
                   <p className="text-xs text-muted-foreground">Crédito no período</p>
                   <p className="font-semibold tabular-nums text-[#157F6B]">{formatarNumeroCompacto(c.credito)}</p>
