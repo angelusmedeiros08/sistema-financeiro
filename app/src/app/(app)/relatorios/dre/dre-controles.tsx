@@ -7,9 +7,10 @@
 // modo de exibição — por isso ganha um tratamento visualmente diferente
 // (trilho segmentado) em vez do mesmo pill de filtro do Regime.
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
-import { CaretLeft, CaretRight, Clock } from "@phosphor-icons/react/dist/ssr";
+import { Clock } from "@phosphor-icons/react/dist/ssr";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuCheckboxItem } from "@/components/ui/dropdown-menu";
 import { GatilhoFiltro } from "@/components/relatorios/gatilho-filtro";
+import { AnoStepper } from "@/components/relatorios/ano-stepper";
 import { cn } from "@/lib/utils";
 import type { Regime } from "@/lib/relatorios/regime";
 
@@ -54,25 +55,7 @@ export function DreControles({ regime, ano, aba }: { regime: Regime; ano: number
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <div className="flex items-center gap-0.5 rounded-[10px] border border-border bg-card px-1 py-[3px] shadow-[0_1px_2px_rgba(26,29,31,0.03)]">
-          <button
-            type="button"
-            onClick={() => navegarCom("ano", String(ano - 1))}
-            className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-            aria-label="Ano anterior"
-          >
-            <CaretLeft size={12} weight="bold" />
-          </button>
-          <span className="min-w-[3.5ch] text-center text-xs font-bold tabular-nums text-foreground">{ano}</span>
-          <button
-            type="button"
-            onClick={() => navegarCom("ano", String(ano + 1))}
-            className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-            aria-label="Próximo ano"
-          >
-            <CaretRight size={12} weight="bold" />
-          </button>
-        </div>
+        <AnoStepper ano={ano} onMudar={(novoAno) => navegarCom("ano", String(novoAno))} />
       </div>
 
       <div className="flex items-center gap-0.5 rounded-full bg-muted/60 p-1">

@@ -4,6 +4,7 @@ import { createClient } from "@/utils/supabase/server";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
 import { buscarDFCMatriz, buscarFluxoSankey } from "@/lib/relatorios/dfc";
 import { RelatoriosSubNav } from "../sub-nav";
+import { DfcControles } from "./dfc-controles";
 import { SankeyFluxoCaixa } from "@/components/relatorios/sankey-fluxo-caixa";
 import { DfcMatrizTabela } from "@/components/relatorios/dfc-matriz-tabela";
 
@@ -24,12 +25,6 @@ export default async function PaginaRelatoriosDfc({
     buscarFluxoSankey(supabase, { tenantId: contexto.tenantId, ano }),
   ]);
 
-  function href(overrides: Record<string, string>) {
-    const p = new URLSearchParams(Object.entries(sp).filter(([, v]) => v !== undefined) as [string, string][]);
-    for (const [chave, valor] of Object.entries(overrides)) p.set(chave, valor);
-    return `/relatorios/dfc?${p.toString()}`;
-  }
-
   return (
     <div className="flex w-full flex-col gap-6">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -41,18 +36,7 @@ export default async function PaginaRelatoriosDfc({
 
       <RelatoriosSubNav />
 
-      <div className="flex flex-wrap items-center gap-x-6 gap-y-3 rounded-xl border border-border bg-card px-4 py-3">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold text-muted-foreground">Ano</span>
-          <Link href={href({ ano: String(ano - 1) })} className="rounded-full px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-muted">
-            ‹
-          </Link>
-          <span className="text-sm font-bold tabular-nums text-foreground">{ano}</span>
-          <Link href={href({ ano: String(ano + 1) })} className="rounded-full px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-muted">
-            ›
-          </Link>
-        </div>
-      </div>
+      <DfcControles ano={ano} />
 
       <div className="rounded-2xl bg-card shadow-card p-6">
         <div className="mb-4">
