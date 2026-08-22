@@ -66,7 +66,7 @@ export default async function PaginaCamposPersonalizados() {
                     <TableCell className="text-muted-foreground">{ROTULO_TIPO[c.tipo] ?? c.tipo}</TableCell>
                     <TableCell className="text-muted-foreground">{ROTULO_APLICA_A[c.aplica_a] ?? c.aplica_a}</TableCell>
                     <TableCell>
-                      <Badge className={cn("border-none font-semibold", c.disponivel ? "bg-[#157F6B]/12 text-[#0F5F50]" : "bg-muted text-muted-foreground")}>
+                      <Badge className={cn("border-none font-semibold", c.disponivel ? "bg-positivo/12 text-positivo-foreground" : "bg-muted text-muted-foreground")}>
                         {c.disponivel ? "Ativo" : "Removido"}
                       </Badge>
                     </TableCell>

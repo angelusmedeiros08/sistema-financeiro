@@ -17,7 +17,7 @@ export function AgingBarras({ titulo, dados }: { titulo: string; dados: AgingRes
     <div className="rounded-2xl bg-card shadow-card p-5">
       <div className="mb-4 flex items-center justify-between">
         <h2 className="font-heading text-sm font-bold text-foreground">{titulo}</h2>
-        <span className="text-sm font-bold tabular-nums text-[#B23A2E]">{formatarMoeda(dados.totalVencido)}</span>
+        <span className="text-sm font-bold tabular-nums text-destructive">{formatarMoeda(dados.totalVencido)}</span>
       </div>
 
       {faixas.length === 0 ? (

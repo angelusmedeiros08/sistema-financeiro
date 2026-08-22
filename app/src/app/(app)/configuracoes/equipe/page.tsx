@@ -89,7 +89,7 @@ export default async function PaginaEquipe() {
                           pendente
                             ? "bg-[#E3A62F]/15 text-[#B4691E]"
                             : m.ativo
-                              ? "bg-[#157F6B]/12 text-[#0F5F50]"
+                              ? "bg-positivo/12 text-positivo-foreground"
                               : "bg-muted text-muted-foreground",
                         )}
                       >

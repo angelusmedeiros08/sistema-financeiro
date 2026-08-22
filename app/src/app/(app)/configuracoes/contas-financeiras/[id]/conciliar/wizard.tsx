@@ -191,7 +191,7 @@ export function WizardConciliacao({
         {erro && <p className="mt-3 text-sm text-destructive">{erro}</p>}
 
         {resumoImportacao && (
-          <p className="mt-3 flex items-center gap-1.5 text-sm text-[#0F5F50]">
+          <p className="mt-3 flex items-center gap-1.5 text-sm text-positivo-foreground">
             <CheckCircle size={15} weight="fill" />
             {resumoImportacao.inseridas} linha(s) importada(s)
             {resumoImportacao.puladas > 0 ? ` — ${resumoImportacao.puladas} já eram conhecidas, puladas.` : "."}

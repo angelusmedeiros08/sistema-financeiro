@@ -128,7 +128,7 @@ export function PassoPreview({
       </div>
 
       <div className="flex flex-wrap items-center gap-3 rounded-xl bg-muted/40 px-3 py-2 text-sm">
-        <span className="flex items-center gap-1 font-medium text-[#0F5F50]">
+        <span className="flex items-center gap-1 font-medium text-positivo-foreground">
           <CheckCircle size={15} weight="fill" />
           {prontas.length} prontas
         </span>
@@ -211,7 +211,7 @@ export function PassoPreview({
 }
 
 function StatusIcone({ status }: { status: LinhaValidada["status"] }) {
-  if (status === "ok") return <CheckCircle size={16} weight="fill" className="text-[#157F6B]" />;
+  if (status === "ok") return <CheckCircle size={16} weight="fill" className="text-positivo" />;
   if (status === "aviso") return <WarningCircle size={16} weight="fill" className="text-amber-600 dark:text-amber-400" />;
   return <XCircle size={16} weight="fill" className="text-destructive" />;
 }

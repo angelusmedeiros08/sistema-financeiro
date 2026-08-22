@@ -86,7 +86,7 @@ export default async function PaginaFormasPagamento({
                   <TableRow key={f.id}>
                     <TableCell className="font-medium text-foreground">{f.nome}</TableCell>
                     <TableCell>
-                      <Badge className={cn("border-none font-semibold", f.ativo ? "bg-[#157F6B]/12 text-[#0F5F50]" : "bg-muted text-muted-foreground")}>
+                      <Badge className={cn("border-none font-semibold", f.ativo ? "bg-positivo/12 text-positivo-foreground" : "bg-muted text-muted-foreground")}>
                         {f.ativo ? "Ativo" : "Inativo"}
                       </Badge>
                     </TableCell>

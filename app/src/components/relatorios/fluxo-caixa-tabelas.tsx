@@ -18,13 +18,13 @@ const colunasDiario = helperDiario.columns([
     id: "entradas",
     header: "Entradas",
     meta: { numerica: true },
-    cell: (info) => <span className="tabular-nums text-[#157F6B]">{formatarNumeroCompacto(info.getValue())}</span>,
+    cell: (info) => <span className="tabular-nums text-positivo">{formatarNumeroCompacto(info.getValue())}</span>,
   }),
   helperDiario.accessor("saidas", {
     id: "saidas",
     header: "Saídas",
     meta: { numerica: true },
-    cell: (info) => <span className="tabular-nums text-[#B23A2E]">{formatarNumeroCompacto(info.getValue())}</span>,
+    cell: (info) => <span className="tabular-nums text-destructive">{formatarNumeroCompacto(info.getValue())}</span>,
   }),
   helperDiario.accessor("saldoPeriodo", {
     id: "saldoPeriodo",
@@ -66,7 +66,7 @@ const colunasPR = helperPR.columns([
     id: "realizado",
     header: "Realizado",
     meta: { numerica: true },
-    cell: (info) => <span className="tabular-nums text-[#157F6B]">{formatarNumeroCompacto(info.getValue())}</span>,
+    cell: (info) => <span className="tabular-nums text-positivo">{formatarNumeroCompacto(info.getValue())}</span>,
   }),
   helperPR.accessor("variacao", {
     id: "variacao",

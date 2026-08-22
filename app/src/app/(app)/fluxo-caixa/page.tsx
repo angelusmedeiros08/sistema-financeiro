@@ -82,8 +82,8 @@ async function FluxoDiario({
           dados={pontos.map((p) => ({ chave: p.chave, entradas: p.entradas, saidas: -p.saidas }))}
           eixoX="chave"
           series={[
-            { chave: "entradas", nome: "Entradas", cor: "#157F6B" },
-            { chave: "saidas", nome: "Saídas", cor: "#B23A2E" },
+            { chave: "entradas", nome: "Entradas", cor: "var(--positivo)" },
+            { chave: "saidas", nome: "Saídas", cor: "var(--destructive)" },
           ]}
         />
       </div>
@@ -118,7 +118,7 @@ async function FluxoPrevistoRealizado({
           eixoX="chave"
           series={[
             { chave: "previsto", nome: "Previsto", cor: "#E3A62F" },
-            { chave: "realizado", nome: "Realizado", cor: "#157F6B" },
+            { chave: "realizado", nome: "Realizado", cor: "var(--positivo)" },
           ]}
         />
       </div>

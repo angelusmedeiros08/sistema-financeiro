@@ -13,7 +13,7 @@ function Coluna({ titulo, categorias, tom }: { titulo: string; categorias: Categ
   return (
     <div>
       <h3 className="mb-3 flex items-center gap-1.5 text-[11px] font-extrabold tracking-wide text-muted-foreground uppercase">
-        <span className={cn("size-1.5 rounded-full", tom === "receita" ? "bg-[#157F6B]" : "bg-[#B23A2E]")} />
+        <span className={cn("size-1.5 rounded-full", tom === "receita" ? "bg-positivo" : "bg-destructive")} />
         {titulo}
       </h3>
       <div className="flex flex-col gap-2.5">
@@ -32,7 +32,10 @@ function Coluna({ titulo, categorias, tom }: { titulo: string; categorias: Categ
                 className={cn("h-full rounded-full", c.outros && "opacity-50")}
                 style={{
                   width: `${Math.max((c.valor / maior) * 100, 2)}%`,
-                  background: tom === "receita" ? "linear-gradient(90deg, #0FA37E, #157F6B)" : "linear-gradient(90deg, #D8583A, #B23A2E)",
+                  background:
+                    tom === "receita"
+                      ? "linear-gradient(90deg, var(--chart-1), var(--positivo))"
+                      : "linear-gradient(90deg, var(--primary), var(--destructive))",
                 }}
               />
             </div>
@@ -55,7 +58,7 @@ export function ComposicaoFluxoCaixa({ dados }: { dados: ComposicaoFluxoCaixaDad
       <div className="mb-7 flex items-center justify-center gap-3 sm:gap-6">
         <div className="text-center">
           <div className="mb-1 text-[10.5px] font-bold tracking-wide text-muted-foreground uppercase">Receita total</div>
-          <div className="text-lg font-extrabold tabular-nums text-[#157F6B]">{formatarNumeroAbreviado(dados.totalReceitas)}</div>
+          <div className="text-lg font-extrabold tabular-nums text-positivo">{formatarNumeroAbreviado(dados.totalReceitas)}</div>
         </div>
         <ArrowRight size={18} className="shrink-0 text-muted-foreground" />
         <div className="text-center">
@@ -67,7 +70,7 @@ export function ComposicaoFluxoCaixa({ dados }: { dados: ComposicaoFluxoCaixaDad
         <ArrowRight size={18} className="shrink-0 text-muted-foreground" />
         <div className="text-center">
           <div className="mb-1 text-[10.5px] font-bold tracking-wide text-muted-foreground uppercase">Despesa total</div>
-          <div className="text-lg font-extrabold tabular-nums text-[#B23A2E]">{formatarNumeroAbreviado(dados.totalDespesas)}</div>
+          <div className="text-lg font-extrabold tabular-nums text-destructive">{formatarNumeroAbreviado(dados.totalDespesas)}</div>
         </div>
       </div>
 

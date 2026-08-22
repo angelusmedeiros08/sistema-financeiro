@@ -24,13 +24,13 @@ const colunas = helper.columns([
     id: "entradas",
     header: "Entradas",
     meta: { numerica: true },
-    cell: (info) => <span className="font-semibold tabular-nums text-[#157F6B]">{formatarNumeroCompacto(info.getValue())}</span>,
+    cell: (info) => <span className="font-semibold tabular-nums text-positivo">{formatarNumeroCompacto(info.getValue())}</span>,
   }),
   helper.accessor("saidas", {
     id: "saidas",
     header: "Saídas",
     meta: { numerica: true },
-    cell: (info) => <span className="font-semibold tabular-nums text-[#B23A2E]">{formatarNumeroCompacto(info.getValue())}</span>,
+    cell: (info) => <span className="font-semibold tabular-nums text-destructive">{formatarNumeroCompacto(info.getValue())}</span>,
   }),
   helper.accessor("saldo", {
     id: "saldo",

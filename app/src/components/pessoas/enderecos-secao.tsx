@@ -127,7 +127,7 @@ export function EnderecosSecao({ pessoaId, enderecos }: { pessoaId: string; ende
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium text-foreground">{ROTULO_TIPO_ENDERECO[e.tipo] ?? e.tipo}</span>
-                    {e.principal && <Badge className="border-none bg-[#157F6B]/12 font-semibold text-[#0F5F50]">Principal</Badge>}
+                    {e.principal && <Badge className="border-none bg-positivo/12 font-semibold text-positivo-foreground">Principal</Badge>}
                   </div>
                   <p className="truncate text-sm text-muted-foreground">{formatarLinha(e)}</p>
                 </div>

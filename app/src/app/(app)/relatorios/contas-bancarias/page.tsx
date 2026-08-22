@@ -44,15 +44,15 @@ export default async function PaginaRelatoriosContasBancarias({
               <div className="grid grid-cols-1 gap-3 border-t border-border pt-3 text-sm sm:grid-cols-3">
                 <div>
                   <p className="text-xs text-muted-foreground">Crédito no período</p>
-                  <p className="font-semibold tabular-nums text-[#157F6B]">{formatarNumeroCompacto(c.credito)}</p>
+                  <p className="font-semibold tabular-nums text-positivo">{formatarNumeroCompacto(c.credito)}</p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Débito no período</p>
-                  <p className="font-semibold tabular-nums text-[#B23A2E]">{formatarNumeroCompacto(c.debito)}</p>
+                  <p className="font-semibold tabular-nums text-destructive">{formatarNumeroCompacto(c.debito)}</p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Saldo do período</p>
-                  <p className={cn("font-semibold tabular-nums", c.saldoPeriodo >= 0 ? "text-[#157F6B]" : "text-[#B23A2E]")}>
+                  <p className={cn("font-semibold tabular-nums", c.saldoPeriodo >= 0 ? "text-positivo" : "text-destructive")}>
                     {formatarNumeroCompacto(c.saldoPeriodo)}
                   </p>
                 </div>

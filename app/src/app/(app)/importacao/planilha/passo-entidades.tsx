@@ -306,7 +306,7 @@ function LinhaEntidade({
       <div className="min-w-32 flex-1">
         <p className="text-sm font-medium text-foreground">{correspondencia.valorOriginal}</p>
         {correspondencia.tipoCorrespondencia === "exata" && (
-          <Badge variant="outline" className="mt-1 gap-1 border-none bg-[#157F6B]/12 text-[#0F5F50]">
+          <Badge variant="outline" className="mt-1 gap-1 border-none bg-positivo/12 text-positivo-foreground">
             <Check size={11} />
             Igual a &quot;{correspondencia.correspondenciaNome}&quot;
           </Badge>
@@ -416,7 +416,7 @@ function BadgeCorrespondenciaPessoa({ correspondencia }: { correspondencia: Corr
 
   if (tipo === "exata_documento" && candidatos.length === 1) {
     return (
-      <Badge variant="outline" className="mt-1 gap-1 border-none bg-[#157F6B]/12 text-[#0F5F50]">
+      <Badge variant="outline" className="mt-1 gap-1 border-none bg-positivo/12 text-positivo-foreground">
         <Check size={11} />
         Documento bate com &quot;{candidatos[0].nome}&quot;
       </Badge>

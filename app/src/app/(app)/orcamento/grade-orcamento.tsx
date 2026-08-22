@@ -114,7 +114,7 @@ export function GradeOrcamento({ ano, linhas }: { ano: number; linhas: LinhaGrad
                   <span className="text-sm font-semibold text-foreground">{linha.categoriaNome}</span>
                   <span className="flex items-center gap-2">
                     {status && (
-                      <span className={cn("text-[10px] font-medium", status === "erro" ? "text-[#B23A2E]" : "text-muted-foreground")}>
+                      <span className={cn("text-[10px] font-medium", status === "erro" ? "text-destructive" : "text-muted-foreground")}>
                         {status === "salvando" ? "salvando…" : status === "erro" ? "erro" : "salvo"}
                       </span>
                     )}
@@ -175,7 +175,7 @@ export function GradeOrcamento({ ano, linhas }: { ano: number; linhas: LinhaGrad
             <span className="truncate" title={linha.categoriaNome}>
               {linha.categoriaNome}
               {status && (
-                <span className={cn("ml-1.5 text-[9px] font-normal", status === "erro" ? "text-[#B23A2E]" : "text-muted-foreground")}>
+                <span className={cn("ml-1.5 text-[9px] font-normal", status === "erro" ? "text-destructive" : "text-muted-foreground")}>
                   {status === "salvando" ? "salvando…" : status === "erro" ? "erro" : "salvo"}
                 </span>
               )}

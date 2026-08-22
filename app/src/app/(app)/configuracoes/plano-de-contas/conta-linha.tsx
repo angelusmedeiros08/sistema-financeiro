@@ -32,10 +32,10 @@ const ROTULO_TIPO: Record<string, string> = Object.fromEntries(OPCOES_TIPO.map((
 // teal, despesa e passivo pra coral) — o ponto colorido deixa a coluna
 // Tipo escaneável sem precisar ler o texto linha a linha.
 const COR_TIPO: Record<string, string> = {
-  ATIVO: "#157F6B",
-  RECEITA: "#157F6B",
-  PASSIVO: "#B23A2E",
-  DESPESA: "#B23A2E",
+  ATIVO: "var(--positivo)",
+  RECEITA: "var(--positivo)",
+  PASSIVO: "var(--destructive)",
+  DESPESA: "var(--destructive)",
   PATRIMONIO_LIQUIDO: "#7A8B5C",
 };
 
@@ -73,7 +73,7 @@ export function ContaLinha({ conta, todasContas }: { conta: ContaContabilComNive
           </span>
         </TableCell>
         <TableCell>
-          <Badge className={cn("border-none font-semibold", conta.natureza === "DEVEDORA" ? "bg-[#7A8B5C]/12 text-[#4F5C3A]" : "bg-[#157F6B]/12 text-[#0F5F50]")}>
+          <Badge className={cn("border-none font-semibold", conta.natureza === "DEVEDORA" ? "bg-[#7A8B5C]/12 text-[#4F5C3A]" : "bg-positivo/12 text-positivo-foreground")}>
             {conta.natureza === "DEVEDORA" ? "Devedora" : "Credora"}
           </Badge>
         </TableCell>

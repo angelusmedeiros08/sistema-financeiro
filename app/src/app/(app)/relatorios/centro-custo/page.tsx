@@ -38,10 +38,10 @@ export default async function PaginaRelatoriosCentroCusto({
                 <span className="w-40 shrink-0 truncate text-xs font-medium text-foreground">{l.nome}</span>
                 <TrilhoBarra
                   valorPercentual={Math.abs(l.saldo) / maiorSaldoAbsoluto}
-                  cor={l.saldo >= 0 ? "#157F6B" : "#B23A2E"}
+                  cor={l.saldo >= 0 ? "var(--positivo)" : "var(--destructive)"}
                   valorFormatado={formatarMoeda(l.saldo)}
                 />
-                <span className={cn("min-w-28 shrink-0 text-right text-xs font-semibold tabular-nums", l.saldo >= 0 ? "text-[#157F6B]" : "text-[#B23A2E]")}>
+                <span className={cn("min-w-28 shrink-0 text-right text-xs font-semibold tabular-nums", l.saldo >= 0 ? "text-positivo" : "text-destructive")}>
                   {formatarMoeda(l.saldo)}
                 </span>
               </div>

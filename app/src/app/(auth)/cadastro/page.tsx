@@ -25,7 +25,7 @@ export default function PaginaCadastro() {
           Cadastro fechado no momento — peça um convite a quem já usa o sistema.
         </p>
       ) : estado.sucesso ? (
-        <p className="rounded-xl border border-[#157F6B]/25 bg-[#157F6B]/10 p-4 text-sm text-[#0F5F50]">
+        <p className="rounded-xl border border-positivo/25 bg-positivo/10 p-4 text-sm text-positivo-foreground">
           {estado.sucesso}
         </p>
       ) : (

@@ -31,7 +31,7 @@ function criarColunas(maior: number) {
               {linha.categoriaNome}
             </span>
             <div className="w-full max-w-40">
-              <TrilhoBarra valorPercentual={linha.total / maior} cor="#B23A2E" espessura={5} valorFormatado={formatarMoeda(linha.total)} />
+              <TrilhoBarra valorPercentual={linha.total / maior} cor="var(--destructive)" espessura={5} valorFormatado={formatarMoeda(linha.total)} />
             </div>
           </div>
         );

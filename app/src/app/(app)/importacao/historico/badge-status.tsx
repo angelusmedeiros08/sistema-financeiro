@@ -15,7 +15,7 @@ export function BadgeStatusImportacao({ status }: { status: string }) {
         status === "em_andamento"
           ? "bg-amber-500/12 text-amber-700"
           : status === "concluida"
-            ? "bg-[#157F6B]/12 text-[#0F5F50]"
+            ? "bg-positivo/12 text-positivo-foreground"
             : "bg-muted text-muted-foreground",
       )}
     >

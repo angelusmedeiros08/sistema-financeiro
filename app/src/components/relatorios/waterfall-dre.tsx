@@ -106,16 +106,17 @@ function quebrarRotulo(texto: string, maxCharsPorLinha: number): [string, string
 }
 
 function corBarra(barra: BarraWaterfall): { fill: string; stroke: string; fillOpacity: number; strokeWidth: number } {
-  if (barra.tipo === "final") return { fill: "#D8583A", stroke: "#a8412a", fillOpacity: 1, strokeWidth: 2 };
+  if (barra.tipo === "final")
+    return { fill: "var(--primary)", stroke: "color-mix(in srgb, var(--primary) 80%, black)", fillOpacity: 1, strokeWidth: 2 };
   const positivo = barra.valorMostrado >= 0;
   if (barra.tipo === "checkpoint") {
     return positivo
-      ? { fill: "#157F6B", stroke: "#0d5d4e", fillOpacity: 1, strokeWidth: 1.5 }
-      : { fill: "#B23A2E", stroke: "#8a2c22", fillOpacity: 1, strokeWidth: 1.5 };
+      ? { fill: "var(--positivo)", stroke: "color-mix(in srgb, var(--positivo) 80%, black)", fillOpacity: 1, strokeWidth: 1.5 }
+      : { fill: "var(--destructive)", stroke: "color-mix(in srgb, var(--destructive) 80%, black)", fillOpacity: 1, strokeWidth: 1.5 };
   }
   return positivo
-    ? { fill: "#157F6B", stroke: "#157F6B", fillOpacity: 0.32, strokeWidth: 1 }
-    : { fill: "#B23A2E", stroke: "#B23A2E", fillOpacity: 0.32, strokeWidth: 1 };
+    ? { fill: "var(--positivo)", stroke: "var(--positivo)", fillOpacity: 0.32, strokeWidth: 1 }
+    : { fill: "var(--destructive)", stroke: "var(--destructive)", fillOpacity: 0.32, strokeWidth: 1 };
 }
 
 const MARGEM = { top: 24, right: 12, bottom: 54, left: 12 };

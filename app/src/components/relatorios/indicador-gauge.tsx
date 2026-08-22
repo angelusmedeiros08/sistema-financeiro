@@ -12,15 +12,15 @@ import { Sparkline } from "@/components/painel/sparkline";
 // número dentro do anel — o percentual vira item de legenda (bolinha +
 // número em negrito) do lado, no mesmo padrão da referência Taskcore.
 const ZONAS_PADRAO = [
-  { ate: 0.4, cor: "#B23A2E" },
+  { ate: 0.4, cor: "var(--destructive)" },
   { ate: 0.7, cor: "#E3A62F" },
-  { ate: 1, cor: "#157F6B" },
+  { ate: 1, cor: "var(--positivo)" },
 ] as const;
 
 const ZONAS_INVERTIDAS = [
-  { ate: 0.3, cor: "#157F6B" },
+  { ate: 0.3, cor: "var(--positivo)" },
   { ate: 0.65, cor: "#E3A62F" },
-  { ate: 1, cor: "#B23A2E" },
+  { ate: 1, cor: "var(--destructive)" },
 ] as const;
 
 function corDaZona(valor: number, invertido: boolean): string {

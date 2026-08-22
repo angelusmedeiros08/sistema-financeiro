@@ -152,7 +152,7 @@ export function PassoRevisao({
       </div>
 
       <div className="flex flex-wrap items-center gap-3 rounded-xl bg-muted/40 px-3 py-2 text-sm">
-        <span className="flex items-center gap-1 font-medium text-[#0F5F50]">
+        <span className="flex items-center gap-1 font-medium text-positivo-foreground">
           <CheckCircle size={15} weight="fill" />
           {prontas.length} prontas
         </span>
@@ -202,7 +202,7 @@ export function PassoRevisao({
                     ) : l.status === "precisa_confirmar" ? (
                       <WarningCircle size={16} weight="fill" className="text-amber-600 dark:text-amber-400" />
                     ) : (
-                      <CheckCircle size={16} weight="fill" className="text-[#157F6B]" />
+                      <CheckCircle size={16} weight="fill" className="text-positivo" />
                     )}
                     {l.erros.length > 0 && <p className="mt-0.5 max-w-40 text-xs text-muted-foreground">{l.erros.join(" ")}</p>}
                     {l.avisos.length > 0 && <p className="mt-0.5 max-w-40 text-xs text-amber-700 dark:text-amber-400">{l.avisos.join(" ")}</p>}

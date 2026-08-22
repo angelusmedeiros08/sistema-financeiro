@@ -91,7 +91,7 @@ export function PassoResultado({ linhas, contaFinanceiraId, onReiniciar }: { lin
       {concluido && (
         <>
           <div className="flex flex-wrap gap-4">
-            <span className="flex items-center gap-1.5 text-sm font-medium text-[#0F5F50]">
+            <span className="flex items-center gap-1.5 text-sm font-medium text-positivo-foreground">
               <CheckCircle size={16} weight="fill" />
               {sucessos} importados com sucesso
             </span>

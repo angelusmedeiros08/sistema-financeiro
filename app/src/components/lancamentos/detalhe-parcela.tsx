@@ -101,7 +101,7 @@ function LinhaBaixa({ baixa, caminhoPagina }: { baixa: Baixa; caminhoPagina: str
           {baixa.estornado_em ? (
             <Badge className="border-none bg-muted font-semibold text-muted-foreground">Estornada</Badge>
           ) : (
-            <Badge className="border-none bg-[#157F6B]/12 font-semibold text-[#0F5F50]">Válida</Badge>
+            <Badge className="border-none bg-positivo/12 font-semibold text-positivo-foreground">Válida</Badge>
           )}
         </TableCell>
         <TableCell className="text-right">

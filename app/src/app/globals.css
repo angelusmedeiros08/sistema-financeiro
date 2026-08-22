@@ -28,6 +28,7 @@
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -79,6 +80,7 @@
   --positivo: #157f6b;
   --positivo-foreground: #0f5f50;
   --destructive: #b23a2e;
+  --destructive-foreground: #8a2e24;
   --border: #e5e1d8;
   --input: #e5e1d8;
   --ring: #d8583a;
@@ -119,7 +121,12 @@
   --accent-gold: #c99a3b;
   --positivo: #1f9c84;
   --positivo-foreground: #6fd3bb;
-  --destructive: #c94a3d;
+  /* #c94a3d (mesmo tom do light, sem ajuste) só batia ~3.7:1 contra
+     --background aqui — abaixo do minimo de leitura de texto normal
+     (4.5:1). Clareado pra ~5:1, mesma faixa de --positivo/--primary
+     escuros, sem sair da familia de vermelho quente já estabelecida. */
+  --destructive: #e35f4f;
+  --destructive-foreground: #f2a99b;
   --border: rgba(255, 255, 255, 0.1);
   --input: rgba(255, 255, 255, 0.14);
   --ring: #e2694b;

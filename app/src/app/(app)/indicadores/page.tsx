@@ -110,7 +110,7 @@ export default async function PaginaIndicadores() {
                   <li key={f.formaPagamentoId ?? "nao-informado"} className="flex items-center justify-between gap-3 text-sm">
                     <span className="flex-1 truncate text-foreground">{f.nome}</span>
                     <span className="shrink-0 tabular-nums text-muted-foreground">{formatarMoeda(f.valorTotal)}</span>
-                    <span className={cn("min-w-20 shrink-0 text-right text-xs font-semibold tabular-nums", f.atrasoMedioDias > 0 ? "text-[#B23A2E]" : "text-[#157F6B]")}>
+                    <span className={cn("min-w-20 shrink-0 text-right text-xs font-semibold tabular-nums", f.atrasoMedioDias > 0 ? "text-destructive" : "text-positivo")}>
                       {f.atrasoMedioDias >= 0 ? "+" : ""}
                       {f.atrasoMedioDias.toFixed(1)}d
                     </span>
@@ -134,7 +134,7 @@ function CardSaldoProjetado({ saldoAtual, projecoes, limiar, pontos }: SaldoProj
       </div>
       <div className="mb-2 flex items-center gap-4 text-[11px] font-medium text-muted-foreground">
         <span className="flex items-center gap-1.5">
-          <span className="h-[2px] w-4 rounded-full bg-[#157F6B]" /> Realizado
+          <span className="h-[2px] w-4 rounded-full bg-positivo" /> Realizado
         </span>
         <span className="flex items-center gap-1.5">
           <span className="h-[2px] w-4 rounded-full bg-[#4C7DF0]" style={{ backgroundImage: "repeating-linear-gradient(90deg,#4C7DF0 0 4px,transparent 4px 7px)" }} /> Projetado
@@ -147,9 +147,9 @@ function CardSaldoProjetado({ saldoAtual, projecoes, limiar, pontos }: SaldoProj
           grid não trunca/quebra sozinho. Empilha em 1 coluna até sm. */}
       <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
         {projecoes.map((p) => (
-          <div key={p.dias} className={cn("rounded-xl p-3", p.ruptura ? "bg-[#B23A2E]/8" : "bg-muted/40")}>
+          <div key={p.dias} className={cn("rounded-xl p-3", p.ruptura ? "bg-destructive/8" : "bg-muted/40")}>
             <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">D+{p.dias}</p>
-            <p className={cn("mt-1 text-lg font-bold tabular-nums", p.ruptura ? "text-[#B23A2E]" : "text-foreground")}>{formatarMoeda(p.saldo)}</p>
+            <p className={cn("mt-1 text-lg font-bold tabular-nums", p.ruptura ? "text-destructive" : "text-foreground")}>{formatarMoeda(p.saldo)}</p>
           </div>
         ))}
       </div>
@@ -162,7 +162,7 @@ function CardPrazoMedio({ titulo, dias, quantidadeBaixas }: { titulo: string; di
   return (
     <div className="rounded-2xl bg-card shadow-card p-5">
       <p className="mb-1 text-xs font-semibold text-muted-foreground">{titulo}</p>
-      <p className={cn("text-2xl font-bold tabular-nums", dias > 0 ? "text-[#B23A2E]" : "text-[#157F6B]")}>
+      <p className={cn("text-2xl font-bold tabular-nums", dias > 0 ? "text-destructive" : "text-positivo")}>
         {dias >= 0 ? "+" : ""}
         {dias.toFixed(1)} dias
       </p>
@@ -192,7 +192,7 @@ function ListaVariacaoCategorias({
               <li key={l.categoriaId} className="flex items-center gap-3 text-sm">
                 <span className="flex-1 truncate text-foreground">{l.nome}</span>
                 <span className="shrink-0 tabular-nums text-muted-foreground">{formatarMoeda(l.valorMesAtual)}</span>
-                <span className={cn("flex shrink-0 items-center gap-0.5 text-xs font-semibold tabular-nums", positivo ? "text-[#157F6B]" : "text-[#B23A2E]")}>
+                <span className={cn("flex shrink-0 items-center gap-0.5 text-xs font-semibold tabular-nums", positivo ? "text-positivo" : "text-destructive")}>
                   {positivo ? <ArrowUp size={11} weight="bold" /> : <ArrowDown size={11} weight="bold" />}
                   {formatarPercentual(Math.abs(l.variacaoPercentual))}
                 </span>

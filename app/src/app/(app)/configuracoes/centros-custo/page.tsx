@@ -91,7 +91,7 @@ export default async function PaginaCentrosCusto({
                       <TagCategoria nome={c.nome} />
                     </TableCell>
                     <TableCell>
-                      <Badge className={cn("border-none font-semibold", c.ativo ? "bg-[#157F6B]/12 text-[#0F5F50]" : "bg-muted text-muted-foreground")}>
+                      <Badge className={cn("border-none font-semibold", c.ativo ? "bg-positivo/12 text-positivo-foreground" : "bg-muted text-muted-foreground")}>
                         {c.ativo ? "Ativo" : "Inativo"}
                       </Badge>
                     </TableCell>

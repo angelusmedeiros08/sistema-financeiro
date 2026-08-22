@@ -106,7 +106,7 @@ async function AbaContas({ tenantId, supabase }: { tenantId: string; supabase: A
                     <TableCell className="text-muted-foreground">{c.banco ?? "-"}</TableCell>
                     <TableCell className="text-right tabular-nums">{formatarMoeda(Number(c.saldo_inicial))}</TableCell>
                     <TableCell>
-                      <Badge className={cn("border-none font-semibold", c.ativo ? "bg-[#157F6B]/12 text-[#0F5F50]" : "bg-muted text-muted-foreground")}>
+                      <Badge className={cn("border-none font-semibold", c.ativo ? "bg-positivo/12 text-positivo-foreground" : "bg-muted text-muted-foreground")}>
                         {c.ativo ? "Ativa" : "Inativa"}
                       </Badge>
                     </TableCell>
@@ -180,11 +180,11 @@ async function VisaoGeralContasFinanceiras({ tenantId, supabase }: { tenantId: s
               <div className="mt-2 grid grid-cols-2 gap-3 text-sm">
                 <div>
                   <p className="text-xs text-muted-foreground">Crédito</p>
-                  <p className="font-semibold tabular-nums text-[#157F6B]">{formatarMoeda(c.credito)}</p>
+                  <p className="font-semibold tabular-nums text-positivo">{formatarMoeda(c.credito)}</p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Débito</p>
-                  <p className="font-semibold tabular-nums text-[#B23A2E]">{formatarMoeda(c.debito)}</p>
+                  <p className="font-semibold tabular-nums text-destructive">{formatarMoeda(c.debito)}</p>
                 </div>
               </div>
             </div>

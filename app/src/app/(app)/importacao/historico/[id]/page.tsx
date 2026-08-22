@@ -61,7 +61,7 @@ export default async function PaginaDetalheImportacao({ params }: { params: Prom
         </div>
         <div className="rounded-2xl bg-card shadow-card p-4">
           <p className="text-xs font-medium text-muted-foreground">Sucesso</p>
-          <p className="mt-1 text-2xl font-bold text-[#0F5F50]">{importacao.sucessos}</p>
+          <p className="mt-1 text-2xl font-bold text-positivo-foreground">{importacao.sucessos}</p>
         </div>
         <div className="rounded-2xl bg-card shadow-card p-4">
           <p className="text-xs font-medium text-muted-foreground">Erro</p>

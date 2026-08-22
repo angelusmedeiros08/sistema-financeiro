@@ -92,7 +92,7 @@ function EnderecoPendenteEditor({
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium text-foreground">{ROTULO_TIPO_ENDERECO[e.tipo]}</span>
-                  {e.principal && <Badge className="border-none bg-[#157F6B]/12 font-semibold text-[#0F5F50]">Principal</Badge>}
+                  {e.principal && <Badge className="border-none bg-positivo/12 font-semibold text-positivo-foreground">Principal</Badge>}
                 </div>
                 <p className="truncate text-sm text-muted-foreground">{formatarLinhaEnderecoPendente(e)}</p>
               </div>
@@ -172,7 +172,7 @@ function ContatoPendenteEditor({
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium text-foreground">{c.nome}</span>
                   {c.cargo && <span className="text-xs text-muted-foreground">{c.cargo}</span>}
-                  {c.principal && <Badge className="border-none bg-[#157F6B]/12 font-semibold text-[#0F5F50]">Principal</Badge>}
+                  {c.principal && <Badge className="border-none bg-positivo/12 font-semibold text-positivo-foreground">Principal</Badge>}
                 </div>
                 <p className="truncate text-sm text-muted-foreground">
                   {[c.email, c.telefone].filter(Boolean).join(" · ") || "Sem e-mail/telefone"}

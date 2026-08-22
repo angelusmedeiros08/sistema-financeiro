@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 function badgeCorrespondencia(correspondencia: LinhaConciliacao["correspondencia"]) {
   if (correspondencia === "exata") {
     return (
-      <Badge variant="outline" className="gap-1 border-none bg-[#157F6B]/12 text-[#0F5F50]">
+      <Badge variant="outline" className="gap-1 border-none bg-positivo/12 text-positivo-foreground">
         <Check size={11} />
         Igual — só confirmar
       </Badge>
@@ -140,7 +140,7 @@ export function LinhaConciliacaoCard({
         <div>
           <div className="flex items-center gap-2">
             <span className="text-sm font-semibold text-foreground">{formatarMoeda(linha.valor)}</span>
-            <Badge className={cn("border-none text-[10px] font-semibold", linha.tipo === "CREDITO" ? "bg-[#157F6B]/12 text-[#0F5F50]" : "bg-[#B23A2E]/12 text-[#B23A2E]")}>
+            <Badge className={cn("border-none text-[10px] font-semibold", linha.tipo === "CREDITO" ? "bg-positivo/12 text-positivo-foreground" : "bg-destructive/12 text-destructive-foreground")}>
               {linha.tipo === "CREDITO" ? "Crédito" : "Débito"}
             </Badge>
             <span className="text-xs text-muted-foreground">{formatarDataIsoParaBR(linha.data)}</span>
@@ -161,7 +161,7 @@ export function LinhaConciliacaoCard({
             </label>
           ))}
           <div className="mt-1 flex items-center justify-between border-t border-border pt-2 text-xs">
-            <span className={cn("font-medium", somaBate ? "text-[#0F5F50]" : "text-muted-foreground")}>
+            <span className={cn("font-medium", somaBate ? "text-positivo-foreground" : "text-muted-foreground")}>
               {formatarMoeda(somaSelecionada)} selecionado de {formatarMoeda(linha.valor)} do extrato
             </span>
             <Button type="button" size="sm" className="h-7 text-xs" disabled={!somaBate || selecionados.size === 0 || enviando} onClick={confirmar}>

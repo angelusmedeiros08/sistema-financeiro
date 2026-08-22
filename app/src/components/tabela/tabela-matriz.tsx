@@ -61,7 +61,7 @@ export type TipoLinhaMatriz = "detalhe" | "subtotal" | "final";
 
 /** Valor tabular-nums colorido por sinal — recebe o texto já formatado (ex: "–" pra zero). */
 export function ValorMatriz({ valor, formatado }: { valor: number; formatado: string }) {
-  return <span className={valor > 0 ? "text-[#157F6B]" : valor < 0 ? "text-[#B23A2E]" : "text-muted-foreground/40"}>{formatado}</span>;
+  return <span className={valor > 0 ? "text-positivo" : valor < 0 ? "text-destructive" : "text-muted-foreground/40"}>{formatado}</span>;
 }
 
 /** Coluna AV% — percentual de participação com mini-barra horizontal. */
@@ -70,7 +70,7 @@ export function CelulaAV({ percentual, negativo = false }: { percentual: number;
   return (
     <span className="inline-flex items-center gap-1.5">
       <span className="h-1 w-8.5 overflow-hidden rounded-[3px] bg-muted">
-        <span className="block h-full rounded-[3px]" style={{ width: `${largura}%`, background: negativo ? "#B23A2E" : "#157F6B" }} />
+        <span className="block h-full rounded-[3px]" style={{ width: `${largura}%`, background: negativo ? "var(--destructive)" : "var(--positivo)" }} />
       </span>
       <span className="w-7.5 text-right text-[11px] font-semibold text-muted-foreground tabular-nums">
         {(percentual * 100).toLocaleString("pt-BR", { maximumFractionDigits: percentual !== 0 && Math.abs(percentual) < 0.01 ? 1 : 0 })}%
@@ -87,7 +87,7 @@ export function ChipDelta({ percentual }: { percentual: number }) {
     <span
       className={cn(
         "ml-1.5 inline-flex items-center gap-0.5 rounded-full px-1.5 py-px text-[10px] font-bold",
-        sobe ? "bg-[#157F6B]/10 text-[#157F6B]" : "bg-[#B23A2E]/9 text-[#B23A2E]",
+        sobe ? "bg-positivo/10 text-positivo" : "bg-destructive/9 text-destructive",
       )}
     >
       {sobe ? "▲" : "▼"} {Math.abs(percentual * 100).toLocaleString("pt-BR", { maximumFractionDigits: 0 })}%
@@ -248,7 +248,7 @@ export function TabelaMatriz<TData extends Record<string, any>>({
                         {ultimaFixa && (tipo === "subtotal" || tipo === "final") && (
                           <span
                             className="absolute top-0.5 bottom-0.5 left-0 w-[3px] rounded-full"
-                            style={{ background: tipo === "subtotal" ? "#157F6B" : "#D8583A" }}
+                            style={{ background: tipo === "subtotal" ? "var(--positivo)" : "var(--primary)" }}
                           />
                         )}
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -266,12 +266,12 @@ export function TabelaMatriz<TData extends Record<string, any>>({
         <div className="flex flex-wrap items-center gap-4.5 border-t border-border bg-muted/30 px-4.5 py-3 text-[11px] text-muted-foreground">
           {temSubtotal && (
             <span className="flex items-center gap-1.5">
-              <span className="size-2.5 rounded-[3px]" style={{ background: "#157F6B" }} /> Subtotal
+              <span className="size-2.5 rounded-[3px]" style={{ background: "var(--positivo)" }} /> Subtotal
             </span>
           )}
           {temFinal && (
             <span className="flex items-center gap-1.5">
-              <span className="size-2.5 rounded-[3px]" style={{ background: "#D8583A" }} /> Resultado final
+              <span className="size-2.5 rounded-[3px]" style={{ background: "var(--primary)" }} /> Resultado final
             </span>
           )}
           {ehColunaMesAtual && (

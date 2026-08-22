@@ -10,9 +10,9 @@ const ROTULO: Record<NivelRiscoConcentracao, string> = {
 };
 
 const COR: Record<NivelRiscoConcentracao, string> = {
-  ALTO: "bg-[#B23A2E]/12 text-[#8A2E24]",
+  ALTO: "bg-destructive/12 text-destructive-foreground",
   MEDIO: "bg-[#C98A1F]/12 text-[#96690F]",
-  BAIXO: "bg-[#157F6B]/12 text-[#0F5F50]",
+  BAIXO: "bg-positivo/12 text-positivo-foreground",
 };
 
 export function BadgeRiscoConcentracao({ nivelRisco, percentualTop3 }: { nivelRisco: NivelRiscoConcentracao; percentualTop3: number }) {

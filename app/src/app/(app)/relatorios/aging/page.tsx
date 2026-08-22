@@ -35,7 +35,7 @@ export default async function PaginaRelatoriosAging() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <FaixasAVencer titulo="A vencer: a receber" dados={agingReceita} cor="#157F6B" />
+        <FaixasAVencer titulo="A vencer: a receber" dados={agingReceita} cor="var(--positivo)" />
         <FaixasAVencer titulo="A vencer: a pagar" dados={agingDespesa} cor="#C98A1F" />
       </div>
 

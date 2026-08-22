@@ -39,7 +39,7 @@ export function NotificacoesMenu({ notificacoes }: { notificacoes: NotificacaoAl
         <Button variant="ghost" size="icon" className="relative" title="Notificações">
           <Bell size={19} />
           {temNovaHoje && (
-            <span className="absolute right-1.5 top-1.5 size-1.5 rounded-full bg-[#B23A2E]" />
+            <span className="absolute right-1.5 top-1.5 size-1.5 rounded-full bg-destructive" />
           )}
           <span className="sr-only">Notificações</span>
         </Button>

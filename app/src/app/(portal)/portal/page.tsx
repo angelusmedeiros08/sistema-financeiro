@@ -72,7 +72,7 @@ export default async function PaginaPortal() {
                   <span
                     className={
                       "flex size-8 shrink-0 items-center justify-center rounded-lg " +
-                      (evento.tipo === "RECEITA" ? "bg-[#157F6B]" : "bg-[#B23A2E]")
+                      (evento.tipo === "RECEITA" ? "bg-positivo" : "bg-destructive")
                     }
                   >
                     {evento.tipo === "RECEITA" ? (

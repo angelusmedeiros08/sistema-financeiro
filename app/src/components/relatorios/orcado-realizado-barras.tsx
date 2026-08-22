@@ -18,7 +18,7 @@ export function OrcadoRealizadoBarras({ linhas }: { linhas: LinhaOrcadoRealizado
     <div className="flex flex-col gap-4">
       {linhas.map((linha) => {
         const estourou = linha.tipo === "DESPESA" ? linha.desvioPercentual > 0 : linha.desvioPercentual < 0;
-        const corDesvio = linha.desvioPercentual === 0 ? "text-muted-foreground" : estourou ? "text-[#B23A2E]" : "text-[#157F6B]";
+        const corDesvio = linha.desvioPercentual === 0 ? "text-muted-foreground" : estourou ? "text-destructive" : "text-positivo";
 
         return (
           <div key={linha.categoriaId}>

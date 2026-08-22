@@ -65,7 +65,7 @@ export default async function PaginaHistoricoImportacoes() {
                     {new Date(i.criadoEm).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" })}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
-                    <span className="text-[#0F5F50]">{i.sucessos} ok</span>
+                    <span className="text-positivo-foreground">{i.sucessos} ok</span>
                     {i.erros > 0 && <span className="text-destructive"> · {i.erros} erro{i.erros > 1 ? "s" : ""}</span>}
                     {i.pendentes > 0 && <span> · {i.pendentes} pendente{i.pendentes > 1 ? "s" : ""}</span>}
                   </TableCell>

@@ -49,7 +49,7 @@ export function ImportarPessoasWizard({
                 i === indiceAtual
                   ? "rounded-full bg-primary px-2.5 py-1 text-primary-foreground"
                   : i < indiceAtual
-                    ? "rounded-full bg-[#157F6B]/12 px-2.5 py-1 text-[#0F5F50]"
+                    ? "rounded-full bg-positivo/12 px-2.5 py-1 text-positivo-foreground"
                     : "rounded-full bg-muted px-2.5 py-1"
               }
             >

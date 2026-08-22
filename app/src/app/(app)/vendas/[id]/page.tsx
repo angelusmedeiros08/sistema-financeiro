@@ -18,8 +18,8 @@ function badgeStatus(status: StatusVenda) {
   const mapa: Record<StatusVenda, { rotulo: string; className: string }> = {
     RASCUNHO: { rotulo: "Rascunho", className: "bg-muted text-muted-foreground" },
     ENVIADO: { rotulo: "Enviado", className: "bg-amber-500/12 text-amber-700 dark:text-amber-400" },
-    APROVADO: { rotulo: "Aprovada", className: "bg-[#157F6B]/12 text-[#0F5F50]" },
-    RECUSADO: { rotulo: "Recusada", className: "bg-[#B23A2E]/12 text-[#B23A2E]" },
+    APROVADO: { rotulo: "Aprovada", className: "bg-positivo/12 text-positivo-foreground" },
+    RECUSADO: { rotulo: "Recusada", className: "bg-destructive/12 text-destructive-foreground" },
   };
   const { rotulo, className } = mapa[status];
   return <Badge variant="outline" className={cn("border-none text-[11px] font-semibold", className)}>{rotulo}</Badge>;

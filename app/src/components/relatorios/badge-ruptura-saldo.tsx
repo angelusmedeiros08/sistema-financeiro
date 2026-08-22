@@ -6,6 +6,6 @@ import { formatarMoeda } from "@/lib/formatacao";
 // de concentração.
 export function BadgeRupturaSaldo({ saldoD7 }: { saldoD7: number }) {
   return (
-    <Badge className="border-none font-semibold bg-[#B23A2E]/12 text-[#8A2E24]">Caixa negativo em 7 dias · {formatarMoeda(saldoD7)}</Badge>
+    <Badge className="border-none font-semibold bg-destructive/12 text-destructive-foreground">Caixa negativo em 7 dias · {formatarMoeda(saldoD7)}</Badge>
   );
 }

@@ -64,16 +64,16 @@ declare module "@tanstack/react-table" {
 type VarianteBadge = "positivo" | "pendente" | "negativo" | "neutro";
 
 const TONS_BADGE: Record<VarianteBadge, string> = {
-  positivo: "bg-[#157F6B]/12 text-[#0F5F50]",
+  positivo: "bg-positivo/12 text-positivo-foreground",
   pendente: "bg-[#C98A1F]/12 text-[#96690F]",
-  negativo: "bg-[#B23A2E]/12 text-[#8A2E24]",
+  negativo: "bg-destructive/12 text-destructive-foreground",
   neutro: "bg-muted text-muted-foreground",
 };
 
 const PONTOS_BADGE: Record<VarianteBadge, string> = {
-  positivo: "bg-[#157F6B]",
+  positivo: "bg-positivo",
   pendente: "bg-[#C98A1F]",
-  negativo: "bg-[#B23A2E]",
+  negativo: "bg-destructive",
   neutro: "bg-muted-foreground",
 };
 
@@ -110,7 +110,7 @@ export function CelulaLideranca({ icone: Icone, cor, primario, secundario }: { i
 /** Valor tabular-nums colorido por sinal — recebe o texto já formatado (moeda/percentual). */
 export function ValorLista({ valor, formatado }: { valor: number; formatado: string }) {
   return (
-    <span className={cn("font-bold tabular-nums", valor > 0 ? "text-[#157F6B]" : valor < 0 ? "text-[#B23A2E]" : "text-foreground")}>{formatado}</span>
+    <span className={cn("font-bold tabular-nums", valor > 0 ? "text-positivo" : valor < 0 ? "text-destructive" : "text-foreground")}>{formatado}</span>
   );
 }
 

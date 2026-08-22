@@ -76,7 +76,7 @@ export default async function PaginaRecorrencias() {
                         <Badge
                           className={cn(
                             "border-none font-semibold",
-                            r.ativa ? "bg-[#157F6B]/12 text-[#0F5F50]" : "bg-muted text-muted-foreground",
+                            r.ativa ? "bg-positivo/12 text-positivo-foreground" : "bg-muted text-muted-foreground",
                           )}
                         >
                           {r.ativa ? "Ativa" : "Cancelada"}
