@@ -2,10 +2,10 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
-import { buscarDFCMatriz, buscarFluxoSankey } from "@/lib/relatorios/dfc";
+import { buscarDFCMatriz, buscarComposicaoFluxoCaixa } from "@/lib/relatorios/dfc";
 import { RelatoriosSubNav } from "../sub-nav";
 import { DfcControles } from "./dfc-controles";
-import { SankeyFluxoCaixa } from "@/components/relatorios/sankey-fluxo-caixa";
+import { ComposicaoFluxoCaixa } from "@/components/relatorios/composicao-fluxo-caixa";
 import { DfcMatrizTabela } from "@/components/relatorios/dfc-matriz-tabela";
 
 export default async function PaginaRelatoriosDfc({
@@ -20,9 +20,9 @@ export default async function PaginaRelatoriosDfc({
   const ano = Number(sp.ano) || new Date().getFullYear();
 
   const supabase = await createClient();
-  const [linhas, fluxoSankey] = await Promise.all([
+  const [linhas, composicaoFluxo] = await Promise.all([
     buscarDFCMatriz(supabase, { tenantId: contexto.tenantId, ano }),
-    buscarFluxoSankey(supabase, { tenantId: contexto.tenantId, ano }),
+    buscarComposicaoFluxoCaixa(supabase, { tenantId: contexto.tenantId, ano }),
   ]);
 
   return (
@@ -43,7 +43,7 @@ export default async function PaginaRelatoriosDfc({
           <h2 className="font-heading text-base font-bold text-foreground">Composição do fluxo de caixa realizado</h2>
           <p className="text-xs text-muted-foreground">De onde a receita veio e pra onde ela foi no ano — o que a matriz abaixo, por atividade, não mostra.</p>
         </div>
-        <SankeyFluxoCaixa fluxo={fluxoSankey} />
+        <ComposicaoFluxoCaixa dados={composicaoFluxo} />
       </div>
 
       <div className="flex flex-col gap-3">
