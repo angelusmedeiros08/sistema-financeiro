@@ -70,8 +70,7 @@ export function DetalhePessoa({
       <ContatosSecao pessoaId={pessoa.id} contatos={pessoa.contatos} />
 
       <section>
-        <h2 className="mb-3 text-xs font-bold uppercase tracking-wide text-muted-foreground">Histórico de lançamentos</h2>
-        <TabelaEventos eventos={lancamentos} textoVazio="Nenhum lançamento vinculado a esta pessoa ainda." />
+        <TabelaEventos eventos={lancamentos} textoVazio="Nenhum lançamento vinculado a esta pessoa ainda." titulo="Histórico de lançamentos" />
       </section>
     </div>
   );

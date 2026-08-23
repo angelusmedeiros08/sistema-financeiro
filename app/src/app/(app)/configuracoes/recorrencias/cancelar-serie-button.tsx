@@ -2,7 +2,7 @@
 
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { cancelarRegraRecorrenciaAction } from "@/lib/contabil/recorrencia-actions";
 
 export function CancelarSerieButton({ regraId }: { regraId: string }) {
@@ -17,8 +17,8 @@ export function CancelarSerieButton({ regraId }: { regraId: string }) {
   }
 
   return (
-    <Button size="sm" variant="outline" className="text-destructive" disabled={pendente} onClick={() => iniciarTransicao(acionar)}>
+    <DropdownMenuItem variant="destructive" disabled={pendente} onSelect={() => iniciarTransicao(acionar)}>
       {pendente ? "Cancelando..." : "Cancelar série"}
-    </Button>
+    </DropdownMenuItem>
   );
 }

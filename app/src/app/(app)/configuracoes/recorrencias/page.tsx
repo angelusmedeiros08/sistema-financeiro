@@ -1,15 +1,9 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { EstadoVazio } from "@/components/ui/estado-vazio";
-import { formatarMoeda } from "@/lib/formatacao";
-import { cn } from "@/lib/utils";
 import { ConfiguracoesSubNav } from "../sub-nav";
-import { CancelarSerieButton } from "./cancelar-serie-button";
-
-const ROTULO_UNIDADE: Record<string, string> = { DIA: "dia(s)", SEMANA: "semana(s)", MES: "mês(es)" };
+import { TabelaRecorrencias } from "./tabela-recorrencias";
 
 export default async function PaginaRecorrencias() {
   const contexto = await obterUsuarioETenantAtual();
@@ -29,66 +23,13 @@ export default async function PaginaRecorrencias() {
       <h1 className="text-xl font-bold tracking-tight text-foreground">Recorrências</h1>
       <ConfiguracoesSubNav />
 
-      <section>
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Séries</h2>
-          <p className="text-xs text-muted-foreground">
-            Criadas ao marcar &quot;Repetir lançamento?&quot; numa despesa ou receita.
-          </p>
-        </div>
+      <section className="flex flex-col gap-3">
+        <p className="text-xs text-muted-foreground">Criadas ao marcar &quot;Repetir lançamento?&quot; numa despesa ou receita.</p>
 
         {!regras || regras.length === 0 ? (
           <EstadoVazio texto="Nenhuma série recorrente cadastrada ainda." />
         ) : (
-          <div className="overflow-hidden rounded-2xl bg-card shadow-card">
-            <Table>
-              <TableHeader>
-                <TableRow className="hover:bg-transparent">
-                  <TableHead>Descrição</TableHead>
-                  <TableHead>Frequência</TableHead>
-                  <TableHead>Término</TableHead>
-                  <TableHead className="text-right">Valor</TableHead>
-                  <TableHead className="text-right">Geradas</TableHead>
-                  <TableHead>Situação</TableHead>
-                  <TableHead className="text-right">Ação</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {regras.map((r) => {
-                  const termino = r.numero_ocorrencias
-                    ? `Após ${r.numero_ocorrencias} ocorrências`
-                    : r.data_fim
-                      ? `Até ${new Date(r.data_fim + "T00:00:00").toLocaleDateString("pt-BR")}`
-                      : "Indefinido";
-
-                  return (
-                    <TableRow key={r.id}>
-                      <TableCell className="font-medium text-foreground">{r.descricao}</TableCell>
-                      <TableCell className="text-muted-foreground">
-                        A cada {r.intervalo} {ROTULO_UNIDADE[r.unidade_intervalo]}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">{termino}</TableCell>
-                      <TableCell className="text-right tabular-nums text-foreground">
-                        {formatarMoeda(Number(r.valor_total))}
-                      </TableCell>
-                      <TableCell className="text-right tabular-nums text-muted-foreground">{r.ocorrencias_geradas}</TableCell>
-                      <TableCell>
-                        <Badge
-                          className={cn(
-                            "border-none font-semibold",
-                            r.ativa ? "bg-positivo/12 text-positivo-foreground" : "bg-muted text-muted-foreground",
-                          )}
-                        >
-                          {r.ativa ? "Ativa" : "Cancelada"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">{r.ativa && <CancelarSerieButton regraId={r.id} />}</TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </div>
+          <TabelaRecorrencias regras={regras} />
         )}
       </section>
     </div>

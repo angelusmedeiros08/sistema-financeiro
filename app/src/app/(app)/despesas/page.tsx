@@ -56,8 +56,11 @@ export default async function PaginaDespesas() {
       </section>
 
       <section>
-        <h2 className="mb-3 text-xs font-bold uppercase tracking-wide text-muted-foreground">Lançadas</h2>
-        {!totalEventosTenant ? <CtaImportarPlanilha /> : <TabelaEventos eventos={eventos ?? []} textoVazio="Nenhuma despesa registrada ainda." />}
+        {!totalEventosTenant ? (
+          <CtaImportarPlanilha />
+        ) : (
+          <TabelaEventos eventos={eventos ?? []} textoVazio="Nenhuma despesa registrada ainda." titulo="Lançadas" />
+        )}
       </section>
     </div>
   );
