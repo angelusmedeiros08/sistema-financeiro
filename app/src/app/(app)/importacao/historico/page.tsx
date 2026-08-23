@@ -4,12 +4,7 @@ import { ClockCounterClockwise } from "@phosphor-icons/react/dist/ssr";
 import { createClient } from "@/utils/supabase/server";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
 import { listarImportacoes } from "@/lib/importacoes/importacoes";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { BadgeStatusImportacao } from "./badge-status";
-
-const ROTULO_TIPO: Record<string, string> = {
-  pessoas: "Clientes/Fornecedores",
-};
+import { TabelaHistoricoImportacoes } from "./tabela-historico";
 
 export default async function PaginaHistoricoImportacoes() {
   const contexto = await obterUsuarioETenantAtual();
@@ -39,44 +34,7 @@ export default async function PaginaHistoricoImportacoes() {
           </Link>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-2xl bg-card shadow-card">
-          <Table>
-            <TableHeader>
-              <TableRow className="hover:bg-transparent">
-                <TableHead>Arquivo</TableHead>
-                <TableHead>Tipo</TableHead>
-                <TableHead>Importado por</TableHead>
-                <TableHead>Data</TableHead>
-                <TableHead>Resultado</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {importacoes.map((i) => (
-                <TableRow key={i.id} className="cursor-pointer">
-                  <TableCell>
-                    <Link href={`/importacao/historico/${i.id}`} className="block font-medium text-foreground">
-                      {i.nomeArquivo}
-                    </Link>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">{ROTULO_TIPO[i.tipo] ?? i.tipo}</TableCell>
-                  <TableCell className="text-muted-foreground">{i.criadoPorNome ?? "-"}</TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {new Date(i.criadoEm).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" })}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    <span className="text-positivo-foreground">{i.sucessos} ok</span>
-                    {i.erros > 0 && <span className="text-destructive"> · {i.erros} erro{i.erros > 1 ? "s" : ""}</span>}
-                    {i.pendentes > 0 && <span> · {i.pendentes} pendente{i.pendentes > 1 ? "s" : ""}</span>}
-                  </TableCell>
-                  <TableCell>
-                    <BadgeStatusImportacao status={i.status} />
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+        <TabelaHistoricoImportacoes importacoes={importacoes} />
       )}
     </div>
   );

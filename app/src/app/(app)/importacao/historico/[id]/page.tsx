@@ -4,10 +4,10 @@ import { createClient } from "@/utils/supabase/server";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
 import { buscarImportacao } from "@/lib/importacoes/importacoes";
 import type { Json } from "@/utils/supabase/database.types";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { BadgeStatusImportacao } from "../badge-status";
 import { RetomarPainel } from "./retomar-painel";
 import { DesfazerPainel } from "./desfazer-painel";
+import { TabelaErrosImportacao } from "./tabela-erros";
 
 const ROTULO_TIPO: Record<string, string> = {
   pessoas: "Clientes/Fornecedores",
@@ -81,29 +81,9 @@ export default async function PaginaDetalheImportacao({ params }: { params: Prom
       )}
 
       {itensComErro.length > 0 && (
-        <section>
-          <h2 className="mb-3 text-xs font-bold uppercase tracking-wide text-muted-foreground">Linhas com erro</h2>
-          <div className="overflow-hidden rounded-2xl bg-card shadow-card">
-            <Table>
-              <TableHeader>
-                <TableRow className="hover:bg-transparent">
-                  <TableHead className="w-20">Linha</TableHead>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>Erro</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {itensComErro.map((it) => (
-                  <TableRow key={it.id}>
-                    <TableCell className="text-muted-foreground">{it.linhaNumero}</TableCell>
-                    <TableCell className="font-medium text-foreground">{nomeDoItem(it.dadosNormalizados)}</TableCell>
-                    <TableCell className="text-destructive">{it.erro}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </section>
+        <TabelaErrosImportacao
+          itens={itensComErro.map((it) => ({ id: it.id, linhaNumero: it.linhaNumero, nome: nomeDoItem(it.dadosNormalizados), erro: it.erro }))}
+        />
       )}
     </div>
   );
