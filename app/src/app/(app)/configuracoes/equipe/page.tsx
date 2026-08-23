@@ -1,15 +1,9 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
 import { ConfiguracoesSubNav } from "../sub-nav";
 import { ConvidarForm } from "./convidar-form";
-import { AcessoToggleButton } from "./acesso-toggle-button";
-import { CancelarConviteButton } from "./cancelar-convite-button";
-import { ROTULO_PAPEL } from "@/lib/tenant/rotulos";
-import { corPorNome } from "@/lib/cor-por-nome";
+import { TabelaEquipe } from "./tabela-equipe";
 
 export default async function PaginaEquipe() {
   const contexto = await obterUsuarioETenantAtual();
@@ -45,73 +39,7 @@ export default async function PaginaEquipe() {
       )}
 
       <section>
-        <h2 className="mb-3 text-xs font-bold uppercase tracking-wide text-muted-foreground">Membros</h2>
-        <div className="overflow-hidden rounded-2xl bg-card shadow-card">
-          <Table>
-            <TableHeader>
-              <TableRow className="hover:bg-transparent">
-                <TableHead>Nome</TableHead>
-                <TableHead>E-mail</TableHead>
-                <TableHead>Papel</TableHead>
-                <TableHead>Situação</TableHead>
-                {souAdmin && <TableHead className="text-right">Ação</TableHead>}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {(membros ?? []).map((m) => {
-                // Independe de `ativo`: um convite pendente pode ter sido
-                // revogado numa tentativa anterior sem nunca ter sido aceito
-                // — nesse caso ainda precisa do botão de cancelar (que apaga
-                // a conta de auth), não do de reativar. senha_definida (não
-                // email_confirmed_at do Supabase) é o sinal certo: esse
-                // último já fica true assim que a pessoa clica em "Aceitar
-                // convite", antes de existir senha de verdade.
-                const pendente = !m.senha_definida;
-                return (
-                  <TableRow key={m.usuario_id}>
-                    <TableCell className="font-medium text-foreground">
-                      <div className="flex items-center gap-2.5">
-                        <span
-                          className="flex size-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
-                          style={{ background: corPorNome(m.usuarios?.nome ?? m.usuarios?.email ?? "?").texto }}
-                        >
-                          {(m.usuarios?.nome ?? m.usuarios?.email ?? "?").charAt(0).toUpperCase()}
-                        </span>
-                        {m.usuarios?.nome ?? "-"}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">{m.usuarios?.email ?? "-"}</TableCell>
-                    <TableCell className="text-muted-foreground">{ROTULO_PAPEL[m.papel] ?? m.papel}</TableCell>
-                    <TableCell>
-                      <Badge
-                        className={cn(
-                          "border-none font-semibold",
-                          pendente
-                            ? "bg-[#E3A62F]/15 text-[#B4691E]"
-                            : m.ativo
-                              ? "bg-positivo/12 text-positivo-foreground"
-                              : "bg-muted text-muted-foreground",
-                        )}
-                      >
-                        {pendente ? "Convite pendente" : m.ativo ? "Ativo" : "Revogado"}
-                      </Badge>
-                    </TableCell>
-                    {souAdmin && (
-                      <TableCell className="text-right">
-                        {m.usuario_id !== contexto.user.id &&
-                          (pendente ? (
-                            <CancelarConviteButton usuarioId={m.usuario_id} />
-                          ) : (
-                            <AcessoToggleButton usuarioId={m.usuario_id} ativo={m.ativo} />
-                          ))}
-                      </TableCell>
-                    )}
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </div>
+        <TabelaEquipe membros={membros ?? []} souAdmin={souAdmin} usuarioAtualId={contexto.user.id} />
       </section>
     </div>
   );

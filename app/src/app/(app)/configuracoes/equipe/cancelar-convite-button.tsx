@@ -1,7 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
-import { Button } from "@/components/ui/button";
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { cancelarConviteAction } from "@/lib/tenant/equipe-actions";
 
 export function CancelarConviteButton({ usuarioId }: { usuarioId: string }) {
@@ -15,8 +15,8 @@ export function CancelarConviteButton({ usuarioId }: { usuarioId: string }) {
   }
 
   return (
-    <Button size="sm" variant="outline" className="text-destructive" disabled={pendente} onClick={() => iniciarTransicao(acionar)}>
+    <DropdownMenuItem variant="destructive" disabled={pendente} onSelect={() => iniciarTransicao(acionar)}>
       {pendente ? "..." : "Cancelar convite"}
-    </Button>
+    </DropdownMenuItem>
   );
 }

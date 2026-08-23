@@ -19,20 +19,14 @@ export type LinhaPessoa = {
 // do endereço principal ativo (se houver) só pra exibição na tabela.
 export async function listarPessoas(
   supabase: Cliente,
-  params: { tenant_id: string; perfil: PerfilPessoa; busca?: string },
+  params: { tenant_id: string; perfil: PerfilPessoa },
 ): Promise<LinhaPessoa[]> {
-  let query = supabase
+  const { data, error } = await supabase
     .from("pessoas")
     .select("id, nome, documento, email, telefone, pessoa_enderecos(cidade, uf, principal, substituido_em)")
     .eq("tenant_id", params.tenant_id)
     .contains("perfis", [params.perfil])
     .order("nome");
-
-  if (params.busca?.trim()) {
-    query = query.ilike("nome", `%${params.busca.trim()}%`);
-  }
-
-  const { data, error } = await query;
   if (error || !data) return [];
 
   return data.map((p) => {

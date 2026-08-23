@@ -1,13 +1,12 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { MagnifyingGlass, Plus } from "@phosphor-icons/react/dist/ssr";
+import { Plus } from "@phosphor-icons/react/dist/ssr";
 import { createClient } from "@/utils/supabase/server";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
 import { listarPessoas } from "@/lib/pessoas/buscar-pessoa";
 import { TabelaPessoas } from "@/components/pessoas/tabela-pessoas";
 import { CtaImportarPessoas } from "@/components/pessoas/cta-importar-pessoas";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
 const ABAS = [
@@ -18,16 +17,16 @@ const ABAS = [
 export default async function PaginaFornecedores({
   searchParams,
 }: {
-  searchParams: Promise<{ busca?: string; aba?: string }>;
+  searchParams: Promise<{ aba?: string }>;
 }) {
   const contexto = await obterUsuarioETenantAtual();
   if ("erro" in contexto) redirect("/entrar");
 
-  const { busca, aba = "fornecedores" } = await searchParams;
+  const { aba = "fornecedores" } = await searchParams;
   const abaAtual = ABAS.find((a) => a.valor === aba) ?? ABAS[0];
 
   const supabase = await createClient();
-  const fornecedores = await listarPessoas(supabase, { tenant_id: contexto.tenantId, perfil: abaAtual.perfil, busca });
+  const fornecedores = await listarPessoas(supabase, { tenant_id: contexto.tenantId, perfil: abaAtual.perfil });
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-6">
@@ -56,13 +55,7 @@ export default async function PaginaFornecedores({
         ))}
       </div>
 
-      <form method="get" className="relative max-w-sm">
-        <input type="hidden" name="aba" value={abaAtual.valor} />
-        <MagnifyingGlass size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-        <Input name="busca" defaultValue={busca} placeholder="Buscar por nome..." className="pl-9" />
-      </form>
-
-      {fornecedores.length === 0 && !busca ? (
+      {fornecedores.length === 0 ? (
         <CtaImportarPessoas rotulo={abaAtual.valor === "transportadoras" ? "transportadora" : "fornecedor"} />
       ) : (
         <TabelaPessoas

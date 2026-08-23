@@ -1,7 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
-import { Button } from "@/components/ui/button";
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { definirAcessoUsuarioAction } from "@/lib/tenant/equipe-actions";
 
 export function AcessoToggleButton({ usuarioId, ativo }: { usuarioId: string; ativo: boolean }) {
@@ -15,14 +15,8 @@ export function AcessoToggleButton({ usuarioId, ativo }: { usuarioId: string; at
   }
 
   return (
-    <Button
-      size="sm"
-      variant="outline"
-      className={ativo ? "text-destructive" : undefined}
-      disabled={pendente}
-      onClick={() => iniciarTransicao(acionar)}
-    >
-      {pendente ? "..." : ativo ? "Revogar" : "Reativar"}
-    </Button>
+    <DropdownMenuItem variant={ativo ? "destructive" : "default"} disabled={pendente} onSelect={() => iniciarTransicao(acionar)}>
+      {pendente ? "..." : ativo ? "Revogar acesso" : "Reativar acesso"}
+    </DropdownMenuItem>
   );
 }

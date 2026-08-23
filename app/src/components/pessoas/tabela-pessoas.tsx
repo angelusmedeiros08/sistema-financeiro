@@ -1,8 +1,52 @@
-import Link from "next/link";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+"use client";
+
 import { EstadoVazio } from "@/components/ui/estado-vazio";
+import { TabelaLista, criarColunaLista } from "@/components/tabela/tabela-lista";
 import { corPorNome } from "@/lib/cor-por-nome";
 import type { LinhaPessoa } from "@/lib/pessoas/buscar-pessoa";
+
+const helper = criarColunaLista<LinhaPessoa>();
+
+const colunas = helper.columns([
+  helper.accessor("nome", {
+    id: "nome",
+    header: "Nome",
+    cell: (info) => {
+      const p = info.row.original;
+      return (
+        <div className="flex items-center gap-2.5">
+          <span
+            className="flex size-7 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white"
+            style={{ background: corPorNome(p.nome).texto }}
+          >
+            {p.nome.charAt(0).toUpperCase()}
+          </span>
+          <span className="font-semibold text-foreground">{p.nome}</span>
+        </div>
+      );
+    },
+  }),
+  helper.accessor("documento", {
+    id: "documento",
+    header: "Documento",
+    cell: (info) => <span className="text-muted-foreground">{info.getValue() ?? "-"}</span>,
+  }),
+  helper.accessor("email", {
+    id: "email",
+    header: "E-mail",
+    cell: (info) => <span className="text-muted-foreground">{info.getValue() ?? "-"}</span>,
+  }),
+  helper.accessor("telefone", {
+    id: "telefone",
+    header: "Telefone",
+    cell: (info) => <span className="text-muted-foreground">{info.getValue() ?? "-"}</span>,
+  }),
+  helper.accessor((p) => (p.cidade && p.uf ? `${p.cidade}/${p.uf}` : "-"), {
+    id: "cidadeUf",
+    header: "Cidade/UF",
+    cell: (info) => <span className="text-muted-foreground">{info.getValue()}</span>,
+  }),
+]);
 
 export function TabelaPessoas({
   pessoas,
@@ -18,39 +62,12 @@ export function TabelaPessoas({
   }
 
   return (
-    <div className="overflow-hidden rounded-2xl bg-card shadow-card">
-      <Table>
-        <TableHeader>
-          <TableRow className="hover:bg-transparent">
-            <TableHead>Nome</TableHead>
-            <TableHead>Documento</TableHead>
-            <TableHead>E-mail</TableHead>
-            <TableHead>Telefone</TableHead>
-            <TableHead>Cidade/UF</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {pessoas.map((p) => (
-            <TableRow key={p.id} className="cursor-pointer">
-              <TableCell className="p-0">
-                <Link href={`/${caminhoBase}/${p.id}`} className="flex items-center gap-2.5 px-4 py-2.5 font-medium text-foreground">
-                  <span
-                    className="flex size-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
-                    style={{ background: corPorNome(p.nome).texto }}
-                  >
-                    {p.nome.charAt(0).toUpperCase()}
-                  </span>
-                  {p.nome}
-                </Link>
-              </TableCell>
-              <TableCell className="text-muted-foreground">{p.documento ?? "-"}</TableCell>
-              <TableCell className="text-muted-foreground">{p.email ?? "-"}</TableCell>
-              <TableCell className="text-muted-foreground">{p.telefone ?? "-"}</TableCell>
-              <TableCell className="text-muted-foreground">{p.cidade && p.uf ? `${p.cidade}/${p.uf}` : "-"}</TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+    <TabelaLista
+      titulo={caminhoBase === "clientes" ? "Clientes" : "Fornecedores"}
+      data={pessoas}
+      columns={colunas}
+      buscaPlaceholder="Buscar por nome, documento, e-mail…"
+      linkPara={(p) => `/${caminhoBase}/${p.id}`}
+    />
   );
 }

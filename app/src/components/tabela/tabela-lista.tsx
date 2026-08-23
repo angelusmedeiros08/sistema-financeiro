@@ -20,6 +20,7 @@ import {
   type TableFeatures,
 } from "@tanstack/react-table";
 import { CaretLeft, CaretRight, DotsThree, MagnifyingGlass } from "@phosphor-icons/react/dist/ssr";
+import Link from "next/link";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -133,8 +134,10 @@ interface TabelaListaProps<TData extends Record<string, any>> {
   busca?: boolean;
   /** Mensagem quando `data` já chega vazio (não é o caso de busca sem resultado, que sempre mostra "Nada encontrado"). */
   textoVazio?: string;
-  /** Itens do DropdownMenu de ação por linha — se omitido, a coluna de ação some. */
+  /** Itens do DropdownMenu de ação por linha — se omitido, a coluna de ação some. Ignorado quando `linkPara` está presente. */
   acoes?: (linha: TData) => ReactNode;
+  /** Linha inteira clicável, navegando pro href retornado — sem coluna de ação. Pra listas onde clicar em qualquer parte da linha já é o fluxo natural (ex: ir pro detalhe da pessoa). */
+  linkPara?: (linha: TData) => string;
 }
 
 export function TabelaLista<TData extends Record<string, any>>({
@@ -146,28 +149,33 @@ export function TabelaLista<TData extends Record<string, any>>({
   busca = true,
   textoVazio = "Nada encontrado.",
   acoes,
+  linkPara,
 }: TabelaListaProps<TData>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
   const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: tamanhoPagina });
 
-  const colunasFinais: ColunaLista<TData>[] = acoes
+  const colunasFinais: ColunaLista<TData>[] = acoes && !linkPara
     ? [
         ...columns,
         {
           id: "_acoes",
           header: "",
           enableSorting: false,
-          cell: ({ row }) => (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="flex size-7 items-center justify-center rounded-[7px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
-                  <DotsThree size={18} weight="bold" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">{acoes(row.original)}</DropdownMenuContent>
-            </DropdownMenu>
-          ),
+          cell: ({ row }) => {
+            const conteudo = acoes(row.original);
+            if (!conteudo) return null;
+            return (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="flex size-7 items-center justify-center rounded-[7px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
+                    <DotsThree size={18} weight="bold" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">{conteudo}</DropdownMenuContent>
+              </DropdownMenu>
+            );
+          },
         },
       ]
     : columns;
@@ -248,13 +256,27 @@ export function TabelaLista<TData extends Record<string, any>>({
               </tr>
             ) : (
               linhas.map((row) => (
-                <tr key={row.id} className="group border-b border-border last:border-none hover:bg-muted/40">
+                <tr key={row.id} className={cn("group border-b border-border last:border-none hover:bg-muted/40", linkPara && "cursor-pointer")}>
                   {row.getAllCells().map((cell, i) => (
-                    <td key={cell.id} className={cn("px-4.5 py-3.5 align-middle", cell.column.columnDef.meta?.numerica && "text-right", i === 0 && "relative")}>
+                    <td
+                      key={cell.id}
+                      className={cn(
+                        "align-middle",
+                        cell.column.columnDef.meta?.numerica && "text-right",
+                        i === 0 && "relative",
+                        linkPara ? "p-0" : "px-4.5 py-3.5",
+                      )}
+                    >
                       {i === 0 && (
                         <span className="absolute inset-y-0 left-0 w-[3px] scale-y-0 rounded-full bg-primary transition-transform group-hover:scale-y-100" />
                       )}
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      {linkPara ? (
+                        <Link href={linkPara(row.original)} className="block px-4.5 py-3.5">
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </Link>
+                      ) : (
+                        flexRender(cell.column.columnDef.cell, cell.getContext())
+                      )}
                     </td>
                   ))}
                 </tr>

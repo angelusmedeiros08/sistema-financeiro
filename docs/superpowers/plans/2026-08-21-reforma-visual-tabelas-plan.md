@@ -86,10 +86,10 @@ _Teste por página:_ dado real do tenant, contagem de linha/coluna certa, cores 
 
 Essas já usam `<Table>` do shadcn (não é reescrita do zero, é enriquecimento: ícone+2 linhas, badge, sort, paginação, menu de ação via `DropdownMenu`). Agrupar por domínio pra manter contexto de negócio junto durante a migração:
 
-- **Pessoas/equipe**: `tabela-pessoas.tsx`, `configuracoes/equipe/page.tsx`
+- [x] **Pessoas/equipe**: `tabela-pessoas.tsx`, `configuracoes/equipe/page.tsx` — feito. `tabela-lista.tsx` ganhou prop `linkPara` (linha inteira clicável, sem menu de ação) pra cobrir o padrão de navegação já usado aqui e reaproveitado em `tabela-parcelas-abertas.tsx`/`vendas/page.tsx`. `acoes` agora pode retornar `null` por linha (some o menu `⋯` — usado pra ocultar ação na própria linha do usuário logado em Equipe). Busca server-side redundante (`?busca=`) removida de `/clientes` e `/fornecedores`, substituída pela busca embutida da `TabelaLista`.
 - **Cadastros financeiros**: `configuracoes/categorias/` (+`categoria-linha.tsx`), `configuracoes/contas-financeiras/page.tsx`, `configuracoes/formas-pagamento/page.tsx`, `configuracoes/centros-custo/page.tsx`, `configuracoes/plano-de-contas/` (+`conta-linha.tsx`)
-- **Lançamentos**: `tabela-parcelas-abertas.tsx`, `detalhe-parcela.tsx`, `tabela-eventos.tsx`, `configuracoes/recorrencias/page.tsx`, `configuracoes/regras-categorizacao/tabela-regras.tsx`
-- **Produtos/vendas**: `produtos-servicos/page.tsx` (+`produto-servico-linha.tsx`), `vendas/page.tsx`
+- **Lançamentos**: `tabela-parcelas-abertas.tsx` (linha clicável, usar `linkPara`), `detalhe-parcela.tsx` (⚠️ a tabela de "baixas" tem linha expansível inline pro formulário de anexo — `TabelaLista` não suporta linha expansível; manter essa tabela específica como `<Table>` shadcn puro, não migrar), `tabela-eventos.tsx`, `configuracoes/recorrencias/page.tsx`, `configuracoes/regras-categorizacao/tabela-regras.tsx`
+- **Produtos/vendas**: `produtos-servicos/page.tsx` (+`produto-servico-linha.tsx`), `vendas/page.tsx` (linha clicável, usar `linkPara`)
 - **Importação**: `importacao/planilha/passo-preview.tsx`, `importacao/planilha/passo-mapeamento.tsx`, `importacao/pessoas/passo-revisao.tsx`, `importacao/historico/page.tsx`, `importacao/historico/[id]/page.tsx`
 - **Config diversa**: `configuracoes/campos-personalizados/page.tsx`
 
