@@ -6,10 +6,7 @@ import { buscarContasBancarias } from "@/lib/relatorios/contas-bancarias";
 import { buscarResumoVencimentos } from "@/lib/relatorios/aging";
 import { ConfiguracoesSubNav } from "../sub-nav";
 import { NovaContaFinanceiraForm } from "./nova-conta-form";
-import { ToggleAtivoContaButton } from "./toggle-ativo-button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { TabelaContasFinanceiras } from "./tabela-contas-financeiras";
 import { EstadoVazio } from "@/components/ui/estado-vazio";
 import { StatCard } from "@/components/painel/stat-card";
 import { formatarMoeda } from "@/lib/formatacao";
@@ -19,12 +16,6 @@ const ABAS = [
   { valor: "contas", rotulo: "Contas" },
   { valor: "visao-geral", rotulo: "Visão geral" },
 ] as const;
-
-const ROTULO_TIPO: Record<string, string> = {
-  BANCO: "Conta bancária",
-  CAIXA: "Caixa",
-  CARTEIRA_DIGITAL: "Carteira digital",
-};
 
 export default async function PaginaContasFinanceiras({
   searchParams,
@@ -81,48 +72,10 @@ async function AbaContas({ tenantId, supabase }: { tenantId: string; supabase: A
       </section>
 
       <section>
-        <h2 className="mb-3 text-xs font-bold uppercase tracking-wide text-muted-foreground">Cadastradas</h2>
-
         {!contas || contas.length === 0 ? (
           <EstadoVazio texto="Nenhuma conta financeira cadastrada ainda." />
         ) : (
-          <div className="overflow-hidden rounded-2xl bg-card shadow-card">
-            <Table>
-              <TableHeader>
-                <TableRow className="hover:bg-transparent">
-                  <TableHead>Nome</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Banco</TableHead>
-                  <TableHead className="text-right">Saldo inicial</TableHead>
-                  <TableHead>Situação</TableHead>
-                  <TableHead className="text-right">Ação</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {contas.map((c) => (
-                  <TableRow key={c.id}>
-                    <TableCell className="font-medium text-foreground">{c.nome}</TableCell>
-                    <TableCell className="text-muted-foreground">{ROTULO_TIPO[c.tipo ?? ""] ?? c.tipo ?? "-"}</TableCell>
-                    <TableCell className="text-muted-foreground">{c.banco ?? "-"}</TableCell>
-                    <TableCell className="text-right tabular-nums">{formatarMoeda(Number(c.saldo_inicial))}</TableCell>
-                    <TableCell>
-                      <Badge className={cn("border-none font-semibold", c.ativo ? "bg-positivo/12 text-positivo-foreground" : "bg-muted text-muted-foreground")}>
-                        {c.ativo ? "Ativa" : "Inativa"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button asChild variant="outline" size="sm" className="h-7 text-xs">
-                          <Link href={`/configuracoes/contas-financeiras/${c.id}/conciliar`}>Conciliar</Link>
-                        </Button>
-                        <ToggleAtivoContaButton id={c.id} ativo={c.ativo} />
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+          <TabelaContasFinanceiras contas={contas} />
         )}
       </section>
     </div>

@@ -3,9 +3,7 @@ import Link from "next/link";
 import { createClient } from "@/utils/supabase/server";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
 import { NovaFormaPagamentoForm } from "./nova-forma-pagamento-form";
-import { ToggleAtivoButton } from "./toggle-ativo-button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
+import { TabelaFormasPagamento } from "./tabela-formas-pagamento";
 import { EstadoVazio } from "@/components/ui/estado-vazio";
 import { cn } from "@/lib/utils";
 import { ConfiguracoesSubNav } from "../sub-nav";
@@ -48,9 +46,8 @@ export default async function PaginaFormasPagamento({
         <NovaFormaPagamentoForm />
       </section>
 
-      <section>
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Cadastradas</h2>
+      <section className="flex flex-col gap-3">
+        <div className="flex justify-end">
           <div className="flex gap-1">
             {FILTROS.map((f) => (
               <Link
@@ -72,32 +69,7 @@ export default async function PaginaFormasPagamento({
             texto={`Nenhuma forma de pagamento ${filtro === "inativos" ? "inativa" : "cadastrada"} ainda.`}
           />
         ) : (
-          <div className="overflow-hidden rounded-2xl bg-card shadow-card">
-            <Table>
-              <TableHeader>
-                <TableRow className="hover:bg-transparent">
-                  <TableHead>Nome</TableHead>
-                  <TableHead>Situação</TableHead>
-                  <TableHead className="text-right">Ação</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {formas.map((f) => (
-                  <TableRow key={f.id}>
-                    <TableCell className="font-medium text-foreground">{f.nome}</TableCell>
-                    <TableCell>
-                      <Badge className={cn("border-none font-semibold", f.ativo ? "bg-positivo/12 text-positivo-foreground" : "bg-muted text-muted-foreground")}>
-                        {f.ativo ? "Ativo" : "Inativo"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <ToggleAtivoButton id={f.id} ativo={f.ativo} />
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+          <TabelaFormasPagamento formas={formas} />
         )}
       </section>
     </div>

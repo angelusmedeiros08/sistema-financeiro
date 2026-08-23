@@ -3,11 +3,8 @@ import Link from "next/link";
 import { createClient } from "@/utils/supabase/server";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
 import { NovoCentroCustoForm } from "./novo-centro-custo-form";
-import { ToggleAtivoButton } from "./toggle-ativo-button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
+import { TabelaCentrosCusto } from "./tabela-centros-custo";
 import { EstadoVazio } from "@/components/ui/estado-vazio";
-import { TagCategoria } from "@/components/ui/tag-categoria";
 import { cn } from "@/lib/utils";
 import { ConfiguracoesSubNav } from "../sub-nav";
 
@@ -49,9 +46,8 @@ export default async function PaginaCentrosCusto({
         <NovoCentroCustoForm />
       </section>
 
-      <section>
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Cadastrados</h2>
+      <section className="flex flex-col gap-3">
+        <div className="flex justify-end">
           <div className="flex gap-1">
             {FILTROS.map((f) => (
               <Link
@@ -73,36 +69,7 @@ export default async function PaginaCentrosCusto({
             texto={`Nenhum centro de custo ${filtro === "inativos" ? "inativo" : "cadastrado"} ainda.`}
           />
         ) : (
-          <div className="overflow-hidden rounded-2xl bg-card shadow-card">
-            <Table>
-              <TableHeader>
-                <TableRow className="hover:bg-transparent">
-                  <TableHead>Código</TableHead>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>Situação</TableHead>
-                  <TableHead className="text-right">Ação</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {centros.map((c) => (
-                  <TableRow key={c.id}>
-                    <TableCell className="text-muted-foreground">{c.codigo ?? "-"}</TableCell>
-                    <TableCell>
-                      <TagCategoria nome={c.nome} />
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={cn("border-none font-semibold", c.ativo ? "bg-positivo/12 text-positivo-foreground" : "bg-muted text-muted-foreground")}>
-                        {c.ativo ? "Ativo" : "Inativo"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <ToggleAtivoButton id={c.id} ativo={c.ativo} />
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+          <TabelaCentrosCusto centros={centros} />
         )}
       </section>
     </div>
