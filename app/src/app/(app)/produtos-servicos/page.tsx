@@ -2,10 +2,9 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
 import { listarProdutosServicos } from "@/lib/produtos-servicos/produtos-servicos";
-import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { EstadoVazio } from "@/components/ui/estado-vazio";
 import { NovoProdutoServicoForm } from "./novo-produto-servico-form";
-import { ProdutoServicoLinha } from "./produto-servico-linha";
+import { TabelaProdutosServicos } from "./tabela-produtos-servicos";
 
 export default async function PaginaProdutosServicos() {
   const contexto = await obterUsuarioETenantAtual();
@@ -35,29 +34,7 @@ export default async function PaginaProdutosServicos() {
       </section>
 
       <section>
-        <h2 className="mb-3 text-xs font-bold uppercase tracking-wide text-muted-foreground">Cadastrados</h2>
-        {produtosServicos.length === 0 ? (
-          <EstadoVazio texto="Nenhum produto ou serviço ainda." />
-        ) : (
-          <div className="overflow-hidden rounded-2xl bg-card shadow-card">
-            <Table>
-              <TableHeader>
-                <TableRow className="hover:bg-transparent">
-                  <TableHead>Nome</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Categoria</TableHead>
-                  <TableHead className="text-right">Preço</TableHead>
-                  <TableHead className="text-right">Ação</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {produtosServicos.map((produtoServico) => (
-                  <ProdutoServicoLinha key={produtoServico.id} produtoServico={produtoServico} categoriasReceita={categoriasReceita} />
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
+        <TabelaProdutosServicos produtosServicos={produtosServicos} categoriasReceita={categoriasReceita} />
       </section>
     </div>
   );

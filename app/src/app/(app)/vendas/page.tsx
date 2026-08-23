@@ -5,11 +5,7 @@ import { createClient } from "@/utils/supabase/server";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
 import { listarVendas } from "@/lib/vendas/vendas";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { EstadoVazio } from "@/components/ui/estado-vazio";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { formatarMoeda } from "@/lib/formatacao";
-import { formatarDataIsoParaBR } from "@/lib/importacao/locale-br";
+import { TabelaVendas } from "./tabela-vendas";
 import type { Database } from "@/utils/supabase/database.types";
 import { cn } from "@/lib/utils";
 
@@ -22,17 +18,6 @@ const FILTROS: { valor: string; rotulo: string; status?: StatusVenda }[] = [
   { valor: "aprovada", rotulo: "Aprovada", status: "APROVADO" },
   { valor: "recusada", rotulo: "Recusada", status: "RECUSADO" },
 ];
-
-function badgeStatus(status: StatusVenda) {
-  const mapa: Record<StatusVenda, { rotulo: string; className: string }> = {
-    RASCUNHO: { rotulo: "Rascunho", className: "bg-muted text-muted-foreground" },
-    ENVIADO: { rotulo: "Enviado", className: "bg-amber-500/12 text-amber-700 dark:text-amber-400" },
-    APROVADO: { rotulo: "Aprovada", className: "bg-positivo/12 text-positivo-foreground" },
-    RECUSADO: { rotulo: "Recusada", className: "bg-destructive/12 text-destructive-foreground" },
-  };
-  const { rotulo, className } = mapa[status];
-  return <Badge variant="outline" className={cn("border-none text-[10px] font-semibold", className)}>{rotulo}</Badge>;
-}
 
 export default async function PaginaVendas({ searchParams }: { searchParams: Promise<{ situacao?: string }> }) {
   const contexto = await obterUsuarioETenantAtual();
@@ -71,38 +56,7 @@ export default async function PaginaVendas({ searchParams }: { searchParams: Pro
         ))}
       </div>
 
-      {vendas.length === 0 ? (
-        <EstadoVazio texto="Nenhuma venda nessa situação." />
-      ) : (
-        <div className="overflow-hidden rounded-2xl bg-card shadow-card">
-          <Table>
-            <TableHeader>
-              <TableRow className="hover:bg-transparent">
-                <TableHead>Número</TableHead>
-                <TableHead>Cliente</TableHead>
-                <TableHead>Data</TableHead>
-                <TableHead>Situação</TableHead>
-                <TableHead className="text-right">Valor</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {vendas.map((venda) => (
-                <TableRow key={venda.id} className="cursor-pointer">
-                  <TableCell>
-                    <Link href={`/vendas/${venda.id}`} className="block font-medium text-foreground">
-                      #{venda.numero}
-                    </Link>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">{venda.pessoaNome}</TableCell>
-                  <TableCell className="text-muted-foreground">{formatarDataIsoParaBR(venda.dataEmissao)}</TableCell>
-                  <TableCell>{badgeStatus(venda.status)}</TableCell>
-                  <TableCell className="text-right tabular-nums">{formatarMoeda(venda.valorTotal)}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      )}
+      <TabelaVendas vendas={vendas} />
     </div>
   );
 }
