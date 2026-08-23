@@ -41,7 +41,7 @@ export default async function PaginaVendas({ searchParams }: { searchParams: Pro
         </Button>
       </div>
 
-      <div className="flex gap-1">
+      <div className="flex flex-wrap gap-1">
         {FILTROS.map((f) => (
           <Link
             key={f.valor}

@@ -92,7 +92,7 @@ export function EventoFinanceiroForm({
         <Input id="data_vencimento" name="data_vencimento" type="date" required />
       </div>
 
-      <div className="space-y-1.5 sm:col-span-2">
+      <div className="min-w-0 space-y-1.5 sm:col-span-2">
         <div className="flex items-center justify-between">
           <Label htmlFor={rateioAtivo ? undefined : "categoria_id"}>Categoria</Label>
           <button

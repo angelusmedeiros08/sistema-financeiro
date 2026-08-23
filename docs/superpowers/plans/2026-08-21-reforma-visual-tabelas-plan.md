@@ -98,11 +98,27 @@ Essas já usam `<Table>` do shadcn (não é reescrita do zero, é enriquecimento
 _Depende de:_ Fatia 4 (usa o mesmo `tabela-lista.tsx`). Independente das Fatias 5/6 — pode rodar em paralelo.
 _Teste:_ um grupo por vez, mesma checagem da Fatia 6. Tabelas de importação (`passo-preview`, `passo-mapeamento`, `passo-revisao`) merecem atenção redobrada — são o único caso onde tabela aparece dentro de um fluxo de wizard, checar que paginação/scroll não quebra o fluxo de avançar/voltar passo.
 
-## Fatia 8 — Varredura final
+## Fatia 8 — Varredura final [x] concluída
 
 Depois de todas as fatias anteriores: passar por todas as ~30 páginas de tabela + 12 de gráfico uma última vez, em telas estreita/média/larga, procurando qualquer resquício visual do padrão antigo (borda genérica, tabela sem ícone, badge sem bolinha) que tenha escapado da migração página-a-página. Confirmar que nenhum arquivo ainda importa `Public+Sans`/`Cabinet+Grotesk`/nome antigo de fonte.
 
 _Depende de:_ Fatias 1–7 completas.
+
+**Verificação estática (grep):**
+- Nenhum arquivo fora das 6 exceções documentadas na Fatia 7 ainda importa `<Table>` do shadcn — confirmado, os 8 arquivos encontrados são exatamente os esperados.
+- Nenhum arquivo importa `Public+Sans`/`Cabinet+Grotesk`/nome antigo de fonte — confirmado, zero ocorrências.
+- Hex hardcoded restantes (`text-[#…]`/`bg-[#…]`) revisados um a um — todos são ou (a) arquivos de exceção da Fatia 7, ou (b) cor arbitrária de categoria/UI já deliberada em fatias anteriores (tom âmbar "pendente", azul "projetado", tooltip escuro de gráfico), ou (c) confirmada com bom contraste em dark mode por conta própria. Nenhum resquício real.
+
+**Verificação responsiva (375px/768px):** 3 sweeps em paralelo (Relatórios+Painel, Cadastros+Pessoas, Lançamentos+Vendas+Importação) cobrindo ~50 rotas. Achados, todos corrigidos:
+- `configuracoes/contas-financeiras/nova-conta-form.tsx` — grid de 5 colunas fixas sem variante mobile.
+- `configuracoes/estrutura-dre/nova-linha-form.tsx` — grid de 4 colunas fixas sem variante mobile.
+- `configuracoes/estrutura-dre/linha-dre-item.tsx` — fileira flex (setas + rótulo + badge + botão Remover) sem `min-w-0`/truncamento no rótulo.
+- `vendas/venda-form.tsx` — linha de item (produto/qtd/preço/total/remover) sem scroll próprio; ganhou `overflow-x-auto` + `min-w`.
+- `components/formularios/rateio-categorias.tsx` (usado em Receitas/Despesas) — mesma correção nos dois níveis (linha de categoria e sub-linha de centro de custo); precisou também de `min-w-0` no wrapper em `evento-financeiro-form.tsx` porque o grid pai (`sm:grid-cols-2`) sem `min-w-0` deixava o filho com `overflow-x-auto` esticar a coluna inteira — mesma causa-raiz do bug de item de grid/flex que não encolhe abaixo do conteúdo sem `min-width:0` explícito.
+- `vendas/page.tsx` e mais 4 páginas com fileira de pills de filtro (`configuracoes/centros-custo`, `configuracoes/formas-pagamento`, `contas-a-pagar`, `contas-a-receber`) — ganharam `flex-wrap` defensivamente.
+- `importacao/planilha/wizard.tsx` e `importacao/pessoas/wizard.tsx` — indicador de passos (`<ol>`) sem `flex-wrap`.
+
+Todas as correções verificadas em 375px e 768px após o fix, typecheck limpo.
 
 ---
 

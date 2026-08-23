@@ -48,7 +48,7 @@ export default async function PaginaFormasPagamento({
 
       <section className="flex flex-col gap-3">
         <div className="flex justify-end">
-          <div className="flex gap-1">
+          <div className="flex flex-wrap gap-1">
             {FILTROS.map((f) => (
               <Link
                 key={f.valor}

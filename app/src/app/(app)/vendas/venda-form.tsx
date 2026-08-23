@@ -155,9 +155,9 @@ export function VendaForm({
 
       <div className="rounded-2xl bg-card shadow-card p-5">
         <h2 className="mb-3 text-xs font-bold uppercase tracking-wide text-muted-foreground">Itens</h2>
-        <div className="space-y-2">
+        <div className="space-y-2 overflow-x-auto">
           {itens.map((item, indice) => (
-            <div key={indice} className="grid grid-cols-[1fr_84px_100px_100px_auto] items-center gap-2">
+            <div key={indice} className="grid min-w-[540px] grid-cols-[1fr_84px_100px_100px_auto] items-center gap-2">
               <ProdutoServicoCombobox
                 produtos={produtos}
                 value={item.produtoServicoId}

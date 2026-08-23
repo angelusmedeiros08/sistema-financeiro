@@ -22,7 +22,7 @@ export function NovaContaFinanceiraForm() {
 
   return (
     <form ref={formRef} action={formAction} className="rounded-2xl bg-card shadow-card p-5">
-      <div className="grid grid-cols-[1fr_140px_1fr_140px_auto] items-end gap-3">
+      <div className="grid grid-cols-1 items-end gap-3 sm:grid-cols-[1fr_140px_1fr_140px_auto]">
         <div className="space-y-1.5">
           <Label htmlFor="nome">Nome</Label>
           <Input id="nome" name="nome" type="text" required placeholder="Ex.: Banco do Brasil CC" />

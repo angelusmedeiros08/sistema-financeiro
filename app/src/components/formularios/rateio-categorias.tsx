@@ -188,8 +188,8 @@ export function RateioCategorias({
           const centrosCustoEscolhidos = new Set(linha.subLinhasCentroCusto.map((s) => s.centro_custo_id).filter(Boolean));
 
           return (
-            <div key={indice} className="space-y-1.5 rounded-xl border border-border/60 p-2">
-              <div className="grid grid-cols-[1fr_100px_84px_auto] items-center gap-2">
+            <div key={indice} className="space-y-1.5 overflow-x-auto rounded-xl border border-border/60 p-2">
+              <div className="grid min-w-[380px] grid-cols-[1fr_100px_84px_auto] items-center gap-2">
                 <Select value={linha.categoria_id} onValueChange={(v) => atualizarLinha(indice, { categoria_id: v })}>
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Categoria..." />
@@ -256,13 +256,13 @@ export function RateioCategorias({
                       </button>
                     </div>
                   ) : (
-                    <div className="space-y-1.5 rounded-lg bg-muted/40 p-2">
+                    <div className="space-y-1.5 overflow-x-auto rounded-lg bg-muted/40 p-2">
                       {linha.subLinhasCentroCusto.map((sub, indiceSub) => {
                         const opcoesSub = centrosCusto.filter(
                           (c) => c.id === sub.centro_custo_id || !centrosCustoEscolhidos.has(c.id),
                         );
                         return (
-                          <div key={indiceSub} className="grid grid-cols-[1fr_84px_70px_auto] items-center gap-1.5">
+                          <div key={indiceSub} className="grid min-w-[320px] grid-cols-[1fr_84px_70px_auto] items-center gap-1.5">
                             <Select
                               value={sub.centro_custo_id}
                               onValueChange={(v) => atualizarSubLinha(indice, indiceSub, { centro_custo_id: v })}

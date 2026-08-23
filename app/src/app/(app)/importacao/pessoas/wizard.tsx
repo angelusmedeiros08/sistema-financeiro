@@ -41,7 +41,7 @@ export function ImportarPessoasWizard({
 
   return (
     <div className="flex flex-col gap-6">
-      <ol className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+      <ol className="flex flex-wrap items-center gap-2 text-xs font-medium text-muted-foreground">
         {ETAPAS.map((e, i) => (
           <li key={e.chave} className="flex items-center gap-2">
             <span

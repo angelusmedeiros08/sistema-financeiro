@@ -83,16 +83,17 @@ export function LinhaDreItem({
           </button>
         </div>
 
-        <div className="flex-1">
-          <p className="font-medium text-foreground">{linha.rotulo}</p>
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-medium text-foreground">{linha.rotulo}</p>
         </div>
 
-        <Badge className={cn("border-none font-semibold", CLASSE_BADGE_TIPO[linha.tipoCalc])}>{ROTULO_TIPO[linha.tipoCalc]}</Badge>
+        <Badge className={cn("shrink-0 border-none font-semibold", CLASSE_BADGE_TIPO[linha.tipoCalc])}>{ROTULO_TIPO[linha.tipoCalc]}</Badge>
 
         <Button
           type="button"
           variant="ghost"
           size="sm"
+          className="shrink-0"
           disabled={pendente}
           onClick={() => iniciarTransicao(async () => {
             const formData = new FormData();

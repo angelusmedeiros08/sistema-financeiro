@@ -45,7 +45,7 @@ export default async function PaginaContasAReceber({
     <div className="mx-auto flex max-w-5xl flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-xl font-bold tracking-tight text-foreground">Contas a receber</h1>
-        <div className="flex gap-1">
+        <div className="flex flex-wrap gap-1">
           {FILTROS.map((f) => (
             <Link
               key={f.valor}
