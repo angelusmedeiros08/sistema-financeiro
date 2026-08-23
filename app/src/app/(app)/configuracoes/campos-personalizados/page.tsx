@@ -2,26 +2,9 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
 import { listarCamposPersonalizados } from "@/lib/pessoas/buscar-pessoa";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { EstadoVazio } from "@/components/ui/estado-vazio";
-import { cn } from "@/lib/utils";
 import { ConfiguracoesSubNav } from "../sub-nav";
 import { NovoCampoForm } from "./novo-campo-form";
-import { RemoverCampoButton } from "./remover-campo-button";
-
-const ROTULO_TIPO: Record<string, string> = {
-  TEXTO: "Texto",
-  NUMERO: "Número",
-  DATA: "Data",
-  BOOLEANO: "Sim/Não",
-};
-
-const ROTULO_APLICA_A: Record<string, string> = {
-  AMBOS: "Clientes e fornecedores",
-  CLIENTE: "Só clientes",
-  FORNECEDOR: "Só fornecedores",
-};
+import { TabelaCamposPersonalizados } from "./tabela-campos-personalizados";
 
 export default async function PaginaCamposPersonalizados() {
   const contexto = await obterUsuarioETenantAtual();
@@ -44,39 +27,7 @@ export default async function PaginaCamposPersonalizados() {
       </section>
 
       <section>
-        <h2 className="mb-3 text-xs font-bold uppercase tracking-wide text-muted-foreground">Cadastrados</h2>
-        {campos.length === 0 ? (
-          <EstadoVazio texto="Nenhum campo personalizado cadastrado ainda." />
-        ) : (
-          <div className="overflow-hidden rounded-2xl bg-card shadow-card">
-            <Table>
-              <TableHeader>
-                <TableRow className="hover:bg-transparent">
-                  <TableHead>Rótulo</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Aplica a</TableHead>
-                  <TableHead>Situação</TableHead>
-                  <TableHead className="text-right">Ação</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {campos.map((c) => (
-                  <TableRow key={c.id}>
-                    <TableCell className="font-medium text-foreground">{c.rotulo}</TableCell>
-                    <TableCell className="text-muted-foreground">{ROTULO_TIPO[c.tipo] ?? c.tipo}</TableCell>
-                    <TableCell className="text-muted-foreground">{ROTULO_APLICA_A[c.aplica_a] ?? c.aplica_a}</TableCell>
-                    <TableCell>
-                      <Badge className={cn("border-none font-semibold", c.disponivel ? "bg-positivo/12 text-positivo-foreground" : "bg-muted text-muted-foreground")}>
-                        {c.disponivel ? "Ativo" : "Removido"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">{c.disponivel && <RemoverCampoButton campoId={c.id} />}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
+        <TabelaCamposPersonalizados campos={campos} />
       </section>
     </div>
   );

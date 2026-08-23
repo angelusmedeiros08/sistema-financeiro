@@ -1,20 +1,17 @@
 "use client";
 
 import { useTransition } from "react";
-import { Button } from "@/components/ui/button";
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { removerCampoPersonalizadoAction } from "@/lib/pessoas/pessoas-actions";
 
 export function RemoverCampoButton({ campoId }: { campoId: string }) {
   const [pendente, iniciarTransicao] = useTransition();
 
   return (
-    <Button
-      type="button"
-      variant="ghost"
-      size="sm"
-      className="text-destructive"
+    <DropdownMenuItem
+      variant="destructive"
       disabled={pendente}
-      onClick={() =>
+      onSelect={() =>
         iniciarTransicao(async () => {
           const formData = new FormData();
           formData.set("campo_id", campoId);
@@ -23,6 +20,6 @@ export function RemoverCampoButton({ campoId }: { campoId: string }) {
       }
     >
       {pendente ? "Removendo..." : "Remover"}
-    </Button>
+    </DropdownMenuItem>
   );
 }
