@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { List, SignOut, UserCircle } from "@phosphor-icons/react/dist/ssr";
+import { Buildings, Check, List, SignOut, UserCircle } from "@phosphor-icons/react/dist/ssr";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,16 +16,22 @@ import { CommandPaletteBusca } from "./command-palette-busca";
 import { NovoRegistroMenu } from "./novo-registro-menu";
 import { NotificacoesMenu, type NotificacaoAlerta } from "./notificacoes-menu";
 import { sair } from "@/app/(auth)/actions";
+import { trocarTenantAtivo } from "@/lib/tenant/trocar-tenant-actions";
 
 export function Topbar({
   tenantNome,
+  tenantId,
+  tenantsDisponiveis,
   nome,
   notificacoes,
 }: {
   tenantNome: string;
+  tenantId: string;
+  tenantsDisponiveis: { id: string; nome: string }[];
   nome: string;
   notificacoes: NotificacaoAlerta[];
 }) {
+  const outrosTenants = tenantsDisponiveis.filter((t) => t.id !== tenantId);
   return (
     <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-border bg-card px-4 lg:px-8">
       <Sheet>
@@ -71,8 +77,35 @@ export function Topbar({
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel className="flex flex-col gap-0.5">
               <span className="truncate font-semibold text-foreground">{nome}</span>
-              <span className="truncate text-xs font-normal text-muted-foreground">{tenantNome}</span>
+              <span className="flex items-center gap-1 truncate text-xs font-normal text-muted-foreground">
+                <Buildings size={12} />
+                {tenantNome}
+              </span>
             </DropdownMenuLabel>
+
+            {outrosTenants.length > 0 && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel className="text-[10.5px] font-bold tracking-wide text-muted-foreground uppercase">
+                  Trocar de empresa
+                </DropdownMenuLabel>
+                <DropdownMenuItem className="gap-2 opacity-100" disabled>
+                  <Check size={14} className="text-primary" />
+                  <span className="truncate font-medium text-foreground">{tenantNome}</span>
+                </DropdownMenuItem>
+                {outrosTenants.map((t) => (
+                  <form key={t.id} action={trocarTenantAtivo}>
+                    <input type="hidden" name="tenant_id" value={t.id} />
+                    <DropdownMenuItem asChild>
+                      <button type="submit" className="w-full gap-2 pl-[26px] text-left">
+                        <span className="truncate">{t.nome}</span>
+                      </button>
+                    </DropdownMenuItem>
+                  </form>
+                ))}
+              </>
+            )}
+
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
               <Link href="/perfil" className="gap-2">

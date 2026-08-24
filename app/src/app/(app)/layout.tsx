@@ -34,6 +34,8 @@ export default async function LayoutApp({ children }: { children: React.ReactNod
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar
           tenantNome={contexto.tenantNome}
+          tenantId={contexto.tenantId}
+          tenantsDisponiveis={contexto.tenantsDisponiveis}
           nome={usuario?.nome ?? contexto.user.email ?? ""}
           notificacoes={(alertas ?? []).map((a) => ({ id: a.id, tipo: a.tipo, enviadoEm: a.enviado_em }))}
         />

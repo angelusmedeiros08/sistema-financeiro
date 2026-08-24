@@ -1,7 +1,12 @@
 import { cache } from "react";
+import { cookies } from "next/headers";
 import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/utils/supabase/server";
 import type { Database } from "@/utils/supabase/database.types";
+
+export const COOKIE_TENANT_ATIVO = "tenant_ativo";
+
+type TenantDisponivel = { id: string; nome: string };
 
 type ResultadoTenant =
   | { erro: string }
@@ -11,12 +16,17 @@ type ResultadoTenant =
       tenantNome: string;
       papel: Database["public"]["Enums"]["papel_usuario"];
       pessoaId: string | null;
+      tenantsDisponiveis: TenantDisponivel[];
     };
 
-// Fase 0+1 ainda não tem seletor de tenant na UI — um usuário recém-cadastrado
-// só pertence a 1 tenant (o que criou no cadastro). Quando o suporte a
-// contador/BPO com múltiplas empresas entrar na UI, isto vira um seletor
-// real em vez de "pegar o primeiro".
+// Um usuário pode ter vínculo ativo com mais de um tenant (ex.: sócio com
+// empresa própria além da principal, ou futuro contador/BPO com vários
+// clientes). O cookie tenant_ativo guarda qual desses o usuário escolheu por
+// último — mas NUNCA é confiado como autorização por si só: todo acesso
+// busca a lista real de vínculos ativos no banco (RLS aplicada) e só usa o
+// valor do cookie se ele realmente bater com um vínculo existente. Cookie
+// ausente, inválido, ou apontando pra tenant que o usuário não pertence mais
+// cai no fallback de sempre — o primeiro vínculo ativo.
 //
 // cache() do React deduplica isto dentro de uma mesma renderização — o
 // layout do app e a página filha podem chamar sem duplicar a viagem ao banco.
@@ -31,23 +41,27 @@ export const obterUsuarioETenantAtual = cache(async (): Promise<ResultadoTenant>
     return { erro: "Não autenticado." };
   }
 
-  const { data: vinculo, error } = await supabase
+  const { data: vinculos, error } = await supabase
     .from("usuario_tenant")
     .select("tenant_id, papel, pessoa_id, tenants(nome)")
     .eq("usuario_id", user.id)
     .eq("ativo", true)
-    .limit(1)
-    .maybeSingle();
+    .order("convidado_em");
 
-  if (error || !vinculo) {
+  if (error || !vinculos || vinculos.length === 0) {
     return { erro: "Usuário sem empresa vinculada." };
   }
 
+  const cookieStore = await cookies();
+  const tenantIdPreferido = cookieStore.get(COOKIE_TENANT_ATIVO)?.value;
+  const vinculoEscolhido = (tenantIdPreferido && vinculos.find((v) => v.tenant_id === tenantIdPreferido)) || vinculos[0];
+
   return {
     user,
-    tenantId: vinculo.tenant_id,
-    tenantNome: vinculo.tenants?.nome ?? "",
-    papel: vinculo.papel,
-    pessoaId: vinculo.pessoa_id,
+    tenantId: vinculoEscolhido.tenant_id,
+    tenantNome: vinculoEscolhido.tenants?.nome ?? "",
+    papel: vinculoEscolhido.papel,
+    pessoaId: vinculoEscolhido.pessoa_id,
+    tenantsDisponiveis: vinculos.map((v) => ({ id: v.tenant_id, nome: v.tenants?.nome ?? "" })),
   };
 });
