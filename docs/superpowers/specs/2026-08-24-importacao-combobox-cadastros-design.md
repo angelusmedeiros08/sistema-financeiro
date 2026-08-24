@@ -14,22 +14,24 @@ Novo componente em `components/formularios/combobox-entidade.tsx`, genérico o b
 
 Props:
 - `opcoes: { id: string; rotulo: string; subtexto?: string }[]` — lista já resolvida (existente + candidato sugerido, se houver).
-- `valor: { tipo: "existente"; id: string } | { tipo: "criar_novo"; nome: string; tipoCategoriaNova?: "RECEITA" | "DESPESA" } | null` — estado controlado, espelha `ResolucaoEntidade` já usado no wizard.
+- `valor: { tipo: "existente"; id: string } | { tipo: "criar_novo"; tipoCategoriaNova?: "RECEITA" | "DESPESA" } | null` — estado controlado, espelha `ResolucaoEntidade` já usado no wizard.
+- `nomeParaCriar: string` — sempre `correspondencia.valorOriginal` (o texto tal como veio da planilha), nunca o texto digitado na busca. A busca só filtra a lista de existentes; o nome do cadastro novo tem que ser o valor real da linha, senão o mapeamento de volta pra ela quebra (achado revisando o primeiro rascunho: um combobox de formulário comum deixa criar com qualquer texto digitado, mas aqui a criação precisa ficar amarrada ao valor da célula).
 - `onMudar: (valor) => void`.
 - `acoesCriar: { rotulo: string; tipoCategoriaNova?: "RECEITA" | "DESPESA" }[]` — 1 ação (`Criar "X"`) pro caso comum, 2 ações (`Criar "X" como Despesa` / `Criar "X" como Receita`) só pra categoria.
-- `permiteNenhum?: boolean` — centro de custo e forma de pagamento passam `true`; categoria e pessoa não passam (são sempre obrigatórios no wizard).
+- `permiteNenhum?: boolean` — existe no componente pra reuso futuro, mas nenhuma seção do wizard passa `true` hoje: `extrairValoresUnicos` (Seção "Correção" abaixo) já ignora célula vazia antes de qualquer valor chegar nesta tela, então todo valor mostrado aqui é texto real que precisa de uma correspondência (existente ou nova) — nunca "nenhum".
 - `badge?: ReactNode` — a badge de correspondência já calculada por `LinhaEntidade`/`LinhaEntidadePessoa`, renderizada como está hoje, fora do combobox.
 
 Comportamento da lista (dentro do `Popover`):
-1. Se `permiteNenhum`, "Nenhum" aparece fixo no topo, sempre visível, mesmo com busca ativa (filtra por texto normalmente pras opções abaixo, mas "Nenhum" nunca some).
-2. Opções existentes filtradas por texto (`nome`/`documento`/`email`/`telefone` pra pessoa), na ordem em que chegam (já vêm ordenadas pelo `resolverTodasCorrespondencias` — sugestão de correspondência primeiro, se houver).
-3. Se a busca não bate exatamente com nenhuma opção existente, as ações de criar aparecem logo em seguida — nunca precisa rolar além do que a busca já filtrou.
+1. Opções existentes filtradas por texto (`nome`/`documento`/`email`/`telefone` pra pessoa), na ordem em que chegam (já vêm ordenadas pelo `resolverTodasCorrespondencias` — sugestão de correspondência primeiro, se houver).
+2. Se a busca não bate exatamente com nenhuma opção existente, as ações de criar aparecem logo em seguida — nunca precisa rolar além do que a busca já filtrou.
+
+**Correção em cima da proposta original**: cheguei a propor "Nenhum" fixo no topo pra centro de custo/forma de pagamento (campos opcionais), mas isso não corresponde a nenhum caso real — `extrairValoresUnicos` (`lib/importacao/fuzzy.ts`) já descarta célula vazia antes da lista de valores únicos ser montada, então uma planilha sem a coluna preenchida nem faz a seção aparecer nesta tela (`secoes` já filtra `s.valores.length > 0`). "Nenhum" ficaria sem propósito.
 
 ## Adaptação por tipo de entidade
 
 **Categoria** (`passo-entidades.tsx`, `LinhaEntidade` quando `tipo === "categoria"`): duas ações de criar em vez de uma — "Criar 'X' como Despesa" e "Criar 'X' como Receita" — cada uma já fecha nome + tipo num clique só, eliminando o segundo `Select` de Receita/Despesa que existe hoje. `permiteNenhum={false}`.
 
-**Centro de custo / Forma de pagamento**: uma ação de criar ("Criar 'X'"), `permiteNenhum={true}` com "Nenhum" fixo no topo — cobre o caso comum de "essa planilha não tem essa coluna preenchida, mas mesmo assim preciso decidir por linha".
+**Centro de custo / Forma de pagamento**: uma ação de criar ("Criar 'X'"), sem "Nenhum" — ver correção acima.
 
 **Pessoa** (`LinhaEntidadePessoa`): cada candidato de `correspondencia.candidatos` vira uma opção com `subtexto` = `[documento, email, telefone].filter(Boolean).join(" · ")`, igual ao que já é mostrado hoje dentro do `SelectItem`. Busca filtra por nome ou documento. Uma ação de criar, `permiteNenhum={false}` (pessoa é sempre obrigatória quando a coluna Cliente/Fornecedor está preenchida — se a célula vier vazia, a linha nem entra na lista de valores únicos, comportamento que não muda).
 

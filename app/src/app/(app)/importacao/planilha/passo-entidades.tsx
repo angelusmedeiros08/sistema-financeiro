@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, ArrowRight, Check, Sparkle, Spinner } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ComboboxEntidade, type ValorComboboxEntidade } from "@/components/formularios/combobox-entidade";
 import { extrairValoresUnicos, resolverTodasCorrespondencias } from "@/lib/importacao/fuzzy";
 import { normalizarTexto } from "@/lib/importacao/locale-br";
 import { resolverCorrespondenciaPessoa, type PessoaExistente } from "@/lib/pessoas/importacao/correspondencia";
@@ -13,7 +13,6 @@ import type { EntidadesExistentes } from "@/lib/importacao/resolucao";
 import type { LinhaBruta, ResolucaoEntidade, TipoEntidadeImportacao } from "@/lib/importacao/tipos";
 import type { CorrespondenciaPessoa } from "@/lib/pessoas/importacao/tipos";
 import type { Database } from "@/utils/supabase/database.types";
-import { cn } from "@/lib/utils";
 
 type CategoriaNova = { id: string; nome: string; tipo: Database["public"]["Enums"]["tipo_categoria"] };
 
@@ -404,6 +403,25 @@ function montarMapaFinal(
   return mapa;
 }
 
+// Ações de criar: categoria pede tipo (Receita/Despesa) — cada uma já fecha
+// nome + tipo num clique só, sem precisar de um segundo controle em
+// sequência (buraco de clique achado testando a Fatia 4 ao vivo).
+const ACOES_CRIAR_POR_TIPO: Record<TipoEntidadeImportacao, { rotulo: string; tipoCategoriaNova?: "RECEITA" | "DESPESA" }[]> = {
+  categoria: [
+    { rotulo: "Criar nova categoria de Despesa", tipoCategoriaNova: "DESPESA" },
+    { rotulo: "Criar nova categoria de Receita", tipoCategoriaNova: "RECEITA" },
+  ],
+  centro_custo: [{ rotulo: "Criar novo centro de custo" }],
+  forma_pagamento: [{ rotulo: "Criar nova forma de pagamento" }],
+  pessoa: [{ rotulo: "Criar novo cadastro" }],
+};
+
+function decisaoParaValor(decisao: ResolucaoEntidade): ValorComboboxEntidade {
+  if (!decisao) return null;
+  if (decisao.acao === "criar_novo") return { tipo: "criar_novo", tipoCategoriaNova: decisao.tipoCategoriaNova };
+  return decisao.entidadeId ? { tipo: "existente", id: decisao.entidadeId } : null;
+}
+
 function LinhaEntidade({
   tipo,
   correspondencia,
@@ -417,8 +435,21 @@ function LinhaEntidade({
   decisao: ResolucaoEntidade;
   onMudar: (decisao: ResolucaoEntidade) => void;
 }) {
-  const CRIAR_NOVO = "__criar_novo__";
-  const selecaoAtual = decisao?.acao === "usar_existente" ? decisao.entidadeId ?? "" : decisao?.acao === "criar_novo" ? CRIAR_NOVO : "";
+  function converterEChamar(valor: ValorComboboxEntidade) {
+    if (!valor) return;
+    if (valor.tipo === "existente") {
+      onMudar({ valorOriginal: correspondencia.valorOriginal, acao: "usar_existente", entidadeId: valor.id });
+    } else {
+      onMudar({ valorOriginal: correspondencia.valorOriginal, acao: "criar_novo", entidadeId: null, tipoCategoriaNova: valor.tipoCategoriaNova });
+    }
+  }
+
+  // Sugestão (se houver) primeiro na lista, sem duplicar quando ela já
+  // aparece na lista completa de existentes.
+  const opcoes = [
+    ...(correspondencia.correspondenciaId ? [{ id: correspondencia.correspondenciaId, rotulo: `Usar "${correspondencia.correspondenciaNome}"` }] : []),
+    ...existentes.filter((e) => e.id !== correspondencia.correspondenciaId).map((e) => ({ id: e.id, rotulo: e.nome })),
+  ];
 
   return (
     <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border/60 p-2.5">
@@ -438,39 +469,13 @@ function LinhaEntidade({
         )}
       </div>
 
-      <Select value={selecaoAtual} onValueChange={(v) => (v === CRIAR_NOVO ? onMudar({ valorOriginal: correspondencia.valorOriginal, acao: "criar_novo", entidadeId: null }) : onMudar({ valorOriginal: correspondencia.valorOriginal, acao: "usar_existente", entidadeId: v }))}>
-        <SelectTrigger className="h-8 w-56 text-xs">
-          <SelectValue placeholder="Escolher ação..." />
-        </SelectTrigger>
-        <SelectContent>
-          {correspondencia.correspondenciaId && (
-            <SelectItem value={correspondencia.correspondenciaId}>Usar &quot;{correspondencia.correspondenciaNome}&quot;</SelectItem>
-          )}
-          {existentes
-            .filter((e) => e.id !== correspondencia.correspondenciaId)
-            .map((e) => (
-              <SelectItem key={e.id} value={e.id}>
-                {e.nome}
-              </SelectItem>
-            ))}
-          <SelectItem value={CRIAR_NOVO}>+ Criar &quot;{correspondencia.valorOriginal}&quot; novo</SelectItem>
-        </SelectContent>
-      </Select>
-
-      {tipo === "categoria" && decisao?.acao === "criar_novo" && (
-        <Select
-          value={decisao.tipoCategoriaNova ?? ""}
-          onValueChange={(v) => onMudar({ ...decisao, tipoCategoriaNova: v as "RECEITA" | "DESPESA" })}
-        >
-          <SelectTrigger className={cn("h-8 w-32 text-xs", !decisao.tipoCategoriaNova && "border-destructive text-destructive")}>
-            <SelectValue placeholder="Receita/Despesa" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="RECEITA">Receita</SelectItem>
-            <SelectItem value="DESPESA">Despesa</SelectItem>
-          </SelectContent>
-        </Select>
-      )}
+      <ComboboxEntidade
+        opcoes={opcoes}
+        valor={decisaoParaValor(decisao)}
+        onMudar={converterEChamar}
+        nomeParaCriar={correspondencia.valorOriginal}
+        acoesCriar={ACOES_CRIAR_POR_TIPO[tipo]}
+      />
     </div>
   );
 }
@@ -491,11 +496,21 @@ function LinhaEntidadePessoa({
   decisao: ResolucaoEntidade;
   onMudar: (decisao: ResolucaoEntidade) => void;
 }) {
-  const CRIAR_NOVO = "__criar_novo__";
-  const selecaoAtual = decisao?.acao === "usar_existente" ? decisao.entidadeId ?? "" : decisao?.acao === "criar_novo" ? CRIAR_NOVO : "";
+  function converterEChamar(valor: ValorComboboxEntidade) {
+    if (!valor) return;
+    if (valor.tipo === "existente") {
+      onMudar({ valorOriginal, acao: "usar_existente", entidadeId: valor.id });
+    } else {
+      onMudar({ valorOriginal, acao: "criar_novo", entidadeId: null });
+    }
+  }
 
   const idsCandidatos = new Set(correspondencia.candidatos.map((c) => c.id));
-  const opcoes = [...correspondencia.candidatos, ...existentes.filter((e) => !idsCandidatos.has(e.id))];
+  const opcoes = [...correspondencia.candidatos, ...existentes.filter((e) => !idsCandidatos.has(e.id))].map((p) => ({
+    id: p.id,
+    rotulo: `Usar "${p.nome}"`,
+    subtexto: [p.documento, p.email, p.telefone].filter(Boolean).join(" · ") || undefined,
+  }));
 
   return (
     <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border/60 p-2.5">
@@ -504,28 +519,13 @@ function LinhaEntidadePessoa({
         <BadgeCorrespondenciaPessoa correspondencia={correspondencia} />
       </div>
 
-      <Select
-        value={selecaoAtual}
-        onValueChange={(v) => (v === CRIAR_NOVO ? onMudar({ valorOriginal, acao: "criar_novo", entidadeId: null }) : onMudar({ valorOriginal, acao: "usar_existente", entidadeId: v }))}
-      >
-        <SelectTrigger className="h-8 w-64 text-xs">
-          <SelectValue placeholder="Escolher ação..." />
-        </SelectTrigger>
-        <SelectContent>
-          {opcoes.map((p) => {
-            const rotulo = [p.documento, p.email, p.telefone].filter(Boolean).join(" · ");
-            return (
-              <SelectItem key={p.id} value={p.id}>
-                <span className="flex flex-col">
-                  <span>Usar &quot;{p.nome}&quot;</span>
-                  {rotulo && <span className="text-[10px] text-muted-foreground">{rotulo}</span>}
-                </span>
-              </SelectItem>
-            );
-          })}
-          <SelectItem value={CRIAR_NOVO}>+ Criar &quot;{valorOriginal}&quot; novo</SelectItem>
-        </SelectContent>
-      </Select>
+      <ComboboxEntidade
+        opcoes={opcoes}
+        valor={decisaoParaValor(decisao)}
+        onMudar={converterEChamar}
+        nomeParaCriar={valorOriginal}
+        acoesCriar={ACOES_CRIAR_POR_TIPO.pessoa}
+      />
     </div>
   );
 }
