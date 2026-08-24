@@ -323,10 +323,14 @@ export async function estornarEventoFinanceiro(
 
   // Só pode estar PENDENTE ou ATRASADO neste ponto — RECEBIDO_PARCIAL/
   // QUITADO exigem baixa viva, já barrado acima; RENEGOCIADO já barrado
-  // acima também.
+  // acima também. Erro aqui não pode ser descartado em silêncio: o
+  // lançamento de estorno já existe neste ponto, então uma parcela que
+  // devia ter sido cancelada e não foi deixaria o razão e o operacional
+  // divergentes (evento revertido, mas ainda "a pagar/receber" nos relatórios).
   const pendentes = parcelas.filter((p) => p.status === "PENDENTE" || p.status === "ATRASADO");
   for (const p of pendentes) {
-    await supabase.from("parcelas").update({ status: "CANCELADO", motivo_cancelamento: params.motivo }).eq("id", p.id);
+    const { error: erroCancelar } = await supabase.from("parcelas").update({ status: "CANCELADO", motivo_cancelamento: params.motivo }).eq("id", p.id);
+    if (erroCancelar) return { erro: `Lançamento estornado, mas falha ao cancelar parcela: ${erroCancelar.message}` };
   }
 
   // WHERE estornado_em is null: mesma proteção de atomicidade-por-guarda de

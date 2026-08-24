@@ -49,24 +49,33 @@ export async function estornarBaixa(
     return { erro: "Partidas do lançamento original não encontradas." };
   }
 
-  const partidasInvertidas: PartidaEntrada[] = partidasOriginais.map((p) => ({
-    conta_contabil_id: p.conta_contabil_id,
-    tipo: p.tipo === "DEBITO" ? "CREDITO" : "DEBITO",
-    valor: p.valor,
-  }));
+  // Reentrância: se uma tentativa anterior já criou o lançamento contrário
+  // mas falhou antes de marcar estornado_em (mesma classe do bug 017 —
+  // UPDATE bloqueado em silêncio pelo RLS —, já corrigido na policy, mas
+  // qualquer outra causa de falha no passo final teria o mesmo efeito), uma
+  // nova chamada não pode criar um SEGUNDO lançamento de estorno.
+  const { data: estornoJaExiste } = await supabase.from("lancamentos").select("id").eq("estornado_de_id", lancamentoOriginal.id).maybeSingle();
 
-  const resultadoLancamento = await registrarLancamento(supabase, {
-    tenant_id: params.tenant_id,
-    data_competencia: new Date().toISOString().slice(0, 10),
-    descricao: `Estorno: ${lancamentoOriginal.descricao}`,
-    origem: "ESTORNO",
-    estornado_de_id: lancamentoOriginal.id,
-    criado_por: params.criado_por,
-    partidas: partidasInvertidas,
-  });
+  if (!estornoJaExiste) {
+    const partidasInvertidas: PartidaEntrada[] = partidasOriginais.map((p) => ({
+      conta_contabil_id: p.conta_contabil_id,
+      tipo: p.tipo === "DEBITO" ? "CREDITO" : "DEBITO",
+      valor: p.valor,
+    }));
 
-  if ("erro" in resultadoLancamento) {
-    return { erro: resultadoLancamento.erro };
+    const resultadoLancamento = await registrarLancamento(supabase, {
+      tenant_id: params.tenant_id,
+      data_competencia: new Date().toISOString().slice(0, 10),
+      descricao: `Estorno: ${lancamentoOriginal.descricao}`,
+      origem: "ESTORNO",
+      estornado_de_id: lancamentoOriginal.id,
+      criado_por: params.criado_por,
+      partidas: partidasInvertidas,
+    });
+
+    if ("erro" in resultadoLancamento) {
+      return { erro: resultadoLancamento.erro };
+    }
   }
 
   // WHERE estornado_em is null garante atomicidade contra estorno em
