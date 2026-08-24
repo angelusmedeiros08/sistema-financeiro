@@ -25,12 +25,12 @@ Primeiro `lib/pagamentos/tipos.ts` — só o tipo `EventoPagamento` neutro (unio
 _Depende de:_ nada — pode rodar em paralelo com a Fatia 1.
 _Teste:_ script isolado (ou chamada direta via Node) contra o sandbox do Asaas — criar um customer de teste, criar um Checkout de teste, confirmar que o link retornado abre a página de pagamento hospedada do Asaas. Confirmar também, lendo o código, que `ASAAS_API_KEY` não aparece em nenhum arquivo que vira bundle de cliente (grep por `ASAAS_API_KEY` fora de `lib/asaas/` e de route handlers/server actions deve dar zero resultado).
 
-## Fatia 3 — Extrair provisionamento de tenant pra função reaproveitável
+## Fatia 3 — Extrair provisionamento de tenant pra função reaproveitável [x] concluída
 
-Hoje todo o seed (plano de contas, DRE modelo, categorias, conta Caixa, formas de pagamento) mora dentro de `cadastrar()` em `app/src/app/(auth)/actions.ts`. Extrair para `lib/tenant/provisionar.ts::provisionarTenantNovo({nome, asaasCustomerId, asaasSubscriptionId, statusAssinatura, trialTerminaEm})` — recebe os dados de assinatura, faz o mesmo insert em `tenants` (com as colunas novas da Fatia 1) + todo o seed que já existia + o envio do e-mail de ativação (ver Fatia 7). `cadastrar()` passa a chamar essa função (refatoração pura — `/cadastro` continua desligado e se comporta idêntico a antes).
+Extraído de `cadastrar()` (`app/src/app/(auth)/actions.ts`) pra `lib/tenant/provisionar.ts::provisionarTenantNovo({nome, usuarioId, asaasCustomerId?, asaasSubscriptionId?, statusAssinatura?, trialTerminaEm?})`. **Ajuste de desenho em relação ao plano original:** a função recebe `usuarioId` já pronto (não cria usuário nem manda e-mail) — os dois callers (`cadastrar()` via `signUp` direto, e o futuro fluxo de pagamento via `generateLink` de convite, Fatia 7) usam mecanismos de criação de usuário genuinamente diferentes; misturar isso na função compartilhada só complicaria sem ganho, já que a parte que É idêntica entre os dois é só "tenant + seed". `cadastrar()` virou uma chamada direta pra essa função (refatoração pura).
 
 _Depende de:_ Fatia 1.
-_Teste:_ reativar `CADASTRO_PUBLICO_ATIVO` temporariamente em ambiente local, rodar `/cadastro` uma vez, confirmar que o tenant sai idêntico a antes da refatoração. Desligar a flag de novo depois.
+_Teste:_ **feito sem reativar `/cadastro`** (evita expor a rota pública mesmo brevemente) — rota de API temporária sob `/api/cron/` (já isenta do gate de sessão, autenticada pelo mesmo `CRON_SECRET` em tempo constante), criando um usuário descartável + chamando `provisionarTenantNovo` de dentro do runtime real do Next.js (necessário pro `import "server-only"` resolver certo), conferindo o resultado, e limpando tudo (tenant + usuário) antes de apagar a própria rota. Resultado: 14 contas, 23 linhas de DRE, 28 categorias, vínculo admin OK, campos de assinatura gravados certos. Rota nunca commitada.
 
 ## Fatia 4 — Rota pública `/assinar`
 
