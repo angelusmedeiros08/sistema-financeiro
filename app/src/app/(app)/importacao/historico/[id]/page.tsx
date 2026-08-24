@@ -7,10 +7,12 @@ import type { Json } from "@/utils/supabase/database.types";
 import { BadgeStatusImportacao } from "../badge-status";
 import { RetomarPainel } from "./retomar-painel";
 import { DesfazerPainel } from "./desfazer-painel";
+import { DesfazerPainelFinanceiro } from "./desfazer-painel-financeiro";
 import { TabelaErrosImportacao } from "./tabela-erros";
 
 const ROTULO_TIPO: Record<string, string> = {
   pessoas: "Clientes/Fornecedores",
+  financeiro: "Lançamentos financeiros",
 };
 
 function nomeDoItem(dados: Json): string {
@@ -76,7 +78,8 @@ export default async function PaginaDetalheImportacao({ params }: { params: Prom
       {(podeRetomar || itensCriadosSucesso.length > 0) && (
         <div className="flex flex-wrap items-start gap-6 rounded-2xl bg-card shadow-card p-4">
           {podeRetomar && <RetomarPainel importacaoId={importacao.id} contagemPendente={contagemPendente} />}
-          {itensCriadosSucesso.length > 0 && <DesfazerPainel importacaoId={importacao.id} contagemAtiva={contagemAtiva} />}
+          {itensCriadosSucesso.length > 0 && importacao.tipo === "financeiro" && <DesfazerPainelFinanceiro importacaoId={importacao.id} />}
+          {itensCriadosSucesso.length > 0 && importacao.tipo === "pessoas" && <DesfazerPainel importacaoId={importacao.id} contagemAtiva={contagemAtiva} />}
         </div>
       )}
 

@@ -29,10 +29,12 @@ const ESTADO_INICIAL = {
   buffer: null as ArrayBuffer | null,
   parse: null as ResultadoParse | null,
   contaFinanceiraId: "",
+  nomeArquivo: "",
   linhasBrutas: [] as LinhaBruta[],
   formatoNumerico: "BR" as FormatoNumerico,
   resolucoes: null as Record<TipoEntidadeImportacao, Map<string, ResolucaoEntidade>> | null,
   linhasProntas: [] as LinhaPronta[],
+  importacaoId: null as string | null,
 };
 
 export function ImportarPlanilhaWizard({
@@ -77,8 +79,8 @@ export function ImportarPlanilhaWizard({
       {estado.etapa === "upload" && (
         <PassoUpload
           contasFinanceiras={contasFinanceiras}
-          onAvancar={({ buffer, parse, contaFinanceiraId }) =>
-            setEstado((s) => ({ ...s, etapa: "mapeamento", buffer, parse, contaFinanceiraId }))
+          onAvancar={({ arquivo, buffer, parse, contaFinanceiraId }) =>
+            setEstado((s) => ({ ...s, etapa: "mapeamento", buffer, parse, contaFinanceiraId, nomeArquivo: arquivo.name }))
           }
         />
       )}
@@ -96,13 +98,14 @@ export function ImportarPlanilhaWizard({
       {estado.etapa === "entidades" && (
         <PassoEntidades
           linhasBrutas={estado.linhasBrutas}
+          nomeArquivo={estado.nomeArquivo}
           entidadesExistentes={entidadesExistentes}
           onVoltar={() => setEstado((s) => ({ ...s, etapa: "mapeamento" }))}
-          onAvancar={(resolucoes, categoriasNovas: CategoriaNova[]) => {
+          onAvancar={(resolucoes, categoriasNovas: CategoriaNova[], importacaoId) => {
             if (categoriasNovas.length > 0) {
               setEntidadesExistentes((atual) => ({ ...atual, categorias: [...atual.categorias, ...categoriasNovas] }));
             }
-            setEstado((s) => ({ ...s, etapa: "preview", resolucoes }));
+            setEstado((s) => ({ ...s, etapa: "preview", resolucoes, importacaoId }));
           }}
         />
       )}
@@ -123,6 +126,7 @@ export function ImportarPlanilhaWizard({
           linhas={estado.linhasProntas}
           totalLinhasArquivo={estado.linhasBrutas.length}
           contaFinanceiraId={estado.contaFinanceiraId}
+          importacaoId={estado.importacaoId}
           onReiniciar={reiniciar}
         />
       )}

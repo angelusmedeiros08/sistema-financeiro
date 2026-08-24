@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, ArrowRight, Check, Sparkle, Spinner } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { extrairValoresUnicos, resolverTodasCorrespondencias } from "@/lib/importacao/fuzzy";
 import { normalizarTexto } from "@/lib/importacao/locale-br";
 import { resolverCorrespondenciaPessoa, type PessoaExistente } from "@/lib/pessoas/importacao/correspondencia";
-import { criarEntidadesAprovadasAction } from "./actions";
+import { criarEntidadesAprovadasAction, iniciarImportacaoFinanceiraAction } from "./actions";
 import type { EntidadesExistentes } from "@/lib/importacao/resolucao";
 import type { LinhaBruta, ResolucaoEntidade, TipoEntidadeImportacao } from "@/lib/importacao/tipos";
 import type { CorrespondenciaPessoa } from "@/lib/pessoas/importacao/tipos";
@@ -30,15 +30,29 @@ const SECOES: SecaoConfig[] = [
 
 export function PassoEntidades({
   linhasBrutas,
+  nomeArquivo,
   entidadesExistentes,
   onVoltar,
   onAvancar,
 }: {
   linhasBrutas: LinhaBruta[];
+  nomeArquivo: string;
   entidadesExistentes: EntidadesExistentes;
   onVoltar: () => void;
-  onAvancar: (resolucoes: Record<TipoEntidadeImportacao, Map<string, ResolucaoEntidade>>, categoriasNovas: CategoriaNova[]) => void;
+  onAvancar: (resolucoes: Record<TipoEntidadeImportacao, Map<string, ResolucaoEntidade>>, categoriasNovas: CategoriaNova[], importacaoId: string | null) => void;
 }) {
+  // Nasce assim que a etapa Cadastros abre — antes de qualquer entidade
+  // ser criada, porque a criação já precisa registrar proveniência
+  // (importacoes_entidades_criadas, Fatia 4 da spec). Se falhar, segue sem
+  // rastreamento de lote em vez de travar o usuário — desfazer depois não
+  // vai listar essa importação, mas o import em si continua funcionando.
+  const [importacaoId, setImportacaoId] = useState<string | null>(null);
+  useEffect(() => {
+    iniciarImportacaoFinanceiraAction({ nomeArquivo, totalLinhas: linhasBrutas.length }).then((r) => {
+      if (!("erro" in r)) setImportacaoId(r.importacaoId);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const secoes = useMemo(
     () =>
       SECOES.map((secao) => {
@@ -191,12 +205,12 @@ export function PassoEntidades({
     }
 
     if (paraCriar.length === 0) {
-      onAvancar(montarMapaFinal(secoes, decisoes, valoresPessoa, decisoesPessoa), []);
+      onAvancar(montarMapaFinal(secoes, decisoes, valoresPessoa, decisoesPessoa), [], importacaoId);
       return;
     }
 
     setEnviando(true);
-    const resultado = await criarEntidadesAprovadasAction(paraCriar);
+    const resultado = await criarEntidadesAprovadasAction(paraCriar, importacaoId ?? undefined);
     setEnviando(false);
 
     if ("erro" in resultado) {
@@ -227,7 +241,7 @@ export function PassoEntidades({
       }
     }
 
-    onAvancar(montarMapaFinal(secoes, decisoesAtualizadas, valoresPessoa, decisoesPessoaAtualizadas), categoriasNovas);
+    onAvancar(montarMapaFinal(secoes, decisoesAtualizadas, valoresPessoa, decisoesPessoaAtualizadas), categoriasNovas, importacaoId);
   }
 
   const numAproximadasPessoa = correspondenciasPessoa.filter((c) => c.correspondencia.tipo === "aproximada" && c.correspondencia.candidatos.length === 1).length;

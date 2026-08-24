@@ -499,11 +499,13 @@ export type Database = {
       }
       eventos_financeiros: {
         Row: {
+          atualizado_em: string
           criado_em: string
           criado_por: string | null
           data_competencia: string
           descricao: string | null
           documento_fiscal_id: string | null
+          estornado_em: string | null
           id: string
           import_key: string | null
           pessoa_id: string | null
@@ -513,11 +515,13 @@ export type Database = {
           valor_total: number
         }
         Insert: {
+          atualizado_em?: string
           criado_em?: string
           criado_por?: string | null
           data_competencia: string
           descricao?: string | null
           documento_fiscal_id?: string | null
+          estornado_em?: string | null
           id?: string
           import_key?: string | null
           pessoa_id?: string | null
@@ -527,11 +531,13 @@ export type Database = {
           valor_total: number
         }
         Update: {
+          atualizado_em?: string
           criado_em?: string
           criado_por?: string | null
           data_competencia?: string
           descricao?: string | null
           documento_fiscal_id?: string | null
+          estornado_em?: string | null
           id?: string
           import_key?: string | null
           pessoa_id?: string | null
@@ -776,6 +782,48 @@ export type Database = {
           },
         ]
       }
+      importacoes_entidades_criadas: {
+        Row: {
+          criado_em: string
+          entidade_id: string
+          id: string
+          importacao_id: string
+          tenant_id: string
+          tipo_entidade: string
+        }
+        Insert: {
+          criado_em?: string
+          entidade_id: string
+          id?: string
+          importacao_id: string
+          tenant_id: string
+          tipo_entidade: string
+        }
+        Update: {
+          criado_em?: string
+          entidade_id?: string
+          id?: string
+          importacao_id?: string
+          tenant_id?: string
+          tipo_entidade?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "importacoes_entidades_criadas_importacao_id_fkey"
+            columns: ["importacao_id"]
+            isOneToOne: false
+            referencedRelation: "importacoes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "importacoes_entidades_criadas_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       importacoes_itens: {
         Row: {
           acao: Database["public"]["Enums"]["acao_item_importacao"]
@@ -783,6 +831,7 @@ export type Database = {
           dados_normalizados: Json
           desfeito_em: string | null
           erro: string | null
+          evento_financeiro_id: string | null
           id: string
           importacao_id: string
           linha_numero: number
@@ -796,6 +845,7 @@ export type Database = {
           dados_normalizados: Json
           desfeito_em?: string | null
           erro?: string | null
+          evento_financeiro_id?: string | null
           id?: string
           importacao_id: string
           linha_numero: number
@@ -809,6 +859,7 @@ export type Database = {
           dados_normalizados?: Json
           desfeito_em?: string | null
           erro?: string | null
+          evento_financeiro_id?: string | null
           id?: string
           importacao_id?: string
           linha_numero?: number
@@ -817,6 +868,27 @@ export type Database = {
           tenant_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "importacoes_itens_evento_financeiro_id_fkey"
+            columns: ["evento_financeiro_id"]
+            isOneToOne: false
+            referencedRelation: "eventos_financeiros"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "importacoes_itens_evento_financeiro_id_fkey"
+            columns: ["evento_financeiro_id"]
+            isOneToOne: false
+            referencedRelation: "vw_movimento_competencia_previsto"
+            referencedColumns: ["evento_financeiro_id"]
+          },
+          {
+            foreignKeyName: "importacoes_itens_evento_financeiro_id_fkey"
+            columns: ["evento_financeiro_id"]
+            isOneToOne: false
+            referencedRelation: "vw_movimento_realizado"
+            referencedColumns: ["evento_financeiro_id"]
+          },
           {
             foreignKeyName: "importacoes_itens_importacao_id_fkey"
             columns: ["importacao_id"]
@@ -1023,6 +1095,7 @@ export type Database = {
       }
       parcelas: {
         Row: {
+          atualizado_em: string
           conta_financeira_id: string | null
           criado_em: string
           data_vencimento: string
@@ -1036,6 +1109,7 @@ export type Database = {
           valor: number
         }
         Insert: {
+          atualizado_em?: string
           conta_financeira_id?: string | null
           criado_em?: string
           data_vencimento: string
@@ -1049,6 +1123,7 @@ export type Database = {
           valor: number
         }
         Update: {
+          atualizado_em?: string
           conta_financeira_id?: string | null
           criado_em?: string
           data_vencimento?: string
@@ -2182,7 +2257,7 @@ export type Database = {
         | "DESPESA"
       tipo_endereco: "COMERCIAL" | "COBRANCA" | "ENTREGA" | "OUTRO"
       tipo_extrato_linha: "CREDITO" | "DEBITO"
-      tipo_importacao: "pessoas"
+      tipo_importacao: "pessoas" | "financeiro"
       tipo_linha_dre:
         | "FOLHA"
         | "SUBTOTAL"
@@ -2381,7 +2456,7 @@ export const Constants = {
       ],
       tipo_endereco: ["COMERCIAL", "COBRANCA", "ENTREGA", "OUTRO"],
       tipo_extrato_linha: ["CREDITO", "DEBITO"],
-      tipo_importacao: ["pessoas"],
+      tipo_importacao: ["pessoas", "financeiro"],
       tipo_linha_dre: [
         "FOLHA",
         "SUBTOTAL",

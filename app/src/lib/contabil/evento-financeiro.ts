@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/utils/supabase/database.types";
 import { buscarContaGenericaPorTipo } from "./plano-contas";
 import { criarCategoria } from "./categorias";
+import { registrarLancamento } from "./ledger";
 
 type Cliente = SupabaseClient<Database>;
 type TipoCategoria = Database["public"]["Enums"]["tipo_categoria"];
@@ -230,4 +231,116 @@ export async function criarEventoFinanceiro(
   }
 
   return { evento_id: eventoId };
+}
+
+// Reverte um evento financeiro inteiro (nunca só uma baixa): mesmo
+// princípio de estornarBaixa() — lancamentos/partidas são imutáveis por
+// trigger de banco, então nunca edita/apaga nada, sempre cria um
+// lançamento contrário. Primeiro consumidor é "desfazer importação", mas é
+// capacidade central do razão contábil, não uma função exclusiva de
+// import — qualquer despesa/receita criada errada pode usar isto.
+export async function estornarEventoFinanceiro(
+  supabase: Cliente,
+  params: { tenant_id: string; evento_id: string; motivo: string; criado_por?: string },
+): Promise<{ sucesso: true } | { erro: string }> {
+  const { data: evento, error: erroEvento } = await supabase
+    .from("eventos_financeiros")
+    .select("id, descricao, estornado_em")
+    .eq("id", params.evento_id)
+    .eq("tenant_id", params.tenant_id)
+    .single();
+
+  if (erroEvento || !evento) return { erro: "Evento financeiro não encontrado." };
+  if (evento.estornado_em) return { erro: "Este evento já foi estornado." };
+
+  const { data: parcelas, error: erroParcelas } = await supabase
+    .from("parcelas")
+    .select("id, status")
+    .eq("evento_financeiro_id", params.evento_id);
+
+  if (erroParcelas || !parcelas) return { erro: "Falha ao consultar as parcelas do evento." };
+
+  if (parcelas.some((p) => p.status === "RENEGOCIADO")) {
+    return { erro: "Este evento tem parcela renegociada — não é possível estornar automaticamente." };
+  }
+
+  const idsParcelas = parcelas.map((p) => p.id);
+  if (idsParcelas.length > 0) {
+    const { data: baixasVivas } = await supabase.from("baixas").select("id").in("parcela_id", idsParcelas).is("estornado_em", null);
+    if (baixasVivas && baixasVivas.length > 0) {
+      return { erro: "Existe baixa registrada para este evento — estorne a baixa primeiro." };
+    }
+  }
+
+  // referencia_id é referência polimórfica de aplicação (sem FK) — mesma
+  // regra usada na criação, em criar_evento_financeiro: origem='MANUAL',
+  // referencia_id=evento_id.
+  const { data: lancamentoOriginal, error: erroLancamento } = await supabase
+    .from("lancamentos")
+    .select("id, descricao")
+    .eq("tenant_id", params.tenant_id)
+    .eq("referencia_id", params.evento_id)
+    .eq("origem", "MANUAL")
+    .maybeSingle();
+
+  if (erroLancamento || !lancamentoOriginal) return { erro: "Lançamento de reconhecimento não encontrado para este evento." };
+
+  const { data: partidasOriginais, error: erroPartidasOriginais } = await supabase
+    .from("partidas")
+    .select("conta_contabil_id, tipo, valor")
+    .eq("lancamento_id", lancamentoOriginal.id);
+
+  if (erroPartidasOriginais || !partidasOriginais || partidasOriginais.length === 0) {
+    return { erro: "Partidas do lançamento original não encontradas." };
+  }
+
+  // Reentrância: se uma tentativa anterior já criou o lançamento contrário
+  // mas falhou antes de marcar estornado_em (achado ao vivo: RLS sem
+  // policy de UPDATE em eventos_financeiros bloqueava o passo final em
+  // silêncio), uma nova chamada não pode criar um SEGUNDO lançamento de
+  // estorno — só completa o que faltou.
+  const { data: estornoJaExiste } = await supabase.from("lancamentos").select("id").eq("estornado_de_id", lancamentoOriginal.id).maybeSingle();
+
+  if (!estornoJaExiste) {
+    const partidasInvertidas = partidasOriginais.map((p) => ({
+      conta_contabil_id: p.conta_contabil_id,
+      tipo: (p.tipo === "DEBITO" ? "CREDITO" : "DEBITO") as "DEBITO" | "CREDITO",
+      valor: p.valor,
+    }));
+
+    const resultadoLancamento = await registrarLancamento(supabase, {
+      tenant_id: params.tenant_id,
+      data_competencia: new Date().toISOString().slice(0, 10),
+      descricao: `Estorno: ${lancamentoOriginal.descricao}`,
+      origem: "ESTORNO",
+      estornado_de_id: lancamentoOriginal.id,
+      criado_por: params.criado_por,
+      partidas: partidasInvertidas,
+    });
+
+    if ("erro" in resultadoLancamento) return { erro: resultadoLancamento.erro };
+  }
+
+  // Só pode estar PENDENTE ou ATRASADO neste ponto — RECEBIDO_PARCIAL/
+  // QUITADO exigem baixa viva, já barrado acima; RENEGOCIADO já barrado
+  // acima também.
+  const pendentes = parcelas.filter((p) => p.status === "PENDENTE" || p.status === "ATRASADO");
+  for (const p of pendentes) {
+    await supabase.from("parcelas").update({ status: "CANCELADO", motivo_cancelamento: params.motivo }).eq("id", p.id);
+  }
+
+  // WHERE estornado_em is null: mesma proteção de atomicidade-por-guarda de
+  // estornarBaixa() contra estorno em duplicidade concorrente.
+  const { data: marcado, error: erroMarcar } = await supabase
+    .from("eventos_financeiros")
+    .update({ estornado_em: new Date().toISOString() })
+    .eq("id", params.evento_id)
+    .is("estornado_em", null)
+    .select("id");
+
+  if (erroMarcar || !marcado || marcado.length === 0) {
+    return { erro: "Não foi possível marcar o evento como estornado (já pode ter sido estornado em paralelo)." };
+  }
+
+  return { sucesso: true };
 }

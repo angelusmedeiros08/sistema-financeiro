@@ -6,7 +6,7 @@ import { CheckCircle, DownloadSimple, XCircle } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { baixarArquivoTexto } from "@/lib/importacao/download";
 import { COLUNAS_TEMPLATE } from "@/lib/importacao/template";
-import { importarLinhaAction, revalidarPosImportacaoAction } from "./actions";
+import { importarLinhaAction, revalidarPosImportacaoAction, finalizarImportacaoFinanceiraAction } from "./actions";
 import type { LinhaPronta } from "./passo-preview";
 
 type ResultadoLinha = { linha: LinhaPronta; sucesso: boolean; erro?: string };
@@ -15,11 +15,13 @@ export function PassoResultado({
   linhas,
   totalLinhasArquivo,
   contaFinanceiraId,
+  importacaoId,
   onReiniciar,
 }: {
   linhas: LinhaPronta[];
   totalLinhasArquivo: number;
   contaFinanceiraId: string;
+  importacaoId: string | null;
   onReiniciar: () => void;
 }) {
   const [feitos, setFeitos] = useState(0);
@@ -47,6 +49,8 @@ export function PassoResultado({
           pessoa_id: item.pessoaId,
           centro_custo_id: item.centroCustoId,
           forma_pagamento_id: item.formaPagamentoId,
+          importacaoId: importacaoId ?? undefined,
+          linhaNumero: item.linha.linha,
         });
 
         acumulados.push("erro" in resultado ? { linha: item, sucesso: false, erro: resultado.erro } : { linha: item, sucesso: true });
@@ -54,6 +58,7 @@ export function PassoResultado({
         setFeitos((f) => f + 1);
       }
 
+      if (importacaoId) await finalizarImportacaoFinanceiraAction(importacaoId);
       await revalidarPosImportacaoAction();
       setConcluido(true);
     })();

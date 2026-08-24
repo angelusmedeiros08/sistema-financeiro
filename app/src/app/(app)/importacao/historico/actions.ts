@@ -11,6 +11,12 @@ import {
 } from "@/lib/importacoes/importacoes";
 import { importarLinhaPessoaAction, finalizarImportacaoPessoasAction } from "../pessoas/actions";
 import type { ParametrosImportarLinhaPessoa } from "../pessoas/actions";
+import {
+  preverDesfazerImportacaoFinanceira,
+  desfazerImportacaoFinanceira,
+  type PreviaDesfazerFinanceira,
+  type ResultadoDesfazerFinanceira,
+} from "@/lib/importacoes/importacoes-financeiro";
 
 export async function prepararRetomadaAction(importacaoId: string): Promise<{ itens: ItemImportacao[] } | { erro: string }> {
   const contexto = await obterUsuarioETenantAtual();
@@ -49,6 +55,47 @@ export async function desfazerImportacaoAction(
     revalidatePath("/clientes");
     revalidatePath("/fornecedores");
     revalidatePath(`/configuracoes/importacoes/${importacaoId}`);
+  }
+
+  return resultado;
+}
+
+export async function preverDesfazerImportacaoFinanceiraAction(importacaoId: string): Promise<PreviaDesfazerFinanceira | { erro: string }> {
+  const contexto = await obterUsuarioETenantAtual();
+  if ("erro" in contexto) return { erro: contexto.erro };
+
+  const supabase = await createClient();
+  return preverDesfazerImportacaoFinanceira(supabase, { tenant_id: contexto.tenantId, importacao_id: importacaoId });
+}
+
+// A prévia é sempre recalculada no servidor a partir do que o cliente
+// confirmou (não confia em nada calculado no browser) — mas nunca
+// reavalia a classificação, só executa exatamente o snapshot recebido,
+// como já documentado em desfazerImportacaoFinanceira().
+export async function desfazerImportacaoFinanceiraAction(
+  importacaoId: string,
+  previa: PreviaDesfazerFinanceira,
+  incluirModificados: boolean,
+): Promise<ResultadoDesfazerFinanceira | { erro: string }> {
+  const contexto = await obterUsuarioETenantAtual();
+  if ("erro" in contexto) return { erro: contexto.erro };
+
+  const supabase = await createClient();
+  const resultado = await desfazerImportacaoFinanceira(supabase, {
+    tenant_id: contexto.tenantId,
+    importacao_id: importacaoId,
+    criado_por: contexto.user.id,
+    previa,
+    incluirModificados,
+  });
+
+  if (!("erro" in resultado)) {
+    revalidatePath("/despesas");
+    revalidatePath("/receitas");
+    revalidatePath("/contas-a-pagar");
+    revalidatePath("/contas-a-receber");
+    revalidatePath("/painel");
+    revalidatePath(`/importacao/historico/${importacaoId}`);
   }
 
   return resultado;
