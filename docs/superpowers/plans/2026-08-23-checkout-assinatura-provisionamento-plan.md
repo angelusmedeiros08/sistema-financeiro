@@ -14,7 +14,11 @@ Migration nova: `tenants` ganha `asaas_customer_id text`, `asaas_subscription_id
 _Depende de:_ nada.
 _Teste:_ `select` nas duas tabelas confirmando as colunas/constraints; tentar inserir em `eventos_pagamento_processados` com o client anônimo e confirmar que RLS bloqueia.
 
-## Fatia 2 — Tipo neutro + cliente Asaas (`lib/pagamentos/` + `lib/asaas/`)
+## Fatia 2 — Tipo neutro + cliente Asaas (`lib/pagamentos/` + `lib/asaas/`) [x] código escrito, teste ao vivo pendente
+
+Escrito: `lib/pagamentos/tipos.ts` (tipo `EventoPagamento`), `lib/asaas/cliente-http.ts` (base HTTP isolada — header `access_token`, nunca `Authorization: Bearer`; erro nunca repassa corpo bruto do Asaas), `lib/asaas/checkout.ts::criarCheckoutAssinatura(...)` (Checkout hospedado tipo `RECURRENT`, `POST /v3/checkouts`). Achado ao implementar: a API do Asaas **não aceita referenciar um customer já existente por id** nesse endpoint — só `customerData` inline; o id real do customer só aparece no payload do webhook (Fatia 6), não na resposta da criação do checkout. `ASAAS_API_KEY` confirmada (grep) só referenciada dentro de `cliente-http.ts`.
+
+**Bloqueado:** teste ao vivo contra o sandbox do Asaas precisa da chave de API (`ASAAS_API_KEY` em `.env.local`), ainda não configurada.
 
 Primeiro `lib/pagamentos/tipos.ts` — só o tipo `EventoPagamento` neutro (union de 3 variantes: confirmado/atrasado/cancelado), sem nenhuma dependência do Asaas. Depois `lib/asaas/`: funções puras, sem UI: `criarCliente({nome, email, cpfCnpj})` e `criarCheckoutAssinatura({customerId, callbackUrl, valor, cicloDias})` — cria um Checkout hospedado tipo `RECURRENT`, retorna o link pra onde redirecionar o cliente. **Nenhuma função aqui recebe ou manipula dado de cartão** — isso é o ponto central da correção de escopo PCI, então vale um comentário explícito no código lembrando por quê. Chave de API em `ASAAS_API_KEY` (variável de ambiente server-only, sem prefixo `NEXT_PUBLIC_`), sandbox primeiro.
 
