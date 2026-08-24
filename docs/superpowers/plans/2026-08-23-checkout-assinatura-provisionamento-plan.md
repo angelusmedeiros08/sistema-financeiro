@@ -5,7 +5,7 @@
 
 Ordem por dependência: schema primeiro, depois o cliente Asaas isolado (testável sozinho, sem UI), depois a extração do provisionamento (refatoração pura), só então a rota pública, a página de retorno e o webhook — que juntos formam o único caminho real de provisionamento agora que o checkout é hospedado —, e por último o ciclo de vida (e-mail, middleware, tela de bloqueio) e o teste ponta a ponta. Cada fatia de segurança (rate limit, comparação em tempo constante, tratamento de payload como entrada não confiável) está descrita dentro da fatia a que pertence, não deixada pra depois.
 
-## Fatia 1 — Schema: colunas de assinatura + tabela de eventos
+## Fatia 1 — Schema: colunas de assinatura + tabela de eventos [x] concluída
 
 Migration nova: `tenants` ganha `asaas_customer_id text`, `asaas_subscription_id text`, `status_assinatura text default 'trial'` (constraint check nos 4 valores: trial/ativo/inadimplente/cancelado), `trial_termina_em timestamptz`. Tabela nova `eventos_pagamento_processados` (`id text primary key`, `tipo text`, `processado_em timestamptz default now()`). RLS em ambas: nenhuma policy de INSERT/UPDATE para `authenticated` (só `service_role` escreve, mesmo padrão de `tenants` hoje). Aplicar via Supabase MCP, documentar em `docs/schema-aplicado-supabase.md`, regenerar `database.types.ts`.
 

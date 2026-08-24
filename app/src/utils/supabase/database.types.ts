@@ -571,6 +571,24 @@ export type Database = {
           },
         ]
       }
+      eventos_pagamento_processados: {
+        Row: {
+          id: string
+          processado_em: string
+          tipo: string
+        }
+        Insert: {
+          id: string
+          processado_em?: string
+          tipo: string
+        }
+        Update: {
+          id?: string
+          processado_em?: string
+          tipo?: string
+        }
+        Relationships: []
+      }
       extrato_linha_baixas: {
         Row: {
           baixa_id: string
@@ -1674,28 +1692,40 @@ export type Database = {
       }
       tenants: {
         Row: {
+          asaas_customer_id: string | null
+          asaas_subscription_id: string | null
           cnpj: string | null
           criado_em: string
           id: string
           limiar_saldo_minimo_alerta: number
           nome: string
           plano: string
+          status_assinatura: string
+          trial_termina_em: string | null
         }
         Insert: {
+          asaas_customer_id?: string | null
+          asaas_subscription_id?: string | null
           cnpj?: string | null
           criado_em?: string
           id?: string
           limiar_saldo_minimo_alerta?: number
           nome: string
           plano?: string
+          status_assinatura?: string
+          trial_termina_em?: string | null
         }
         Update: {
+          asaas_customer_id?: string | null
+          asaas_subscription_id?: string | null
           cnpj?: string | null
           criado_em?: string
           id?: string
           limiar_saldo_minimo_alerta?: number
           nome?: string
           plano?: string
+          status_assinatura?: string
+          trial_termina_em?: string | null
         }
         Relationships: []
       }
