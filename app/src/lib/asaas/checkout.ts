@@ -25,14 +25,25 @@ export async function criarCheckoutAssinatura(params: {
   valor: number;
   descricaoItem: string;
   proximoVencimento: string; // "YYYY-MM-DD"
+  formaPagamento: "CREDIT_CARD" | "PIX";
+  // Nome da empresa escolhido no formulário de /assinar — nada é provisionado
+  // ainda nesse ponto (Fatia 4), então não há tenant pra guardar isso. Vai e
+  // volta pelo próprio Asaas: o webhook de pagamento confirmado (Fatia 6) lê
+  // de volta esse valor pra saber com que nome criar o tenant.
+  nomeEmpresa: string;
   ciclo?: CicloAssinatura;
 }): Promise<CheckoutAssinatura> {
   const resposta = await chamarAsaas<RespostaCheckout>("/v3/checkouts", {
     method: "POST",
     body: JSON.stringify({
-      billingTypes: ["CREDIT_CARD", "PIX"],
+      // Uma única forma de pagamento por checkout, nunca as duas juntas —
+      // trial de 7 dias só existe no caminho cartão (Pix cobra na hora), e
+      // pra aplicar isso certo no nextDueDate é preciso já saber qual delas
+      // antes de montar a chamada (decidido na tela de /assinar).
+      billingTypes: [params.formaPagamento],
       chargeTypes: ["RECURRENT"],
       minutesToExpire: 60,
+      externalReference: params.nomeEmpresa,
       callback: {
         successUrl: params.callbackUrlSucesso,
         cancelUrl: params.callbackUrlCancelado,

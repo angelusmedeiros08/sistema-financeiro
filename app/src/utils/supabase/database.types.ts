@@ -1729,6 +1729,27 @@ export type Database = {
         }
         Relationships: []
       }
+      tentativas_assinatura: {
+        Row: {
+          criado_em: string
+          email: string
+          id: number
+          ip: string
+        }
+        Insert: {
+          criado_em?: string
+          email: string
+          id?: never
+          ip: string
+        }
+        Update: {
+          criado_em?: string
+          email?: string
+          id?: never
+          ip?: string
+        }
+        Relationships: []
+      }
       usuario_tenant: {
         Row: {
           ativo: boolean

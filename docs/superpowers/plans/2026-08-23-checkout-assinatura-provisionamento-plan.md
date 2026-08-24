@@ -32,11 +32,23 @@ Extraído de `cadastrar()` (`app/src/app/(auth)/actions.ts`) pra `lib/tenant/pro
 _Depende de:_ Fatia 1.
 _Teste:_ **feito sem reativar `/cadastro`** (evita expor a rota pública mesmo brevemente) — rota de API temporária sob `/api/cron/` (já isenta do gate de sessão, autenticada pelo mesmo `CRON_SECRET` em tempo constante), criando um usuário descartável + chamando `provisionarTenantNovo` de dentro do runtime real do Next.js (necessário pro `import "server-only"` resolver certo), conferindo o resultado, e limpando tudo (tenant + usuário) antes de apagar a própria rota. Resultado: 14 contas, 23 linhas de DRE, 28 categorias, vínculo admin OK, campos de assinatura gravados certos. Rota nunca commitada.
 
-## Fatia 4 — Rota pública `/assinar`
+## Fatia 4 — Rota pública `/assinar` [x] código escrito, teste ao vivo pendente
 
 Página nova com formulário: nome da empresa, nome do responsável, e-mail, CPF/CNPJ. Server action que chama `lib/asaas` (Fatia 2) pra criar customer + Checkout hospedado, e redireciona o cliente pro link retornado. **Não coleta nenhum dado de pagamento** — isso fica inteiramente na página do Asaas.
 
 Segurança desta fatia: rate limit por IP e por e-mail na criação de customer (mesmo sem coletar cartão, esse endpoint ainda pode ser abusado pra spam de tenants ou reconhecimento); validação de CPF/CNPJ por checksum real, não só formato.
+
+Escrito: migration `tentativas_assinatura_rate_limit` (tabela `tentativas_assinatura`, RLS sem policy — mesmo padrão de `eventos_pagamento_processados`), `lib/pagamentos/cpf-cnpj.ts` (`validarCpf`/`validarCnpj`/`validarCpfCnpj`, checksum real dos dois dígitos verificadores, não só formato/tamanho), `lib/pagamentos/rate-limit.ts::registrarTentativaAssinatura({email,ip})` (limite de 3/hora por e-mail e 10/hora por IP, janela deslizante; **grava a tentativa sempre**, permitida ou bloqueada — senão dava pra "gastar" o limite sem deixar rastro), `lib/pagamentos/plano.ts` (constantes do plano único — `VALOR_PLANO_MENSAL` é placeholder, nunca confirmado em conversa, **precisa de decisão do usuário antes de qualquer cobrança real**), `lib/pagamentos/assinatura-actions.ts::assinar()` (valida campos → rate limit → CPF/CNPJ → `criarCheckoutAssinatura` → `redirect()` pro link), `app/(auth)/assinar/page.tsx` (formulário + escolha Cartão/Pix via `RadioGroup`, mesmo padrão visual de `/cadastro`).
+
+**Achado de desenho durante a fatia:** o Checkout hospedado não aceita nome de empresa nenhum — só nome/e-mail/CPF-CNPJ do responsável (`customerData`). Como nada é provisionado antes do webhook (Fatia 6), e o webhook só enxerga o payload do Asaas, o nome da empresa escolhido no formulário precisava de um jeito de "ir e voltar" — resolvido usando o campo `externalReference` do Checkout (confirmado via documentação Asaas: existe pra exatamente esse propósito, reconciliar o evento do webhook com o pedido original). `criarCheckoutAssinatura` ganhou parâmetro `nomeEmpresa`, mandado como `externalReference`; Fatia 6 vai precisar ler de volta esse campo no payload do evento pra saber com que nome criar o tenant — anotado no comentário do código.
+
+`lib/asaas/checkout.ts` também ganhou parâmetro obrigatório `formaPagamento: "CREDIT_CARD" | "PIX"` (era hardcoded pras duas juntas) — `billingTypes` agora reflete só a escolha feita na tela, necessário pra aplicar o trial de 7 dias só no caminho cartão (`nextDueDate` calculado em `assinatura-actions.ts` conforme a forma escolhida).
+
+`utils/supabase/middleware.ts`: `/assinar` adicionado à lista de rotas públicas (sem essa entrada a rota fica inalcançável por quem ainda não tem sessão, que é o público inteiro dela).
+
+Verificado: `pnpm tsc --noEmit` limpo, `pnpm lint` limpo nos arquivos novos/alterados, grep confirma `ASAAS_API_KEY`/`ASAAS_WEBHOOK_TOKEN` só aparecem dentro de `lib/asaas/cliente-http.ts` (comentário + mensagem de erro, nunca o valor).
+
+**Bloqueado (como as demais fatias que tocam a API real):** teste ao vivo contra o sandbox — preencher o formulário, confirmar redirecionamento pro Checkout com valor/ciclo/forma certos, disparar várias tentativas seguidas e confirmar bloqueio do rate limit — precisa de `ASAAS_API_KEY` em `.env.local`, ainda não configurada. `VALOR_PLANO_MENSAL` (`lib/pagamentos/plano.ts`) também precisa de confirmação do usuário antes desse teste.
 
 _Depende de:_ Fatia 2.
 _Teste:_ preencher o formulário, confirmar redirecionamento pro Checkout do Asaas sandbox com os dados certos (valor, ciclo). Testar rate limit disparando várias tentativas seguidas e confirmar bloqueio.

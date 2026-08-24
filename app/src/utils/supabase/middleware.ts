@@ -36,13 +36,15 @@ export async function updateSession(request: NextRequest) {
 
   // /auth/* (confirmação de cadastro, e futuro reset de senha), /convite/
   // aceitar (a pessoa ainda não tem sessão até clicar "Aceitar" — ver
-  // aceitarConvite() em (auth)/actions.ts) e /api/cron/* (autenticado por
-  // segredo compartilhado, não sessão) são acessados por quem ainda não
-  // tem sessão — sem essas entradas o gate abaixo intercepta a requisição
-  // antes do route handler rodar.
+  // aceitarConvite() em (auth)/actions.ts), /assinar (rota pública de
+  // checkout — Fatia 4 do fluxo de pagamento, ninguém tem sessão antes de
+  // pagar) e /api/cron/* (autenticado por segredo compartilhado, não sessão)
+  // são acessados por quem ainda não tem sessão — sem essas entradas o gate
+  // abaixo intercepta a requisição antes do route handler rodar.
   const isAuthRoute =
     request.nextUrl.pathname.startsWith("/entrar") ||
     request.nextUrl.pathname.startsWith("/cadastro") ||
+    request.nextUrl.pathname.startsWith("/assinar") ||
     request.nextUrl.pathname.startsWith("/auth") ||
     request.nextUrl.pathname.startsWith("/convite/aceitar");
   const isPublicRoute =
