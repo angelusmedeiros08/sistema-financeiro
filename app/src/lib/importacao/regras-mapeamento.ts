@@ -43,10 +43,11 @@ export async function salvarRegraMapeamentoSeNaoExiste(
     .eq("cabecalho_normalizado", cabecalhoNormalizado)
     .maybeSingle();
 
-  if (existente) {
-    await supabase.from("regras_mapeamento_coluna").update({ chave_coluna: params.chaveColuna }).eq("id", existente.id);
-    return;
-  }
+  // Existe de verdade: uma correção pontual num arquivo não pode reescrever
+  // silenciosamente uma regra que vale pro tenant inteiro (mudar a regra de
+  // propósito é ação explícita, na tela de Configurações → Mapeamento de
+  // colunas, com apagarRegraMapeamento). Bate com o próprio nome da função.
+  if (existente) return;
 
   await supabase.from("regras_mapeamento_coluna").insert({
     tenant_id: params.tenantId,

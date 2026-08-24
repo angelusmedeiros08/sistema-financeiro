@@ -204,15 +204,49 @@ export type ResultadoDesfazerFinanceira = {
   entidadesComErro: { tipo_entidade: TipoEntidade; nome: string; erro: string }[];
 };
 
-// Executa exatamente o que a prévia classificou — nunca reavalia a
-// classificação na hora, usa o snapshot já confirmado pelo usuário (Seção
-// "Fluxo de desfazer" da spec: "usa exatamente o snapshot da prévia").
+// Assinatura estável da prévia — só os ids que decidem o que a execução vai
+// tocar, ordenados. Usada só pra comparar "a prévia que o usuário confirmou"
+// contra "a prévia recém-recalculada no servidor", nunca pra decidir o que
+// executar (isso sempre vem da recém-recalculada, nunca do objeto do cliente).
+function assinaturaPrevia(p: PreviaDesfazerFinanceira): string {
+  const ids = (lista: { item_id?: string; entidade_id?: string }[]) =>
+    lista
+      .map((x) => x.item_id ?? x.entidade_id ?? "")
+      .sort()
+      .join(",");
+  return [
+    ids(p.aReverter),
+    ids(p.protegidosPorBaixa),
+    ids(p.protegidosPorModificacao),
+    ids(p.entidadesARemover),
+    ids(p.entidadesPreservadas),
+  ].join("|");
+}
+
+// Executa o que a prévia classificou — mas nunca confia nos ids que o
+// cliente mandou de volta: um payload adulterado (ou só uma aba velha,
+// reaberta depois de outra ação ter mudado o estado) poderia apontar
+// evento_id/entidade_id pra um registro qualquer do tenant que nada tem a
+// ver com esta importação, e tanto estornarEventoFinanceiro quanto o DELETE
+// de entidade (via admin client, bypassa RLS) executariam do mesmo jeito.
+// Por isso a prévia é sempre recalculada aqui, no servidor, a partir só de
+// `importacao_id`/`tenant_id` — o snapshot do cliente serve exclusivamente
+// pra comparar (mesma assinatura = nada mudou desde que o usuário viu a
+// tela) e decidir se a chamada segue ou é rejeitada; a lista de ids que
+// realmente executa é sempre a recém-calculada, nunca a do cliente.
 export async function desfazerImportacaoFinanceira(
   supabase: Cliente,
   params: { tenant_id: string; importacao_id: string; criado_por: string; previa: PreviaDesfazerFinanceira; incluirModificados: boolean },
 ): Promise<ResultadoDesfazerFinanceira | { erro: string }> {
-  const idsPuros = new Set(params.previa.aReverter.map((a) => a.item_id));
-  const itensParaReverter = params.incluirModificados ? [...params.previa.aReverter, ...params.previa.protegidosPorModificacao] : params.previa.aReverter;
+  const previaAtual = await preverDesfazerImportacaoFinanceira(supabase, { tenant_id: params.tenant_id, importacao_id: params.importacao_id });
+  if ("erro" in previaAtual) return previaAtual;
+
+  if (assinaturaPrevia(previaAtual) !== assinaturaPrevia(params.previa)) {
+    return { erro: "A importação mudou desde a última verificação — recarregue a prévia e confirme de novo." };
+  }
+
+  const idsPuros = new Set(previaAtual.aReverter.map((a) => a.item_id));
+  const itensParaReverter = params.incluirModificados ? [...previaAtual.aReverter, ...previaAtual.protegidosPorModificacao] : previaAtual.aReverter;
 
   const admin = createAdminClient();
   let eventosRevertidos = 0;
@@ -252,10 +286,10 @@ export async function desfazerImportacaoFinanceira(
 
   // Entidades sem policy de DELETE de propósito (mesmo padrão de
   // desfazerImportacao de Pessoas) — admin client só pra este DELETE
-  // estreito, guardado pelo snapshot da prévia, não por uma policy geral.
+  // estreito, guardado pela prévia recém-recalculada, não por uma policy geral.
   let entidadesRemovidas = 0;
   const entidadesComErro: { tipo_entidade: TipoEntidade; nome: string; erro: string }[] = [];
-  for (const e of params.previa.entidadesARemover) {
+  for (const e of previaAtual.entidadesARemover) {
     const { error } = await admin.from(TABELA_POR_TIPO_ENTIDADE[e.tipo_entidade]).delete().eq("id", e.entidade_id).eq("tenant_id", params.tenant_id);
     if (error) {
       entidadesComErro.push({ tipo_entidade: e.tipo_entidade, nome: e.nome, erro: error.message });

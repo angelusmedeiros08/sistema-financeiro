@@ -120,13 +120,17 @@ export function PassoEntidades({
   // "exata_nome" (buraco original da spec de homônimos), conflito de
   // documento, múltiplos candidatos ou "fraca" — esses continuam exigindo
   // decisão manual, porque errar ali tem custo real (duplicar/juntar
-  // cadastro errado).
+  // cadastro errado). E nunca pisam numa linha que o usuário já decidiu à
+  // mão (mesmo que a decisão manual seja diferente da sugestão) — sem essa
+  // guarda, "Aceitar sugestões" desfazia silenciosamente uma correção
+  // manual feita segundos antes na mesma seção.
   function aceitarSugestoes(secao: (typeof secoes)[number]) {
     setDecisoes((atual) => {
       const novo = { ...atual };
       for (const c of secao.correspondencias) {
-        if (c.tipoCorrespondencia === "aproximada" && c.correspondenciaId) {
-          novo[chaveDecisao(secao.tipo, c.valorOriginal)] = { valorOriginal: c.valorOriginal, acao: "usar_existente", entidadeId: c.correspondenciaId };
+        const chave = chaveDecisao(secao.tipo, c.valorOriginal);
+        if (c.tipoCorrespondencia === "aproximada" && c.correspondenciaId && !atual[chave]) {
+          novo[chave] = { valorOriginal: c.valorOriginal, acao: "usar_existente", entidadeId: c.correspondenciaId };
         }
       }
       return novo;
@@ -137,8 +141,9 @@ export function PassoEntidades({
     setDecisoes((atual) => {
       const novo = { ...atual };
       for (const c of secao.correspondencias) {
-        if (c.tipoCorrespondencia === "nenhuma") {
-          novo[chaveDecisao(secao.tipo, c.valorOriginal)] = { valorOriginal: c.valorOriginal, acao: "criar_novo", entidadeId: null };
+        const chave = chaveDecisao(secao.tipo, c.valorOriginal);
+        if (c.tipoCorrespondencia === "nenhuma" && !atual[chave]) {
+          novo[chave] = { valorOriginal: c.valorOriginal, acao: "criar_novo", entidadeId: null };
         }
       }
       return novo;
@@ -149,7 +154,7 @@ export function PassoEntidades({
     setDecisoesPessoa((atual) => {
       const novo = { ...atual };
       for (const c of correspondenciasPessoa) {
-        if (c.correspondencia.tipo === "aproximada" && c.correspondencia.candidatos.length === 1) {
+        if (c.correspondencia.tipo === "aproximada" && c.correspondencia.candidatos.length === 1 && !atual[c.valorOriginal]) {
           novo[c.valorOriginal] = { valorOriginal: c.valorOriginal, acao: "usar_existente", entidadeId: c.correspondencia.candidatos[0].id };
         }
       }
@@ -161,7 +166,7 @@ export function PassoEntidades({
     setDecisoesPessoa((atual) => {
       const novo = { ...atual };
       for (const c of correspondenciasPessoa) {
-        if (c.correspondencia.tipo === "nenhuma") {
+        if (c.correspondencia.tipo === "nenhuma" && !atual[c.valorOriginal]) {
           novo[c.valorOriginal] = { valorOriginal: c.valorOriginal, acao: "criar_novo", entidadeId: null };
         }
       }
@@ -244,8 +249,10 @@ export function PassoEntidades({
     onAvancar(montarMapaFinal(secoes, decisoesAtualizadas, valoresPessoa, decisoesPessoaAtualizadas), categoriasNovas, importacaoId);
   }
 
-  const numAproximadasPessoa = correspondenciasPessoa.filter((c) => c.correspondencia.tipo === "aproximada" && c.correspondencia.candidatos.length === 1).length;
-  const numSemCorrespondenciaPessoa = correspondenciasPessoa.filter((c) => c.correspondencia.tipo === "nenhuma").length;
+  const numAproximadasPessoa = correspondenciasPessoa.filter(
+    (c) => c.correspondencia.tipo === "aproximada" && c.correspondencia.candidatos.length === 1 && !decisoesPessoa[c.valorOriginal],
+  ).length;
+  const numSemCorrespondenciaPessoa = correspondenciasPessoa.filter((c) => c.correspondencia.tipo === "nenhuma" && !decisoesPessoa[c.valorOriginal]).length;
 
   return (
     <div className="flex flex-col gap-6 rounded-2xl bg-card shadow-card p-6">
@@ -257,8 +264,16 @@ export function PassoEntidades({
       </div>
 
       {secoes.map((secao) => {
-        const numAproximadas = secao.correspondencias.filter((c) => c.tipoCorrespondencia === "aproximada" && c.correspondenciaId).length;
-        const numSemCorrespondencia = secao.correspondencias.filter((c) => c.tipoCorrespondencia === "nenhuma").length;
+        // Só conta o que o clique em lote realmente vai mudar — exclui
+        // linhas já decididas à mão, senão o rótulo do botão promete mais
+        // do que aplica (ou pior, sugere que reaplicaria em cima do que já
+        // foi decidido).
+        const numAproximadas = secao.correspondencias.filter(
+          (c) => c.tipoCorrespondencia === "aproximada" && c.correspondenciaId && !decisoes[chaveDecisao(secao.tipo, c.valorOriginal)],
+        ).length;
+        const numSemCorrespondencia = secao.correspondencias.filter(
+          (c) => c.tipoCorrespondencia === "nenhuma" && !decisoes[chaveDecisao(secao.tipo, c.valorOriginal)],
+        ).length;
         return (
           <div key={secao.tipo} className="space-y-2">
             <div className="flex flex-wrap items-center justify-between gap-2">
