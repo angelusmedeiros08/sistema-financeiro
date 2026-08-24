@@ -2,25 +2,54 @@ import { normalizarTexto } from "@/lib/importacao/locale-br";
 import type { CampoPersonalizadoDefinicao } from "@/lib/pessoas/buscar-pessoa";
 import type { ColunaChave, ColunaChaveFixa, LinhaBrutaPessoa } from "./tipos";
 
-export const COLUNAS_TEMPLATE_FIXAS: { chave: ColunaChaveFixa; rotulo: string; obrigatoria: boolean; ajuda?: string }[] = [
-  { chave: "nome", rotulo: "Nome", obrigatoria: true },
-  { chave: "perfil", rotulo: "Perfil", obrigatoria: true, ajuda: "Cliente, Fornecedor ou Transportadora — mais de um separado por vírgula" },
-  { chave: "documento", rotulo: "CPF/CNPJ", obrigatoria: false },
-  { chave: "natureza", rotulo: "Natureza", obrigatoria: false, ajuda: "Física ou Jurídica — vazio infere pelo tamanho do documento" },
-  { chave: "email", rotulo: "Email", obrigatoria: false },
-  { chave: "telefone", rotulo: "Telefone", obrigatoria: false },
+export const COLUNAS_TEMPLATE_FIXAS: { chave: ColunaChaveFixa; rotulo: string; obrigatoria: boolean; ajuda?: string; sinonimos?: string[] }[] = [
+  { chave: "nome", rotulo: "Nome", obrigatoria: true, sinonimos: ["Nome Completo", "Razão Social", "Cliente/Fornecedor"] },
+  {
+    chave: "perfil",
+    rotulo: "Perfil",
+    obrigatoria: true,
+    ajuda: "Cliente, Fornecedor ou Transportadora — mais de um separado por vírgula",
+    sinonimos: ["Tipo"],
+  },
+  { chave: "documento", rotulo: "CPF/CNPJ", obrigatoria: false, sinonimos: ["CNPJ/CPF", "Documento"] },
+  {
+    chave: "natureza",
+    rotulo: "Natureza",
+    obrigatoria: false,
+    ajuda: "Física ou Jurídica — vazio infere pelo tamanho do documento",
+    sinonimos: ["Pessoa Física ou Jurídica"],
+  },
+  { chave: "email", rotulo: "Email", obrigatoria: false, sinonimos: ["E-mail"] },
+  { chave: "telefone", rotulo: "Telefone", obrigatoria: false, sinonimos: ["Celular", "WhatsApp"] },
   { chave: "endereco_cep", rotulo: "CEP", obrigatoria: false },
-  { chave: "endereco_logradouro", rotulo: "Logradouro", obrigatoria: false },
+  { chave: "endereco_logradouro", rotulo: "Logradouro", obrigatoria: false, sinonimos: ["Endereço", "Rua"] },
   { chave: "endereco_numero", rotulo: "Número", obrigatoria: false },
   { chave: "endereco_complemento", rotulo: "Complemento", obrigatoria: false },
   { chave: "endereco_bairro", rotulo: "Bairro", obrigatoria: false },
-  { chave: "endereco_cidade", rotulo: "Cidade", obrigatoria: false },
-  { chave: "endereco_uf", rotulo: "UF", obrigatoria: false },
+  { chave: "endereco_cidade", rotulo: "Cidade", obrigatoria: false, sinonimos: ["Município"] },
+  { chave: "endereco_uf", rotulo: "UF", obrigatoria: false, sinonimos: ["Estado"] },
   { chave: "contato_nome", rotulo: "Nome do contato", obrigatoria: false },
   { chave: "contato_cargo", rotulo: "Cargo do contato", obrigatoria: false },
-  { chave: "contato_email", rotulo: "Email do contato", obrigatoria: false },
+  { chave: "contato_email", rotulo: "Email do contato", obrigatoria: false, sinonimos: ["E-mail do Contato"] },
   { chave: "contato_telefone", rotulo: "Telefone do contato", obrigatoria: false },
 ];
+
+// Mesma checagem de colisão de lib/importacao/template.ts, aplicada aqui —
+// os dois templates são independentes, então a lista de sinônimos de um não
+// protege o outro.
+(function validarSinonimosSemColisao() {
+  const donoPorSinonimo = new Map<string, string>();
+  for (const c of COLUNAS_TEMPLATE_FIXAS) {
+    for (const rotulo of [c.rotulo, ...(c.sinonimos ?? [])]) {
+      const chave = normalizarTexto(rotulo);
+      const dono = donoPorSinonimo.get(chave);
+      if (dono && dono !== c.chave) {
+        throw new Error(`Sinônimo de coluna colidindo: "${rotulo}" pertence tanto a "${dono}" quanto a "${c.chave}".`);
+      }
+      donoPorSinonimo.set(chave, c.chave);
+    }
+  }
+})();
 
 export type ColunaTemplate = { chave: ColunaChave; rotulo: string; obrigatoria: boolean; ajuda?: string };
 
@@ -58,12 +87,27 @@ export function gerarModeloCsv(camposPersonalizados: CampoPersonalizadoDefinicao
   return `${cabecalho}\n${linhaExemplo}\n`;
 }
 
-export function sugerirMapeamentoColunas(colunasArquivo: string[], colunasTemplate: ColunaTemplate[]): Partial<Record<ColunaChave, number>> {
+export function sugerirMapeamentoColunas(
+  colunasArquivo: string[],
+  colunasTemplate: ColunaTemplate[],
+  regrasAprendidas: Record<string, string> = {},
+): Partial<Record<ColunaChave, number>> {
   const normalizados = colunasArquivo.map(normalizarTexto);
   const mapeamento: Partial<Record<ColunaChave, number>> = {};
+  const chavesValidas = new Set(colunasTemplate.map((c) => c.chave));
+
+  normalizados.forEach((cabecalho, idx) => {
+    const chaveAprendida = regrasAprendidas[cabecalho] as ColunaChave | undefined;
+    if (chaveAprendida && chavesValidas.has(chaveAprendida)) {
+      mapeamento[chaveAprendida] = idx;
+    }
+  });
 
   for (const { chave, rotulo } of colunasTemplate) {
-    const idx = normalizados.findIndex((c) => c === normalizarTexto(rotulo));
+    if (mapeamento[chave] !== undefined) continue;
+    const sinonimos = COLUNAS_TEMPLATE_FIXAS.find((c) => c.chave === chave)?.sinonimos ?? [];
+    const candidatos = [rotulo, ...sinonimos].map(normalizarTexto);
+    const idx = normalizados.findIndex((c) => candidatos.includes(c));
     if (idx >= 0) mapeamento[chave] = idx;
   }
 

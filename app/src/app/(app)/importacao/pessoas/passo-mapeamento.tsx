@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { COLUNAS_TEMPLATE_FIXAS, montarColunasTemplate, sugerirMapeamentoColunas, type ColunaTemplate } from "@/lib/pessoas/importacao/template";
 import { reparsearCsvComEncoding, type EncodingSuportado, type ResultadoParse } from "@/lib/importacao/parse";
+import { salvarCorrecoesMapeamentoAction } from "@/lib/importacao/regras-mapeamento-actions";
 import type { CampoPersonalizadoDefinicao } from "@/lib/pessoas/buscar-pessoa";
 import type { ColunaChave } from "@/lib/pessoas/importacao/tipos";
 
@@ -31,24 +32,31 @@ export function PassoMapeamento({
   parseInicial,
   buffer,
   camposPersonalizados,
+  regrasMapeamentoIniciais,
   onVoltar,
   onAvancar,
 }: {
   parseInicial: ResultadoParse;
   buffer: ArrayBuffer | null;
   camposPersonalizados: CampoPersonalizadoDefinicao[];
+  regrasMapeamentoIniciais: Record<string, string>;
   onVoltar: () => void;
   onAvancar: (dados: { linhasTexto: string[][]; mapeamento: Partial<Record<ColunaChave, number>> }) => void;
 }) {
   const colunasTemplate = useMemo(() => montarColunasTemplate(camposPersonalizados), [camposPersonalizados]);
   const [parseAtual, setParseAtual] = useState(parseInicial);
-  const [mapeamento, setMapeamento] = useState<Partial<Record<ColunaChave, number>>>(() => sugerirMapeamentoColunas(parseInicial.colunas, colunasTemplate));
+  const [sugestaoAutomatica, setSugestaoAutomatica] = useState(() =>
+    sugerirMapeamentoColunas(parseInicial.colunas, colunasTemplate, regrasMapeamentoIniciais),
+  );
+  const [mapeamento, setMapeamento] = useState<Partial<Record<ColunaChave, number>>>(sugestaoAutomatica);
 
   function trocarEncoding(encoding: EncodingSuportado) {
     if (!buffer) return;
     const novoParse = reparsearCsvComEncoding(buffer, encoding);
     setParseAtual(novoParse);
-    setMapeamento(sugerirMapeamentoColunas(novoParse.colunas, colunasTemplate));
+    const sugestao = sugerirMapeamentoColunas(novoParse.colunas, colunasTemplate, regrasMapeamentoIniciais);
+    setSugestaoAutomatica(sugestao);
+    setMapeamento(sugestao);
   }
 
   const colunasObrigatoriasFaltando = colunasTemplate.filter((c) => c.obrigatoria && mapeamento[c.chave] === undefined);
@@ -146,7 +154,15 @@ export function PassoMapeamento({
           type="button"
           className="gap-1.5"
           disabled={colunasObrigatoriasFaltando.length > 0}
-          onClick={() => onAvancar({ linhasTexto: parseAtual.linhas, mapeamento })}
+          onClick={() => {
+            void salvarCorrecoesMapeamentoAction({
+              tipoWizard: "pessoas",
+              colunasArquivo: parseAtual.colunas,
+              sugestaoAutomatica,
+              mapeamentoFinal: mapeamento,
+            });
+            onAvancar({ linhasTexto: parseAtual.linhas, mapeamento });
+          }}
         >
           Continuar
           <ArrowRight size={14} />

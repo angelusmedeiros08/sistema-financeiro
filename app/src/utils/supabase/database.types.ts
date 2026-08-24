@@ -1536,6 +1536,41 @@ export type Database = {
           },
         ]
       }
+      regras_mapeamento_coluna: {
+        Row: {
+          cabecalho_normalizado: string
+          chave_coluna: string
+          criado_em: string
+          id: string
+          tenant_id: string
+          tipo_wizard: string
+        }
+        Insert: {
+          cabecalho_normalizado: string
+          chave_coluna: string
+          criado_em?: string
+          id?: string
+          tenant_id: string
+          tipo_wizard: string
+        }
+        Update: {
+          cabecalho_normalizado?: string
+          chave_coluna?: string
+          criado_em?: string
+          id?: string
+          tenant_id?: string
+          tipo_wizard?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "regras_mapeamento_coluna_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       regras_recorrencia: {
         Row: {
           ativa: boolean

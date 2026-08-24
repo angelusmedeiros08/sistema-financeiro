@@ -4,6 +4,7 @@ import { ArrowLeft } from "@phosphor-icons/react/dist/ssr";
 import { createClient } from "@/utils/supabase/server";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
 import { listarCamposPersonalizados } from "@/lib/pessoas/buscar-pessoa";
+import { buscarRegrasMapeamento } from "@/lib/importacao/regras-mapeamento";
 import { ImportarPessoasWizard } from "./wizard";
 
 export default async function PaginaImportarPessoas() {
@@ -12,9 +13,10 @@ export default async function PaginaImportarPessoas() {
 
   const supabase = await createClient();
 
-  const [{ data: pessoasExistentes }, camposPersonalizados] = await Promise.all([
+  const [{ data: pessoasExistentes }, camposPersonalizados, regrasMapeamento] = await Promise.all([
     supabase.from("pessoas").select("id, nome, documento, perfis, email, telefone").eq("tenant_id", contexto.tenantId).order("nome"),
     listarCamposPersonalizados(supabase, { tenant_id: contexto.tenantId, apenasDisponiveis: true }),
+    buscarRegrasMapeamento(supabase, contexto.tenantId, "pessoas"),
   ]);
 
   return (
@@ -25,7 +27,11 @@ export default async function PaginaImportarPessoas() {
       </Link>
       <h1 className="text-xl font-bold tracking-tight text-foreground">Importar clientes/fornecedores</h1>
 
-      <ImportarPessoasWizard pessoasExistentesIniciais={pessoasExistentes ?? []} camposPersonalizados={camposPersonalizados} />
+      <ImportarPessoasWizard
+        pessoasExistentesIniciais={pessoasExistentes ?? []}
+        camposPersonalizados={camposPersonalizados}
+        regrasMapeamentoIniciais={regrasMapeamento}
+      />
     </div>
   );
 }

@@ -32,9 +32,11 @@ const ESTADO_INICIAL = {
 export function ImportarPessoasWizard({
   pessoasExistentesIniciais,
   camposPersonalizados,
+  regrasMapeamentoIniciais,
 }: {
   pessoasExistentesIniciais: PessoaExistente[];
   camposPersonalizados: CampoPersonalizadoDefinicao[];
+  regrasMapeamentoIniciais: Record<string, string>;
 }) {
   const [estado, setEstado] = useState(ESTADO_INICIAL);
   const indiceAtual = ETAPAS.findIndex((e) => e.chave === estado.etapa);
@@ -72,6 +74,7 @@ export function ImportarPessoasWizard({
           parseInicial={estado.parse}
           buffer={estado.buffer}
           camposPersonalizados={camposPersonalizados}
+          regrasMapeamentoIniciais={regrasMapeamentoIniciais}
           onVoltar={() => setEstado({ ...ESTADO_INICIAL, etapa: "upload" })}
           onAvancar={({ linhasTexto, mapeamento }) => setEstado((s) => ({ ...s, etapa: "revisao", linhasTexto, mapeamento }))}
         />

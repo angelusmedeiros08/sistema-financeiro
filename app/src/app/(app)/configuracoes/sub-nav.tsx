@@ -19,6 +19,7 @@ const GRUPOS = [
     rotulo: "Automação",
     itens: [
       { href: "/configuracoes/regras-categorizacao", rotulo: "Regras de categorização" },
+      { href: "/configuracoes/mapeamento-colunas", rotulo: "Mapeamento de colunas" },
       { href: "/configuracoes/recorrencias", rotulo: "Recorrências" },
     ],
   },

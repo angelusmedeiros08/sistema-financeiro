@@ -11,6 +11,7 @@ import { COLUNAS_TEMPLATE, sugerirMapeamentoColunas } from "@/lib/importacao/tem
 import { reparsearCsvComEncoding, type EncodingSuportado, type ResultadoParse } from "@/lib/importacao/parse";
 import { parseDataPlanilha, parseValorPlanilha, type FormatoNumerico } from "@/lib/importacao/locale-br";
 import { montarLinhasBrutas } from "@/lib/importacao/validacao";
+import { salvarCorrecoesMapeamentoAction } from "@/lib/importacao/regras-mapeamento-actions";
 import type { ColunaChave, LinhaBruta } from "@/lib/importacao/tipos";
 import { cn } from "@/lib/utils";
 
@@ -25,23 +26,31 @@ const NENHUMA = "__nenhuma__";
 export function PassoMapeamento({
   parseInicial,
   buffer,
+  regrasMapeamentoIniciais,
   onVoltar,
   onAvancar,
 }: {
   parseInicial: ResultadoParse;
   buffer: ArrayBuffer | null;
+  regrasMapeamentoIniciais: Record<string, string>;
   onVoltar: () => void;
   onAvancar: (dados: { linhasBrutas: LinhaBruta[]; formatoNumerico: FormatoNumerico }) => void;
 }) {
   const [parseAtual, setParseAtual] = useState(parseInicial);
-  const [mapeamento, setMapeamento] = useState<Partial<Record<ColunaChave, number>>>(() => sugerirMapeamentoColunas(parseInicial.colunas));
+  // Snapshot da sugestão automática (regra aprendida → rótulo → sinônimo) —
+  // comparado contra o mapeamento final no avançar, pra saber o que o
+  // usuário corrigiu à mão e vale aprender pra próxima importação.
+  const [sugestaoAutomatica, setSugestaoAutomatica] = useState(() => sugerirMapeamentoColunas(parseInicial.colunas, regrasMapeamentoIniciais));
+  const [mapeamento, setMapeamento] = useState<Partial<Record<ColunaChave, number>>>(sugestaoAutomatica);
   const [formatoNumerico, setFormatoNumerico] = useState<FormatoNumerico>("BR");
 
   function trocarEncoding(encoding: EncodingSuportado) {
     if (!buffer) return;
     const novoParse = reparsearCsvComEncoding(buffer, encoding);
     setParseAtual(novoParse);
-    setMapeamento(sugerirMapeamentoColunas(novoParse.colunas));
+    const sugestao = sugerirMapeamentoColunas(novoParse.colunas, regrasMapeamentoIniciais);
+    setSugestaoAutomatica(sugestao);
+    setMapeamento(sugestao);
   }
 
   const colunasObrigatoriasFaltando = COLUNAS_TEMPLATE.filter((c) => c.obrigatoria && mapeamento[c.chave] === undefined);
@@ -50,6 +59,12 @@ export function PassoMapeamento({
 
   function avancar() {
     const linhasBrutas = montarLinhasBrutas(parseAtual.linhas, mapeamento);
+    void salvarCorrecoesMapeamentoAction({
+      tipoWizard: "financeiro",
+      colunasArquivo: parseAtual.colunas,
+      sugestaoAutomatica,
+      mapeamentoFinal: mapeamento,
+    });
     onAvancar({ linhasBrutas, formatoNumerico });
   }
 

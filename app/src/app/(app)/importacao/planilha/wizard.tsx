@@ -38,9 +38,11 @@ const ESTADO_INICIAL = {
 export function ImportarPlanilhaWizard({
   contasFinanceiras,
   entidadesExistentesIniciais,
+  regrasMapeamentoIniciais,
 }: {
   contasFinanceiras: ContaFinanceira[];
   entidadesExistentesIniciais: EntidadesExistentes;
+  regrasMapeamentoIniciais: Record<string, string>;
 }) {
   const [estado, setEstado] = useState(ESTADO_INICIAL);
   const [entidadesExistentes, setEntidadesExistentes] = useState(entidadesExistentesIniciais);
@@ -85,6 +87,7 @@ export function ImportarPlanilhaWizard({
         <PassoMapeamento
           parseInicial={estado.parse}
           buffer={estado.buffer}
+          regrasMapeamentoIniciais={regrasMapeamentoIniciais}
           onVoltar={() => setEstado({ ...ESTADO_INICIAL, etapa: "upload" })}
           onAvancar={({ linhasBrutas, formatoNumerico }) => setEstado((s) => ({ ...s, etapa: "entidades", linhasBrutas, formatoNumerico }))}
         />
