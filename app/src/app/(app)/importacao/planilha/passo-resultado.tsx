@@ -11,7 +11,17 @@ import type { LinhaPronta } from "./passo-preview";
 
 type ResultadoLinha = { linha: LinhaPronta; sucesso: boolean; erro?: string };
 
-export function PassoResultado({ linhas, contaFinanceiraId, onReiniciar }: { linhas: LinhaPronta[]; contaFinanceiraId: string; onReiniciar: () => void }) {
+export function PassoResultado({
+  linhas,
+  totalLinhasArquivo,
+  contaFinanceiraId,
+  onReiniciar,
+}: {
+  linhas: LinhaPronta[];
+  totalLinhasArquivo: number;
+  contaFinanceiraId: string;
+  onReiniciar: () => void;
+}) {
   const [feitos, setFeitos] = useState(0);
   const [resultados, setResultados] = useState<ResultadoLinha[]>([]);
   const [concluido, setConcluido] = useState(false);
@@ -90,6 +100,11 @@ export function PassoResultado({ linhas, contaFinanceiraId, onReiniciar }: { lin
 
       {concluido && (
         <>
+          <p className="text-xs text-muted-foreground">
+            {totalLinhasArquivo} linhas na planilha → {linhas.length} chegaram prontas na importação → {sucessos} importadas
+            {falhas.length > 0 && `, ${falhas.length} falharam`}
+            {totalLinhasArquivo - linhas.length > 0 && ` (${totalLinhasArquivo - linhas.length} ficaram para trás nas etapas de Colunas/Cadastros/Revisão)`}.
+          </p>
           <div className="flex flex-wrap gap-4">
             <span className="flex items-center gap-1.5 text-sm font-medium text-positivo-foreground">
               <CheckCircle size={16} weight="fill" />

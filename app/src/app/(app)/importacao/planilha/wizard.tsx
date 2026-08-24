@@ -119,7 +119,12 @@ export function ImportarPlanilhaWizard({
       )}
 
       {estado.etapa === "resultado" && (
-        <PassoResultado linhas={estado.linhasProntas} contaFinanceiraId={estado.contaFinanceiraId} onReiniciar={reiniciar} />
+        <PassoResultado
+          linhas={estado.linhasProntas}
+          totalLinhasArquivo={estado.linhasBrutas.length}
+          contaFinanceiraId={estado.contaFinanceiraId}
+          onReiniciar={reiniciar}
+        />
       )}
     </div>
   );

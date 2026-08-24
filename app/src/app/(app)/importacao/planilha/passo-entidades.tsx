@@ -100,6 +100,61 @@ export function PassoEntidades({
     setDecisoesPessoa((atual) => ({ ...atual, [valorOriginal]: decisao }));
   }
 
+  // Ações em lote: só tocam correspondência de candidato único e
+  // não-ambígua — exatamente o que já decidiria certo se o usuário
+  // confirmasse linha a linha, só que num clique só. Nunca mexem em
+  // "exata_nome" (buraco original da spec de homônimos), conflito de
+  // documento, múltiplos candidatos ou "fraca" — esses continuam exigindo
+  // decisão manual, porque errar ali tem custo real (duplicar/juntar
+  // cadastro errado).
+  function aceitarSugestoes(secao: (typeof secoes)[number]) {
+    setDecisoes((atual) => {
+      const novo = { ...atual };
+      for (const c of secao.correspondencias) {
+        if (c.tipoCorrespondencia === "aproximada" && c.correspondenciaId) {
+          novo[chaveDecisao(secao.tipo, c.valorOriginal)] = { valorOriginal: c.valorOriginal, acao: "usar_existente", entidadeId: c.correspondenciaId };
+        }
+      }
+      return novo;
+    });
+  }
+
+  function criarTodosNovos(secao: (typeof secoes)[number]) {
+    setDecisoes((atual) => {
+      const novo = { ...atual };
+      for (const c of secao.correspondencias) {
+        if (c.tipoCorrespondencia === "nenhuma") {
+          novo[chaveDecisao(secao.tipo, c.valorOriginal)] = { valorOriginal: c.valorOriginal, acao: "criar_novo", entidadeId: null };
+        }
+      }
+      return novo;
+    });
+  }
+
+  function aceitarSugestoesPessoa() {
+    setDecisoesPessoa((atual) => {
+      const novo = { ...atual };
+      for (const c of correspondenciasPessoa) {
+        if (c.correspondencia.tipo === "aproximada" && c.correspondencia.candidatos.length === 1) {
+          novo[c.valorOriginal] = { valorOriginal: c.valorOriginal, acao: "usar_existente", entidadeId: c.correspondencia.candidatos[0].id };
+        }
+      }
+      return novo;
+    });
+  }
+
+  function criarTodosNovosPessoa() {
+    setDecisoesPessoa((atual) => {
+      const novo = { ...atual };
+      for (const c of correspondenciasPessoa) {
+        if (c.correspondencia.tipo === "nenhuma") {
+          novo[c.valorOriginal] = { valorOriginal: c.valorOriginal, acao: "criar_novo", entidadeId: null };
+        }
+      }
+      return novo;
+    });
+  }
+
   const todasResolvidas =
     secoes.every((secao) =>
       secao.valores.every((v) => {
@@ -175,6 +230,9 @@ export function PassoEntidades({
     onAvancar(montarMapaFinal(secoes, decisoesAtualizadas, valoresPessoa, decisoesPessoaAtualizadas), categoriasNovas);
   }
 
+  const numAproximadasPessoa = correspondenciasPessoa.filter((c) => c.correspondencia.tipo === "aproximada" && c.correspondencia.candidatos.length === 1).length;
+  const numSemCorrespondenciaPessoa = correspondenciasPessoa.filter((c) => c.correspondencia.tipo === "nenhuma").length;
+
   return (
     <div className="flex flex-col gap-6 rounded-2xl bg-card shadow-card p-6">
       <div>
@@ -184,29 +242,61 @@ export function PassoEntidades({
         </p>
       </div>
 
-      {secoes.map((secao) => (
-        <div key={secao.tipo} className="space-y-2">
-          <h3 className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-            {secao.titulo} ({secao.valores.length})
-          </h3>
-          <div className="space-y-1.5">
-            {secao.correspondencias.map((c) => (
-              <LinhaEntidade
-                key={c.valorOriginal}
-                tipo={secao.tipo}
-                correspondencia={c}
-                existentes={secao.tipo === "categoria" ? entidadesExistentes.categorias : entidadesExistentes[chaveExistentes(secao.tipo)]}
-                decisao={decisoes[chaveDecisao(secao.tipo, c.valorOriginal)] ?? null}
-                onMudar={(d) => definirDecisao(secao.tipo, c.valorOriginal, d)}
-              />
-            ))}
+      {secoes.map((secao) => {
+        const numAproximadas = secao.correspondencias.filter((c) => c.tipoCorrespondencia === "aproximada" && c.correspondenciaId).length;
+        const numSemCorrespondencia = secao.correspondencias.filter((c) => c.tipoCorrespondencia === "nenhuma").length;
+        return (
+          <div key={secao.tipo} className="space-y-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h3 className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                {secao.titulo} ({secao.valores.length})
+              </h3>
+              <div className="flex gap-2">
+                {numAproximadas > 1 && (
+                  <Button type="button" variant="outline" size="sm" className="h-7 gap-1 text-xs" onClick={() => aceitarSugestoes(secao)}>
+                    Aceitar {numAproximadas} sugestões
+                  </Button>
+                )}
+                {numSemCorrespondencia > 1 && (
+                  <Button type="button" variant="outline" size="sm" className="h-7 gap-1 text-xs" onClick={() => criarTodosNovos(secao)}>
+                    Criar {numSemCorrespondencia} novos
+                  </Button>
+                )}
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              {secao.correspondencias.map((c) => (
+                <LinhaEntidade
+                  key={c.valorOriginal}
+                  tipo={secao.tipo}
+                  correspondencia={c}
+                  existentes={secao.tipo === "categoria" ? entidadesExistentes.categorias : entidadesExistentes[chaveExistentes(secao.tipo)]}
+                  decisao={decisoes[chaveDecisao(secao.tipo, c.valorOriginal)] ?? null}
+                  onMudar={(d) => definirDecisao(secao.tipo, c.valorOriginal, d)}
+                />
+              ))}
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
 
       {valoresPessoa.length > 0 && (
         <div className="space-y-2">
-          <h3 className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Clientes / Fornecedores ({valoresPessoa.length})</h3>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h3 className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Clientes / Fornecedores ({valoresPessoa.length})</h3>
+            <div className="flex gap-2">
+              {numAproximadasPessoa > 1 && (
+                <Button type="button" variant="outline" size="sm" className="h-7 gap-1 text-xs" onClick={aceitarSugestoesPessoa}>
+                  Aceitar {numAproximadasPessoa} sugestões
+                </Button>
+              )}
+              {numSemCorrespondenciaPessoa > 1 && (
+                <Button type="button" variant="outline" size="sm" className="h-7 gap-1 text-xs" onClick={criarTodosNovosPessoa}>
+                  Criar {numSemCorrespondenciaPessoa} novos
+                </Button>
+              )}
+            </div>
+          </div>
           <div className="space-y-1.5">
             {correspondenciasPessoa.map((c) => (
               <LinhaEntidadePessoa

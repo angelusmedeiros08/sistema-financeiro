@@ -101,12 +101,31 @@ export function PassoPreview({
   const comErro = linhas.filter((l) => l.status === "erro");
   const comAviso = linhas.filter((l) => l.status === "aviso");
 
+  // Reconciliação visível: uma linha contada em "prontas" nunca deveria
+  // falhar aqui (status !== "erro" já deveria garantir que esses campos
+  // resolveram) — mas se acontecer, entra numa lista visível em vez de
+  // um `continue` silencioso. O número que a tela mostra tem que ser
+  // garantidamente o número que chega no banco.
+  const [puladasNoFinal, setPuladasNoFinal] = useState<{ linha: LinhaValidada; motivo: string }[]>([]);
+
   function importar() {
     const linhasProntas: LinhaPronta[] = [];
+    const puladas: { linha: LinhaValidada; motivo: string }[] = [];
     for (const l of prontas) {
       const categoriaId = resolver("categoria", l.categoria);
       const categoria = categoriaId ? categoriaPorId.get(categoriaId) : null;
-      if (!categoriaId || !categoria || l.valorNumero === null || l.dataCompetenciaIso === null) continue;
+      if (!categoriaId || !categoria) {
+        puladas.push({ linha: l, motivo: `Categoria "${l.categoria}" não resolveu — volte à etapa Cadastros e confirme essa categoria.` });
+        continue;
+      }
+      if (l.valorNumero === null) {
+        puladas.push({ linha: l, motivo: "Valor inválido no momento de importar." });
+        continue;
+      }
+      if (l.dataCompetenciaIso === null) {
+        puladas.push({ linha: l, motivo: "Data de competência inválida no momento de importar." });
+        continue;
+      }
 
       linhasProntas.push({
         linha: l,
@@ -116,6 +135,11 @@ export function PassoPreview({
         centroCustoId: l.centroCusto.trim() ? resolver("centro_custo", l.centroCusto) : null,
         formaPagamentoId: l.formaPagamento.trim() ? resolver("forma_pagamento", l.formaPagamento) : null,
       });
+    }
+
+    if (puladas.length > 0) {
+      setPuladasNoFinal(puladas);
+      return; // nunca importa parcialmente sem o usuário ver o que ficou de fora
     }
     onImportar(linhasProntas);
   }
@@ -128,6 +152,7 @@ export function PassoPreview({
       </div>
 
       <div className="flex flex-wrap items-center gap-3 rounded-xl bg-muted/40 px-3 py-2 text-sm">
+        <span className="text-xs text-muted-foreground">{linhasBrutas.length} linhas na planilha</span>
         <span className="flex items-center gap-1 font-medium text-positivo-foreground">
           <CheckCircle size={15} weight="fill" />
           {prontas.length} prontas
@@ -147,6 +172,21 @@ export function PassoPreview({
           </span>
         )}
       </div>
+
+      {puladasNoFinal.length > 0 && (
+        <div className="space-y-1.5 rounded-xl border border-destructive/30 bg-destructive/5 p-3">
+          <p className="text-sm font-medium text-destructive">
+            {puladasNoFinal.length} linha(s) não puderam ser importadas agora — nada foi importado ainda:
+          </p>
+          <ul className="space-y-0.5 text-xs text-muted-foreground">
+            {puladasNoFinal.map((p, i) => (
+              <li key={i}>
+                Linha {p.linha.linha}: {p.motivo}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div className="max-h-[32rem] overflow-auto rounded-xl border border-border">
         <Table>
