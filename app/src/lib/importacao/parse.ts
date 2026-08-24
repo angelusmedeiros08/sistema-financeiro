@@ -1,4 +1,5 @@
 import * as XLSX from "xlsx";
+import { repararMojibake } from "./locale-br";
 
 export type EncodingSuportado = "utf-8" | "windows-1252" | "iso-8859-1";
 
@@ -44,7 +45,11 @@ function celulaParaTexto(valor: unknown): string {
     return `${ano}-${mes}-${dia}`;
   }
   if (typeof valor === "number") return String(valor);
-  return String(valor ?? "").trim();
+  // repararMojibake: cobre os dois caminhos (XLSX e CSV) num único ponto —
+  // ambos convergem pra matrizParaColunas → celulaParaTexto antes de virar
+  // coluna/linha (ver decisão na spec de importação: corrupção nasce no
+  // arquivo de origem, não no nosso decode, então o reparo é pós-leitura).
+  return repararMojibake(String(valor ?? "").trim());
 }
 
 function matrizParaColunas(matriz: unknown[][]): { colunas: string[]; linhas: string[][] } {
