@@ -19,7 +19,7 @@ import { MODELO_COMPLETO_DRE } from "../src/lib/relatorios/dre";
 import type { Database } from "../src/utils/supabase/database.types";
 
 // --- dados do próximo tenant a provisionar (edite aqui antes de rodar) ---
-const NOME_EMPRESA = "TROQUE_AQUI";
+const NOME_EMPRESA: string = "TROQUE_AQUI";
 const NOME_RESPONSAVEL = "TROQUE_AQUI";
 const EMAIL = "TROQUE_AQUI@exemplo.com";
 // ---------------------------------------------------------------------

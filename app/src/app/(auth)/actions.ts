@@ -224,13 +224,21 @@ export async function entrar(formData: FormData): Promise<ResultadoAcao | never>
   const senha = String(formData.get("senha") ?? "");
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password: senha });
+  const { error, data } = await supabase.auth.signInWithPassword({ email, password: senha });
 
   if (error) {
     return { erro: error.message };
   }
 
-  redirect("/painel");
+  // Só quem tem mais de 1 vínculo ativo passa pela tela de escolha — com 1
+  // só (o caso comum) entra direto no painel, sem fricção extra.
+  const { count } = await supabase
+    .from("usuario_tenant")
+    .select("tenant_id", { count: "exact", head: true })
+    .eq("usuario_id", data.user.id)
+    .eq("ativo", true);
+
+  redirect((count ?? 0) > 1 ? "/escolher-empresa" : "/painel");
 }
 
 // Consome o token de convite só quando a pessoa clica de propósito no botão
