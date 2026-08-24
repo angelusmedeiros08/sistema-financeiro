@@ -107,6 +107,11 @@ export function DesfazerPainelFinanceiro({ importacaoId }: { importacaoId: strin
           {resultado.eventosComErro.length > 0 && (
             <p className="mt-1 text-destructive">{resultado.eventosComErro.length} falharam ao reverter — veja os detalhes no lançamento.</p>
           )}
+          {resultado.entidadesComErro.length > 0 && (
+            <p className="mt-1 text-destructive">
+              {resultado.entidadesComErro.length} cadastro(s) não puderam ser removidos ({resultado.entidadesComErro.map((e) => e.nome).join(", ")}) — ficaram em uso por outro registro criado depois.
+            </p>
+          )}
         </div>
       )}
     </div>

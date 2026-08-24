@@ -201,6 +201,7 @@ export type ResultadoDesfazerFinanceira = {
   eventosRevertidos: number;
   eventosComErro: { evento_id: string; erro: string }[];
   entidadesRemovidas: number;
+  entidadesComErro: { tipo_entidade: TipoEntidade; nome: string; erro: string }[];
 };
 
 // Executa exatamente o que a prévia classificou — nunca reavalia a
@@ -210,8 +211,10 @@ export async function desfazerImportacaoFinanceira(
   supabase: Cliente,
   params: { tenant_id: string; importacao_id: string; criado_por: string; previa: PreviaDesfazerFinanceira; incluirModificados: boolean },
 ): Promise<ResultadoDesfazerFinanceira | { erro: string }> {
+  const idsPuros = new Set(params.previa.aReverter.map((a) => a.item_id));
   const itensParaReverter = params.incluirModificados ? [...params.previa.aReverter, ...params.previa.protegidosPorModificacao] : params.previa.aReverter;
 
+  const admin = createAdminClient();
   let eventosRevertidos = 0;
   const eventosComErro: { evento_id: string; erro: string }[] = [];
 
@@ -227,20 +230,41 @@ export async function desfazerImportacaoFinanceira(
       continue;
     }
     eventosRevertidos++;
-    await supabase.from("importacoes_itens").update({ desfeito_em: new Date().toISOString() }).eq("id", item.item_id);
+
+    // Item "puro" (sem baixa, sem modificação desde a criação): o efeito
+    // contábil já ficou permanentemente registrado no razão imutável
+    // (lançamento original + estorno) — o "stub" operacional (evento/parcela/
+    // rateio) pode ser apagado de verdade, o que também libera os cadastros
+    // criados só por ele. Item incluído por "incluir modificados" mantém o
+    // stub como registro auditável, porque alguém mexeu nele depois da importação.
+    let eventoFinanceiroIdFinal: string | null = item.evento_id;
+    if (idsPuros.has(item.item_id)) {
+      await supabase.from("importacoes_itens").update({ evento_financeiro_id: null }).eq("id", item.item_id);
+      const { error: erroExclusao } = await admin.from("eventos_financeiros").delete().eq("id", item.evento_id).eq("tenant_id", params.tenant_id);
+      eventoFinanceiroIdFinal = erroExclusao ? item.evento_id : null;
+    }
+
+    await supabase
+      .from("importacoes_itens")
+      .update({ desfeito_em: new Date().toISOString(), evento_financeiro_id: eventoFinanceiroIdFinal })
+      .eq("id", item.item_id);
   }
 
   // Entidades sem policy de DELETE de propósito (mesmo padrão de
   // desfazerImportacao de Pessoas) — admin client só pra este DELETE
   // estreito, guardado pelo snapshot da prévia, não por uma policy geral.
-  const admin = createAdminClient();
   let entidadesRemovidas = 0;
+  const entidadesComErro: { tipo_entidade: TipoEntidade; nome: string; erro: string }[] = [];
   for (const e of params.previa.entidadesARemover) {
     const { error } = await admin.from(TABELA_POR_TIPO_ENTIDADE[e.tipo_entidade]).delete().eq("id", e.entidade_id).eq("tenant_id", params.tenant_id);
-    if (!error) entidadesRemovidas++;
+    if (error) {
+      entidadesComErro.push({ tipo_entidade: e.tipo_entidade, nome: e.nome, erro: error.message });
+    } else {
+      entidadesRemovidas++;
+    }
   }
 
   await finalizarImportacaoFinanceira(supabase, { importacao_id: params.importacao_id });
 
-  return { eventosRevertidos, eventosComErro, entidadesRemovidas };
+  return { eventosRevertidos, eventosComErro, entidadesRemovidas, entidadesComErro };
 }
