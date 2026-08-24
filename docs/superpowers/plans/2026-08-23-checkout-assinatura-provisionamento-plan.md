@@ -5,6 +5,8 @@
 
 Ordem por dependência: schema primeiro, depois o cliente Asaas isolado (testável sozinho, sem UI), depois a extração do provisionamento (refatoração pura), só então a rota pública, a página de retorno e o webhook — que juntos formam o único caminho real de provisionamento agora que o checkout é hospedado —, e por último o ciclo de vida (e-mail, middleware, tela de bloqueio) e o teste ponta a ponta. Cada fatia de segurança (rate limit, comparação em tempo constante, tratamento de payload como entrada não confiável) está descrita dentro da fatia a que pertence, não deixada pra depois.
 
+**Princípio de todas as fatias abaixo que tocam o Asaas:** nada fora de `lib/asaas/` conhece o formato/nomes de evento do Asaas. A tradução pro tipo neutro `EventoPagamento` (`lib/pagamentos/tipos.ts`) mora em `lib/asaas/webhook.ts`; webhook handler, provisionamento e middleware só enxergam o tipo neutro. Ver spec, seção "Princípio: o Asaas fica isolado, não espalhado".
+
 ## Fatia 1 — Schema: colunas de assinatura + tabela de eventos [x] concluída
 
 Migration nova: `tenants` ganha `asaas_customer_id text`, `asaas_subscription_id text`, `status_assinatura text default 'trial'` (constraint check nos 4 valores: trial/ativo/inadimplente/cancelado), `trial_termina_em timestamptz`. Tabela nova `eventos_pagamento_processados` (`id text primary key`, `tipo text`, `processado_em timestamptz default now()`). RLS em ambas: nenhuma policy de INSERT/UPDATE para `authenticated` (só `service_role` escreve, mesmo padrão de `tenants` hoje). Aplicar via Supabase MCP, documentar em `docs/schema-aplicado-supabase.md`, regenerar `database.types.ts`.
@@ -12,9 +14,9 @@ Migration nova: `tenants` ganha `asaas_customer_id text`, `asaas_subscription_id
 _Depende de:_ nada.
 _Teste:_ `select` nas duas tabelas confirmando as colunas/constraints; tentar inserir em `eventos_pagamento_processados` com o client anônimo e confirmar que RLS bloqueia.
 
-## Fatia 2 — Cliente Asaas (`lib/asaas/`)
+## Fatia 2 — Tipo neutro + cliente Asaas (`lib/pagamentos/` + `lib/asaas/`)
 
-Funções puras, sem UI: `criarCliente({nome, email, cpfCnpj})` e `criarCheckoutAssinatura({customerId, callbackUrl, valor, cicloDias})` — cria um Checkout hospedado tipo `RECURRENT`, retorna o link pra onde redirecionar o cliente. **Nenhuma função aqui recebe ou manipula dado de cartão** — isso é o ponto central da correção de escopo PCI, então vale um comentário explícito no código lembrando por quê. Chave de API em `ASAAS_API_KEY` (variável de ambiente server-only, sem prefixo `NEXT_PUBLIC_`), sandbox primeiro.
+Primeiro `lib/pagamentos/tipos.ts` — só o tipo `EventoPagamento` neutro (union de 3 variantes: confirmado/atrasado/cancelado), sem nenhuma dependência do Asaas. Depois `lib/asaas/`: funções puras, sem UI: `criarCliente({nome, email, cpfCnpj})` e `criarCheckoutAssinatura({customerId, callbackUrl, valor, cicloDias})` — cria um Checkout hospedado tipo `RECURRENT`, retorna o link pra onde redirecionar o cliente. **Nenhuma função aqui recebe ou manipula dado de cartão** — isso é o ponto central da correção de escopo PCI, então vale um comentário explícito no código lembrando por quê. Chave de API em `ASAAS_API_KEY` (variável de ambiente server-only, sem prefixo `NEXT_PUBLIC_`), sandbox primeiro.
 
 _Depende de:_ nada — pode rodar em paralelo com a Fatia 1.
 _Teste:_ script isolado (ou chamada direta via Node) contra o sandbox do Asaas — criar um customer de teste, criar um Checkout de teste, confirmar que o link retornado abre a página de pagamento hospedada do Asaas. Confirmar também, lendo o código, que `ASAAS_API_KEY` não aparece em nenhum arquivo que vira bundle de cliente (grep por `ASAAS_API_KEY` fora de `lib/asaas/` e de route handlers/server actions deve dar zero resultado).
@@ -47,14 +49,15 @@ _Teste:_ visitar a URL de callback manualmente, sem ter pago nada, com parâmetr
 Rota de API `app/src/app/api/webhooks/asaas/route.ts`, fora do middleware de sessão normal. **Este é o único gatilho real de provisionamento do sistema.**
 
 - Valida o header `asaas-access-token` com comparação em tempo constante (`crypto.timingSafeEqual`) contra `ASAAS_WEBHOOK_TOKEN` — requisição sem token válido retorna 401 sem tocar em dado nenhum.
-- Todo campo do payload tratado como entrada não confiável — validado em tipo/formato antes de usar.
+- Chama `lib/asaas/webhook.ts::interpretarEventoAsaas(payload)` logo em seguida — é aí, e só aí, que o formato bruto do Asaas é lido; a partir desse ponto o handler só enxerga o `EventoPagamento` neutro (`lib/pagamentos/tipos.ts`, Fatia 2). Evento que a tradução não reconhece retorna `null` e o handler responde 200 sem processar nada (Asaas manda tipos de evento que não nos interessam, ex. de saque/transferência).
+- Todo campo do payload bruto tratado como entrada não confiável dentro do tradutor — validado em tipo/formato antes de virar `EventoPagamento`.
 - Checa `eventos_pagamento_processados` pelo `id` do evento antes de processar (idempotência) — evento repetido responde 200 sem reprocessar.
 - Rate limit no próprio endpoint, mesmo autenticado por token.
 - Resposta de erro nunca vaza detalhe interno (stack trace, nome de tabela).
-- Trata os eventos:
-  - `PAYMENT_CONFIRMED` / `PAYMENT_RECEIVED`: se o tenant ainda não existe, chama `provisionarTenantNovo` (Fatia 3) com `status_assinatura` `trial` (se dentro da janela de trial do cartão) ou `ativo` (Pix, ou fim do trial); se já existe, só atualiza `status_assinatura = 'ativo'`.
-  - `PAYMENT_OVERDUE`: `status_assinatura = 'inadimplente'`.
-  - `SUBSCRIPTION_CANCELED`: `status_assinatura = 'cancelado'`.
+- Trata os `EventoPagamento` já traduzidos:
+  - `pagamento_confirmado`: se o tenant ainda não existe, chama `provisionarTenantNovo` (Fatia 3) com `status_assinatura` `trial` (se dentro da janela de trial do cartão) ou `ativo` (Pix, ou fim do trial); se já existe, só atualiza `status_assinatura = 'ativo'`.
+  - `pagamento_atrasado`: `status_assinatura = 'inadimplente'`.
+  - `assinatura_cancelada`: `status_assinatura = 'cancelado'`.
 
 _Depende de:_ Fatias 1, 2, 3.
 _Teste:_ usar a ferramenta de teste de webhook do painel Asaas — confirmar que cada tipo de evento atualiza o `status_assinatura` certo, que reenviar o mesmo evento não duplica processamento, que um token errado (inclusive um quase certo, testando a comparação em tempo constante) é rejeitado, e que um payload com campo faltando/malformado não derruba o endpoint nem gera erro vazando detalhe interno.

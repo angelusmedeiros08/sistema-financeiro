@@ -17,6 +17,23 @@ A primeira versão deste spec previa construir uma tela de cartão dentro do pr�
 
 **Efeito colateral bom desse ajuste:** como agora não existe mais um momento síncrono de "cartão validado" dentro da nossa própria requisição, o provisionamento do tenant passa a ter **um único gatilho: o webhook confirmado**, tanto para cartão quanto para Pix. A trilha dupla (síncrono para cartão / assíncrono para Pix) da primeira versão deste spec deixa de existir — simplifica a arquitetura.
 
+## Princípio: o Asaas fica isolado, não espalhado
+
+O usuário foi explícito: mesmo depois de em produção, precisa ser possível trocar essa estrutura por outra no futuro — e qualquer estrutura que existir aqui, atual ou futura, precisa ser igualmente segura. Isso vira uma regra de arquitetura, não só uma intenção:
+
+- **`lib/asaas/` é a única parte do sistema que conhece o Asaas de verdade** — nomes de evento (`PAYMENT_CONFIRMED`, `PAYMENT_OVERDUE`, ...), formato do payload, header `asaas-access-token`, o jeito de criar customer/checkout. Nada disso vaza pra fora desse diretório.
+- Webhook handler, provisionamento de tenant e middleware de status **nunca leem um campo específico do Asaas diretamente.** Trabalham só com um formato interno neutro, definido em `lib/pagamentos/tipos.ts`:
+  ```ts
+  export type EventoPagamento =
+    | { tipo: "pagamento_confirmado"; assinaturaExternaId: string; ehPrimeiroPagamento: boolean }
+    | { tipo: "pagamento_atrasado"; assinaturaExternaId: string }
+    | { tipo: "assinatura_cancelada"; assinaturaExternaId: string };
+  ```
+  É `lib/asaas/webhook.ts::interpretarEventoAsaas(payloadBruto)` que traduz o evento bruto pra esse formato (ou retorna `null` pra evento que não nos interessa, ignorado). O route handler do webhook chama essa tradução primeiro, e só then passa o `EventoPagamento` neutro pra lógica de negócio.
+- **Trocar de fornecedor no futuro** (Mercado Pago, outro) é escrever um novo `lib/mercadopago/webhook.ts` que traduz pro MESMO `EventoPagamento` — zero mudança em webhook handler, provisionamento, middleware ou nas telas. O "core" do sistema nunca soube que era Asaas.
+- **A régua de segurança (segredos nunca expostos, comparação de token em tempo constante, webhook nunca confiado sem validação, retorno do navegador nunca tratado como prova de pagamento, RLS) vale pra qualquer fornecedor que ocupar essa camada** — é regra do sistema, não regra "do Asaas". Um fornecedor novo só entra depois de seguir o mesmo padrão.
+- Fica fora de escopo por enquanto (YAGNI — só existe um fornecedor hoje): renomear as colunas de schema (`asaas_customer_id`/`asaas_subscription_id`) pra algo genérico com `provedor_pagamento`. Se um segundo fornecedor entrar de verdade, isso vira uma migration pequena e isolada — não bloqueia nada até lá.
+
 ## Decisões de escopo (confirmadas com o usuário)
 
 - **Gateway de pagamento: Asaas.** Único entre as opções avaliadas (Stripe, Mercado Pago, Hotmart/Kiwify) que combina Pix + boleto + cartão + assinatura recorrente numa API só, com taxas de ~2-5% e feito especificamente para cobrança recorrente de SaaS brasileiro.
