@@ -19,10 +19,20 @@ export type LinhaPronta = ParametrosImportarLinhaPessoa & { linhaNumero: number;
 
 function decisaoPadrao(l: LinhaValidadaPessoa): DecisaoLinha {
   if (l.status === "erro") return null;
-  // Único caso que ainda decide sozinho: documento bateu com EXATAMENTE um
-  // cadastro. Nome sozinho (mesmo "exata_nome") nunca mais pré-decide —
-  // pode ser homônimo (Seção "Modelo de correspondência" da spec).
-  const decideSozinho = l.correspondencia.tipo === "exata_documento" && l.correspondencia.candidatos.length === 1;
+  // Documento bateu com EXATAMENTE um cadastro decide sozinho, sempre.
+  // Nome aproximado com um único candidato agora também pré-preenche — mas
+  // o status continua "precisa_confirmar" (badge amarelo "Parece X —
+  // confirme" some visível), então o operador ainda revisa cada linha, só
+  // não precisa mais abrir a lista e clicar uma por uma pra confirmar o que
+  // já era óbvio. Com 2+ candidatos parecidos (caso ambíguo de verdade —
+  // ex.: "Ampero Soluções" vs "Ampero Solucoes Ltda", nomes parecidos mas
+  // empresas diferentes) continua sem pré-selecionar. Nome exato sem
+  // documento pra comparar ("exata_nome") também nunca pré-decide — pode
+  // ser homônimo (Seção "Modelo de correspondência" da spec; buraco
+  // original: dois "João Silva" cadastrados, o primeiro do SELECT ganhava
+  // em silêncio).
+  const decideSozinho =
+    (l.correspondencia.tipo === "exata_documento" || l.correspondencia.tipo === "aproximada") && l.correspondencia.candidatos.length === 1;
   if (decideSozinho) return { acao: "atualizar", pessoaId: l.correspondencia.candidatos[0].id };
   if (l.correspondencia.tipo === "nenhuma" || l.correspondencia.tipo === "fraca") return { acao: "criar", pessoaId: null };
   return null;

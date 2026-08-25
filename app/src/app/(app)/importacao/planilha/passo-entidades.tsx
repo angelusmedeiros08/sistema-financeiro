@@ -149,9 +149,16 @@ export function PassoEntidades({
   const [decisoesPessoa, setDecisoesPessoa] = useState<Record<string, ResolucaoEntidade>>(() => {
     const inicial: Record<string, ResolucaoEntidade> = {};
     for (const c of correspondenciasPessoa) {
-      // Único caso que decide sozinho: documento bateu com EXATAMENTE um
-      // cadastro. Nome sozinho nunca mais pré-decide (era o buraco original).
-      if (c.correspondencia.tipo === "exata_documento" && c.correspondencia.candidatos.length === 1) {
+      // Documento bateu com EXATAMENTE um cadastro decide sozinho, sempre.
+      // Nome aproximado com um único candidato também pré-preenche — o
+      // badge "Parece X — confirme" continua visível, então o operador
+      // ainda revisa, só não precisa abrir a lista pra confirmar o óbvio.
+      // Com 2+ candidatos parecidos (ambíguo de verdade) ou nome exato sem
+      // documento (pode ser homônimo — era o buraco original) continua sem
+      // pré-selecionar.
+      const decideSozinho =
+        (c.correspondencia.tipo === "exata_documento" || c.correspondencia.tipo === "aproximada") && c.correspondencia.candidatos.length === 1;
+      if (decideSozinho) {
         inicial[c.valorOriginal] = { valorOriginal: c.valorOriginal, acao: "usar_existente", entidadeId: c.correspondencia.candidatos[0].id };
       }
     }
