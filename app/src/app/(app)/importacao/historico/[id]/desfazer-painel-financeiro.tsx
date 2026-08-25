@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Trash, Warning } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,14 @@ export function DesfazerPainelFinanceiro({ importacaoId }: { importacaoId: strin
   const [rodando, setRodando] = useState(false);
   const [resultado, setResultado] = useState<ResultadoDesfazerFinanceira | null>(null);
   const [erro, setErro] = useState("");
+  // O botão que abre a prévia (e depois "Confirmar reversão") some do DOM
+  // assim que o painel seguinte aparece — sem isso, o foco cai pro
+  // <body> sem aviso nenhum, achado na auditoria de acessibilidade.
+  const painelPreviaRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (previa) painelPreviaRef.current?.focus();
+  }, [previa]);
 
   async function abrirPrevia() {
     setErro("");
@@ -57,7 +65,11 @@ export function DesfazerPainelFinanceiro({ importacaoId }: { importacaoId: strin
   if (previa) {
     const totalAReverter = incluirModificados ? previa.aReverter.length + previa.protegidosPorModificacao.length : previa.aReverter.length;
     return (
-      <div className="flex max-w-md flex-col gap-3 rounded-xl border border-destructive/30 bg-destructive/5 p-3">
+      <div
+        ref={painelPreviaRef}
+        tabIndex={-1}
+        className="flex max-w-md flex-col gap-3 rounded-xl border border-destructive/30 bg-destructive/5 p-3 outline-none"
+      >
         <div className="flex gap-2">
           <Warning size={16} weight="fill" className="mt-0.5 shrink-0 text-destructive" />
           <div className="space-y-1.5 text-xs text-foreground">
@@ -98,17 +110,23 @@ export function DesfazerPainelFinanceiro({ importacaoId }: { importacaoId: strin
         <Trash size={14} />
         {carregandoPrevia ? "Avaliando..." : "Desfazer importação"}
       </Button>
-      {erro && <p className="text-xs text-destructive">{erro}</p>}
+      {erro && (
+        <p role="alert" className="text-xs text-destructive">
+          {erro}
+        </p>
+      )}
       {resultado && (
-        <div className="rounded-xl bg-muted/40 p-3 text-xs text-muted-foreground">
+        <div role="status" className="rounded-xl bg-muted/40 p-3 text-xs text-muted-foreground">
           <p className="font-medium text-foreground">
             {resultado.eventosRevertidos} lançamento(s) revertido(s), {resultado.entidadesRemovidas} cadastro(s) removido(s).
           </p>
           {resultado.eventosComErro.length > 0 && (
-            <p className="mt-1 text-destructive">{resultado.eventosComErro.length} falharam ao reverter — veja os detalhes no lançamento.</p>
+            <p role="alert" className="mt-1 text-destructive">
+              {resultado.eventosComErro.length} falharam ao reverter — veja os detalhes no lançamento.
+            </p>
           )}
           {resultado.entidadesComErro.length > 0 && (
-            <p className="mt-1 text-destructive">
+            <p role="alert" className="mt-1 text-destructive">
               {resultado.entidadesComErro.length} cadastro(s) não puderam ser removidos ({resultado.entidadesComErro.map((e) => e.nome).join(", ")}) — ficaram em uso por outro registro criado depois.
             </p>
           )}

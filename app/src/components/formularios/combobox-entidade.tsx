@@ -30,6 +30,7 @@ export function ComboboxEntidade({
   nomeParaCriar,
   acoesCriar,
   placeholder = "Escolher ação...",
+  rotuloAcessivel,
 }: {
   opcoes: OpcaoComboboxEntidade[];
   valor: ValorComboboxEntidade;
@@ -37,6 +38,10 @@ export function ComboboxEntidade({
   nomeParaCriar: string;
   acoesCriar: AcaoCriar[];
   placeholder?: string;
+  // Sem isso, todo combobox sem valor escolhido anuncia só "Escolher
+  // ação..." pra leitor de tela — numa tela com uma linha por valor único
+  // da planilha, fica impossível saber qual linha cada controle decide.
+  rotuloAcessivel?: string;
 }) {
   const [aberto, setAberto] = useState(false);
   const [busca, setBusca] = useState("");
@@ -64,7 +69,14 @@ export function ComboboxEntidade({
   return (
     <Popover open={aberto} onOpenChange={setAberto}>
       <PopoverTrigger asChild>
-        <Button type="button" variant="outline" role="combobox" aria-expanded={aberto} className="h-8 w-64 justify-between text-xs font-normal">
+        <Button
+          type="button"
+          variant="outline"
+          role="combobox"
+          aria-expanded={aberto}
+          aria-label={rotuloAcessivel ? `${rotuloAcessivel}: ${rotuloAtual || placeholder}` : undefined}
+          className="h-8 w-64 justify-between text-xs font-normal"
+        >
           <span className={cn("truncate", !rotuloAtual && "text-muted-foreground")}>{rotuloAtual || placeholder}</span>
           <CaretUpDown size={14} className="shrink-0 opacity-50" />
         </Button>

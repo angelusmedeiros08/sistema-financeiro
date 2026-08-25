@@ -98,7 +98,10 @@ export function StatCard({ label, valor, detalhe, variant, delta, serie, icon: I
           size={14}
           weight="bold"
           className={cn(
-            "absolute right-4 bottom-4 opacity-0 transition-opacity group-hover/stat:opacity-100",
+            // group-focus-visible além do hover — sem isso, quem navega
+            // por teclado nunca vê a pista de "isto é clicável" que o
+            // mouse recebe (achado na auditoria de acessibilidade).
+            "absolute right-4 bottom-4 opacity-0 transition-opacity group-hover/stat:opacity-100 group-focus-visible/stat:opacity-100",
             v === "hero" ? "text-white/80" : "text-muted-foreground",
           )}
         />

@@ -110,6 +110,7 @@ export function ImportarPlanilhaWizard({
           nomeArquivo={estado.nomeArquivo}
           entidadesExistentes={entidadesExistentes}
           colunasFoiPulado={estado.colunasFoiPulado}
+          formatoNumericoAssumido={estado.formatoNumerico}
           onRevisarColunas={() => setEstado((s) => ({ ...s, etapa: "mapeamento", permitirPuloColunas: false }))}
           onVoltar={() => setEstado((s) => ({ ...s, etapa: "mapeamento", permitirPuloColunas: false }))}
           onAvancar={(resolucoes, categoriasNovas: CategoriaNova[], importacaoId) => {

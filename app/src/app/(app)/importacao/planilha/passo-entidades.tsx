@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, Check, Sparkle, Spinner } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ComboboxEntidade, type ValorComboboxEntidade } from "@/components/formularios/combobox-entidade";
 import { extrairValoresUnicos, resolverTodasCorrespondencias } from "@/lib/importacao/fuzzy";
-import { normalizarTexto } from "@/lib/importacao/locale-br";
+import { normalizarTexto, type FormatoNumerico } from "@/lib/importacao/locale-br";
 import { resolverCorrespondenciaPessoa, type PessoaExistente } from "@/lib/pessoas/importacao/correspondencia";
 import { criarEntidadesAprovadasAction, iniciarImportacaoFinanceiraAction } from "./actions";
 import type { EntidadesExistentes } from "@/lib/importacao/resolucao";
@@ -32,6 +32,7 @@ export function PassoEntidades({
   nomeArquivo,
   entidadesExistentes,
   colunasFoiPulado,
+  formatoNumericoAssumido,
   onRevisarColunas,
   onVoltar,
   onAvancar,
@@ -40,6 +41,7 @@ export function PassoEntidades({
   nomeArquivo: string;
   entidadesExistentes: EntidadesExistentes;
   colunasFoiPulado: boolean;
+  formatoNumericoAssumido: FormatoNumerico;
   onRevisarColunas: () => void;
   onVoltar: () => void;
   onAvancar: (resolucoes: Record<TipoEntidadeImportacao, Map<string, ResolucaoEntidade>>, categoriasNovas: CategoriaNova[], importacaoId: string | null) => void;
@@ -54,6 +56,18 @@ export function PassoEntidades({
     iniciarImportacaoFinanceiraAction({ nomeArquivo, totalLinhas: linhasBrutas.length }).then((r) => {
       if (!("erro" in r)) setImportacaoId(r.importacaoId);
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Quando a etapa Colunas foi pulada automaticamente, a tela muda de
+  // conteúdo sem nenhuma ação do usuário — sem foco movido pro heading,
+  // quem usa leitor de tela nem percebe que já está numa etapa nova
+  // (achado na auditoria de acessibilidade). Só move foco nesse caso
+  // específico: quando o usuário clicou "Continuar" de propósito, ele já
+  // sabe onde está e mover o foco à força seria mais confuso, não menos.
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    if (colunasFoiPulado) headingRef.current?.focus();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const secoes = useMemo(
@@ -260,13 +274,16 @@ export function PassoEntidades({
   return (
     <div className="flex flex-col gap-6 rounded-2xl bg-card shadow-card p-6">
       <div>
-        <h2 className="text-sm font-bold text-foreground">3. Revise categorias, centros de custo, pessoas e formas de pagamento</h2>
+        <h2 ref={headingRef} tabIndex={-1} className="text-sm font-bold text-foreground outline-none">
+          3. Revise categorias, centros de custo, pessoas e formas de pagamento
+        </h2>
         <p className="mt-1 text-sm text-muted-foreground">
           Cada valor único encontrado na planilha precisa apontar pra um cadastro existente ou virar um cadastro novo.
         </p>
         {colunasFoiPulado && (
           <button type="button" onClick={onRevisarColunas} className="mt-1.5 text-xs font-medium text-primary underline-offset-2 hover:underline">
-            Colunas reconhecidas automaticamente — Revisar mapeamento de colunas
+            Colunas reconhecidas automaticamente (formato {formatoNumericoAssumido === "BR" ? "brasileiro" : "americano"}) — Revisar mapeamento de
+            colunas
           </button>
         )}
       </div>
@@ -349,7 +366,11 @@ export function PassoEntidades({
         </div>
       )}
 
-      {erro && <p className="text-sm text-destructive">{erro}</p>}
+      {erro && (
+        <p role="alert" className="text-sm text-destructive">
+          {erro}
+        </p>
+      )}
 
       <div className="flex justify-between">
         <Button type="button" variant="ghost" className="gap-1.5" onClick={onVoltar} disabled={enviando}>
@@ -484,6 +505,7 @@ function LinhaEntidade({
         onMudar={converterEChamar}
         nomeParaCriar={correspondencia.valorOriginal}
         acoesCriar={ACOES_CRIAR_POR_TIPO[tipo]}
+        rotuloAcessivel={`Ação para "${correspondencia.valorOriginal}"`}
       />
     </div>
   );
@@ -534,6 +556,7 @@ function LinhaEntidadePessoa({
         onMudar={converterEChamar}
         nomeParaCriar={valorOriginal}
         acoesCriar={ACOES_CRIAR_POR_TIPO.pessoa}
+        rotuloAcessivel={`Ação para "${valorOriginal}"`}
       />
     </div>
   );

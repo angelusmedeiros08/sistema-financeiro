@@ -66,6 +66,7 @@ export default async function PaginaContasAPagar({
             <Link
               key={f.valor}
               href={`/contas-a-pagar?situacao=${f.valor}`}
+              aria-current={filtro.valor === f.valor ? "true" : undefined}
               className={cn(
                 "rounded-full px-3 py-1 text-xs font-medium",
                 filtro.valor === f.valor ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted",
