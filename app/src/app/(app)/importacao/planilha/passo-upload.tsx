@@ -51,6 +51,9 @@ export function PassoUpload({
           <p className="mt-1 text-sm text-muted-foreground">
             Aceita .csv e .xlsx, até 10MB e 500 linhas. Baixe o modelo se quiser garantir que as colunas batem certinho.
           </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Nome com acento vindo de fontes diferentes na mesma planilha (copiado e colado) é corrigido automaticamente, célula por célula.
+          </p>
         </div>
         <Button
           type="button"

@@ -100,6 +100,13 @@ export function PassoPreview({
   const prontas = linhas.filter((l) => l.status !== "erro" && incluidas.has(l.importKey));
   const comErro = linhas.filter((l) => l.status === "erro");
   const comAviso = linhas.filter((l) => l.status === "aviso");
+  // Único jeito de o operador conferir contra o total da planilha original
+  // antes de importar — achado ao vivo com uma planilha real: a soma do
+  // sistema saiu diferente da soma da planilha, e não existia lugar nenhum
+  // pra notar isso antes do fato consumado (só contagem de linha, nunca
+  // valor). Erro não soma (valorNumero inválido), por isso o aviso ao lado
+  // é contagem, não um segundo total.
+  const somaProntas = prontas.reduce((acc, l) => acc + (l.valorNumero ?? 0), 0);
 
   // Reconciliação visível: uma linha contada em "prontas" nunca deveria
   // falhar aqui (status !== "erro" já deveria garantir que esses campos
@@ -170,6 +177,19 @@ export function PassoPreview({
             <Spinner size={12} className="animate-spin" />
             checando duplicatas...
           </span>
+        )}
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card px-3 py-2.5">
+        <div>
+          <p className="text-xs text-muted-foreground">Soma do que está pronto pra importar</p>
+          <p className="text-lg font-bold tabular-nums text-foreground">{formatarMoeda(somaProntas)}</p>
+        </div>
+        {comErro.length > 0 && (
+          <p role="alert" className="max-w-72 text-right text-xs text-destructive">
+            {comErro.length} linha{comErro.length !== 1 ? "s" : ""} com erro não {comErro.length !== 1 ? "entram" : "entra"} nessa soma — confira antes de
+            importar, pra não fechar um total menor do que a sua planilha original.
+          </p>
         )}
       </div>
 
