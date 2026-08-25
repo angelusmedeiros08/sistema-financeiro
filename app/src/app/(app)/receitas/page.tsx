@@ -59,7 +59,7 @@ export default async function PaginaReceitas() {
         {!totalEventosTenant ? (
           <CtaImportarPlanilha />
         ) : (
-          <TabelaEventos eventos={eventos ?? []} textoVazio="Nenhuma receita registrada ainda." titulo="Lançadas" />
+          <TabelaEventos eventos={eventos ?? []} textoVazio="Nenhuma receita registrada ainda." titulo="Lançadas" caminhoBase="receitas" />
         )}
       </section>
     </div>

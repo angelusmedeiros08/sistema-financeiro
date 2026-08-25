@@ -348,3 +348,142 @@ export async function estornarEventoFinanceiro(
 
   return { sucesso: true };
 }
+
+export type ParametrosEditarEventoFinanceiro = {
+  tenant_id: string;
+  evento_id: string;
+  descricao: string;
+  valor_total: number;
+  categorias: LinhaCategoria[];
+  pessoa_id?: string | null;
+  criado_por?: string;
+};
+
+function assinaturaRateio(linhas: { categoria_id: string; valor: number }[]): string {
+  return linhas
+    .map((l) => `${l.categoria_id}:${l.valor.toFixed(2)}`)
+    .sort()
+    .join(",");
+}
+
+// Aplica o centro de custo "modo simples" (1 categoria só, sem rateio) no
+// rateio_categoria já existente do evento — chamado depois de UPDATE direto
+// ou depois de recriar, sempre pelo evento_id final. Rateio com 2+
+// categorias já resolve seu próprio centro de custo por linha dentro de
+// `categorias` (extrairLinhasCategoria), então esta função não faz nada
+// nesse caso — não há "o" centro de custo do evento pra substituir.
+async function aplicarCentroCustoSimples(
+  supabase: Cliente,
+  tenantId: string,
+  eventoId: string,
+  centroCustoId: string | null,
+): Promise<{ erro?: string }> {
+  const { data: rateios } = await supabase.from("rateio_categoria").select("id, valor").eq("evento_financeiro_id", eventoId);
+  if (!rateios || rateios.length !== 1) return {};
+
+  const [rateio] = rateios;
+  const { error: erroDelete } = await supabase.from("rateio_centro_custo").delete().eq("rateio_categoria_id", rateio.id);
+  if (erroDelete) return { erro: erroDelete.message };
+
+  if (centroCustoId) {
+    const { error: erroInsert } = await supabase
+      .from("rateio_centro_custo")
+      .insert({ tenant_id: tenantId, rateio_categoria_id: rateio.id, centro_custo_id: centroCustoId, valor: rateio.valor });
+    if (erroInsert) return { erro: erroInsert.message };
+  }
+
+  return {};
+}
+
+// Corrige um lançamento já criado — ponto de entrada único do formulário
+// de edição (Fatia final da revisão de Importação: "editar com clique
+// simples"). Descrição/pessoa/centro de custo são UPDATE direto, nunca
+// tocam o razão. Valor ou categoria mudando é outra história: o
+// lançamento de reconhecimento já é imutável (mesmo raciocínio de
+// estornarEventoFinanceiro), então "corrigir" esses dois campos é sempre
+// estornar o evento errado e criar um novo com os valores certos — nunca
+// um UPDATE disfarçado. Por isso só aceita evento com 1 parcela, sem
+// baixa viva e sem rateio pré-existente (2+ categorias): a redistribuição
+// de valor entre parcelas/categorias já ativas é um problema maior do que
+// "corrigir um erro de digitação", fica de fora por ora.
+export async function editarEventoFinanceiro(
+  supabase: Cliente,
+  params: ParametrosEditarEventoFinanceiro,
+): Promise<{ evento_id: string; recriado: boolean } | { erro: string }> {
+  const { data: evento, error: erroEvento } = await supabase
+    .from("eventos_financeiros")
+    .select("id, tipo, valor_total, data_competencia, estornado_em")
+    .eq("id", params.evento_id)
+    .eq("tenant_id", params.tenant_id)
+    .single();
+
+  if (erroEvento || !evento) return { erro: "Lançamento não encontrado." };
+  if (evento.estornado_em) return { erro: "Este lançamento já foi estornado." };
+
+  if (params.categorias.length === 0) return { erro: "Informe ao menos uma categoria." };
+  const somaCategorias = params.categorias.reduce((acc, c) => acc + c.valor, 0);
+  if (Math.round((somaCategorias - params.valor_total) * 100) !== 0) {
+    return { erro: "A soma das categorias não bate com o valor total." };
+  }
+
+  const { data: rateioAtual } = await supabase.from("rateio_categoria").select("categoria_id, valor").eq("evento_financeiro_id", params.evento_id);
+
+  const valorMudou = Math.round((Number(evento.valor_total) - params.valor_total) * 100) !== 0;
+  const rateioMudou = assinaturaRateio(rateioAtual ?? []) !== assinaturaRateio(params.categorias);
+  const precisaRecriar = valorMudou || rateioMudou;
+
+  if (!precisaRecriar) {
+    const { error: erroUpdate } = await supabase
+      .from("eventos_financeiros")
+      .update({ descricao: params.descricao, pessoa_id: params.pessoa_id ?? null })
+      .eq("id", params.evento_id)
+      .eq("tenant_id", params.tenant_id);
+    if (erroUpdate) return { erro: erroUpdate.message };
+
+    const resultadoCC = await aplicarCentroCustoSimples(supabase, params.tenant_id, params.evento_id, params.categorias[0]?.centro_custo_id ?? null);
+    if (resultadoCC.erro) return { erro: resultadoCC.erro };
+
+    return { evento_id: params.evento_id, recriado: false };
+  }
+
+  if ((rateioAtual?.length ?? 0) > 1) {
+    return { erro: "Este lançamento já está dividido entre categorias — pra corrigir valor ou categoria, estorne e lance de novo." };
+  }
+
+  const { data: parcelas, error: erroParcelas } = await supabase
+    .from("parcelas")
+    .select("id, data_vencimento")
+    .eq("evento_financeiro_id", params.evento_id);
+
+  if (erroParcelas || !parcelas) return { erro: "Falha ao consultar as parcelas do lançamento." };
+  if (parcelas.length !== 1) {
+    return { erro: "Este lançamento está parcelado — pra corrigir valor ou categoria, estorne e lance de novo." };
+  }
+
+  const resultadoEstorno = await estornarEventoFinanceiro(supabase, {
+    tenant_id: params.tenant_id,
+    evento_id: params.evento_id,
+    motivo: "Correção de lançamento",
+    criado_por: params.criado_por,
+  });
+  if ("erro" in resultadoEstorno) return { erro: resultadoEstorno.erro };
+
+  const resultadoCriacao = await criarEventoFinanceiro(supabase, {
+    tenant_id: params.tenant_id,
+    tipo: evento.tipo,
+    descricao: params.descricao,
+    valor_total: params.valor_total,
+    data_competencia: evento.data_competencia,
+    categorias: params.categorias,
+    pessoa_id: params.pessoa_id,
+    numero_parcelas: 1,
+    primeiro_vencimento: parcelas[0].data_vencimento,
+    criado_por: params.criado_por,
+  });
+  if ("erro" in resultadoCriacao) return { erro: resultadoCriacao.erro };
+
+  const resultadoCC = await aplicarCentroCustoSimples(supabase, params.tenant_id, resultadoCriacao.evento_id, params.categorias[0]?.centro_custo_id ?? null);
+  if (resultadoCC.erro) return { erro: resultadoCC.erro };
+
+  return { evento_id: resultadoCriacao.evento_id, recriado: true };
+}

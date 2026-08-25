@@ -5,6 +5,7 @@ import { createClient } from "@/utils/supabase/server";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
 import {
   criarEventoFinanceiro,
+  editarEventoFinanceiro,
   resolverPessoaId,
   resolverCentroCustoIdSimples,
   resolverCategoriaIdSimples,
@@ -88,4 +89,59 @@ export async function criarReceita(formData: FormData): Promise<ResultadoAcao> {
   revalidatePath("/contas-a-receber");
   revalidatePath("/painel");
   return { sucesso: true };
+}
+
+type ResultadoEdicao = { erro: string } | { sucesso: true; evento_id: string; recriado: boolean };
+
+export async function editarReceita(eventoId: string, formData: FormData): Promise<ResultadoEdicao> {
+  const descricao = String(formData.get("descricao") ?? "").trim();
+  const valorTexto = String(formData.get("valor") ?? "").replace(",", ".");
+  const pessoaId = String(formData.get("pessoa_id") ?? "") || undefined;
+  const pessoaNomeNovo = String(formData.get("pessoa_nome_novo") ?? "") || undefined;
+
+  const valor = Number(valorTexto);
+  if (!descricao || !Number.isFinite(valor) || valor <= 0) {
+    return { erro: "Preencha descrição e valor (maior que zero)." };
+  }
+
+  const contexto = await obterUsuarioETenantAtual();
+  if ("erro" in contexto) return { erro: contexto.erro };
+  const { user, tenantId } = contexto;
+
+  const supabase = await createClient();
+
+  await resolverCentroCustoIdSimples(supabase, tenantId, formData);
+  const erroCategoriaNova = await resolverCategoriaIdSimples(supabase, tenantId, "RECEITA", formData);
+  if (erroCategoriaNova) return erroCategoriaNova;
+
+  const categoriaId = String(formData.get("categoria_id") ?? "");
+  const categorias = extrairLinhasCategoria(formData, categoriaId, valor);
+  if ("erro" in categorias) return categorias;
+  if (!categoriaId && categorias.length === 1) {
+    return { erro: "Selecione uma categoria." };
+  }
+
+  const pessoaResolvidaId = await resolverPessoaId(supabase, tenantId, {
+    pessoaId,
+    nomeNovaPessoa: pessoaNomeNovo,
+    perfil: "CLIENTE",
+  });
+
+  const resultado = await editarEventoFinanceiro(supabase, {
+    tenant_id: tenantId,
+    evento_id: eventoId,
+    descricao,
+    valor_total: valor,
+    categorias,
+    pessoa_id: pessoaResolvidaId,
+    criado_por: user.id,
+  });
+
+  if ("erro" in resultado) return { erro: resultado.erro };
+
+  revalidatePath("/receitas");
+  revalidatePath("/contas-a-receber");
+  revalidatePath("/painel");
+  revalidatePath(`/receitas/${eventoId}`);
+  return { sucesso: true, evento_id: resultado.evento_id, recriado: resultado.recriado };
 }

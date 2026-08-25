@@ -9,10 +9,10 @@ import { cn } from "@/lib/utils";
 
 type CentroCusto = { id: string; nome: string };
 
-export function CentroCustoCombobox({ centrosCusto }: { centrosCusto: CentroCusto[] }) {
+export function CentroCustoCombobox({ centrosCusto, centroCustoInicial }: { centrosCusto: CentroCusto[]; centroCustoInicial?: CentroCusto | null }) {
   const [aberto, setAberto] = useState(false);
   const [busca, setBusca] = useState("");
-  const [selecionado, setSelecionado] = useState<CentroCusto | null>(null);
+  const [selecionado, setSelecionado] = useState<CentroCusto | null>(centroCustoInicial ?? null);
   const [novoNome, setNovoNome] = useState("");
 
   const filtrados = centrosCusto.filter((c) => c.nome.toLowerCase().includes(busca.toLowerCase()));

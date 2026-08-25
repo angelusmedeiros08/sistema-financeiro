@@ -59,7 +59,7 @@ export default async function PaginaDespesas() {
         {!totalEventosTenant ? (
           <CtaImportarPlanilha />
         ) : (
-          <TabelaEventos eventos={eventos ?? []} textoVazio="Nenhuma despesa registrada ainda." titulo="Lançadas" />
+          <TabelaEventos eventos={eventos ?? []} textoVazio="Nenhuma despesa registrada ainda." titulo="Lançadas" caminhoBase="despesas" />
         )}
       </section>
     </div>

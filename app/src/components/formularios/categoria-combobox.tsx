@@ -14,10 +14,10 @@ type Categoria = { id: string; nome: string };
 // à conta contábil genérica do tipo (resolvido no servidor, ver
 // resolverCategoriaIdSimples), reclassificável depois em Configurações →
 // Categorias.
-export function CategoriaCombobox({ categorias }: { categorias: Categoria[] }) {
+export function CategoriaCombobox({ categorias, categoriaInicial }: { categorias: Categoria[]; categoriaInicial?: Categoria | null }) {
   const [aberto, setAberto] = useState(false);
   const [busca, setBusca] = useState("");
-  const [selecionada, setSelecionada] = useState<Categoria | null>(null);
+  const [selecionada, setSelecionada] = useState<Categoria | null>(categoriaInicial ?? null);
   const [novoNome, setNovoNome] = useState("");
 
   const filtradas = categorias.filter((c) => c.nome.toLowerCase().includes(busca.toLowerCase()));

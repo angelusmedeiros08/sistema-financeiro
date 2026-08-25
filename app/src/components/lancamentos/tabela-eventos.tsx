@@ -79,14 +79,27 @@ export function TabelaEventos({
   eventos,
   textoVazio,
   titulo = "Lançamentos",
+  caminhoBase,
 }: {
   eventos: EventoLinha[];
   textoVazio: string;
   titulo?: string;
+  // string, não função — funções não atravessam a fronteira Server/Client
+  // Component (esta tabela é "use client", as páginas que a chamam não são).
+  caminhoBase?: "receitas" | "despesas";
 }) {
   if (eventos.length === 0) {
     return <EstadoVazio texto={textoVazio} />;
   }
 
-  return <TabelaLista titulo={titulo} data={eventos} columns={colunas} busca={false} textoVazio={textoVazio} />;
+  return (
+    <TabelaLista
+      titulo={titulo}
+      data={eventos}
+      columns={colunas}
+      busca={false}
+      textoVazio={textoVazio}
+      linkPara={caminhoBase ? (e) => `/${caminhoBase}/${e.id}` : undefined}
+    />
+  );
 }
