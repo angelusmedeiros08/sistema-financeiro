@@ -5,6 +5,7 @@ import { ArrowLeft, ArrowRight, Check, Sparkle, Spinner } from "@phosphor-icons/
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ComboboxEntidade, type ValorComboboxEntidade } from "@/components/formularios/combobox-entidade";
+import { cn } from "@/lib/utils";
 import { extrairValoresUnicos, resolverTodasCorrespondencias } from "@/lib/importacao/fuzzy";
 import { normalizarTexto, type FormatoNumerico } from "@/lib/importacao/locale-br";
 import { resolverCorrespondenciaPessoa, type PessoaExistente } from "@/lib/pessoas/importacao/correspondencia";
@@ -17,6 +18,13 @@ import type { Database } from "@/utils/supabase/database.types";
 type CategoriaNova = { id: string; nome: string; tipo: Database["public"]["Enums"]["tipo_categoria"] };
 
 type SecaoConfig = { tipo: TipoEntidadeImportacao; titulo: string; campo: keyof LinhaBruta; obrigatoria: boolean };
+
+type CorrespondenciaGenerica = {
+  valorOriginal: string;
+  correspondenciaId: string | null;
+  correspondenciaNome: string | null;
+  tipoCorrespondencia: "exata" | "aproximada" | "nenhuma";
+};
 
 // Pessoa saiu daqui — tem correspondência própria (documento + múltiplos
 // candidatos, Seção "Modelo de correspondência" da spec de homônimos), não
@@ -80,6 +88,14 @@ export function PassoEntidades({
       }).filter((s) => s.valores.length > 0),
     [linhasBrutas, entidadesExistentes],
   );
+
+  // Só pra separar visualmente a seção Categorias em Despesa/Receita —
+  // tipo já vem junto de entidadesExistentes.categorias, nenhuma query nova.
+  const tipoCategoriaExistentePorId = useMemo(() => {
+    const mapa = new Map<string, "RECEITA" | "DESPESA">();
+    for (const c of entidadesExistentes.categorias) mapa.set(c.id, c.tipo);
+    return mapa;
+  }, [entidadesExistentes.categorias]);
 
   const [decisoes, setDecisoes] = useState<Record<string, ResolucaoEntidade>>(() => {
     const inicial: Record<string, ResolucaoEntidade> = {};
@@ -340,18 +356,74 @@ export function PassoEntidades({
                 )}
               </div>
             </div>
-            <div className="space-y-1.5">
-              {secao.correspondencias.map((c) => (
-                <LinhaEntidade
-                  key={c.valorOriginal}
-                  tipo={secao.tipo}
-                  correspondencia={c}
-                  existentes={secao.tipo === "categoria" ? entidadesExistentes.categorias : entidadesExistentes[chaveExistentes(secao.tipo)]}
-                  decisao={decisoes[chaveDecisao(secao.tipo, c.valorOriginal)] ?? null}
-                  onMudar={(d) => definirDecisao(secao.tipo, c.valorOriginal, d)}
-                />
-              ))}
-            </div>
+            {secao.tipo === "categoria" ? (
+              (() => {
+                const grupos = agruparCorrespondenciasCategoria(secao.correspondencias, tipoCategoriaExistentePorId);
+                return (
+                  <div className="space-y-4">
+                    {grupos.novas.length > 0 && (
+                      <div className="space-y-1.5">
+                        <h4 className="text-[0.7rem] font-bold uppercase tracking-wide text-muted-foreground/70">
+                          Novas — defina o tipo ({grupos.novas.length})
+                        </h4>
+                        {grupos.novas.map((c) => (
+                          <LinhaCategoriaNova
+                            key={c.valorOriginal}
+                            correspondencia={c}
+                            existentes={entidadesExistentes.categorias}
+                            decisao={decisoes[chaveDecisao("categoria", c.valorOriginal)] ?? null}
+                            onMudar={(d) => definirDecisao("categoria", c.valorOriginal, d)}
+                          />
+                        ))}
+                      </div>
+                    )}
+                    {grupos.despesa.length > 0 && (
+                      <div className="space-y-1.5">
+                        <h4 className="text-[0.7rem] font-bold uppercase tracking-wide text-muted-foreground/70">Despesa ({grupos.despesa.length})</h4>
+                        {grupos.despesa.map((c) => (
+                          <LinhaEntidade
+                            key={c.valorOriginal}
+                            tipo="categoria"
+                            correspondencia={c}
+                            existentes={entidadesExistentes.categorias}
+                            decisao={decisoes[chaveDecisao("categoria", c.valorOriginal)] ?? null}
+                            onMudar={(d) => definirDecisao("categoria", c.valorOriginal, d)}
+                          />
+                        ))}
+                      </div>
+                    )}
+                    {grupos.receita.length > 0 && (
+                      <div className="space-y-1.5">
+                        <h4 className="text-[0.7rem] font-bold uppercase tracking-wide text-muted-foreground/70">Receita ({grupos.receita.length})</h4>
+                        {grupos.receita.map((c) => (
+                          <LinhaEntidade
+                            key={c.valorOriginal}
+                            tipo="categoria"
+                            correspondencia={c}
+                            existentes={entidadesExistentes.categorias}
+                            decisao={decisoes[chaveDecisao("categoria", c.valorOriginal)] ?? null}
+                            onMudar={(d) => definirDecisao("categoria", c.valorOriginal, d)}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()
+            ) : (
+              <div className="space-y-1.5">
+                {secao.correspondencias.map((c) => (
+                  <LinhaEntidade
+                    key={c.valorOriginal}
+                    tipo={secao.tipo}
+                    correspondencia={c}
+                    existentes={entidadesExistentes[chaveExistentes(secao.tipo)]}
+                    decisao={decisoes[chaveDecisao(secao.tipo, c.valorOriginal)] ?? null}
+                    onMudar={(d) => definirDecisao(secao.tipo, c.valorOriginal, d)}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         );
       })}
@@ -458,6 +530,24 @@ function montarMapaFinal(
   return mapa;
 }
 
+// Só pra seção Categorias: separa Despesa/Receita/Novas antes de renderizar.
+// Baseado só em correspondenciaId + tipoPorId (nunca em decisoes), então um
+// item nunca troca de grupo depois de decidido — evita a lista "pular"
+// embaixo do cursor enquanto o operador rola (Seção "Agrupamento por tipo"
+// da spec).
+function agruparCorrespondenciasCategoria(correspondencias: CorrespondenciaGenerica[], tipoPorId: Map<string, "RECEITA" | "DESPESA">) {
+  const novas: CorrespondenciaGenerica[] = [];
+  const despesa: CorrespondenciaGenerica[] = [];
+  const receita: CorrespondenciaGenerica[] = [];
+  for (const c of correspondencias) {
+    const tipo = c.correspondenciaId ? tipoPorId.get(c.correspondenciaId) : undefined;
+    if (tipo === "DESPESA") despesa.push(c);
+    else if (tipo === "RECEITA") receita.push(c);
+    else novas.push(c);
+  }
+  return { novas, despesa, receita };
+}
+
 // Ações de criar: categoria pede tipo (Receita/Despesa) — cada uma já fecha
 // nome + tipo num clique só, sem precisar de um segundo controle em
 // sequência (buraco de clique achado testando a Fatia 4 ao vivo).
@@ -485,7 +575,7 @@ function LinhaEntidade({
   onMudar,
 }: {
   tipo: TipoEntidadeImportacao;
-  correspondencia: { valorOriginal: string; correspondenciaId: string | null; correspondenciaNome: string | null; tipoCorrespondencia: "exata" | "aproximada" | "nenhuma" };
+  correspondencia: CorrespondenciaGenerica;
   existentes: { id: string; nome: string }[];
   decisao: ResolucaoEntidade;
   onMudar: (decisao: ResolucaoEntidade) => void;
@@ -532,6 +622,114 @@ function LinhaEntidade({
         acoesCriar={ACOES_CRIAR_POR_TIPO[tipo]}
         rotuloAcessivel={`Ação para "${correspondencia.valorOriginal}"`}
       />
+    </div>
+  );
+}
+
+// Só pro grupo "Novas — defina o tipo": categoria sem nenhuma correspondência
+// vai virar cadastro novo de qualquer forma, só falta o tipo — clicar
+// Despesa/Receita já cria, sem abrir combobox nenhum (Seção "Categoria nova"
+// da spec). "Buscar cadastro existente" cobre o caso do fuzzy match não ter
+// batido (ex.: planilha trouxe "Honorários de Clientes", já existe
+// "Honorários Contratuais") — troca pra busca completa, com link pra voltar.
+function LinhaCategoriaNova({
+  correspondencia,
+  existentes,
+  decisao,
+  onMudar,
+}: {
+  correspondencia: CorrespondenciaGenerica;
+  existentes: { id: string; nome: string }[];
+  decisao: ResolucaoEntidade;
+  onMudar: (decisao: ResolucaoEntidade) => void;
+}) {
+  const [modoBusca, setModoBusca] = useState(decisao?.acao === "usar_existente");
+
+  function converterEChamar(valor: ValorComboboxEntidade) {
+    if (!valor) return;
+    if (valor.tipo === "existente") {
+      onMudar({ valorOriginal: correspondencia.valorOriginal, acao: "usar_existente", entidadeId: valor.id });
+    } else {
+      onMudar({ valorOriginal: correspondencia.valorOriginal, acao: "criar_novo", entidadeId: null, tipoCategoriaNova: valor.tipoCategoriaNova });
+    }
+  }
+
+  function escolherTipo(tipoCategoriaNova: "DESPESA" | "RECEITA") {
+    onMudar({ valorOriginal: correspondencia.valorOriginal, acao: "criar_novo", entidadeId: null, tipoCategoriaNova });
+  }
+
+  if (modoBusca) {
+    const opcoes = existentes.map((e) => ({ id: e.id, rotulo: e.nome }));
+    return (
+      <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border/60 p-2.5">
+        <p className="min-w-32 flex-1 text-sm font-medium text-foreground">{correspondencia.valorOriginal}</p>
+        <ComboboxEntidade
+          opcoes={opcoes}
+          valor={decisaoParaValor(decisao)}
+          onMudar={converterEChamar}
+          nomeParaCriar={correspondencia.valorOriginal}
+          acoesCriar={ACOES_CRIAR_POR_TIPO.categoria}
+          rotuloAcessivel={`Ação para "${correspondencia.valorOriginal}"`}
+        />
+        <button
+          type="button"
+          onClick={() => {
+            // Só limpa quando a decisão atual veio da busca
+            // ("usar_existente") — sem isso, o cadastro que o operador
+            // acabou de rejeitar ficava vivo por baixo do toggle,
+            // visualmente sem nada selecionado mas contando como resolvido
+            // se o operador seguisse sem tocar em Despesa/Receita de novo
+            // (achado testando ao vivo o link "Criar nova"). Se a decisão já
+            // era "criar_novo" (o operador só espiou a busca e voltou), o
+            // toggle já reflete certo sozinho — não precisa (e não deve)
+            // limpar a escolha de Despesa/Receita feita antes.
+            if (decisao?.acao === "usar_existente") onMudar(null);
+            setModoBusca(false);
+          }}
+          className="text-xs font-medium text-primary underline-offset-2 hover:underline"
+        >
+          Criar nova
+        </button>
+      </div>
+    );
+  }
+
+  const tipoSelecionado = decisao?.acao === "criar_novo" ? decisao.tipoCategoriaNova : undefined;
+
+  return (
+    <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border/60 p-2.5">
+      <p className="min-w-32 flex-1 text-sm font-medium text-foreground">{correspondencia.valorOriginal}</p>
+      <button
+        type="button"
+        onClick={() => setModoBusca(true)}
+        className="text-xs font-medium text-muted-foreground underline decoration-border underline-offset-2 hover:text-foreground"
+      >
+        Buscar cadastro existente
+      </button>
+      <div role="group" aria-label={`Tipo de "${correspondencia.valorOriginal}"`} className="inline-flex overflow-hidden rounded-lg border border-border">
+        <button
+          type="button"
+          aria-pressed={tipoSelecionado === "DESPESA"}
+          onClick={() => escolherTipo("DESPESA")}
+          className={cn(
+            "px-2.5 py-1.5 text-xs font-semibold transition-colors",
+            tipoSelecionado === "DESPESA" ? "bg-destructive/10 text-destructive" : "bg-card text-muted-foreground hover:bg-muted hover:text-foreground",
+          )}
+        >
+          Despesa
+        </button>
+        <button
+          type="button"
+          aria-pressed={tipoSelecionado === "RECEITA"}
+          onClick={() => escolherTipo("RECEITA")}
+          className={cn(
+            "border-l border-border px-2.5 py-1.5 text-xs font-semibold transition-colors",
+            tipoSelecionado === "RECEITA" ? "bg-positivo/10 text-positivo" : "bg-card text-muted-foreground hover:bg-muted hover:text-foreground",
+          )}
+        >
+          Receita
+        </button>
+      </div>
     </div>
   );
 }
