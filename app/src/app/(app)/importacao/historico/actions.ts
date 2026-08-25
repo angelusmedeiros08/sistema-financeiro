@@ -90,12 +90,13 @@ export async function desfazerImportacaoFinanceiraAction(
   });
 
   if (!("erro" in resultado)) {
-    revalidatePath("/despesas");
-    revalidatePath("/receitas");
-    revalidatePath("/contas-a-pagar");
-    revalidatePath("/contas-a-receber");
-    revalidatePath("/painel");
-    revalidatePath(`/importacao/historico/${importacaoId}`);
+    // Desfazer importação agora reverte tudo, quitado ou não (baixa
+    // incluída) — o efeito se espalha pelo razão inteiro, então listar
+    // rota por rota (relatórios, indicadores, DRE, aging...) é frágil e
+    // some silenciosamente do dia que alguém adicionar um relatório novo.
+    // 'layout' na raiz invalida o app inteiro pro próximo acesso, do jeito
+    // documentado pra "revalidar tudo" (ver node_modules/next/dist/docs).
+    revalidatePath("/", "layout");
   }
 
   return resultado;

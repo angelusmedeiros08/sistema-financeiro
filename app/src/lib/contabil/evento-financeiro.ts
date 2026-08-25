@@ -3,6 +3,7 @@ import type { Database } from "@/utils/supabase/database.types";
 import { buscarContaGenericaPorTipo } from "./plano-contas";
 import { criarCategoria } from "./categorias";
 import { registrarLancamento } from "./ledger";
+import { estornarBaixa } from "./ciclo-vida-parcela";
 
 type Cliente = SupabaseClient<Database>;
 type TipoCategoria = Database["public"]["Enums"]["tipo_categoria"];
@@ -241,7 +242,20 @@ export async function criarEventoFinanceiro(
 // import — qualquer despesa/receita criada errada pode usar isto.
 export async function estornarEventoFinanceiro(
   supabase: Cliente,
-  params: { tenant_id: string; evento_id: string; motivo: string; criado_por?: string },
+  params: {
+    tenant_id: string;
+    evento_id: string;
+    motivo: string;
+    criado_por?: string;
+    // Default false preserva o comportamento de sempre (bloquear e pedir
+    // estorno manual da baixa primeiro) pra quem chama isso fora do fluxo
+    // de desfazer importação — ex.: editarEventoFinanceiro corrigindo
+    // categoria/valor de um lançamento já pago não deve reverter o
+    // recebimento/pagamento em silêncio, só porque precisou recriar o
+    // evento. "Desfazer importação" passa true de propósito: ali o pedido
+    // é reverter TUDO, quitado ou não (ver Seção "Fluxo de desfazer" da spec).
+    estornarBaixasAutomaticamente?: boolean;
+  },
 ): Promise<{ sucesso: true } | { erro: string }> {
   const { data: evento, error: erroEvento } = await supabase
     .from("eventos_financeiros")
@@ -268,7 +282,19 @@ export async function estornarEventoFinanceiro(
   if (idsParcelas.length > 0) {
     const { data: baixasVivas } = await supabase.from("baixas").select("id").in("parcela_id", idsParcelas).is("estornado_em", null);
     if (baixasVivas && baixasVivas.length > 0) {
-      return { erro: "Existe baixa registrada para este evento — estorne a baixa primeiro." };
+      if (!params.estornarBaixasAutomaticamente) {
+        return { erro: "Existe baixa registrada para este evento — estorne a baixa primeiro." };
+      }
+      // Reverte cada baixa viva antes do evento em si — sem isso o razão
+      // ficaria com o recebimento/pagamento intacto enquanto o
+      // reconhecimento já some, um estado contábil impossível (dinheiro
+      // que entrou por um evento que "nunca existiu"). estornarBaixa já é
+      // reentrante por conta própria, então uma falha no meio do loop é
+      // seguro retomar chamando desfazer de novo.
+      for (const baixa of baixasVivas) {
+        const resultadoBaixa = await estornarBaixa(supabase, { tenant_id: params.tenant_id, baixa_id: baixa.id, criado_por: params.criado_por });
+        if ("erro" in resultadoBaixa) return { erro: `Falha ao estornar baixa vinculada: ${resultadoBaixa.erro}` };
+      }
     }
   }
 
@@ -321,13 +347,28 @@ export async function estornarEventoFinanceiro(
     if ("erro" in resultadoLancamento) return { erro: resultadoLancamento.erro };
   }
 
-  // Só pode estar PENDENTE ou ATRASADO neste ponto — RECEBIDO_PARCIAL/
-  // QUITADO exigem baixa viva, já barrado acima; RENEGOCIADO já barrado
-  // acima também. Erro aqui não pode ser descartado em silêncio: o
-  // lançamento de estorno já existe neste ponto, então uma parcela que
-  // devia ter sido cancelada e não foi deixaria o razão e o operacional
-  // divergentes (evento revertido, mas ainda "a pagar/receber" nos relatórios).
-  const pendentes = parcelas.filter((p) => p.status === "PENDENTE" || p.status === "ATRASADO");
+  // Recarrega o status das parcelas em vez de reusar o array do topo da
+  // função: se havia baixa viva e ela foi revertida acima, o gatilho do
+  // banco (atualizar_status_parcela) já recalculou QUITADO/RECEBIDO_PARCIAL
+  // de volta pra PENDENTE nesse meio-tempo — o array carregado antes ficou
+  // desatualizado, e cancelar com base nele deixaria essas parcelas de fora.
+  const { data: parcelasAtuais, error: erroParcelasAtuais } = await supabase
+    .from("parcelas")
+    .select("id, status")
+    .eq("evento_financeiro_id", params.evento_id);
+
+  if (erroParcelasAtuais || !parcelasAtuais) {
+    return { erro: "Lançamento estornado, mas falha ao reconsultar as parcelas para cancelar." };
+  }
+
+  // Só pode estar PENDENTE ou ATRASADO neste ponto — QUITADO/RECEBIDO_PARCIAL
+  // sem baixa viva é estado impossível (baixa foi revertida acima ou nunca
+  // existiu); RENEGOCIADO já barrado acima. Erro aqui não pode ser
+  // descartado em silêncio: o lançamento de estorno já existe neste ponto,
+  // então uma parcela que devia ter sido cancelada e não foi deixaria o
+  // razão e o operacional divergentes (evento revertido, mas ainda "a
+  // pagar/receber" nos relatórios).
+  const pendentes = parcelasAtuais.filter((p) => p.status === "PENDENTE" || p.status === "ATRASADO");
   for (const p of pendentes) {
     const { error: erroCancelar } = await supabase.from("parcelas").update({ status: "CANCELADO", motivo_cancelamento: params.motivo }).eq("id", p.id);
     if (erroCancelar) return { erro: `Lançamento estornado, mas falha ao cancelar parcela: ${erroCancelar.message}` };

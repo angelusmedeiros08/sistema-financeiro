@@ -76,7 +76,13 @@ type EntidadeClassificada = { tipo_entidade: TipoEntidade; entidade_id: string; 
 
 export type PreviaDesfazerFinanceira = {
   aReverter: ItemAReverter[];
-  protegidosPorBaixa: ItemAReverter[];
+  // Subconjunto de aReverter — só informativo, pra avisar o operador que
+  // esses já estavam quitados e a baixa/recebimento também vai ser
+  // desfeita junto. Nunca bloqueia: desfazer importação reverte por
+  // completo, quitado ou não (ver pedido do usuário — reversão precisa
+  // valer independente de status de pagamento e refletir em todo relatório
+  // e indicador que olha pro razão).
+  comBaixaRevertida: ItemAReverter[];
   protegidosPorModificacao: ItemAReverter[];
   entidadesARemover: EntidadeClassificada[];
   entidadesPreservadas: (EntidadeClassificada & { motivo: string })[];
@@ -91,7 +97,7 @@ export async function preverDesfazerImportacaoFinanceira(
 ): Promise<PreviaDesfazerFinanceira | { erro: string }> {
   const { data: itens, error: erroItens } = await supabase
     .from("importacoes_itens")
-    .select("id, evento_financeiro_id")
+    .select("id, evento_financeiro_id, criado_em")
     .eq("importacao_id", params.importacao_id)
     .eq("tenant_id", params.tenant_id)
     .eq("status", "sucesso")
@@ -105,7 +111,7 @@ export async function preverDesfazerImportacaoFinanceira(
   const admin = createAdminClient();
 
   const aReverter: ItemAReverter[] = [];
-  const protegidosPorBaixa: ItemAReverter[] = [];
+  const comBaixaRevertida: ItemAReverter[] = [];
   const protegidosPorModificacao: ItemAReverter[] = [];
 
   if (eventoIds.length > 0) {
@@ -116,9 +122,6 @@ export async function preverDesfazerImportacaoFinanceira(
 
     const parcelaIdsComBaixa = new Set((baixasVivas ?? []).map((b) => b.parcela_id));
     const eventoIdsComBaixa = new Set((parcelas ?? []).filter((p) => parcelaIdsComBaixa.has(p.id)).map((p) => p.evento_financeiro_id));
-    const eventoIdsModificados = new Set(
-      (parcelas ?? []).filter((p) => p.atualizado_em !== p.criado_em).map((p) => p.evento_financeiro_id),
-    );
 
     for (const item of itens) {
       const eventoId = item.evento_financeiro_id as string;
@@ -127,12 +130,28 @@ export async function preverDesfazerImportacaoFinanceira(
 
       const registro: ItemAReverter = { item_id: item.id, evento_id: eventoId, descricao: evento.descricao ?? "", valor: Number(evento.valor_total) };
 
-      if (eventoIdsComBaixa.has(eventoId)) {
-        protegidosPorBaixa.push(registro);
-      } else if (eventoIdsModificados.has(eventoId) || evento.atualizado_em !== evento.criado_em) {
+      // "Modificado" só conta o que aconteceu DEPOIS que este item foi
+      // registrado como importado com sucesso — nunca antes. A baixa
+      // automática de "Data de pagamento" (commitarLinhaImportacao) já
+      // atualiza a parcela ANTES desse registro (mesmo commit da linha),
+      // então nunca entra como modificação alheia à própria importação.
+      // Sem essa referência, toda linha com baixa automática caía em
+      // "modificado" só por causa do próprio timestamp do import (achado
+      // testando ao vivo — nenhum item quitado por planilha conseguia ser
+      // revertido sem o checkbox "incluir modificados", mesmo sem ninguém
+      // ter tocado nele depois). Baixa (quitado ou parcial) em si não
+      // protege mais contra reversão — só modificação humana genuína
+      // protege, porque preserva uma correção deliberada do operador.
+      const itemCriadoEm = new Date(item.criado_em).getTime();
+      const parcelasDoEvento = (parcelas ?? []).filter((p) => p.evento_financeiro_id === eventoId);
+      const modificadoDepoisDoImport =
+        new Date(evento.atualizado_em).getTime() > itemCriadoEm || parcelasDoEvento.some((p) => new Date(p.atualizado_em).getTime() > itemCriadoEm);
+
+      if (modificadoDepoisDoImport) {
         protegidosPorModificacao.push(registro);
       } else {
         aReverter.push(registro);
+        if (eventoIdsComBaixa.has(eventoId)) comBaixaRevertida.push(registro);
       }
     }
   }
@@ -162,7 +181,7 @@ export async function preverDesfazerImportacaoFinanceira(
     }
   }
 
-  return { aReverter, protegidosPorBaixa, protegidosPorModificacao, entidadesARemover, entidadesPreservadas };
+  return { aReverter, comBaixaRevertida, protegidosPorModificacao, entidadesARemover, entidadesPreservadas };
 }
 
 async function buscarNomeEntidade(admin: ReturnType<typeof createAdminClient>, tipo: TipoEntidade, id: string): Promise<string> {
@@ -216,7 +235,7 @@ function assinaturaPrevia(p: PreviaDesfazerFinanceira): string {
       .join(",");
   return [
     ids(p.aReverter),
-    ids(p.protegidosPorBaixa),
+    ids(p.comBaixaRevertida),
     ids(p.protegidosPorModificacao),
     ids(p.entidadesARemover),
     ids(p.entidadesPreservadas),
@@ -258,6 +277,11 @@ export async function desfazerImportacaoFinanceira(
       evento_id: item.evento_id,
       motivo: "Importação desfeita",
       criado_por: params.criado_por,
+      // Desfazer importação é reversão total por definição — quitado ou
+      // não, a baixa também precisa sumir do razão pra relatório e
+      // indicador pararem de contar um recebimento/pagamento cujo evento
+      // de origem não existe mais.
+      estornarBaixasAutomaticamente: true,
     });
     if ("erro" in resultado) {
       eventosComErro.push({ evento_id: item.evento_id, erro: resultado.erro });

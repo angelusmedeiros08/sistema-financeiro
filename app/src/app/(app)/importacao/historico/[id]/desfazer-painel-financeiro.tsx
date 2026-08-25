@@ -74,14 +74,15 @@ export function DesfazerPainelFinanceiro({ importacaoId }: { importacaoId: strin
           <Warning size={16} weight="fill" className="mt-0.5 shrink-0 text-destructive" />
           <div className="space-y-1.5 text-xs text-foreground">
             <p className="font-medium">Serão revertidos: {totalAReverter} lançamento(s).</p>
+            {previa.comBaixaRevertida.length > 0 && (
+              <p>
+                Destes, {previa.comBaixaRevertida.length} já {previa.comBaixaRevertida.length === 1 ? "estava quitado" : "estavam quitados"} — a
+                baixa/recebimento também será revertida.
+              </p>
+            )}
             {previa.entidadesARemover.length > 0 && <p>Serão removidos: {previa.entidadesARemover.length} cadastro(s) criados só por esta importação.</p>}
             {previa.entidadesPreservadas.length > 0 && (
               <p>Serão preservados: {previa.entidadesPreservadas.length} cadastro(s) em uso fora desta importação.</p>
-            )}
-            {previa.protegidosPorBaixa.length > 0 && (
-              <p className="text-destructive">
-                Precisam de atenção: {previa.protegidosPorBaixa.length} lançamento(s) já têm baixa registrada — estorne a baixa manualmente antes.
-              </p>
             )}
             {previa.protegidosPorModificacao.length > 0 && (
               <label className="flex items-center gap-2 pt-1">
