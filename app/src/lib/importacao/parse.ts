@@ -1,7 +1,7 @@
 import * as XLSX from "xlsx";
 import { repararMojibake } from "./locale-br";
 
-export type EncodingSuportado = "utf-8" | "windows-1252" | "iso-8859-1";
+export type EncodingSuportado = "utf-8" | "windows-1252" | "iso-8859-1" | "macintosh";
 
 export type ResultadoParse = {
   colunas: string[];
@@ -11,6 +11,11 @@ export type ResultadoParse = {
   delimitadorUsado?: string;
   nomeAbaUsada?: string;
   totalAbas?: number;
+  // true quando pelo menos 1 célula não estava em UTF-8 e precisou de
+  // fallback pra decodificar — cada célula decide sozinha (ver
+  // decodificarCsvPorCampo), então "true" não significa que o arquivo
+  // inteiro estava errado, só que nem tudo era UTF-8 puro.
+  precisouFallbackDeEncoding?: boolean;
 };
 
 export type ParseArquivoOk = { resultado: ResultadoParse; buffer: ArrayBuffer };
@@ -99,12 +104,52 @@ function detectarDelimitador(primeiraLinha: string): string {
   return semicolons > 0 ? ";" : virgulas > 0 ? "," : ";";
 }
 
-export function decodificarComFallback(buffer: ArrayBuffer): { texto: string; encoding: EncodingSuportado } {
+// Letras acentuadas que aparecem de verdade em nome de gente/empresa em
+// português — usado só pra pontuar caractere >= 0x80 já decodificado, nunca
+// pra decidir por byte cru (a mesma faixa de byte produz letra válida ou
+// símbolo bizarro dependendo do encoding, então só o RESULTADO decodificado
+// distingue os dois — ver decodificarComFallback).
+const LETRAS_ACENTUADAS_PT = "áàâãéêíóôõúüçÁÀÂÃÉÊÍÓÔÕÚÜÇñÑ";
+
+// Conta caractere >= 0x80 que não é letra acentuada de português — símbolo
+// tipográfico (aspas curvas, travessão, marca registrada, per mille...),
+// controle C1 indefinido, ou letra de outro idioma (î, Ž, ı...) quase nunca
+// aparece de verdade em nome de cliente/fornecedor. Usado pra pontuar as
+// duas decodificações candidatas (windows-1252 vs macintosh) e escolher a
+// que "parece mais com texto de verdade", não só a que não trava.
+function contarCaracteresImplausiveis(texto: string): number {
+  let count = 0;
+  for (const ch of texto) {
+    if (ch.codePointAt(0)! < 0x80) continue;
+    if (!LETRAS_ACENTUADAS_PT.includes(ch)) count++;
+  }
+  return count;
+}
+
+// UTF-8 inválido no arquivo inteiro só descarta a hipótese UTF-8 — ainda
+// sobra decidir entre os dois encodings de byte único mais comuns em
+// planilha brasileira. windows-1252 é o palpite óbvio (Excel no Windows),
+// mas Mac Roman também aparece na prática: Excel/Numbers no Mac oferecem
+// "CSV (Macintosh)" como opção de salvar, e os bytes de â/ç/õ/é/ó nesse
+// encoding caem em posições que windows-1252 usa pra outra coisa — às
+// vezes um controle indefinido, às vezes um símbolo tipográfico plausível
+// à primeira vista, às vezes até outra letra acentuada real (î no lugar de
+// Ó, achado com um arquivo real de verdade: mesma planilha tinha nome
+// batendo certo com windows-1252 e nome batendo certo só com macintosh,
+// byte a byte). Só o byte cru nunca decide sozinho quem está certo — as
+// duas decodificações candidatas são pontuadas por quantos caracteres
+// "não parecem nome de gente" cada uma produz, e vence quem tiver menos.
+export function decodificarComFallback(buffer: ArrayBufferLike): { texto: string; encoding: EncodingSuportado } {
   try {
     const texto = new TextDecoder("utf-8", { fatal: true }).decode(buffer);
     return { texto, encoding: "utf-8" };
   } catch {
-    return { texto: new TextDecoder("windows-1252").decode(buffer), encoding: "windows-1252" };
+    const comoWindows1252 = new TextDecoder("windows-1252").decode(buffer);
+    const comoMacintosh = new TextDecoder("macintosh").decode(buffer);
+    if (contarCaracteresImplausiveis(comoMacintosh) < contarCaracteresImplausiveis(comoWindows1252)) {
+      return { texto: comoMacintosh, encoding: "macintosh" };
+    }
+    return { texto: comoWindows1252, encoding: "windows-1252" };
   }
 }
 
@@ -120,10 +165,75 @@ function parseCsvTexto(texto: string): { colunas: string[]; linhas: string[][]; 
   return { colunas, linhas, delimitador };
 }
 
+// Ponto-e-vírgula, quebra de linha e aspas são bytes ASCII (< 0x80) — o
+// mesmo byte em UTF-8, windows-1252, macintosh ou iso-8859-1, nunca parte
+// de um caractere acentuado nessas codificações. Por isso dá pra achar
+// linha/campo direto nos bytes crus, antes de decidir qualquer encoding —
+// o que abre caminho pra decodificar campo por campo em vez do arquivo
+// inteiro de uma vez só (ver decodificarCsvPorCampo, a razão de existir
+// disto).
+function dividirBytesEm(bytes: Uint8Array, byteSeparador: number): Uint8Array[] {
+  const partes: Uint8Array[] = [];
+  let inicio = 0;
+  let dentroDeAspas = false;
+  for (let i = 0; i < bytes.length; i++) {
+    const b = bytes[i];
+    if (b === 0x22) dentroDeAspas = !dentroDeAspas;
+    else if (b === byteSeparador && !dentroDeAspas) {
+      partes.push(bytes.subarray(inicio, i));
+      inicio = i + 1;
+    }
+  }
+  partes.push(bytes.subarray(inicio));
+  return partes;
+}
+
+function decodificarCampoBytes(campo: Uint8Array, marcarFallback: () => void): string {
+  let fim = campo.length;
+  if (fim > 0 && campo[fim - 1] === 0x0d) fim--; // \r de quebra de linha estilo Windows
+  const semQuebra = campo.subarray(0, fim);
+  const { texto, encoding } = decodificarComFallback(semQuebra.buffer.slice(semQuebra.byteOffset, semQuebra.byteOffset + semQuebra.byteLength));
+  if (encoding !== "utf-8") marcarFallback();
+  const semAspas = texto.length >= 2 && texto.startsWith('"') && texto.endsWith('"') ? texto.slice(1, -1).replace(/""/g, '"') : texto;
+  return semAspas.trim();
+}
+
+// Cada campo é decodificado com sua própria detecção UTF-8/fallback, não o
+// arquivo inteiro de uma vez — achado com uma planilha real (Erick):
+// cabeçalho e "Honorários" chegavam em UTF-8 genuíno, mas nomes de cliente
+// tinham sido colados de outra fonte e ficaram em Mac Roman dentro do MESMO
+// arquivo. Decodificar o buffer inteiro como um encoding só sempre corrompe
+// uma das duas partes, não importa qual encoding escolher — só decidir
+// campo a campo resolve os dois ao mesmo tempo. Delimitador é sniffado na
+// primeira linha decodificada de forma tolerante (não importa o encoding
+// exato aqui, só os bytes ASCII de ; e , que já são idênticos em qualquer
+// um dos quatro suportados).
+function decodificarCsvPorCampo(buffer: ArrayBuffer): { colunas: string[]; linhas: string[][]; delimitador: string; precisouFallback: boolean } {
+  const bytes = new Uint8Array(buffer);
+  const primeiraQuebra = bytes.indexOf(0x0a);
+  const primeiraLinhaTexto = new TextDecoder("utf-8").decode(bytes.subarray(0, primeiraQuebra >= 0 ? primeiraQuebra : bytes.length));
+  const delimitador = detectarDelimitador(primeiraLinhaTexto);
+  const byteDelimitador = delimitador === ";" ? 0x3b : 0x2c;
+
+  let precisouFallback = false;
+  const marcarFallback = () => {
+    precisouFallback = true;
+  };
+  const linhasBytes = dividirBytesEm(bytes, 0x0a).filter((l) => l.length > 0);
+  const matriz = linhasBytes.map((linha) => dividirBytesEm(linha, byteDelimitador).map((campo) => decodificarCampoBytes(campo, marcarFallback)));
+
+  const [cabecalhoBruto, ...resto] = matriz;
+  const cabecalho = [...(cabecalhoBruto ?? [])];
+  while (cabecalho.length > 0 && cabecalho[cabecalho.length - 1] === "") cabecalho.pop();
+  const colunas = cabecalho;
+  const linhas = resto.filter((linha) => linha.some((c) => c !== "")).map((linha) => colunas.map((_, i) => linha[i] ?? ""));
+
+  return { colunas, linhas, delimitador, precisouFallback };
+}
+
 export function parseCsvAutomatico(buffer: ArrayBuffer): ResultadoParse {
-  const { texto, encoding } = decodificarComFallback(buffer);
-  const { colunas, linhas, delimitador } = parseCsvTexto(texto);
-  return { colunas, linhas, tipoArquivo: "csv", encodingUsado: encoding, delimitadorUsado: delimitador };
+  const { colunas, linhas, delimitador, precisouFallback } = decodificarCsvPorCampo(buffer);
+  return { colunas, linhas, tipoArquivo: "csv", encodingUsado: "utf-8", delimitadorUsado: delimitador, precisouFallbackDeEncoding: precisouFallback };
 }
 
 // Reprocessa o mesmo buffer com outro encoding — usado quando o usuário

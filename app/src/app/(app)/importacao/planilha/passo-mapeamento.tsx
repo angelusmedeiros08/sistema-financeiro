@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 const OPCOES_ENCODING: { valor: EncodingSuportado; rotulo: string }[] = [
   { valor: "utf-8", rotulo: "UTF-8" },
   { valor: "windows-1252", rotulo: "Windows-1252" },
+  { valor: "macintosh", rotulo: "Macintosh (Mac Roman)" },
   { valor: "iso-8859-1", rotulo: "ISO-8859-1" },
 ];
 
@@ -96,9 +97,18 @@ export function PassoMapeamento({
       {parseAtual.tipoArquivo === "csv" && (
         <div className="flex flex-wrap items-center gap-3 rounded-xl bg-muted/40 p-3">
           <p className="text-xs text-muted-foreground">
-            Detectamos <span className="font-medium text-foreground">{OPCOES_ENCODING.find((o) => o.valor === parseAtual.encodingUsado)?.rotulo}</span> com
-            delimitador <span className="font-medium text-foreground">&quot;{parseAtual.delimitadorUsado}&quot;</span>. Se a prévia abaixo sair com
-            acentos errados, troque o encoding:
+            {parseAtual.precisouFallbackDeEncoding ? (
+              <>
+                Nem toda célula deste arquivo estava em UTF-8 — os nomes com acento foram corrigidos automaticamente, célula por célula (delimitador{" "}
+                <span className="font-medium text-foreground">&quot;{parseAtual.delimitadorUsado}&quot;</span>). Se a prévia abaixo ainda sair com acento
+                errado, troque o encoding manualmente:
+              </>
+            ) : (
+              <>
+                Arquivo em UTF-8, delimitador <span className="font-medium text-foreground">&quot;{parseAtual.delimitadorUsado}&quot;</span>. Se a prévia
+                abaixo sair com acentos errados, troque o encoding:
+              </>
+            )}
           </p>
           <Select value={parseAtual.encodingUsado} onValueChange={(v) => trocarEncoding(v as EncodingSuportado)}>
             <SelectTrigger className="h-7 w-40 text-xs">
