@@ -35,6 +35,12 @@ const ESTADO_INICIAL = {
   resolucoes: null as Record<TipoEntidadeImportacao, Map<string, ResolucaoEntidade>> | null,
   linhasProntas: [] as LinhaPronta[],
   importacaoId: null as string | null,
+  // permitirPuloColunas vira false assim que o usuário pede pra revisar a
+  // etapa de propósito (link em Cadastros ou "Voltar") — nunca pula de
+  // novo depois disso, mesmo que a sugestão continue confiante.
+  // colunasFoiPulado só controla se o link de revisão aparece.
+  permitirPuloColunas: true,
+  colunasFoiPulado: false,
 };
 
 export function ImportarPlanilhaWizard({
@@ -90,8 +96,11 @@ export function ImportarPlanilhaWizard({
           parseInicial={estado.parse}
           buffer={estado.buffer}
           regrasMapeamentoIniciais={regrasMapeamentoIniciais}
+          permitirPuloAutomatico={estado.permitirPuloColunas}
           onVoltar={() => setEstado({ ...ESTADO_INICIAL, etapa: "upload" })}
-          onAvancar={({ linhasBrutas, formatoNumerico }) => setEstado((s) => ({ ...s, etapa: "entidades", linhasBrutas, formatoNumerico }))}
+          onAvancar={({ linhasBrutas, formatoNumerico }, automatico) =>
+            setEstado((s) => ({ ...s, etapa: "entidades", linhasBrutas, formatoNumerico, colunasFoiPulado: automatico }))
+          }
         />
       )}
 
@@ -100,7 +109,9 @@ export function ImportarPlanilhaWizard({
           linhasBrutas={estado.linhasBrutas}
           nomeArquivo={estado.nomeArquivo}
           entidadesExistentes={entidadesExistentes}
-          onVoltar={() => setEstado((s) => ({ ...s, etapa: "mapeamento" }))}
+          colunasFoiPulado={estado.colunasFoiPulado}
+          onRevisarColunas={() => setEstado((s) => ({ ...s, etapa: "mapeamento", permitirPuloColunas: false }))}
+          onVoltar={() => setEstado((s) => ({ ...s, etapa: "mapeamento", permitirPuloColunas: false }))}
           onAvancar={(resolucoes, categoriasNovas: CategoriaNova[], importacaoId) => {
             if (categoriasNovas.length > 0) {
               setEntidadesExistentes((atual) => ({ ...atual, categorias: [...atual.categorias, ...categoriasNovas] }));

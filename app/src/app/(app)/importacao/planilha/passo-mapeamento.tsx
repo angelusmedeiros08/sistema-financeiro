@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, ArrowRight } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -27,14 +27,19 @@ export function PassoMapeamento({
   parseInicial,
   buffer,
   regrasMapeamentoIniciais,
+  permitirPuloAutomatico,
   onVoltar,
   onAvancar,
 }: {
   parseInicial: ResultadoParse;
   buffer: ArrayBuffer | null;
   regrasMapeamentoIniciais: Record<string, string>;
+  // false depois que o usuário já voltou uma vez pra essa etapa de
+  // propósito (link "Revisar mapeamento" ou "Voltar") — nunca pula de
+  // novo por baixo dos pés de quem pediu pra revisar.
+  permitirPuloAutomatico: boolean;
   onVoltar: () => void;
-  onAvancar: (dados: { linhasBrutas: LinhaBruta[]; formatoNumerico: FormatoNumerico }) => void;
+  onAvancar: (dados: { linhasBrutas: LinhaBruta[]; formatoNumerico: FormatoNumerico }, automatico: boolean) => void;
 }) {
   const [parseAtual, setParseAtual] = useState(parseInicial);
   // Snapshot da sugestão automática (regra aprendida → rótulo → sinônimo) —
@@ -57,6 +62,19 @@ export function PassoMapeamento({
 
   const previaLinhas = useMemo(() => montarLinhasBrutas(parseAtual.linhas.slice(0, 5), mapeamento), [parseAtual, mapeamento]);
 
+  // Pula direto pra próxima etapa quando todo campo obrigatório já tem
+  // correspondência automática (rótulo/sinônimo/regra aprendida) — só
+  // avalia uma vez, na primeira renderização com a sugestão inicial, nunca
+  // de novo depois que o usuário já mexeu em algo (trocar encoding, editar
+  // um campo). Nunca esconde a etapa de vez — "Revisar mapeamento de
+  // colunas" em Cadastros volta pra cá com permitirPuloAutomatico=false.
+  useEffect(() => {
+    if (!permitirPuloAutomatico || colunasObrigatoriasFaltando.length > 0) return;
+    const linhasBrutas = montarLinhasBrutas(parseAtual.linhas, mapeamento);
+    onAvancar({ linhasBrutas, formatoNumerico }, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   function avancar() {
     const linhasBrutas = montarLinhasBrutas(parseAtual.linhas, mapeamento);
     void salvarCorrecoesMapeamentoAction({
@@ -65,7 +83,7 @@ export function PassoMapeamento({
       sugestaoAutomatica,
       mapeamentoFinal: mapeamento,
     });
-    onAvancar({ linhasBrutas, formatoNumerico });
+    onAvancar({ linhasBrutas, formatoNumerico }, false);
   }
 
   return (

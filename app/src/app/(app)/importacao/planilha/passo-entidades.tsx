@@ -31,12 +31,16 @@ export function PassoEntidades({
   linhasBrutas,
   nomeArquivo,
   entidadesExistentes,
+  colunasFoiPulado,
+  onRevisarColunas,
   onVoltar,
   onAvancar,
 }: {
   linhasBrutas: LinhaBruta[];
   nomeArquivo: string;
   entidadesExistentes: EntidadesExistentes;
+  colunasFoiPulado: boolean;
+  onRevisarColunas: () => void;
   onVoltar: () => void;
   onAvancar: (resolucoes: Record<TipoEntidadeImportacao, Map<string, ResolucaoEntidade>>, categoriasNovas: CategoriaNova[], importacaoId: string | null) => void;
 }) {
@@ -260,6 +264,11 @@ export function PassoEntidades({
         <p className="mt-1 text-sm text-muted-foreground">
           Cada valor único encontrado na planilha precisa apontar pra um cadastro existente ou virar um cadastro novo.
         </p>
+        {colunasFoiPulado && (
+          <button type="button" onClick={onRevisarColunas} className="mt-1.5 text-xs font-medium text-primary underline-offset-2 hover:underline">
+            Colunas reconhecidas automaticamente — Revisar mapeamento de colunas
+          </button>
+        )}
       </div>
 
       {secoes.map((secao) => {
