@@ -1,5 +1,19 @@
 import type { Cliente } from "./regime";
 
+// Fonte única do critério "vencido"/"vence em N dias" — usado tanto pelos
+// cards (buscarResumoVencimentos/obterPendentesPorTipo) quanto pelo filtro
+// de mesmo nome em Contas a Receber/Pagar (indicador clicável precisa
+// chegar exatamente nos registros que compuseram o total mostrado).
+export const STATUS_VENCIDO = ["PENDENTE", "RECEBIDO_PARCIAL", "ATRASADO"] as const;
+export const STATUS_VENCE_EM_30 = ["PENDENTE"] as const;
+
+export function limitesJanelaVencimento(diasLimite: number): { hojeIso: string; limiteIso: string } {
+  const hoje = new Date();
+  const limite = new Date(hoje);
+  limite.setDate(limite.getDate() + diasLimite);
+  return { hojeIso: hoje.toISOString().slice(0, 10), limiteIso: limite.toISOString().slice(0, 10) };
+}
+
 // Faixas fixas, mesmo recorte da planilha de referência (Seção 3.4 do
 // mapeamento) — lá é configurável em tabela; aqui fica hardcoded por ora,
 // mudança de faixa não é uma necessidade recorrente de tenant a tenant
@@ -80,7 +94,7 @@ export async function buscarAging(
     .select("valor, data_vencimento, eventos_financeiros!inner(tipo), baixas(valor_pago, estornado_em)")
     .eq("tenant_id", params.tenantId)
     .eq("eventos_financeiros.tipo", params.tipo)
-    .in("status", ["PENDENTE", "RECEBIDO_PARCIAL", "ATRASADO"]);
+    .in("status", STATUS_VENCIDO);
 
   const parcelas: ParcelaEmAberto[] = (data ?? []).map((p) => {
     const pago = (p.baixas ?? []).filter((b) => !b.estornado_em).reduce((s, b) => s + Number(b.valor_pago), 0);
@@ -114,7 +128,7 @@ export async function buscarResumoVencimentos(
     .select("valor, data_vencimento, eventos_financeiros!inner(tipo, pessoa_id), baixas(valor_pago, estornado_em)")
     .eq("tenant_id", params.tenantId)
     .eq("eventos_financeiros.tipo", params.tipo)
-    .in("status", ["PENDENTE", "RECEBIDO_PARCIAL", "ATRASADO"]);
+    .in("status", STATUS_VENCIDO);
 
   if (params.pessoaId) query = query.eq("eventos_financeiros.pessoa_id", params.pessoaId);
 
@@ -166,7 +180,7 @@ export async function buscarAgingPorParticipante(
     .select("valor, data_vencimento, eventos_financeiros!inner(tipo, pessoas(id, nome)), baixas(valor_pago, estornado_em)")
     .eq("tenant_id", params.tenantId)
     .eq("eventos_financeiros.tipo", params.tipo)
-    .in("status", ["PENDENTE", "RECEBIDO_PARCIAL", "ATRASADO"]);
+    .in("status", STATUS_VENCIDO);
 
   const hoje = new Date();
   const porPessoa = new Map<string, AgingPorParticipante>();

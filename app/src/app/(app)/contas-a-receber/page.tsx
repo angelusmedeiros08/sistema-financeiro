@@ -3,14 +3,24 @@ import Link from "next/link";
 import { createClient } from "@/utils/supabase/server";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
 import { TabelaParcelasAbertas } from "@/components/lancamentos/tabela-parcelas-abertas";
+import { STATUS_VENCIDO, STATUS_VENCE_EM_30, limitesJanelaVencimento } from "@/lib/relatorios/aging";
+import type { Database } from "@/utils/supabase/database.types";
 import { cn } from "@/lib/utils";
 
-const FILTROS = [
-  { valor: "aberto", rotulo: "Em aberto", status: ["PENDENTE", "RECEBIDO_PARCIAL", "RENEGOCIADO"] },
-  { valor: "quitados", rotulo: "Quitados", status: ["QUITADO"] },
-  { valor: "cancelados", rotulo: "Cancelados", status: ["CANCELADO"] },
-  { valor: "todos", rotulo: "Todos", status: null },
-] as const;
+type StatusParcela = Database["public"]["Enums"]["status_parcela"];
+
+// "vencido"/"vence30" replicam o mesmo critério dos cards clicáveis do
+// Painel/Relatórios (buscarResumoVencimentos/obterPendentesPorTipo) — quem
+// clica em "A receber vencido" precisa cair exatamente nos registros que
+// compuseram aquele total, não numa aproximação.
+const FILTROS: { valor: string; rotulo: string; status: StatusParcela[] | null; janela: "vencido" | "vence30" | null }[] = [
+  { valor: "aberto", rotulo: "Em aberto", status: ["PENDENTE", "RECEBIDO_PARCIAL", "RENEGOCIADO"], janela: null },
+  { valor: "vencido", rotulo: "Vencido", status: [...STATUS_VENCIDO], janela: "vencido" },
+  { valor: "vence30", rotulo: "Vence em 30 dias", status: [...STATUS_VENCE_EM_30], janela: "vence30" },
+  { valor: "quitados", rotulo: "Quitados", status: ["QUITADO"], janela: null },
+  { valor: "cancelados", rotulo: "Cancelados", status: ["CANCELADO"], janela: null },
+  { valor: "todos", rotulo: "Todos", status: null, janela: null },
+];
 
 export default async function PaginaContasAReceber({
   searchParams,
@@ -38,6 +48,12 @@ export default async function PaginaContasAReceber({
     .order("data_vencimento", { ascending: true });
 
   if (filtro.status) query = query.in("status", filtro.status);
+  if (filtro.janela === "vencido") {
+    query = query.lt("data_vencimento", limitesJanelaVencimento(0).hojeIso);
+  } else if (filtro.janela === "vence30") {
+    const { hojeIso, limiteIso } = limitesJanelaVencimento(30);
+    query = query.gte("data_vencimento", hojeIso).lte("data_vencimento", limiteIso);
+  }
 
   const { data: parcelas } = await query;
 

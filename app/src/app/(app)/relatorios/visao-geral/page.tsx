@@ -81,24 +81,28 @@ export default async function PaginaRelatoriosVisaoGeral({
           variant="hero"
           label="Resultado do período"
           valor={formatarMoeda(resultado)}
+          href="/relatorios/dre"
         />
         <StatCard
           variant="coral"
           label="A receber vencido"
           valor={formatarMoeda(resumoReceber.vencidoTotal)}
           detalhe={`Vence hoje: ${formatarMoeda(resumoReceber.venceHojeTotal)}`}
+          href="/contas-a-receber?situacao=vencido"
         />
         <StatCard
           variant="ambar"
           label="A pagar vencido"
           valor={formatarMoeda(resumoPagar.vencidoTotal)}
           detalhe={`Vence hoje: ${formatarMoeda(resumoPagar.venceHojeTotal)}`}
+          href="/contas-a-pagar?situacao=vencido"
         />
         <StatCard
           variant="teal"
           label="Ponto de equilíbrio"
           valor={formatarMoeda(pontoEquilibrio.pontoEquilibrio)}
           detalhe={`Margem de contribuição: ${formatarPercentual(pontoEquilibrio.margemContribuicaoPercentual)}`}
+          href="/relatorios/ponto-equilibrio"
         />
       </div>
 

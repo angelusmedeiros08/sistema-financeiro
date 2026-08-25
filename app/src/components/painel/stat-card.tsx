@@ -1,5 +1,6 @@
+import Link from "next/link";
 import { cva, type VariantProps } from "class-variance-authority";
-import { ArrowUpRight, ArrowDownRight } from "@phosphor-icons/react/dist/ssr";
+import { ArrowUpRight, ArrowDownRight, ArrowRight } from "@phosphor-icons/react/dist/ssr";
 import { cn } from "@/lib/utils";
 import { Sparkline } from "./sparkline";
 
@@ -37,16 +38,20 @@ type StatCardProps = VariantProps<typeof cartaoVariantes> & {
   delta?: number;
   serie?: number[];
   icon?: IconType;
+  // Card vira link pros lançamentos/relatório que compõem o número — pedido
+  // direto de um vídeo do sócio do usuário ("ver o total → entender o que
+  // forma aquele total"). Sem href, comportamento idêntico ao de antes.
+  href?: string;
 };
 
-export function StatCard({ label, valor, detalhe, variant, delta, serie, icon: Icon }: StatCardProps) {
+export function StatCard({ label, valor, detalhe, variant, delta, serie, icon: Icon, href }: StatCardProps) {
   const v = variant ?? "sage";
   const deltaPositivo = typeof delta === "number" && delta >= 0;
   const corDelta = v === "hero" ? "text-white" : deltaPositivo ? "text-positivo" : "text-destructive";
   const corSpark = v === "hero" ? "#ffffff" : deltaPositivo ? "var(--positivo)" : "var(--destructive)";
 
-  return (
-    <div className={cn(cartaoVariantes({ variant }))}>
+  const conteudo = (
+    <>
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2.5">
           {Icon && (
@@ -87,6 +92,27 @@ export function StatCard({ label, valor, detalhe, variant, delta, serie, icon: I
           <Sparkline dados={serie} cor={corSpark} />
         </div>
       )}
-    </div>
+
+      {href && (
+        <ArrowRight
+          size={14}
+          weight="bold"
+          className={cn(
+            "absolute right-4 bottom-4 opacity-0 transition-opacity group-hover/stat:opacity-100",
+            v === "hero" ? "text-white/80" : "text-muted-foreground",
+          )}
+        />
+      )}
+    </>
   );
+
+  if (href) {
+    return (
+      <Link href={href} className={cn(cartaoVariantes({ variant }), "transition-shadow hover:shadow-lg")}>
+        {conteudo}
+      </Link>
+    );
+  }
+
+  return <div className={cn(cartaoVariantes({ variant }))}>{conteudo}</div>;
 }

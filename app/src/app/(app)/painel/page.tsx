@@ -96,6 +96,7 @@ export default async function PaginaPainel() {
               label="A receber (30 dias)"
               valor={formatarMoeda(dados.aReceber.total)}
               detalhe={`Vencido: ${formatarMoeda(dados.vencidosReceber.vencidoTotal)}`}
+              href="/contas-a-receber?situacao=vence30"
             />
           </MotionCard>
           <MotionCard index={3}>
@@ -108,6 +109,7 @@ export default async function PaginaPainel() {
               label="A pagar (30 dias)"
               valor={formatarMoeda(dados.aPagar.total)}
               detalhe={`Vencido: ${formatarMoeda(dados.vencidosPagar.vencidoTotal)}`}
+              href="/contas-a-pagar?situacao=vence30"
             />
           </MotionCard>
           <MotionCard index={5}>
