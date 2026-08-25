@@ -27,7 +27,7 @@ Mesmo padrão já usado no desfazer financeiro — nunca um clique único direto
 
 Por pessoa removível-com-lançamento: tenta estornar cada lançamento vinculado (motivo: "Importação de clientes/fornecedores desfeita"). Se todos os lançamentos daquela pessoa forem estornados com sucesso, a pessoa é removida. Se **qualquer um** falhar (ex.: parcela renegociada — mesmo bloqueio que `estornarEventoFinanceiro` já tem hoje e continua tendo), aquela pessoa específica fica protegida com o motivo do erro — as outras pessoas da mesma importação seguem seu caminho normalmente. Nunca trava o lote inteiro por causa de uma linha.
 
-Lançamento estornado por este fluxo nunca é apagado (diferente do "item puro" do desfazer financeiro, que apaga o stub operacional quando o lançamento pertence à própria importação sendo desfeita) — aqui o lançamento pode vir de outra importação ou ter sido digitado à mão, então o registro operacional fica, só marcado como estornado, preservando o rastro de que existiu.
+Lançamento estornado por este fluxo nunca é apagado (diferente do "item puro" do desfazer financeiro, que apaga o stub operacional quando o lançamento pertence à própria importação sendo desfeita) — aqui o lançamento pode vir de outra importação ou ter sido digitado à mão, então o registro operacional fica, só marcado como estornado, preservando o rastro de que existiu. Como a FK de `eventos_financeiros.pessoa_id` não tem cascade nem set null, o `pessoa_id` desse lançamento é limpo (null) só depois do estorno, pra remover a pessoa não quebrar contra um lançamento que ainda aponta pra ela — o lançamento em si e sua descrição continuam intactos.
 
 ## Resultado e revalidação
 

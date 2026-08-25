@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/utils/supabase/admin";
 import type { Database, Json } from "@/utils/supabase/database.types";
+import { estornarEventoFinanceiro } from "@/lib/contabil/evento-financeiro";
 
 type Cliente = SupabaseClient<Database>;
 type TipoImportacao = Database["public"]["Enums"]["tipo_importacao"];
@@ -205,20 +206,25 @@ export async function marcarImportacaoRetomando(supabase: Cliente, params: { imp
   await supabase.from("importacoes").update({ status: "em_andamento" }).eq("id", params.importacao_id);
 }
 
-// Desfaz uma importação: apaga só as pessoas que ELA criou (nunca as que
-// atualizou — não existe como desfazer um UPDATE sem saber o valor
-// anterior) e só as que ainda não têm nenhum lançamento financeiro
-// vinculado. Uma pessoa criada pela importação e já usada numa venda ou
-// lançamento fica protegida — apagar ela quebraria a integridade do
-// histórico financeiro. Usa o client admin só pra esse DELETE: `pessoas`
-// não tem policy de exclusão nenhuma de propósito (nada mais no app apaga
-// pessoa), então essa é uma exceção estreita, guardada pela checagem de
-// lançamento em código, não uma policy geral.
-export async function desfazerImportacao(
+type EventoAReverter = { evento_id: string; pessoa_id: string; pessoa_nome: string; descricao: string; valor: number };
+type PessoaProtegida = { pessoa_id: string; nome: string; motivo: string };
+
+export type PreviaDesfazerImportacaoPessoas = {
+  pessoasARemover: { pessoa_id: string; nome: string }[];
+  // Subconjunto de pessoasARemover que tem lançamento vivo vinculado — a
+  // remoção só acontece depois de estornar cada um destes.
+  eventosAReverter: EventoAReverter[];
+  protegidas: PessoaProtegida[];
+};
+
+// Só leitura — monta o mesmo diagnóstico que desfazerImportacaoPessoas vai
+// executar depois, pra mostrar antes do botão de confirmação real (mesmo
+// padrão de prévia+confirmar do desfazer financeiro).
+export async function preverDesfazerImportacaoPessoas(
   supabase: Cliente,
   params: { tenant_id: string; importacao_id: string },
-): Promise<{ removidas: number; protegidas: { pessoa_id: string; nome: string }[] } | { erro: string }> {
-  const { data: itensCriados } = await supabase
+): Promise<PreviaDesfazerImportacaoPessoas | { erro: string }> {
+  const { data: itensCriados, error: erroItens } = await supabase
     .from("importacoes_itens")
     .select("id, pessoa_id")
     .eq("importacao_id", params.importacao_id)
@@ -228,30 +234,197 @@ export async function desfazerImportacao(
     .is("desfeito_em", null)
     .not("pessoa_id", "is", null);
 
-  if (!itensCriados || itensCriados.length === 0) return { removidas: 0, protegidas: [] };
+  if (erroItens || !itensCriados) return { erro: erroItens?.message ?? "Falha ao consultar os itens da importação." };
+  if (itensCriados.length === 0) return { pessoasARemover: [], eventosAReverter: [], protegidas: [] };
 
   const pessoaIds = itensCriados.map((i) => i.pessoa_id as string);
   const admin = createAdminClient();
 
-  const { data: comLancamento } = await admin.from("eventos_financeiros").select("pessoa_id").in("pessoa_id", pessoaIds);
-  const protegidosSet = new Set((comLancamento ?? []).map((e) => e.pessoa_id));
+  const { data: pessoas } = await admin.from("pessoas").select("id, nome").in("id", pessoaIds);
+  const nomePorId = new Map((pessoas ?? []).map((p) => [p.id, p.nome]));
 
-  const removiveis = pessoaIds.filter((id) => !protegidosSet.has(id));
-  const protegidasIds = pessoaIds.filter((id) => protegidosSet.has(id));
+  const { data: eventosVivos } = await admin
+    .from("eventos_financeiros")
+    .select("id, pessoa_id, descricao, valor_total")
+    .in("pessoa_id", pessoaIds)
+    .is("estornado_em", null);
 
-  let protegidas: { pessoa_id: string; nome: string }[] = [];
-  if (protegidasIds.length > 0) {
-    const { data: nomes } = await admin.from("pessoas").select("id, nome").in("id", protegidasIds);
-    protegidas = (nomes ?? []).map((p) => ({ pessoa_id: p.id, nome: p.nome }));
+  // As outras 4 formas de "em uso" nunca viram estorno neste fluxo — só
+  // protegem, do jeito que lançamento também protegia antes deste ajuste.
+  // Sem checar as 4, uma pessoa presa só por uma dessas (nenhuma tem
+  // lançamento) passaria como "removível" e o DELETE quebraria com erro de
+  // FK pra TODAS as pessoas do lote, não só essa (achado lendo o schema:
+  // as 4 têm delete_rule NO ACTION).
+  const [{ data: vendasVinculadas }, { data: regrasRecorrencia }, { data: regrasCategorizacao }, { data: usuariosVinculados }] = await Promise.all([
+    admin.from("vendas").select("pessoa_id").in("pessoa_id", pessoaIds),
+    admin.from("regras_recorrencia").select("pessoa_id").in("pessoa_id", pessoaIds),
+    admin.from("regras_categorizacao").select("pessoa_id").in("pessoa_id", pessoaIds),
+    admin.from("usuario_tenant").select("pessoa_id").in("pessoa_id", pessoaIds),
+  ]);
+
+  const idsComVenda = new Set((vendasVinculadas ?? []).map((v) => v.pessoa_id));
+  const idsComRegraRecorrencia = new Set((regrasRecorrencia ?? []).map((r) => r.pessoa_id));
+  const idsComRegraCategorizacao = new Set((regrasCategorizacao ?? []).map((r) => r.pessoa_id));
+  const idsComUsuario = new Set((usuariosVinculados ?? []).map((u) => u.pessoa_id));
+
+  const eventosPorPessoa = new Map<string, EventoAReverter[]>();
+  for (const e of eventosVivos ?? []) {
+    if (!e.pessoa_id) continue;
+    const nome = nomePorId.get(e.pessoa_id) ?? e.pessoa_id;
+    const lista = eventosPorPessoa.get(e.pessoa_id) ?? [];
+    lista.push({ evento_id: e.id, pessoa_id: e.pessoa_id, pessoa_nome: nome, descricao: e.descricao ?? "", valor: Number(e.valor_total) });
+    eventosPorPessoa.set(e.pessoa_id, lista);
   }
 
-  if (removiveis.length > 0) {
-    const { error: erroDelete } = await admin.from("pessoas").delete().in("id", removiveis).eq("tenant_id", params.tenant_id);
-    if (erroDelete) return { erro: erroDelete.message };
+  const pessoasARemover: { pessoa_id: string; nome: string }[] = [];
+  const eventosAReverter: EventoAReverter[] = [];
+  const protegidas: PessoaProtegida[] = [];
 
-    const itemIdsRemovidos = itensCriados.filter((i) => removiveis.includes(i.pessoa_id as string)).map((i) => i.id);
-    await supabase.from("importacoes_itens").update({ desfeito_em: new Date().toISOString() }).in("id", itemIdsRemovidos);
+  for (const id of pessoaIds) {
+    const nome = nomePorId.get(id) ?? id;
+    if (idsComVenda.has(id)) {
+      protegidas.push({ pessoa_id: id, nome, motivo: "vinculada a uma venda" });
+    } else if (idsComRegraRecorrencia.has(id)) {
+      protegidas.push({ pessoa_id: id, nome, motivo: "vinculada a uma regra de recorrência" });
+    } else if (idsComRegraCategorizacao.has(id)) {
+      protegidas.push({ pessoa_id: id, nome, motivo: "vinculada a uma regra de categorização automática" });
+    } else if (idsComUsuario.has(id)) {
+      protegidas.push({ pessoa_id: id, nome, motivo: "vinculada a um usuário do sistema" });
+    } else {
+      pessoasARemover.push({ pessoa_id: id, nome });
+      eventosAReverter.push(...(eventosPorPessoa.get(id) ?? []));
+    }
   }
 
-  return { removidas: removiveis.length, protegidas };
+  return { pessoasARemover, eventosAReverter, protegidas };
+}
+
+function assinaturaPreviaPessoas(p: PreviaDesfazerImportacaoPessoas): string {
+  const idsPessoa = (lista: { pessoa_id: string }[]) => lista.map((x) => x.pessoa_id).sort().join(",");
+  const idsEvento = p.eventosAReverter
+    .map((e) => e.evento_id)
+    .sort()
+    .join(",");
+  return [idsPessoa(p.pessoasARemover), idsEvento, idsPessoa(p.protegidas)].join("|");
+}
+
+export type ResultadoDesfazerImportacaoPessoas = {
+  removidas: number;
+  eventosRevertidos: number;
+  eventosComErro: { evento_id: string; erro: string }[];
+  protegidas: PessoaProtegida[];
+};
+
+// Desfaz uma importação de Clientes/Fornecedores: apaga só as pessoas que
+// ELA criou (nunca as que atualizou — não existe como desfazer um UPDATE
+// sem saber o valor anterior). Lançamento financeiro vinculado deixou de
+// proteger a pessoa em silêncio — agora é estornado primeiro (baixa
+// incluída, mesmo modo do desfazer financeiro), não importa se veio de
+// outra importação ou foi digitado à mão. Só venda, regra de recorrência,
+// regra de categorização e vínculo de usuário continuam protegendo de
+// verdade. Usa o client admin só pro DELETE de pessoa: não tem policy de
+// exclusão nenhuma de propósito, exceção estreita guardada pela prévia
+// recém-recalculada, não por uma policy geral.
+export async function desfazerImportacaoPessoas(
+  supabase: Cliente,
+  params: { tenant_id: string; importacao_id: string; criado_por: string; previa: PreviaDesfazerImportacaoPessoas },
+): Promise<ResultadoDesfazerImportacaoPessoas | { erro: string }> {
+  const previaAtual = await preverDesfazerImportacaoPessoas(supabase, { tenant_id: params.tenant_id, importacao_id: params.importacao_id });
+  if ("erro" in previaAtual) return previaAtual;
+
+  if (assinaturaPreviaPessoas(previaAtual) !== assinaturaPreviaPessoas(params.previa)) {
+    return { erro: "A importação mudou desde a última verificação — recarregue a prévia e confirme de novo." };
+  }
+
+  const eventosPorPessoa = new Map<string, EventoAReverter[]>();
+  for (const e of previaAtual.eventosAReverter) {
+    const lista = eventosPorPessoa.get(e.pessoa_id) ?? [];
+    lista.push(e);
+    eventosPorPessoa.set(e.pessoa_id, lista);
+  }
+
+  let eventosRevertidos = 0;
+  const eventosComErro: { evento_id: string; erro: string }[] = [];
+  // Pessoa some deste set só se TODOS os lançamentos dela reverteram —
+  // parcial não remove nada, senão um evento continuaria vivo apontando
+  // pra uma pessoa que já sumiu (achado pensando no caso de parcela
+  // renegociada, que estornarEventoFinanceiro ainda barra).
+  const pessoasComFalhaDeEvento = new Set<string>();
+
+  for (const [pessoaId, eventos] of eventosPorPessoa) {
+    for (const ev of eventos) {
+      const resultado = await estornarEventoFinanceiro(supabase, {
+        tenant_id: params.tenant_id,
+        evento_id: ev.evento_id,
+        motivo: "Importação de clientes/fornecedores desfeita",
+        criado_por: params.criado_por,
+        estornarBaixasAutomaticamente: true,
+      });
+      if ("erro" in resultado) {
+        eventosComErro.push({ evento_id: ev.evento_id, erro: resultado.erro });
+        pessoasComFalhaDeEvento.add(pessoaId);
+      } else {
+        eventosRevertidos++;
+      }
+    }
+  }
+
+  const pessoasRemoviveis = previaAtual.pessoasARemover.filter((p) => !pessoasComFalhaDeEvento.has(p.pessoa_id));
+
+  const admin = createAdminClient();
+  let removidas = 0;
+  const idsRemovidosComSucesso: string[] = [];
+  const pessoasComErroDeDelete: PessoaProtegida[] = [];
+
+  for (const p of pessoasRemoviveis) {
+    // Estornar o evento não apaga a linha (fica de propósito, ver
+    // comentário da função) — ela continua com pessoa_id apontando pra
+    // quem vamos remover, e a FK é NO ACTION, sem cascade nem set null.
+    // Sem desvincular aqui primeiro, o DELETE da pessoa quebra com erro de
+    // FK mesmo depois do lançamento já ter sido revertido com sucesso
+    // (achado testando ao vivo — a prévia prometia remover a pessoa, mas
+    // ela ficava presa mesmo com o lançamento já estornado). O lançamento
+    // em si continua intacto, só perde a referência de "quem" — condizente
+    // com o cadastro ter deixado de existir. Usa `eq pessoa_id` (não a
+    // lista de eventos revertidos agora) de propósito: pega também um
+    // evento que já tivesse sido estornado numa tentativa anterior desta
+    // mesma pessoa — esse nem aparece mais em eventosAReverter (a prévia só
+    // lista evento vivo), mas continua com o FK preso do jeito antigo.
+    const { error: erroDesvincular } = await admin.from("eventos_financeiros").update({ pessoa_id: null }).eq("pessoa_id", p.pessoa_id);
+    if (erroDesvincular) {
+      pessoasComErroDeDelete.push({ pessoa_id: p.pessoa_id, nome: p.nome, motivo: erroDesvincular.message });
+      continue;
+    }
+
+    const { error } = await admin.from("pessoas").delete().eq("id", p.pessoa_id).eq("tenant_id", params.tenant_id);
+    if (error) {
+      pessoasComErroDeDelete.push({ pessoa_id: p.pessoa_id, nome: p.nome, motivo: error.message });
+    } else {
+      removidas++;
+      idsRemovidosComSucesso.push(p.pessoa_id);
+    }
+  }
+
+  if (idsRemovidosComSucesso.length > 0) {
+    const { data: itensCriados } = await supabase
+      .from("importacoes_itens")
+      .select("id, pessoa_id")
+      .eq("importacao_id", params.importacao_id)
+      .eq("tenant_id", params.tenant_id)
+      .in("pessoa_id", idsRemovidosComSucesso);
+    const itemIds = (itensCriados ?? []).map((i) => i.id);
+    if (itemIds.length > 0) {
+      await supabase.from("importacoes_itens").update({ desfeito_em: new Date().toISOString() }).in("id", itemIds);
+    }
+  }
+
+  const protegidasFinal: PessoaProtegida[] = [
+    ...previaAtual.protegidas,
+    ...previaAtual.pessoasARemover
+      .filter((p) => pessoasComFalhaDeEvento.has(p.pessoa_id))
+      .map((p) => ({ pessoa_id: p.pessoa_id, nome: p.nome, motivo: "falha ao reverter lançamento vinculado — veja os detalhes no lançamento" })),
+    ...pessoasComErroDeDelete,
+  ];
+
+  return { removidas, eventosRevertidos, eventosComErro, protegidas: protegidasFinal };
 }

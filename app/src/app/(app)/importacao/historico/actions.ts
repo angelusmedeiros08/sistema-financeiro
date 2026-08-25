@@ -6,8 +6,11 @@ import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
 import {
   buscarItensParaRetomar,
   marcarImportacaoRetomando,
-  desfazerImportacao,
+  preverDesfazerImportacaoPessoas,
+  desfazerImportacaoPessoas,
   type ItemImportacao,
+  type PreviaDesfazerImportacaoPessoas,
+  type ResultadoDesfazerImportacaoPessoas,
 } from "@/lib/importacoes/importacoes";
 import { importarLinhaPessoaAction, finalizarImportacaoPessoasAction } from "../pessoas/actions";
 import type { ParametrosImportarLinhaPessoa } from "../pessoas/actions";
@@ -42,19 +45,39 @@ export async function finalizarRetomadaAction(importacaoId: string, status: "con
   return finalizarImportacaoPessoasAction(importacaoId, status);
 }
 
-export async function desfazerImportacaoAction(
-  importacaoId: string,
-): Promise<{ removidas: number; protegidas: { pessoa_id: string; nome: string }[] } | { erro: string }> {
+export async function preverDesfazerImportacaoAction(importacaoId: string): Promise<PreviaDesfazerImportacaoPessoas | { erro: string }> {
   const contexto = await obterUsuarioETenantAtual();
   if ("erro" in contexto) return { erro: contexto.erro };
 
   const supabase = await createClient();
-  const resultado = await desfazerImportacao(supabase, { tenant_id: contexto.tenantId, importacao_id: importacaoId });
+  return preverDesfazerImportacaoPessoas(supabase, { tenant_id: contexto.tenantId, importacao_id: importacaoId });
+}
+
+// Mesmo princípio do desfazer financeiro: a prévia é sempre recalculada no
+// servidor a partir só de importacaoId/tenant — o snapshot do cliente serve
+// só pra comparar (nada mudou desde que a tela carregou) e decidir se a
+// chamada segue, nunca pra decidir o que executar.
+export async function desfazerImportacaoAction(
+  importacaoId: string,
+  previa: PreviaDesfazerImportacaoPessoas,
+): Promise<ResultadoDesfazerImportacaoPessoas | { erro: string }> {
+  const contexto = await obterUsuarioETenantAtual();
+  if ("erro" in contexto) return { erro: contexto.erro };
+
+  const supabase = await createClient();
+  const resultado = await desfazerImportacaoPessoas(supabase, {
+    tenant_id: contexto.tenantId,
+    importacao_id: importacaoId,
+    criado_por: contexto.user.id,
+    previa,
+  });
 
   if (!("erro" in resultado)) {
-    revalidatePath("/clientes");
-    revalidatePath("/fornecedores");
-    revalidatePath(`/configuracoes/importacoes/${importacaoId}`);
+    // Lançamento vinculado agora pode ser revertido junto — o efeito se
+    // espalha pelo razão inteiro (relatório, indicador), mesmo raciocínio
+    // já aplicado ao desfazer financeiro: 'layout' na raiz invalida o app
+    // inteiro em vez de listar rota por rota.
+    revalidatePath("/", "layout");
   }
 
   return resultado;
