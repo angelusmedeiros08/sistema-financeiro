@@ -94,6 +94,27 @@ export function PassoRevisao({
     setIncluidas((inc) => new Set(inc).add(linhaNum));
   }
 
+  // "exata_nome" nunca pré-decide sozinho (nome sem documento pode ser
+  // homônimo — buraco original da spec), mas numa planilha de dezenas de
+  // "mesmo nome de X" vira clique repetitivo demais (achado ao vivo: 62
+  // clientes/fornecedores, maioria nome idêntico a cadastro já existente).
+  // Este botão é 1 clique deliberado do operador pra todo mundo com
+  // candidato único — 2+ candidatos parecidos continua exigindo escolha
+  // manual, ambiguidade real não se resolve em lote.
+  function confirmarMesmoNome() {
+    const linhasAlvo = linhas.filter((l) => l.correspondencia.tipo === "exata_nome" && l.correspondencia.candidatos.length === 1 && !decisoes[l.linha]);
+    setDecisoes((d) => {
+      const novo = { ...d };
+      for (const l of linhasAlvo) novo[l.linha] = { acao: "atualizar", pessoaId: l.correspondencia.candidatos[0].id };
+      return novo;
+    });
+    setIncluidas((inc) => {
+      const novo = new Set(inc);
+      for (const l of linhasAlvo) novo.add(l.linha);
+      return novo;
+    });
+  }
+
   function alternarInclusao(linhaNum: number) {
     setIncluidas((atual) => {
       const novo = new Set(atual);
@@ -111,6 +132,9 @@ export function PassoRevisao({
   // desfeitas depois, na Central de Importações).
   const novos = prontas.filter((l) => decisoes[l.linha]?.acao === "criar").length;
   const atualizacoes = prontas.filter((l) => decisoes[l.linha]?.acao === "atualizar").length;
+  const numMesmoNome = linhas.filter(
+    (l) => l.correspondencia.tipo === "exata_nome" && l.correspondencia.candidatos.length === 1 && !decisoes[l.linha],
+  ).length;
 
   function importar() {
     const linhasProntas: LinhaPronta[] = prontas.map((l) => {
@@ -174,6 +198,11 @@ export function PassoRevisao({
           <XCircle size={15} weight="fill" />
           {comErro.length} com erro
         </span>
+        {numMesmoNome > 1 && (
+          <Button type="button" variant="outline" size="sm" className="ml-auto h-7 gap-1 text-xs" onClick={confirmarMesmoNome}>
+            Confirmar {numMesmoNome} de mesmo nome
+          </Button>
+        )}
       </div>
 
       <div className="max-h-[32rem] overflow-auto rounded-xl border border-border">

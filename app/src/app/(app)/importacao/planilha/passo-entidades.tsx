@@ -236,6 +236,25 @@ export function PassoEntidades({
     });
   }
 
+  // "exata_nome" continua sem pré-seleção automática (nome sozinho pode ser
+  // homônimo — buraco original da spec), mas numa importação de dezenas de
+  // "mesmo nome de X" isso vira clique repetitivo demais (achado ao vivo:
+  // 62 clientes/fornecedores, maioria nome idêntico a cadastro já existente).
+  // Este botão é a diferença: 1 clique deliberado do operador, não uma
+  // decisão silenciosa — só toca linha com candidato único (2+ continuam
+  // exigindo escolha manual, ambiguidade real não se resolve em lote).
+  function confirmarMesmoNomePessoa() {
+    setDecisoesPessoa((atual) => {
+      const novo = { ...atual };
+      for (const c of correspondenciasPessoa) {
+        if (c.correspondencia.tipo === "exata_nome" && c.correspondencia.candidatos.length === 1 && !atual[c.valorOriginal]) {
+          novo[c.valorOriginal] = { valorOriginal: c.valorOriginal, acao: "usar_existente", entidadeId: c.correspondencia.candidatos[0].id };
+        }
+      }
+      return novo;
+    });
+  }
+
   function decisaoIncompleta(secao: (typeof secoes)[number], valor: string): boolean {
     const d = decisoes[chaveDecisao(secao.tipo, valor)];
     if (!d) return true;
@@ -325,6 +344,9 @@ export function PassoEntidades({
     (c) => c.correspondencia.tipo === "aproximada" && c.correspondencia.candidatos.length === 1 && !decisoesPessoa[c.valorOriginal],
   ).length;
   const numSemCorrespondenciaPessoa = correspondenciasPessoa.filter((c) => c.correspondencia.tipo === "nenhuma" && !decisoesPessoa[c.valorOriginal]).length;
+  const numMesmoNomePessoa = correspondenciasPessoa.filter(
+    (c) => c.correspondencia.tipo === "exata_nome" && c.correspondencia.candidatos.length === 1 && !decisoesPessoa[c.valorOriginal],
+  ).length;
 
   return (
     <div className="flex flex-col gap-6 rounded-2xl bg-card shadow-card p-6">
@@ -482,6 +504,11 @@ export function PassoEntidades({
               {numSemCorrespondenciaPessoa > 1 && (
                 <Button type="button" variant="outline" size="sm" className="h-7 gap-1 text-xs" onClick={criarTodosNovosPessoa}>
                   Criar {numSemCorrespondenciaPessoa} novos
+                </Button>
+              )}
+              {numMesmoNomePessoa > 1 && (
+                <Button type="button" variant="outline" size="sm" className="h-7 gap-1 text-xs" onClick={confirmarMesmoNomePessoa}>
+                  Confirmar {numMesmoNomePessoa} de mesmo nome
                 </Button>
               )}
             </div>
