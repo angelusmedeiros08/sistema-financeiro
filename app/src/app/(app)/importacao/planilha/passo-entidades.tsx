@@ -191,15 +191,25 @@ export function PassoEntidades({
     });
   }
 
-  const todasResolvidas =
-    secoes.every((secao) =>
-      secao.valores.every((v) => {
-        const d = decisoes[chaveDecisao(secao.tipo, v)];
-        if (!d) return false;
-        if (d.acao === "criar_novo" && secao.tipo === "categoria" && !d.tipoCategoriaNova) return false;
-        return true;
-      }),
-    ) && valoresPessoa.every((v) => Boolean(decisoesPessoa[v]));
+  function decisaoIncompleta(secao: (typeof secoes)[number], valor: string): boolean {
+    const d = decisoes[chaveDecisao(secao.tipo, valor)];
+    if (!d) return true;
+    if (d.acao === "criar_novo" && secao.tipo === "categoria" && !d.tipoCategoriaNova) return true;
+    return false;
+  }
+
+  // Numa planilha de 100 linhas isso facilmente passa de 50 valores únicos
+  // espalhados por 4 seções — sem contar quantos faltam em cada uma, o
+  // usuário só descobre que falta algo quando o botão "Continuar" já está
+  // desabilitado, sem saber onde (achado testando ao vivo com um arquivo
+  // grande de verdade).
+  const pendenciasPorSecao = secoes
+    .map((secao) => ({ titulo: secao.titulo, quantidade: secao.valores.filter((v) => decisaoIncompleta(secao, v)).length }))
+    .filter((p) => p.quantidade > 0);
+  const pendenciasPessoa = valoresPessoa.filter((v) => !decisoesPessoa[v]).length;
+  const totalPendencias = pendenciasPorSecao.reduce((acc, p) => acc + p.quantidade, 0) + pendenciasPessoa;
+
+  const todasResolvidas = totalPendencias === 0;
 
   async function avancar() {
     setErro("");
@@ -288,6 +298,18 @@ export function PassoEntidades({
         )}
       </div>
 
+      {totalPendencias > 0 && (
+        <div className="sticky top-2 z-10 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl bg-amber-500/12 px-3 py-2 text-xs font-medium text-amber-800 dark:text-amber-300">
+          <span className="font-bold">Falta decidir {totalPendencias}:</span>
+          {pendenciasPorSecao.map((p) => (
+            <span key={p.titulo}>
+              {p.titulo} ({p.quantidade})
+            </span>
+          ))}
+          {pendenciasPessoa > 0 && <span>Clientes / Fornecedores ({pendenciasPessoa})</span>}
+        </div>
+      )}
+
       {secoes.map((secao) => {
         // Só conta o que o clique em lote realmente vai mudar — exclui
         // linhas já decididas à mão, senão o rótulo do botão promete mais
@@ -372,24 +394,27 @@ export function PassoEntidades({
         </p>
       )}
 
-      <div className="flex justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <Button type="button" variant="ghost" className="gap-1.5" onClick={onVoltar} disabled={enviando}>
           <ArrowLeft size={14} />
           Voltar
         </Button>
-        <Button type="button" className="gap-1.5" disabled={!todasResolvidas || enviando} onClick={avancar}>
-          {enviando ? (
-            <>
-              <Spinner size={14} className="animate-spin" />
-              Criando cadastros...
-            </>
-          ) : (
-            <>
-              Continuar
-              <ArrowRight size={14} />
-            </>
-          )}
-        </Button>
+        <div className="flex items-center gap-2">
+          {totalPendencias > 0 && <span className="text-xs text-muted-foreground">Ainda falta decidir {totalPendencias} valor(es) acima.</span>}
+          <Button type="button" className="gap-1.5" disabled={!todasResolvidas || enviando} onClick={avancar}>
+            {enviando ? (
+              <>
+                <Spinner size={14} className="animate-spin" />
+                Criando cadastros...
+              </>
+            ) : (
+              <>
+                Continuar
+                <ArrowRight size={14} />
+              </>
+            )}
+          </Button>
+        </div>
       </div>
     </div>
   );
