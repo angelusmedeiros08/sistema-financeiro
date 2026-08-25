@@ -5,6 +5,7 @@ import { ArrowLeft, ArrowRight } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { COLUNAS_TEMPLATE_FIXAS, montarColunasTemplate, sugerirMapeamentoColunas, type ColunaTemplate } from "@/lib/pessoas/importacao/template";
 import { reparsearCsvComEncoding, type EncodingSuportado, type ResultadoParse } from "@/lib/importacao/parse";
 import { salvarCorrecoesMapeamentoAction } from "@/lib/importacao/regras-mapeamento-actions";
@@ -60,6 +61,17 @@ export function PassoMapeamento({
   }
 
   const colunasObrigatoriasFaltando = colunasTemplate.filter((c) => c.obrigatoria && mapeamento[c.chave] === undefined);
+
+  // O aviso de encoding acima ("se a prévia sair com acentos errados,
+  // troque") prometia uma prévia que nunca existiu nesta tela — o operador
+  // só via nome/documento errado bem mais tarde, na Revisão, sem nada
+  // apontando de volta pra esse seletor (achado investigando um relato de
+  // nome com acento/caractere trocado depois de preencher o modelo).
+  function valorPrevia(linha: string[], chave: ColunaChave): string {
+    const idx = mapeamento[chave];
+    return idx !== undefined ? (linha[idx] ?? "").trim() : "";
+  }
+  const previaLinhas = parseAtual.linhas.slice(0, 5);
 
   function renderSelectColuna(c: ColunaTemplate) {
     return (
@@ -143,6 +155,34 @@ export function PassoMapeamento({
 
       {colunasObrigatoriasFaltando.length > 0 && (
         <p className="text-sm text-destructive">Falta mapear: {colunasObrigatoriasFaltando.map((c) => c.rotulo).join(", ")}.</p>
+      )}
+
+      {previaLinhas.length > 0 && (
+        <div>
+          <h3 className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">Prévia (5 primeiras linhas)</h3>
+          <div className="overflow-x-auto rounded-xl border border-border">
+            <Table>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead>Nome</TableHead>
+                  <TableHead>Perfil</TableHead>
+                  <TableHead>Documento</TableHead>
+                  <TableHead>Cidade</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {previaLinhas.map((linha, i) => (
+                  <TableRow key={i}>
+                    <TableCell>{valorPrevia(linha, "nome") || "—"}</TableCell>
+                    <TableCell>{valorPrevia(linha, "perfil") || "—"}</TableCell>
+                    <TableCell>{valorPrevia(linha, "documento") || "—"}</TableCell>
+                    <TableCell>{valorPrevia(linha, "endereco_cidade") || "—"}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
       )}
 
       <div className="flex justify-between">
