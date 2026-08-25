@@ -54,18 +54,40 @@ export function PassoEntidades({
   onVoltar: () => void;
   onAvancar: (resolucoes: Record<TipoEntidadeImportacao, Map<string, ResolucaoEntidade>>, categoriasNovas: CategoriaNova[], importacaoId: string | null) => void;
 }) {
-  // Nasce assim que a etapa Cadastros abre — antes de qualquer entidade
-  // ser criada, porque a criação já precisa registrar proveniência
-  // (importacoes_entidades_criadas, Fatia 4 da spec). Se falhar, segue sem
-  // rastreamento de lote em vez de travar o usuário — desfazer depois não
-  // vai listar essa importação, mas o import em si continua funcionando.
+  // Nasce assim que a etapa Cadastros abre — antes de qualquer entidade ser
+  // criada, porque a criação já precisa registrar proveniência
+  // (importacoes_entidades_criadas, Fatia 4 da spec) e cada linha comitada
+  // mais adiante (Revisão → Importação) também depende deste id pra
+  // registrar seu próprio item. Antes, uma falha aqui deixava a importação
+  // seguir em frente sem rastreamento nenhum — lançamentos nasciam reais e
+  // visíveis, mas ninguém achava o lote na Central de Importações nem
+  // conseguia desfazê-lo depois (caso real: Erick importou, 47 lançamentos
+  // foram criados, zero linha em `importacoes`). Agora bloqueia: sem
+  // importacaoId confirmado, "Continuar" não libera.
   const [importacaoId, setImportacaoId] = useState<string | null>(null);
+  const [erroInicializacao, setErroInicializacao] = useState("");
+  const [inicializando, setInicializando] = useState(true);
+  const [tentativaInicializacao, setTentativaInicializacao] = useState(0);
   useEffect(() => {
     iniciarImportacaoFinanceiraAction({ nomeArquivo, totalLinhas: linhasBrutas.length }).then((r) => {
-      if (!("erro" in r)) setImportacaoId(r.importacaoId);
+      setInicializando(false);
+      if ("erro" in r) {
+        setErroInicializacao(r.erro);
+        return;
+      }
+      setImportacaoId(r.importacaoId);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [tentativaInicializacao]);
+
+  // Dispara pelo clique do botão "Tentar de novo" (nunca sincronamente
+  // dentro do efeito acima) — muda o estado pra "tentando" na hora e só
+  // então incrementa a dependência do efeito, que refaz a chamada.
+  function tentarNovoRastreamento() {
+    setInicializando(true);
+    setErroInicializacao("");
+    setTentativaInicializacao((t) => t + 1);
+  }
 
   // Quando a etapa Colunas foi pulada automaticamente, a tela muda de
   // conteúdo sem nenhuma ação do usuário — sem foco movido pro heading,
@@ -314,6 +336,18 @@ export function PassoEntidades({
         )}
       </div>
 
+      {erroInicializacao && (
+        <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+          <span>
+            Não foi possível preparar o rastreamento desta importação — sem isso, os lançamentos não apareceriam na Central de Importações nem
+            poderiam ser desfeitos depois. {erroInicializacao}
+          </span>
+          <Button type="button" variant="outline" size="sm" className="shrink-0" disabled={inicializando} onClick={tentarNovoRastreamento}>
+            {inicializando ? "Tentando..." : "Tentar de novo"}
+          </Button>
+        </div>
+      )}
+
       {totalPendencias > 0 && (
         <div className="sticky top-2 z-10 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl bg-amber-500/12 px-3 py-2 text-xs font-medium text-amber-800 dark:text-amber-300">
           <span className="font-bold">Falta decidir {totalPendencias}:</span>
@@ -473,7 +507,7 @@ export function PassoEntidades({
         </Button>
         <div className="flex items-center gap-2">
           {totalPendencias > 0 && <span className="text-xs text-muted-foreground">Ainda falta decidir {totalPendencias} valor(es) acima.</span>}
-          <Button type="button" className="gap-1.5" disabled={!todasResolvidas || enviando} onClick={avancar}>
+          <Button type="button" className="gap-1.5" disabled={!todasResolvidas || !importacaoId || enviando} onClick={avancar}>
             {enviando ? (
               <>
                 <Spinner size={14} className="animate-spin" />
