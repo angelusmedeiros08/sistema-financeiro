@@ -576,7 +576,7 @@ function LinhaEntidade({
 }: {
   tipo: TipoEntidadeImportacao;
   correspondencia: CorrespondenciaGenerica;
-  existentes: { id: string; nome: string }[];
+  existentes: { id: string; nome: string; tipo?: "RECEITA" | "DESPESA" }[];
   decisao: ResolucaoEntidade;
   onMudar: (decisao: ResolucaoEntidade) => void;
 }) {
@@ -590,11 +590,24 @@ function LinhaEntidade({
   }
 
   // Sugestão (se houver) primeiro na lista, sem duplicar quando ela já
-  // aparece na lista completa de existentes.
-  const opcoes = [
-    ...(correspondencia.correspondenciaId ? [{ id: correspondencia.correspondenciaId, rotulo: `Usar "${correspondencia.correspondenciaNome}"` }] : []),
-    ...existentes.filter((e) => e.id !== correspondencia.correspondenciaId).map((e) => ({ id: e.id, rotulo: e.nome })),
-  ];
+  // aparece na lista completa de existentes. Nas outras 3 dimensões
+  // (centro de custo/forma de pagamento/pessoa via LinhaEntidadePessoa)
+  // `tipo` nunca vem preenchido, então nenhuma delas ganha `grupo` — só
+  // categoria some misturada com Despesa/Receita numa lista só (achado
+  // testando ao vivo: o combobox de busca não separava por tipo, mesmo
+  // depois da seção Cadastros já separar).
+  const opcoesExistentes = existentes.filter((e) => e.id !== correspondencia.correspondenciaId);
+  const opcoes =
+    tipo === "categoria"
+      ? [
+          ...(correspondencia.correspondenciaId ? [{ id: correspondencia.correspondenciaId, rotulo: `Usar "${correspondencia.correspondenciaNome}"` }] : []),
+          ...opcoesExistentes.filter((e) => e.tipo === "DESPESA").map((e) => ({ id: e.id, rotulo: e.nome, grupo: "Despesa" })),
+          ...opcoesExistentes.filter((e) => e.tipo === "RECEITA").map((e) => ({ id: e.id, rotulo: e.nome, grupo: "Receita" })),
+        ]
+      : [
+          ...(correspondencia.correspondenciaId ? [{ id: correspondencia.correspondenciaId, rotulo: `Usar "${correspondencia.correspondenciaNome}"` }] : []),
+          ...opcoesExistentes.map((e) => ({ id: e.id, rotulo: e.nome })),
+        ];
 
   return (
     <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border/60 p-2.5">
@@ -639,7 +652,7 @@ function LinhaCategoriaNova({
   onMudar,
 }: {
   correspondencia: CorrespondenciaGenerica;
-  existentes: { id: string; nome: string }[];
+  existentes: { id: string; nome: string; tipo: "RECEITA" | "DESPESA" }[];
   decisao: ResolucaoEntidade;
   onMudar: (decisao: ResolucaoEntidade) => void;
 }) {
@@ -659,7 +672,10 @@ function LinhaCategoriaNova({
   }
 
   if (modoBusca) {
-    const opcoes = existentes.map((e) => ({ id: e.id, rotulo: e.nome }));
+    const opcoes = [
+      ...existentes.filter((e) => e.tipo === "DESPESA").map((e) => ({ id: e.id, rotulo: e.nome, grupo: "Despesa" })),
+      ...existentes.filter((e) => e.tipo === "RECEITA").map((e) => ({ id: e.id, rotulo: e.nome, grupo: "Receita" })),
+    ];
     return (
       <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border/60 p-2.5">
         <p className="min-w-32 flex-1 text-sm font-medium text-foreground">{correspondencia.valorOriginal}</p>

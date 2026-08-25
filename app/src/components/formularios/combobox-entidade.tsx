@@ -7,7 +7,15 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
 
-export type OpcaoComboboxEntidade = { id: string; rotulo: string; subtexto?: string };
+export type OpcaoComboboxEntidade = {
+  id: string;
+  rotulo: string;
+  subtexto?: string;
+  // Só categoria usa isto (Despesa/Receita) — sem grupo, a opção cai num
+  // bucket "sem cabeçalho" que sempre aparece primeiro (usado pra manter a
+  // sugestão de correspondência em destaque no topo, antes dos grupos).
+  grupo?: string;
+};
 
 export type ValorComboboxEntidade = { tipo: "existente"; id: string } | { tipo: "criar_novo"; tipoCategoriaNova?: "RECEITA" | "DESPESA" } | null;
 
@@ -66,6 +74,24 @@ export function ComboboxEntidade({
     setAberto(false);
   }
 
+  // Agrupa preservando a ordem de primeira aparição em `opcoes` — quem
+  // monta a lista decide a ordem dos grupos (ex.: Despesa antes de
+  // Receita), esta função só particiona sem reordenar. Item sem `grupo`
+  // (chave null) forma seu próprio bucket, útil pra manter a sugestão de
+  // correspondência sempre em primeiro, fora de qualquer cabeçalho.
+  const gruposOrdenados: { grupo: string | null; itens: OpcaoComboboxEntidade[] }[] = [];
+  {
+    const porGrupo = new Map<string | null, OpcaoComboboxEntidade[]>();
+    for (const o of filtradas) {
+      const chave = o.grupo ?? null;
+      if (!porGrupo.has(chave)) {
+        porGrupo.set(chave, []);
+        gruposOrdenados.push({ grupo: chave, itens: porGrupo.get(chave)! });
+      }
+      porGrupo.get(chave)!.push(o);
+    }
+  }
+
   return (
     <Popover open={aberto} onOpenChange={setAberto}>
       <PopoverTrigger asChild>
@@ -86,18 +112,22 @@ export function ComboboxEntidade({
           <CommandInput placeholder="Buscar um cadastro existente..." value={busca} onValueChange={setBusca} />
           <CommandList>
             {filtradas.length === 0 && !busca && <CommandEmpty>Nenhum cadastro ainda.</CommandEmpty>}
-            <CommandGroup>
-              {filtradas.map((o) => (
-                <CommandItem key={o.id} value={o.id} onSelect={() => escolherExistente(o.id)}>
-                  <span className="flex flex-1 items-center gap-1.5 truncate">
-                    {valor?.tipo === "existente" && valor.id === o.id && <Check size={14} />}
-                    <span className="flex flex-col truncate">
-                      <span className="truncate">{o.rotulo}</span>
-                      {o.subtexto && <span className="text-[10px] text-muted-foreground">{o.subtexto}</span>}
+            {gruposOrdenados.map(({ grupo, itens }) => (
+              <CommandGroup key={grupo ?? "__sem_grupo__"} heading={grupo ?? undefined}>
+                {itens.map((o) => (
+                  <CommandItem key={o.id} value={o.id} onSelect={() => escolherExistente(o.id)}>
+                    <span className="flex flex-1 items-center gap-1.5 truncate">
+                      {valor?.tipo === "existente" && valor.id === o.id && <Check size={14} />}
+                      <span className="flex flex-col truncate">
+                        <span className="truncate">{o.rotulo}</span>
+                        {o.subtexto && <span className="text-[10px] text-muted-foreground">{o.subtexto}</span>}
+                      </span>
                     </span>
-                  </span>
-                </CommandItem>
-              ))}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            ))}
+            <CommandGroup>
               {acoesCriar.map((acao) => (
                 <CommandItem key={acao.rotulo} value={`__criar__${acao.rotulo}`} onSelect={() => escolherCriar(acao)}>
                   {valor?.tipo === "criar_novo" && valor.tipoCategoriaNova === acao.tipoCategoriaNova && <Check size={14} />}
