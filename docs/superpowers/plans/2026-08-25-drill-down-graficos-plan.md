@@ -55,6 +55,12 @@ Achada testando a Fatia 4 ao vivo, não em brainstorming — dois ajustes no que
 2. **Rótulo da fatia "Outras" corrigido.** Pegava o nome do primeiro registro (`baixas[0].formas_pagamento?.nome`) em vez de reconhecer agregado — "Cartão" sozinho escondia que a lista misturava Cartão + Cartão de Crédito. Corrigido nas 3 funções de `lancamentos-filtrados.ts`: checar `valor.length > 1` antes de olhar qualquer nome.
 3. **Período com ano ambíguo.** A janela de 12 meses da Concentração de Receita podia mostrar "26 de ago. – 26 de ago." (mesmo dia/mês, anos diferentes escondidos) — `formatarDataComAno` novo em `lib/formatacao.ts` pro chip de período de `/lancamentos`.
 
+## Fatia 5 — 2ª leva: Centro de Custo, Orçado×Realizado, Análise de Despesas
+
+**Concluída (26/08/2026).** `montarHrefLancamentos`/`FiltroLancamentos` ganharam `tipo` (RECEITA/DESPESA) opcional — Centro de Custo precisa disso porque Saldo é `entradas−saídas` (subtração, sem lista própria); só Entradas e Saídas, cada uma sozinha, têm link (`centro-custo-tabela.tsx`, uma célula-link cada, `hoverLinha={false}` em `TabelaLista` pra não sugerir linha inteira clicável). Orçado×Realizado: só "Realizado" (`orcado-realizado-barras.tsx`) é link — "Previsto" é meta cadastrada à mão, sem lançamento por trás. Análise de Despesas (curva ABC): zero mudança de backend, `href` já existia desde a Fatia 4 — só `linkPara` na tabela.
+
+_Teste:_ 2 revisões de código independentes em paralelo (financeiro/segurança + regressão/UX) — nenhum bug financeiro/tenant/repetição dos padrões já catalogados. 2 achados de polimento corrigidos: rótulo "-" em entidade real com zero lançamentos (agora resolve o nome sempre), hover de linha inteira em tabela com clique só parcial (nova prop `hoverLinha`). Testado ao vivo depois: Entradas/Saídas batendo exato com a origem, período sem movimento mostrando o nome real, hover ausente em `centro-custo-tabela.tsx` e intacto no resto do sistema.
+
 ## Fora de escopo (herdado da spec)
 
-Centro de Custo, Orçado×Realizado e os demais gráficos de barra/pizza por entidade — mesmo contrato (`DestinoDrillDown` + helper da Fatia 1), documentados como 2ª leva, não construídos neste plano. Waterfall do DRE e gráficos de série temporal (linha/área por período) ficam de fora — não representam uma entidade única por ponto clicado, precisam de uma decisão própria não coberta na spec.
+Bucket "Sem centro de custo" (`hrefEntradas`/`hrefSaidas` cobrem só ids reais) e os demais gráficos de barra/pizza por entidade que ainda restarem ficam pra uma eventual 3ª leva, se surgir necessidade. Waterfall do DRE e gráficos de série temporal (linha/área por período) ficam de fora — não representam uma entidade única por ponto clicado, precisam de uma decisão própria não coberta na spec.

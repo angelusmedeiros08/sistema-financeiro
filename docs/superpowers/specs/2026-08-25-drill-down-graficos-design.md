@@ -45,7 +45,7 @@ Verificar ao vivo no navegador, pros 3 gráficos da 1ª leva: clicar em cada fat
 
 ## Escopo
 
-Nesta rodada: os 3 gráficos da 1ª leva (Distribuição por Forma de Pagamento, Concentração de Receita, Top Categorias) + a tela nova `/lancamentos`. Centro de Custo, Orçado×Realizado e os demais gráficos por entidade ficam documentados pra uma 2ª leva, usando o mesmo contrato (`montarHrefLancamentos` + tipo `TipoEntidadeDrillDown`) — não são construídos agora. Waterfall do DRE e gráficos de série temporal (linha/área por período) ficam fora de escopo neste desenho: não representam uma entidade única por ponto clicado, precisariam de uma decisão própria (o que significa "clicar num mês"?) que não foi discutida aqui.
+1ª rodada: os 3 gráficos da 1ª leva (Distribuição por Forma de Pagamento, Concentração de Receita, Top Categorias) + a tela nova `/lancamentos`. 2ª leva (Centro de Custo, Orçado×Realizado, Análise de Despesas/curva ABC) entregue depois, ver seção própria abaixo. Waterfall do DRE e gráficos de série temporal (linha/área por período) continuam fora de escopo: não representam uma entidade única por ponto clicado, precisariam de uma decisão própria (o que significa "clicar num mês"?) que não foi discutida aqui.
 
 ## Correção pós-implementação
 
@@ -65,3 +65,17 @@ Pedido do usuário depois da Fatia 4 no ar: "revisa o que já está no ar antes 
 - **Botão "Voltar" aceitava qualquer URL** no parâmetro `?voltar=`, inclusive externa (risco de phishing/open redirect). Agora só aceita caminho interno.
 
 Tudo testado ao vivo depois das correções, sem regressão nos fluxos já validados na primeira rodada.
+
+## 2ª leva
+
+Entregue em 26/08/2026: Centro de Custo (`/relatorios/centro-custo`), Orçado×Realizado (`/orcamento?aba=comparativo`) e Análise de Despesas/curva ABC (`/relatorios/despesas`).
+
+**Peça nova**: `montarHrefLancamentos` e `FiltroLancamentos` ganharam `tipo` (RECEITA/DESPESA) opcional — generaliza o que antes era um hardcode só pra pessoa (Concentração de Receita só soma RECEITA). Necessário porque **saldo de centro de custo é `entradas − saídas`, uma subtração sem lista de lançamentos correspondente** — só Entradas e Saídas, cada uma sozinha, têm um total real que bate com uma lista filtrada. Cada uma virou um link independente (`tipo: "RECEITA"` / `"DESPESA"`), não a linha inteira.
+
+Mesma lógica se aplica a Orçado×Realizado: só a barra "Realizado" (soma de `buscarMovimento`) tem lançamentos reais atrás; "Previsto" é meta cadastrada à mão (tabela `orcamentos`), não existe lançamento nenhum pra mostrar — fica sem link, de propósito. Análise de Despesas (curva ABC) não precisou de nada novo — já usa `buscarAnaliseCategorias`, que ganhou `href` por linha desde a Fatia 4; só faltava ligar `linkPara` na tabela.
+
+**Revisão de código** (2 agentes independentes em paralelo, focos diferentes — financeiro/segurança um, regressão/UX o outro): nenhum bug financeiro, de tenant ou repetição dos 5 padrões já catalogados acima. Dois achados de polimento, corrigidos no mesmo commit seguinte:
+- Rótulo mostrava "Lançamentos em -" quando uma entidade real tinha zero lançamentos no filtro (ex.: Entradas de um centro que só teve despesa) — nome agora resolvido sempre, não só quando há resultado.
+- `TabelaLista` aplicava o realce de "linha inteira clicável" mesmo em `CentroCustoTabela`, que só tem 2 de 5 colunas realmente clicáveis (Entradas/Saídas, via link próprio por célula, não `linkPara`) — affordance enganosa. Nova prop `hoverLinha` (default `true`, sem mudança em nenhuma tabela existente) desliga isso onde a linha não é uniformemente clicável.
+
+Centro de Custo (bucket "Sem centro de custo") e os demais gráficos de barra/pizza por entidade que ainda restam ficam pra uma eventual 3ª leva, se surgir necessidade — o contrato já suporta.
