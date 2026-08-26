@@ -7,6 +7,8 @@ Ordem por dependência: primeiro o helper que decide "pra onde vai cada clique" 
 
 ## Fatia 1 — Helper central de drill-down
 
+**Concluída.**
+
 Criar `src/lib/relatorios/drill-down.ts`, exportando uma função que recebe `{ tenantId, tipoEntidade: "pessoa" | "categoria" | "forma_pagamento" | "centro_custo", entidadeId: string | string[] | null, periodoInicio, periodoFim }` e devolve o `DestinoDrillDown` (`{ tipo: "pessoa", href }` ou `{ tipo: "lancamentos", href }`) definido na spec.
 
 - `tipoEntidade: "pessoa"` consulta o perfil da pessoa (reaproveitar a busca já existente em `lib/pessoas/buscar-pessoa.ts`) pra decidir `/clientes/[id]` vs `/fornecedores/[id]`.
@@ -18,6 +20,8 @@ _Depende de:_ nada.
 _Teste:_ chamada direta da função com os 5 casos (pessoa cliente, pessoa fornecedor, categoria única, lista "Outras", `null`), conferindo o href exato de cada um.
 
 ## Fatia 2 — Tela nova `/lancamentos`
+
+**Concluída.**
 
 Nova função de busca (`src/lib/relatorios/lancamentos-filtrados.ts` ou junto de `regime.ts`) que aceita os filtros da Fatia 1 (`categoria_id`, `forma_pagamento_id`, `centro_custo_id`, período, aceitando lista e `nenhuma`) e devolve os lançamentos + um resumo (total em R$, contagem, rótulo pro cabeçalho — ex.: "Pix").
 
@@ -31,21 +35,25 @@ _Teste:_ acessar a URL manualmente com cada combinação de filtro (categoria, f
 
 ## Fatia 3 — Botão de voltar no extrato de pessoa
 
-`/clientes/[id]` e `/fornecedores/[id]` ganham o mesmo botão fixo "← Voltar pro relatório" quando `?voltar=` está presente na URL — nenhuma outra mudança na página.
-
-_Depende de:_ nada — pode rodar em paralelo com a Fatia 2.
-_Teste:_ acessar `/clientes/[id]?voltar=/indicadores`, confirmar que o botão aparece e leva de volta pra `/indicadores`; sem o parâmetro, a página fica exatamente como está hoje.
+**Concluída, depois revertida** — ver "Correção pós-implementação" no fim deste plano e na spec. `/clientes/[id]` e `/fornecedores/[id]` ganharam o botão fixo "← Voltar pro relatório" quando `?voltar=` estava presente, testado nos dois casos (com e sem parâmetro) — mas ficou sem uso quando a Fatia 4 revelou, ao vivo, que pessoa não devia ir pro extrato. As duas páginas e `detalhe-pessoa.tsx` voltaram ao estado de antes desta fatia.
 
 ## Fatia 4 — Conectar os 3 gráficos da 1ª leva
 
-Estender `buscarDistribuicaoFormaPagamento`, `buscarConcentracaoReceita` e a função por trás de Top Categorias (`buscarAnaliseCategorias`) pra cada linha incluir o `href` calculado via helper da Fatia 1 (a função já sabe `tenantId`/período/id da entidade — só precisa parar de descartar isso antes de devolver).
+**Concluída**, com uma correção de design no meio do caminho — ver "Correção pós-implementação" abaixo.
 
-`TopCategoriasDonut` (componente único por trás dos 3 usos — forma de pagamento e concentração em `indicadores/page.tsx`, categoria em `visao-geral/page.tsx`): a função interna `agregarFatias` para de descartar o id/href; `onClick` no mesmo `<path>` que já recebe `onMouseMove` faz `router.push(fatia.href)`. **Nenhuma mudança visual** — cor, legenda, ângulo mínimo de fatia, tudo como está hoje.
+Estendidas `buscarDistribuicaoFormaPagamento`, `buscarConcentracaoReceita` e `buscarAnaliseCategorias` (Top Categorias) pra cada linha incluir o `href` calculado via helper da Fatia 1. `TopCategoriasDonut` (componente único por trás dos 3 usos — forma de pagamento e concentração em `indicadores/page.tsx`, categoria em `visao-geral/page.tsx`) ficou "burro": a função interna `agregarFatias` para de descartar o id/href; `onClick` no mesmo `<path>` que já recebe `onMouseMove` faz `router.push(fatia.href)`. Nenhuma mudança visual — cor, legenda, ângulo mínimo de fatia, tudo como estava.
 
-_Depende de:_ Fatia 1, Fatia 2 (destino "lancamentos" precisa existir) e Fatia 3 (destino "pessoa" precisa aceitar o botão de voltar).
-_Teste:_ ao vivo no navegador, nos 3 gráficos — clicar em cada fatia nomeada, em "Outras" e em "Não informado"/"Sem pessoa"; confirmar destino certo, total da lista batendo com o valor da fatia, e o botão de voltar funcionando mesmo depois de um F5 na tela de destino.
+_Teste:_ ao vivo no navegador (tenant Angelus Martiniano, dado real) — pessoa única (fransciso, R$150.000,00), forma de pagamento nomeada (Dinheiro, Pix), "Não informado" (R$80.680,50, 8 pagamentos), fatia "Outras" em forma de pagamento (Cartão+Cartão de Crédito, R$25.159,00) e em categoria (R$90.723,00, 33 lançamentos), link de linha por tipo RECEITA/DESPESA, botão de voltar preservando os filtros de regime/período/granularidade da Visão Geral. Todos batendo exato com o banco depois das correções abaixo.
 
 ---
+
+## Correção pós-implementação
+
+Achada testando a Fatia 4 ao vivo, não em brainstorming — dois ajustes no que já tinha sido desenhado:
+
+1. **Pessoa não vai mais pro extrato dela.** A decisão original (Fatia 3) parecia certa na maquete, mas pousar na tela de **cadastro** (Nome/CPF/Perfis) não é "ver as situações da pessoa". Revertido: pessoa cai em `/lancamentos?pessoa_id=...` igual às outras 3 dimensões — `DestinoDrillDown`/`resolverDestinoDrillDown`/`hrefDoExtratoPessoa` saíram do `drill-down.ts`, sobrou só `montarHrefLancamentos` (síncrono, sem consulta ao banco nenhuma). A Fatia 3 (botão de voltar no extrato) foi revertida junto, por ficar sem uso.
+2. **Rótulo da fatia "Outras" corrigido.** Pegava o nome do primeiro registro (`baixas[0].formas_pagamento?.nome`) em vez de reconhecer agregado — "Cartão" sozinho escondia que a lista misturava Cartão + Cartão de Crédito. Corrigido nas 3 funções de `lancamentos-filtrados.ts`: checar `valor.length > 1` antes de olhar qualquer nome.
+3. **Período com ano ambíguo.** A janela de 12 meses da Concentração de Receita podia mostrar "26 de ago. – 26 de ago." (mesmo dia/mês, anos diferentes escondidos) — `formatarDataComAno` novo em `lib/formatacao.ts` pro chip de período de `/lancamentos`.
 
 ## Fora de escopo (herdado da spec)
 
