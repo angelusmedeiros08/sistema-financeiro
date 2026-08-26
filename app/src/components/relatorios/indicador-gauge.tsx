@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { ArrowRight } from "@phosphor-icons/react/dist/ssr";
 import { Pie } from "@visx/shape";
 import { Group } from "@visx/group";
 import { formatarMesAbreviado, formatarPercentual } from "@/lib/formatacao";
@@ -38,11 +40,14 @@ export function IndicadorGauge({
   valor,
   invertido = false,
   serie,
+  href,
 }: {
   rotulo: string;
   valor: number;
   invertido?: boolean;
   serie?: PontoSerieGauge[];
+  // Card vira link pra Contas a Receber/Pagar — mesmo padrão de `StatCard`.
+  href?: string;
 }) {
   const percentualClamp = Math.max(0, Math.min(1, valor));
   const cor = corDaZona(percentualClamp, invertido);
@@ -53,8 +58,8 @@ export function IndicadorGauge({
     { chave: "resto", total: 1 - percentualClamp, cor: "var(--muted)" },
   ];
 
-  return (
-    <div className="flex items-center gap-4 rounded-2xl bg-card p-4 shadow-card">
+  const conteudo = (
+    <>
       <svg width={72} height={72} className="shrink-0">
         <Group top={36} left={36}>
           <Pie
@@ -102,6 +107,24 @@ export function IndicadorGauge({
           </div>
         </div>
       )}
-    </div>
+
+      {href && (
+        <ArrowRight
+          size={14}
+          weight="bold"
+          className="absolute right-3 bottom-3 text-muted-foreground opacity-0 transition-opacity group-hover/gauge:opacity-100 group-focus-visible/gauge:opacity-100"
+        />
+      )}
+    </>
   );
+
+  if (href) {
+    return (
+      <Link href={href} className="group/gauge relative flex items-center gap-4 rounded-2xl bg-card p-4 shadow-card transition-shadow hover:shadow-lg">
+        {conteudo}
+      </Link>
+    );
+  }
+
+  return <div className="group/gauge relative flex items-center gap-4 rounded-2xl bg-card p-4 shadow-card">{conteudo}</div>;
 }
