@@ -1,7 +1,7 @@
 import type { Cliente } from "./regime";
 
-// Janela do mês corrente (UTC) — mesmo recorte usado pelo Painel pra
-// "resultado do mês" (painel/dados.ts:inicioDoMes), só que também precisa
+// Janela do mês corrente (UTC) — mesmo recorte que `obterResultadoDoMes` e
+// `obterRecebidoPagoDoMes` usam (painel/dados.ts), só que também precisa
 // do último dia aqui.
 export function mesAtual(): { inicio: string; fim: string } {
   const hoje = new Date();

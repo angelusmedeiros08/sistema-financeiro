@@ -140,33 +140,35 @@ export type PontoFluxo = { mes: string; receitas: number; despesas: number };
 // (FiraCast, FinEz: duas áreas sobrepostas, uma por fluxo bruto, não uma
 // barra de resultado líquido). "resultado" de qualquer ponto = receitas -
 // despesas, derivado onde precisar, não guardado solto.
+//
+// Reaproveita `buscarMovimento` (mesmo motivo de `obterResultadoDoMes`,
+// achado na mesma revisão): a query antiga somava `eventos_financeiros.
+// valor_total` direto, sem excluir parcela cancelada nem evento estornado —
+// confirmado ao vivo que isso inflava o gráfico de Fluxo de caixa (e o
+// sparkline de Saldo em caixa, que deriva dele via `reconstruirSerieSaldo`)
+// pra a casa dos bilhões num tenant de teste com um evento estornado gigante.
 async function obterFluxoUltimosMeses(
   supabase: Cliente,
   tenantId: string,
   quantidadeMeses: number,
   pessoaId?: string,
 ): Promise<PontoFluxo[]> {
-  let query = supabase
-    .from("eventos_financeiros")
-    .select("tipo, valor_total, data_competencia")
-    .eq("tenant_id", tenantId)
-    .gte("data_competencia", inicioDoMes(-(quantidadeMeses - 1)));
-
-  if (pessoaId) query = query.eq("pessoa_id", pessoaId);
-
-  const { data } = await query;
+  const dataInicio = inicioDoMes(-(quantidadeMeses - 1));
+  const dataFim = mesAtual().fim;
+  const movimento = await buscarMovimento(supabase, { tenantId, regime: "competencia", dataInicio, dataFim });
+  const filtrado = pessoaId ? movimento.filter((m) => m.pessoaId === pessoaId) : movimento;
 
   const porMes = new Map<string, { receitas: number; despesas: number }>();
   for (let i = quantidadeMeses - 1; i >= 0; i--) {
     porMes.set(inicioDoMes(-i).slice(0, 7), { receitas: 0, despesas: 0 });
   }
 
-  for (const evento of data ?? []) {
-    const chave = evento.data_competencia.slice(0, 7);
+  for (const m of filtrado) {
+    const chave = m.data.slice(0, 7);
     const bucket = porMes.get(chave);
     if (!bucket) continue;
-    if (evento.tipo === "RECEITA") bucket.receitas += Number(evento.valor_total);
-    else bucket.despesas += Number(evento.valor_total);
+    if (m.tipo === "RECEITA") bucket.receitas += m.valor;
+    else bucket.despesas += m.valor;
   }
 
   const nomesMes = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
