@@ -14,6 +14,10 @@ type EventoLinha = {
   valor_total: number;
   parcelas: { status: string; data_vencimento: string }[] | null;
   rateio_categoria: { categorias_financeiras: { nome: string } | null }[] | null;
+  // Só usado quando a tabela mistura receita e despesa na mesma lista (tela
+  // de Lançamentos filtrados) — Despesas/Receitas nunca precisam disso,
+  // já sabem o tipo pelo `caminhoBase` fixo.
+  tipo?: "RECEITA" | "DESPESA";
 };
 
 const helper = criarColunaLista<EventoLinha>();
@@ -92,14 +96,11 @@ export function TabelaEventos({
     return <EstadoVazio texto={textoVazio} />;
   }
 
-  return (
-    <TabelaLista
-      titulo={titulo}
-      data={eventos}
-      columns={colunas}
-      busca={false}
-      textoVazio={textoVazio}
-      linkPara={caminhoBase ? (e) => `/${caminhoBase}/${e.id}` : undefined}
-    />
-  );
+  const linkPara = caminhoBase
+    ? (e: EventoLinha) => `/${caminhoBase}/${e.id}`
+    : eventos[0].tipo
+      ? (e: EventoLinha) => `/${e.tipo === "RECEITA" ? "receitas" : "despesas"}/${e.id}`
+      : undefined;
+
+  return <TabelaLista titulo={titulo} data={eventos} columns={colunas} busca={false} textoVazio={textoVazio} linkPara={linkPara} />;
 }
