@@ -112,6 +112,19 @@ export function ComboboxEntidade({
           <CommandInput placeholder="Buscar um cadastro existente..." value={busca} onValueChange={setBusca} />
           <CommandList>
             {filtradas.length === 0 && !busca && <CommandEmpty>Nenhum cadastro ainda.</CommandEmpty>}
+            {/* Criar sempre primeiro — o comentário desta função já dizia isso
+                ("nunca no fim de uma lista alfabética"), mas o grupo vinha
+                depois de todos os existentes, obrigando rolar a lista inteira
+                pra achar (achado pelo usuário ao vivo). */}
+            <CommandGroup>
+              {acoesCriar.map((acao) => (
+                <CommandItem key={acao.rotulo} value={`__criar__${acao.rotulo}`} onSelect={() => escolherCriar(acao)}>
+                  {valor?.tipo === "criar_novo" && valor.tipoCategoriaNova === acao.tipoCategoriaNova && <Check size={14} />}
+                  <Plus size={14} />
+                  {acao.rotulo}
+                </CommandItem>
+              ))}
+            </CommandGroup>
             {gruposOrdenados.map(({ grupo, itens }) => (
               <CommandGroup key={grupo ?? "__sem_grupo__"} heading={grupo ?? undefined}>
                 {itens.map((o) => (
@@ -127,15 +140,6 @@ export function ComboboxEntidade({
                 ))}
               </CommandGroup>
             ))}
-            <CommandGroup>
-              {acoesCriar.map((acao) => (
-                <CommandItem key={acao.rotulo} value={`__criar__${acao.rotulo}`} onSelect={() => escolherCriar(acao)}>
-                  {valor?.tipo === "criar_novo" && valor.tipoCategoriaNova === acao.tipoCategoriaNova && <Check size={14} />}
-                  <Plus size={14} />
-                  {acao.rotulo}
-                </CommandItem>
-              ))}
-            </CommandGroup>
           </CommandList>
         </Command>
       </PopoverContent>
