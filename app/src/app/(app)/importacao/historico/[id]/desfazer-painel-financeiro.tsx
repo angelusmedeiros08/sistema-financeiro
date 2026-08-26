@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Trash, Warning } from "@phosphor-icons/react";
+import { Spinner, Trash, Warning } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { preverDesfazerImportacaoFinanceiraAction, desfazerImportacaoFinanceiraAction } from "../actions";
@@ -101,6 +101,12 @@ export function DesfazerPainelFinanceiro({ importacaoId }: { importacaoId: strin
             Cancelar
           </Button>
         </div>
+        {rodando && (
+          <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Spinner size={12} className="shrink-0 animate-spin" />
+            Isso pode levar alguns segundos. Não feche nem saia desta página até terminar.
+          </p>
+        )}
       </div>
     );
   }
