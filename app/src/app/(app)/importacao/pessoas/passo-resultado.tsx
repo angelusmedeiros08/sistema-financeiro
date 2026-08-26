@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { CheckCircle, DownloadSimple, XCircle } from "@phosphor-icons/react";
+import { CheckCircle, DownloadSimple, Spinner, XCircle } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { baixarArquivoTexto } from "@/lib/importacao/download";
 import { COLUNAS_TEMPLATE_FIXAS } from "@/lib/pessoas/importacao/template";
@@ -50,7 +50,6 @@ export function PassoResultado({ linhas, nomeArquivo, onReiniciar }: { linhas: L
 
   const sucessos = resultados.filter((r) => r.sucesso).length;
   const falhas = resultados.filter((r) => !r.sucesso);
-  const percentual = fase === "concluido" ? 100 : 0;
   const terminou = fase === "concluido";
 
   // Reconstrói a linha a partir dos campos já normalizados (não guardamos o
@@ -99,12 +98,20 @@ export function PassoResultado({ linhas, nomeArquivo, onReiniciar }: { linhas: L
     <div className="flex flex-col gap-6 rounded-2xl bg-card shadow-card p-6">
       <div>
         <h2 className="text-sm font-bold text-foreground">4. Importando</h2>
-        <p className="mt-1 text-sm text-muted-foreground">{terminou ? "Importação concluída." : "Processando..."}</p>
+        <p className="mt-1 text-sm text-muted-foreground">{terminou ? "Importação concluída." : "Processando as linhas."}</p>
       </div>
 
-      <div className="h-2 overflow-hidden rounded-full bg-muted">
-        <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${percentual}%` }} />
-      </div>
+      {!terminou && (
+        <div className="flex items-center gap-3 rounded-xl bg-muted/40 p-4">
+          <Spinner size={20} className="shrink-0 animate-spin text-muted-foreground" />
+          <div>
+            <p className="text-sm font-medium text-foreground">
+              Importando {linhas.length} pessoa{linhas.length === 1 ? "" : "s"}...
+            </p>
+            <p className="text-xs text-muted-foreground">Isso pode levar alguns segundos. Não feche nem saia desta página até terminar.</p>
+          </div>
+        </div>
+      )}
 
       {terminou && (
         <>

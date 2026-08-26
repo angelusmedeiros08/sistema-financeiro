@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { CheckCircle, DownloadSimple, XCircle } from "@phosphor-icons/react";
+import { CheckCircle, DownloadSimple, Spinner, XCircle } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { baixarArquivoTexto } from "@/lib/importacao/download";
 import { COLUNAS_TEMPLATE } from "@/lib/importacao/template";
@@ -71,7 +71,6 @@ export function PassoResultado({
 
   const sucessos = resultados.filter((r) => r.sucesso).length;
   const falhas = resultados.filter((r) => !r.sucesso);
-  const percentual = concluido ? 100 : 0;
 
   function baixarErros() {
     const cabecalho = COLUNAS_TEMPLATE.map((c) => c.rotulo).join(";") + ";Motivo do erro";
@@ -98,12 +97,20 @@ export function PassoResultado({
     <div className="flex flex-col gap-6 rounded-2xl bg-card shadow-card p-6">
       <div>
         <h2 className="text-sm font-bold text-foreground">5. Importando</h2>
-        <p className="mt-1 text-sm text-muted-foreground">{concluido ? "Importação concluída." : "Processando..."}</p>
+        <p className="mt-1 text-sm text-muted-foreground">{concluido ? "Importação concluída." : "Processando as linhas."}</p>
       </div>
 
-      <div className="h-2 overflow-hidden rounded-full bg-muted">
-        <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${percentual}%` }} />
-      </div>
+      {!concluido && (
+        <div className="flex items-center gap-3 rounded-xl bg-muted/40 p-4">
+          <Spinner size={20} className="shrink-0 animate-spin text-muted-foreground" />
+          <div>
+            <p className="text-sm font-medium text-foreground">
+              Importando {linhas.length} lançamento{linhas.length === 1 ? "" : "s"}...
+            </p>
+            <p className="text-xs text-muted-foreground">Isso pode levar alguns segundos. Não feche nem saia desta página até terminar.</p>
+          </div>
+        </div>
+      )}
 
       {erroGeral && <p className="text-sm text-destructive">Falha ao importar: {erroGeral}</p>}
 
