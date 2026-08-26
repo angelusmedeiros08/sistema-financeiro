@@ -74,7 +74,7 @@ export default async function PaginaIndicadores() {
 
       <section className="rounded-2xl bg-card shadow-card p-6">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <h2 className="font-heading text-base font-bold text-foreground">Estou ficando sem caixa?</h2>
+          <h2 className="font-heading text-base font-bold text-foreground">Saldo projetado</h2>
           {projecaoD7?.ruptura && <BadgeRupturaSaldo saldoD7={projecaoD7.saldo} />}
         </div>
         <CardSaldoProjetado {...saldoProjetado} pontos={serieSaldo.pontos} />
@@ -82,7 +82,7 @@ export default async function PaginaIndicadores() {
 
       <section className="rounded-2xl bg-card shadow-card p-6">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <h2 className="font-heading text-base font-bold text-foreground">Meu risco está concentrado?</h2>
+          <h2 className="font-heading text-base font-bold text-foreground">Concentração de receita</h2>
           <BadgeRiscoConcentracao nivelRisco={concentracao.nivelRisco} percentualTop3={concentracao.percentualTop3} />
         </div>
         <TopCategoriasDonut
@@ -98,7 +98,7 @@ export default async function PaginaIndicadores() {
       </section>
 
       <section className="rounded-2xl bg-card shadow-card p-6">
-        <h2 className="mb-4 font-heading text-base font-bold text-foreground">Onde meu dinheiro está indo?</h2>
+        <h2 className="mb-4 font-heading text-base font-bold text-foreground">Variação de categorias</h2>
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <ListaVariacaoCategorias titulo="Receitas — maior variação vs. mês anterior" linhas={variacaoReceitas} />
           <ListaVariacaoCategorias titulo="Despesas — maior variação vs. mês anterior" linhas={variacaoDespesas} />
@@ -106,7 +106,7 @@ export default async function PaginaIndicadores() {
       </section>
 
       <section className="rounded-2xl bg-card shadow-card p-6">
-        <h2 className="mb-4 font-heading text-base font-bold text-foreground">Quem não paga em dia, e pra quem eu devo?</h2>
+        <h2 className="mb-4 font-heading text-base font-bold text-foreground">Prazos médios e aging</h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <CardPrazoMedio titulo="Prazo médio de recebimento (PMR)" dias={pmr.dias} quantidadeBaixas={pmr.quantidadeBaixas} />
           <CardPrazoMedio titulo="Prazo médio de pagamento (PMP)" dias={pmp.dias} quantidadeBaixas={pmp.quantidadeBaixas} />
@@ -118,7 +118,7 @@ export default async function PaginaIndicadores() {
       </section>
 
       <section className="rounded-2xl bg-card shadow-card p-6">
-        <h2 className="mb-4 font-heading text-base font-bold text-foreground">Como me pagam?</h2>
+        <h2 className="mb-4 font-heading text-base font-bold text-foreground">Distribuição por forma de pagamento</h2>
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <TopCategoriasDonut
             titulo="Distribuição por forma de pagamento (últimos 6 meses)"
