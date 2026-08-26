@@ -55,6 +55,48 @@ export async function importarLinhaPessoaAction(
   return resultado;
 }
 
+export type ResultadoLinhaImportacaoPessoa = { sucesso: boolean; erro?: string };
+
+// Roda o lote inteiro dentro de UMA Server Action, do início ao fim, no
+// servidor — antes, o cliente orquestrava a sequência (iniciar → uma ação
+// por linha, num loop → finalizar) e só ele sabia quando tinha terminado.
+// Se o usuário saísse da tela no meio, o loop ficava rodando escondido ou
+// parava pela metade sem nunca finalizar, deixando o lote travado em
+// "em_andamento" pra sempre. Ver spec 2026-08-26-importacao-execucao-
+// servidor. Reaproveita as 3 ações já existentes (iniciar/por linha/
+// finalizar) por dentro — chamada função-a-função, sem round-trip de rede
+// nenhum entre elas, já que tudo roda dentro desta mesma requisição.
+export async function executarImportacaoPessoasAction(
+  nomeArquivo: string,
+  linhas: (ParametrosImportarLinhaPessoa & { linhaNumero: number })[],
+): Promise<{ importacaoId: string; resultados: ResultadoLinhaImportacaoPessoa[] } | { erro: string }> {
+  const inicio = await iniciarImportacaoPessoasAction(nomeArquivo, linhas);
+  if ("erro" in inicio) return inicio;
+
+  const resultados: ResultadoLinhaImportacaoPessoa[] = [];
+  for (const item of linhas) {
+    const itemId = inicio.itensPorLinha[item.linhaNumero];
+    const resultado = await importarLinhaPessoaAction(itemId, {
+      acao: item.acao,
+      pessoaIdExistente: item.pessoaIdExistente,
+      permitirAtualizarNome: item.permitirAtualizarNome,
+      nome: item.nome,
+      documento: item.documento,
+      natureza: item.natureza,
+      email: item.email,
+      telefone: item.telefone,
+      perfisNovos: item.perfisNovos,
+      campos_personalizados: item.campos_personalizados,
+      endereco: item.endereco,
+      contato: item.contato,
+    });
+    resultados.push("erro" in resultado ? { sucesso: false, erro: resultado.erro } : { sucesso: true });
+  }
+
+  await finalizarImportacaoPessoasAction(inicio.importacao_id, "concluida");
+  return { importacaoId: inicio.importacao_id, resultados };
+}
+
 export async function finalizarImportacaoPessoasAction(importacaoId: string, status: "concluida" | "cancelada"): Promise<{ sucesso: true } | { erro: string }> {
   const contexto = await obterUsuarioETenantAtual();
   if ("erro" in contexto) return { erro: contexto.erro };

@@ -2,23 +2,21 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { CheckCircle, DownloadSimple, StopCircle, XCircle } from "@phosphor-icons/react";
+import { CheckCircle, DownloadSimple, XCircle } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { baixarArquivoTexto } from "@/lib/importacao/download";
 import { COLUNAS_TEMPLATE_FIXAS } from "@/lib/pessoas/importacao/template";
-import { iniciarImportacaoPessoasAction, importarLinhaPessoaAction, finalizarImportacaoPessoasAction, revalidarPosImportacaoPessoasAction } from "./actions";
+import { executarImportacaoPessoasAction, revalidarPosImportacaoPessoasAction } from "./actions";
 import type { LinhaPronta } from "./passo-revisao";
 
 type ResultadoLinha = { linha: LinhaPronta; sucesso: boolean; erro?: string };
-type Fase = "iniciando" | "executando" | "concluido" | "cancelado" | "erro-fatal";
+type Fase = "executando" | "concluido" | "erro-fatal";
 
 export function PassoResultado({ linhas, nomeArquivo, onReiniciar }: { linhas: LinhaPronta[]; nomeArquivo: string; onReiniciar: () => void }) {
-  const [feitos, setFeitos] = useState(0);
   const [resultados, setResultados] = useState<ResultadoLinha[]>([]);
-  const [fase, setFase] = useState<Fase>("iniciando");
+  const [fase, setFase] = useState<Fase>("executando");
   const [erroFatal, setErroFatal] = useState("");
   const [importacaoId, setImportacaoId] = useState<string | null>(null);
-  const canceladoRef = useRef(false);
   const iniciado = useRef(false);
 
   useEffect(() => {
@@ -26,63 +24,34 @@ export function PassoResultado({ linhas, nomeArquivo, onReiniciar }: { linhas: L
     iniciado.current = true;
 
     (async () => {
-      const inicio = await iniciarImportacaoPessoasAction(
+      const resposta = await executarImportacaoPessoasAction(
         nomeArquivo || "importação sem nome",
         linhas.map((l) => ({ ...l, linhaNumero: l.linhaNumero })),
       );
 
-      if ("erro" in inicio) {
-        setErroFatal(inicio.erro);
+      if ("erro" in resposta) {
+        setErroFatal(resposta.erro);
         setFase("erro-fatal");
         return;
       }
 
-      setImportacaoId(inicio.importacao_id);
-      setFase("executando");
-
-      const acumulados: ResultadoLinha[] = [];
-      let foiCancelado = false;
-      for (const item of linhas) {
-        if (canceladoRef.current) {
-          foiCancelado = true;
-          break;
-        }
-
-        const itemId = inicio.itensPorLinha[item.linhaNumero];
-        const resultado = await importarLinhaPessoaAction(itemId, {
-          acao: item.acao,
-          pessoaIdExistente: item.pessoaIdExistente,
-          permitirAtualizarNome: item.permitirAtualizarNome,
-          nome: item.nome,
-          documento: item.documento,
-          natureza: item.natureza,
-          email: item.email,
-          telefone: item.telefone,
-          perfisNovos: item.perfisNovos,
-          campos_personalizados: item.campos_personalizados,
-          endereco: item.endereco,
-          contato: item.contato,
-        });
-        acumulados.push("erro" in resultado ? { linha: item, sucesso: false, erro: resultado.erro } : { linha: item, sucesso: true });
-        setResultados([...acumulados]);
-        setFeitos((f) => f + 1);
-      }
-
-      await finalizarImportacaoPessoasAction(inicio.importacao_id, foiCancelado ? "cancelada" : "concluida");
+      setImportacaoId(resposta.importacaoId);
+      setResultados(
+        linhas.map((item, i) => {
+          const r = resposta.resultados[i];
+          return r.sucesso ? { linha: item, sucesso: true } : { linha: item, sucesso: false, erro: r.erro };
+        }),
+      );
       await revalidarPosImportacaoPessoasAction();
-      setFase(foiCancelado ? "cancelado" : "concluido");
+      setFase("concluido");
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  function cancelar() {
-    canceladoRef.current = true;
-  }
-
   const sucessos = resultados.filter((r) => r.sucesso).length;
   const falhas = resultados.filter((r) => !r.sucesso);
-  const percentual = linhas.length > 0 ? Math.round((feitos / linhas.length) * 100) : 100;
-  const terminou = fase === "concluido" || fase === "cancelado";
+  const percentual = fase === "concluido" ? 100 : 0;
+  const terminou = fase === "concluido";
 
   // Reconstrói a linha a partir dos campos já normalizados (não guardamos o
   // texto bruto original) — suficiente pra reenviar depois de corrigir, já
@@ -128,23 +97,9 @@ export function PassoResultado({ linhas, nomeArquivo, onReiniciar }: { linhas: L
 
   return (
     <div className="flex flex-col gap-6 rounded-2xl bg-card shadow-card p-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h2 className="text-sm font-bold text-foreground">4. Importando</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {fase === "cancelado"
-              ? "Importação cancelada — as linhas já processadas foram mantidas."
-              : terminou
-                ? "Importação concluída."
-                : `Processando linha ${feitos} de ${linhas.length}...`}
-          </p>
-        </div>
-        {fase === "executando" && (
-          <Button type="button" variant="outline" size="sm" className="shrink-0 gap-1.5 text-destructive" onClick={cancelar}>
-            <StopCircle size={14} />
-            Cancelar
-          </Button>
-        )}
+      <div>
+        <h2 className="text-sm font-bold text-foreground">4. Importando</h2>
+        <p className="mt-1 text-sm text-muted-foreground">{terminou ? "Importação concluída." : "Processando..."}</p>
       </div>
 
       <div className="h-2 overflow-hidden rounded-full bg-muted">
@@ -163,9 +118,6 @@ export function PassoResultado({ linhas, nomeArquivo, onReiniciar }: { linhas: L
                 <XCircle size={16} weight="fill" />
                 {falhas.length} falharam
               </span>
-            )}
-            {fase === "cancelado" && (
-              <span className="text-sm font-medium text-muted-foreground">{linhas.length - feitos} não processadas</span>
             )}
           </div>
 
