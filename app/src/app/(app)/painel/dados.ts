@@ -17,10 +17,14 @@ function isoDaquiA(dias: number): string {
   return data.toISOString().slice(0, 10);
 }
 
+// Construído em UTC direto (mesmo padrão de `mesAtual()`), não via
+// `new Date()` local + `.toISOString()` — a versão local dava mês errado
+// (dia 2 em vez de dia 1) nas últimas horas do dia num fuso atrás de UTC
+// (ex.: Brasil, 21h–23h59), porque a conversão pra UTC empurra a data pro
+// dia seguinte (achado em revisão de código).
 function inicioDoMes(offsetMeses = 0): string {
-  const data = new Date();
-  data.setDate(1);
-  data.setMonth(data.getMonth() + offsetMeses);
+  const hoje = new Date();
+  const data = new Date(Date.UTC(hoje.getUTCFullYear(), hoje.getUTCMonth() + offsetMeses, 1));
   return data.toISOString().slice(0, 10);
 }
 
@@ -84,27 +88,28 @@ export type ResultadoDoMes = { liquido: number; receitas: number; despesas: numb
 // linhas linkáveis pro Painel clicável (ver spec 2026-08-26-painel-clicavel);
 // o líquido em si continua sem link (é subtração, não soma direta de
 // lançamentos — mesmo precedente de "Saldo" em Centro de Custo).
+//
+// Reaproveita `buscarMovimento` (regime "competência", mesma fonte que os
+// links de Receitas/Despesas do mês usam) em vez de somar `valor_total`
+// direto de `eventos_financeiros` — a query antiga não excluía parcela
+// cancelada nem evento estornado (a view já exclui os dois, ver entradas 47
+// e 49 do schema), então o card e o link podiam mostrar números diferentes
+// pro "mesmo" mês. Também usa `mesAtual()` (UTC) em vez de `inicioDoMes()`
+// (baseada em `new Date()` local), pelo mesmo motivo: os dois precisam do
+// exato mesmo recorte de data que o href já usa.
 async function obterResultadoDoMes(supabase: Cliente, tenantId: string, pessoaId?: string): Promise<ResultadoDoMes> {
-  let query = supabase
-    .from("eventos_financeiros")
-    .select("tipo, valor_total")
-    .eq("tenant_id", tenantId)
-    .gte("data_competencia", inicioDoMes())
-    .lt("data_competencia", inicioDoMes(1));
-
-  if (pessoaId) query = query.eq("pessoa_id", pessoaId);
-
-  const { data } = await query;
+  const { inicio, fim } = mesAtual();
+  const movimento = await buscarMovimento(supabase, { tenantId, regime: "competencia", dataInicio: inicio, dataFim: fim });
+  const filtrado = pessoaId ? movimento.filter((m) => m.pessoaId === pessoaId) : movimento;
 
   const resultado: ResultadoDoMes = { liquido: 0, receitas: 0, despesas: 0 };
-  for (const e of data ?? []) {
-    const valor = Number(e.valor_total);
-    if (e.tipo === "RECEITA") {
-      resultado.receitas += valor;
-      resultado.liquido += valor;
+  for (const m of filtrado) {
+    if (m.tipo === "RECEITA") {
+      resultado.receitas += m.valor;
+      resultado.liquido += m.valor;
     } else {
-      resultado.despesas += valor;
-      resultado.liquido -= valor;
+      resultado.despesas += m.valor;
+      resultado.liquido -= m.valor;
     }
   }
   return resultado;

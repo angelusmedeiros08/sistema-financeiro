@@ -38,6 +38,23 @@ function caminhoInternoSeguro(bruto: string | undefined): string | null {
   return bruto;
 }
 
+// `rotulo` vem cru da querystring no caso sem dimensão (Saldo em caixa,
+// Recebido/Pago do mês etc.) e vira o <h1> da página — sem validação, um
+// link malicioso poderia usar esse texto pra exibir uma mensagem enganosa
+// dentro do próprio domínio logado (não é XSS, o React escapa o texto, mas
+// o conteúdo ainda seria arbitrário — testado ao vivo com
+// "?rotulo=Sua senha expirou, ligue 0800", que renderizou sem problema
+// antes desta checagem). Um filtro por alfabeto não resolve — uma frase de
+// phishing inteira cabe em letras/espaços/vírgula. Em vez disso, valida
+// contra os padrões exatos que `montarHrefLancamentosSemDimensao` de fato
+// gera hoje (só 5 formatos, todos em `painel/page.tsx`) — qualquer outro
+// texto cai num rótulo genérico (achado em revisão de código).
+const MESES = "janeiro|fevereiro|março|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro";
+const ROTULO_SEGURO = new RegExp(`^(Todo o histórico|Recebido em (${MESES})|Pago em (${MESES})|Receitas de (${MESES})|Despesas de (${MESES}))$`);
+function rotuloSeguro(bruto: string): string {
+  return ROTULO_SEGURO.test(bruto) ? bruto : "Lançamentos";
+}
+
 export default async function PaginaLancamentos({
   searchParams,
 }: {
@@ -65,7 +82,7 @@ export default async function PaginaLancamentos({
     // `rotulo` presente é o que distingue esse caso de uma URL malformada
     // (sem nenhum parâmetro de dimensão nem `rotulo`, que continua caindo
     // em notFound() — nunca mostra "todos os lançamentos" por acidente).
-    filtro = { regime, apenasTipo, rotulo: sp.rotulo };
+    filtro = { regime, apenasTipo, rotulo: rotuloSeguro(sp.rotulo) };
   } else {
     notFound();
   }

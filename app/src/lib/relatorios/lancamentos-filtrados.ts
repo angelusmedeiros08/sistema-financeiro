@@ -8,7 +8,7 @@
 // própria: sua fonte de verdade é `baixas.valor_pago`, não `buscarMovimento`
 // (mesmo raciocínio de distribuicao-forma-pagamento.ts — nunca existiu
 // "forma de pagamento" em regime previsto/competência).
-import type { Cliente, Regime } from "./regime";
+import type { Cliente, MovimentoLinha, Regime } from "./regime";
 import { buscarMovimento, valorComSinal } from "./regime";
 
 export type LinhaLancamentoFiltrado = {
@@ -116,6 +116,25 @@ async function buscarEventosPorId(supabase: Cliente, tenantId: string, valorFilt
   return (data ?? []).map((e) => ({ ...e, valorFiltrado: valorFiltradoPorEvento.get(e.id) ?? e.valor_total }));
 }
 
+// Compartilhado entre `buscarTodoMovimento` (sem dimensão) e
+// `buscarPorMovimento` (categoria/centro de custo/pessoa) — sem isso, cada
+// um tinha sua própria cópia do laço de agregação, e só um dos dois somava
+// com sinal quando `apenasTipo` está ausente (achado em revisão de código:
+// as duas cópias podiam divergir silenciosamente). Sem `apenasTipo` a lista
+// pode misturar RECEITA e DESPESA (é o caso de "Saldo em caixa" e de
+// categoria/centro/pessoa sem filtro de tipo) — "total" precisa ser o saldo
+// líquido (com sinal), não a soma bruta dos dois lados (achado testando
+// Saldo em caixa ao vivo: R$ 189.905,00 de volume ≠ R$ 76.026,00 de saldo).
+// Com `apenasTipo`, todas as linhas já são do mesmo tipo — soma sem sinal,
+// mesmo padrão que todo o resto do drill-down já usa (total sempre
+// positivo, o chip "Só entradas"/"Só saídas" já comunica a direção).
+function agregarMovimento(linhas: MovimentoLinha[], apenasTipo: "RECEITA" | "DESPESA" | undefined): { total: number; valorPorEvento: Map<string, number> } {
+  const total = linhas.reduce((soma, l) => soma + (apenasTipo ? l.valor : valorComSinal(l)), 0);
+  const valorPorEvento = new Map<string, number>();
+  for (const l of linhas) valorPorEvento.set(l.eventoFinanceiroId, (valorPorEvento.get(l.eventoFinanceiroId) ?? 0) + l.valor);
+  return { total, valorPorEvento };
+}
+
 // Sem dimensão nenhuma — todo o movimento de um regime/tipo/período, sem
 // recortar por categoria/centro/pessoa (Saldo em caixa, Recebido/Pago do
 // mês, Receitas/Despesas do mês, ver spec 2026-08-26-painel-clicavel). Não
@@ -134,17 +153,7 @@ async function buscarTodoMovimento(
 
   if (linhas.length === 0) return VAZIO(rotulo);
 
-  // Sem `apenasTipo` a lista mistura RECEITA e DESPESA — "total" precisa ser
-  // o saldo líquido (com sinal), não a soma bruta dos dois lados (achado
-  // testando Saldo em caixa ao vivo: R$ 189.905,00 de volume ≠ R$ 76.026,00
-  // de saldo). Com `apenasTipo`, todas as linhas já são do mesmo tipo — soma
-  // sem sinal, mesmo padrão que todo o resto do drill-down já usa (total
-  // sempre positivo, o chip "Só entradas"/"Só saídas" já comunica a direção;
-  // achado testando "Pago do mês" ao vivo, que virou negativo por engano).
-  const total = linhas.reduce((soma, l) => soma + (apenasTipo ? l.valor : valorComSinal(l)), 0);
-  const valorPorEvento = new Map<string, number>();
-  for (const l of linhas) valorPorEvento.set(l.eventoFinanceiroId, (valorPorEvento.get(l.eventoFinanceiroId) ?? 0) + l.valor);
-
+  const { total, valorPorEvento } = agregarMovimento(linhas, apenasTipo);
   return { linhas: await buscarEventosPorId(supabase, tenantId, valorPorEvento), total, quantidade: valorPorEvento.size, rotulo };
 }
 
@@ -179,9 +188,7 @@ async function buscarPorMovimento(
 
   if (linhas.length === 0) return VAZIO(rotulo);
 
-  const total = linhas.reduce((soma, l) => soma + l.valor, 0);
-  const valorPorEvento = new Map<string, number>();
-  for (const l of linhas) valorPorEvento.set(l.eventoFinanceiroId, (valorPorEvento.get(l.eventoFinanceiroId) ?? 0) + l.valor);
+  const { total, valorPorEvento } = agregarMovimento(linhas, opcoes.apenasTipo);
 
   return { linhas: await buscarEventosPorId(supabase, tenantId, valorPorEvento), total, quantidade: valorPorEvento.size, rotulo };
 }

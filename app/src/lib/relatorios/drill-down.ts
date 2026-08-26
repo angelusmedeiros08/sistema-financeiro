@@ -17,6 +17,20 @@ const PARAM_POR_TIPO: Record<TipoEntidadeDrillDown, string> = {
   centro_custo: "centro_custo_id",
 };
 
+// Base comum às duas variantes de destino (com dimensão e sem) — regime,
+// período, tipo opcional e o link de volta são sempre os mesmos 4 campos;
+// cada variante só acrescenta o que a distingue (dimensão ou rótulo).
+function montarQueryBase(params: { regime: Regime; tipo?: "RECEITA" | "DESPESA"; periodoInicio: string; periodoFim: string; origemHref: string }): URLSearchParams {
+  const query = new URLSearchParams({
+    regime: params.regime,
+    periodo_inicio: params.periodoInicio,
+    periodo_fim: params.periodoFim,
+    voltar: params.origemHref,
+  });
+  if (params.tipo) query.set("tipo", params.tipo);
+  return query;
+}
+
 // entidadeId aceita 3 formas: um id (fatia nomeada normal), uma lista de ids
 // (fatia "Outras", que o donut agrega quando há mais de 5 categorias/
 // pessoas/formas) ou null (bucket "Não informado"/"Sem pessoa", sem id
@@ -47,14 +61,8 @@ export function montarHrefLancamentos(params: {
   origemHref: string;
 }): string {
   const valorParam = Array.isArray(params.entidadeId) ? params.entidadeId.join(",") : (params.entidadeId ?? "nenhuma");
-  const query = new URLSearchParams({
-    [PARAM_POR_TIPO[params.tipoEntidade]]: valorParam,
-    regime: params.regime,
-    periodo_inicio: params.periodoInicio,
-    periodo_fim: params.periodoFim,
-    voltar: params.origemHref,
-  });
-  if (params.tipo) query.set("tipo", params.tipo);
+  const query = montarQueryBase(params);
+  query.set(PARAM_POR_TIPO[params.tipoEntidade], valorParam);
   return `/lancamentos?${query.toString()}`;
 }
 
@@ -71,13 +79,7 @@ export function montarHrefLancamentosSemDimensao(params: {
   rotulo: string;
   origemHref: string;
 }): string {
-  const query = new URLSearchParams({
-    regime: params.regime,
-    periodo_inicio: params.periodoInicio,
-    periodo_fim: params.periodoFim,
-    rotulo: params.rotulo,
-    voltar: params.origemHref,
-  });
-  if (params.tipo) query.set("tipo", params.tipo);
+  const query = montarQueryBase(params);
+  query.set("rotulo", params.rotulo);
   return `/lancamentos?${query.toString()}`;
 }

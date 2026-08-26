@@ -38,15 +38,28 @@ type StatCardProps = VariantProps<typeof cartaoVariantes> & {
   delta?: number;
   serie?: number[];
   icon?: IconType;
-  // Card vira link pros lançamentos/relatório que compõem o número — pedido
-  // direto de um vídeo do sócio do usuário ("ver o total → entender o que
-  // forma aquele total"). Sem href, comportamento idêntico ao de antes.
-  href?: string;
-  // Conteúdo extra depois do sparkline — usado quando o número do card é
-  // uma subtração (ex.: Resultado do mês) e não pode virar link ele mesmo,
-  // mas as duas parcelas que o compõem podem (Receitas/Despesas do mês).
-  children?: React.ReactNode;
-};
+} & (
+    | {
+        // Card vira link pros lançamentos/relatório que compõem o número —
+        // pedido direto de um vídeo do sócio do usuário ("ver o total →
+        // entender o que forma aquele total"). Sem href, comportamento
+        // idêntico ao de antes.
+        href?: string;
+        children?: undefined;
+      }
+    | {
+        // Mutuamente exclusivo com `href` — o wrapper com `href` vira um
+        // `<Link>` (uma tag `<a>`); `children` com link próprio dentro de um
+        // `<a>` já existente é HTML inválido (âncora aninhada), então o tipo
+        // não deixa combinar os dois (achado em revisão de código).
+        href?: undefined;
+        // Conteúdo extra depois do sparkline — usado quando o número do
+        // card é uma subtração (ex.: Resultado do mês) e não pode virar
+        // link ele mesmo, mas as duas parcelas que o compõem podem
+        // (Receitas/Despesas do mês).
+        children?: React.ReactNode;
+      }
+  );
 
 export function StatCard({ label, valor, detalhe, variant, delta, serie, icon: Icon, href, children }: StatCardProps) {
   const v = variant ?? "sage";
