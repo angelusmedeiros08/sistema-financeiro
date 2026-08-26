@@ -1,5 +1,6 @@
 import type { Cliente, Regime } from "./regime";
 import { buscarMovimento } from "./regime";
+import { montarHrefLancamentos } from "./drill-down";
 
 export type LinhaCentroCusto = {
   centroCustoId: string;
@@ -8,6 +9,12 @@ export type LinhaCentroCusto = {
   saidas: number;
   saldo: number;
   margemPercentual: number;
+  // Saldo é entradas−saidas — não existe uma lista de lançamentos cujo
+  // total bate com essa subtração, então não tem link próprio. Entradas e
+  // saídas são somas de verdade, cada uma com seu destino (mesmo raciocínio
+  // de pessoa em concentracao-receita.ts, via o filtro `tipo`).
+  hrefEntradas: string;
+  hrefSaidas: string;
 };
 
 // Mini-P&L por centro de custo: Entradas, Saídas, Saldo, Margem% — mesma
@@ -17,7 +24,7 @@ export type LinhaCentroCusto = {
 // (comportamento correto: centro de custo é opcional por lançamento).
 export async function buscarCentroCusto(
   supabase: Cliente,
-  params: { tenantId: string; regime: Regime; dataInicio: string; dataFim: string },
+  params: { tenantId: string; regime: Regime; dataInicio: string; dataFim: string; origemHref: string },
 ): Promise<LinhaCentroCusto[]> {
   const [movimento, { data: centros }] = await Promise.all([
     buscarMovimento(supabase, params),
@@ -38,6 +45,14 @@ export async function buscarCentroCusto(
   return [...porCentro.entries()]
     .map(([centroCustoId, { entradas, saidas }]) => {
       const saldo = entradas - saidas;
+      const hrefBase = {
+        tipoEntidade: "centro_custo" as const,
+        entidadeId: centroCustoId,
+        regime: params.regime,
+        periodoInicio: params.dataInicio,
+        periodoFim: params.dataFim,
+        origemHref: params.origemHref,
+      };
       return {
         centroCustoId,
         nome: nomePorId.get(centroCustoId) ?? "-",
@@ -45,6 +60,8 @@ export async function buscarCentroCusto(
         saidas,
         saldo,
         margemPercentual: entradas > 0 ? saldo / entradas : 0,
+        hrefEntradas: montarHrefLancamentos({ ...hrefBase, tipo: "RECEITA" }),
+        hrefSaidas: montarHrefLancamentos({ ...hrefBase, tipo: "DESPESA" }),
       };
     })
     .sort((a, b) => b.saldo - a.saldo);

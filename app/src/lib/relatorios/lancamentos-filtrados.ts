@@ -36,6 +36,9 @@ export type FiltroLancamentos = {
   valor: ValorFiltro;
   // Ignorado por "forma_pagamento" — ver comentário no topo do arquivo.
   regime: Regime;
+  // Presente quando a fatia clicada já era, ela mesma, só de um tipo (ex.:
+  // "Entradas" de um centro de custo) — ver comentário em drill-down.ts.
+  apenasTipo?: "RECEITA" | "DESPESA";
 };
 
 export type ResultadoLancamentosFiltrados = {
@@ -62,6 +65,7 @@ export async function buscarLancamentosFiltrados(
         buscarRotulo: (id) => buscarNome(supabase, "categorias_financeiras", tenantId, id),
         rotuloNenhuma: "Sem categoria",
         rotuloVarios: "Outras categorias",
+        apenasTipo: filtro.apenasTipo,
       });
     case "centro_custo":
       return buscarPorMovimento(supabase, tenantId, filtro.valor, filtro.regime, periodoInicio, periodoFim, {
@@ -69,6 +73,7 @@ export async function buscarLancamentosFiltrados(
         buscarRotulo: (id) => buscarNome(supabase, "centros_custo", tenantId, id),
         rotuloNenhuma: "Sem centro de custo",
         rotuloVarios: "Outros centros de custo",
+        apenasTipo: filtro.apenasTipo,
       });
     case "pessoa":
       return buscarPorMovimento(supabase, tenantId, filtro.valor, filtro.regime, periodoInicio, periodoFim, {
@@ -76,12 +81,7 @@ export async function buscarLancamentosFiltrados(
         buscarRotulo: (id) => buscarNome(supabase, "pessoas", tenantId, id),
         rotuloNenhuma: "Sem pessoa vinculada",
         rotuloVarios: "Outras pessoas",
-        // Único gráfico que leva a pessoa até aqui é Concentração de Receita,
-        // que só soma RECEITA — sem esse filtro, uma pessoa que também é
-        // fornecedora mostraria um total maior do que a fatia clicada
-        // (despesas dela entrando na conta). Se um gráfico de despesa por
-        // pessoa aparecer no futuro, isso vira parâmetro, não constante.
-        apenasTipo: "RECEITA",
+        apenasTipo: filtro.apenasTipo,
       });
   }
 }

@@ -34,7 +34,17 @@ type Fatia = { rotulo: string; total: number; cor: string; href: string };
 // trazem o próprio href pronto do servidor (linha.href), só o agregado
 // "Outras" precisa ser montado aqui, porque é uma combinação de ids que
 // nenhuma linha isolada representa sozinha.
-type ContextoDrillDown = { dimensao: TipoEntidadeDrillDown; regime: Regime; periodoInicio: string; periodoFim: string; origemHref: string };
+type ContextoDrillDown = {
+  dimensao: TipoEntidadeDrillDown;
+  regime: Regime;
+  // Mesma razão de montarHrefLancamentos: precisa bater com o `apenasTipo`
+  // que a função de origem já aplicou (ex.: Concentração de Receita só
+  // soma RECEITA) pra "Outras" não ficar maior que a soma dos ids do link.
+  tipo?: "RECEITA" | "DESPESA";
+  periodoInicio: string;
+  periodoFim: string;
+  origemHref: string;
+};
 
 function agregarFatias(linhas: LinhaAnaliseCategoria[], contexto: ContextoDrillDown): Fatia[] {
   const ordenadas = [...linhas].sort((a, b) => b.total - a.total);
@@ -60,6 +70,7 @@ function agregarFatias(linhas: LinhaAnaliseCategoria[], contexto: ContextoDrillD
       tipoEntidade: contexto.dimensao,
       entidadeId: idsResto,
       regime: contexto.regime,
+      tipo: contexto.tipo,
       periodoInicio: contexto.periodoInicio,
       periodoFim: contexto.periodoFim,
       origemHref: contexto.origemHref,
@@ -85,6 +96,7 @@ export function TopCategoriasDonut({
   linhas,
   dimensao,
   regime,
+  tipo,
   periodoInicio,
   periodoFim,
   origemHref,
@@ -93,12 +105,13 @@ export function TopCategoriasDonut({
   linhas: LinhaAnaliseCategoria[];
   dimensao: TipoEntidadeDrillDown;
   regime: Regime;
+  tipo?: "RECEITA" | "DESPESA";
   periodoInicio: string;
   periodoFim: string;
   origemHref: string;
 }) {
   const router = useRouter();
-  const fatias = agregarFatias(linhas, { dimensao, regime, periodoInicio, periodoFim, origemHref });
+  const fatias = agregarFatias(linhas, { dimensao, regime, tipo, periodoInicio, periodoFim, origemHref });
   const total = fatias.reduce((soma, f) => soma + f.total, 0);
   const [hoverIndice, setHoverIndice] = useState<number | null>(null);
 

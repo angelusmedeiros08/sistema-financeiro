@@ -80,6 +80,7 @@ export function DespesasTabela({ linhas }: { linhas: LinhaAnaliseCategoria[] }) 
       columns={criarColunas(maior)}
       buscaPlaceholder="Buscar categoria…"
       textoVazio="Nenhuma despesa categorizada no período selecionado."
+      linkPara={(l) => l.href}
     />
   );
 }

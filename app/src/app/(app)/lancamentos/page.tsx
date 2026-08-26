@@ -50,12 +50,13 @@ export default async function PaginaLancamentos({
   const { periodo_inicio: periodoInicio, periodo_fim: periodoFim } = sp;
   const voltar = caminhoInternoSeguro(sp.voltar);
   const regime: Regime = REGIMES.includes(sp.regime as Regime) ? (sp.regime as Regime) : "competencia";
+  const apenasTipo = sp.tipo === "RECEITA" || sp.tipo === "DESPESA" ? sp.tipo : undefined;
 
   const dimensaoAtiva = DIMENSOES.find((d) => sp[d.param] !== undefined);
   const valor = dimensaoAtiva ? parseValor(sp[dimensaoAtiva.param]) : null;
   if (!dimensaoAtiva || !valor || !periodoInicio || !periodoFim) notFound();
 
-  const filtro: FiltroLancamentos = { dimensao: dimensaoAtiva.dimensao, valor, regime };
+  const filtro: FiltroLancamentos = { dimensao: dimensaoAtiva.dimensao, valor, regime, apenasTipo };
 
   const supabase = await createClient();
   const resultado = await buscarLancamentosFiltrados(supabase, { tenantId: contexto.tenantId, filtro, periodoInicio, periodoFim });
@@ -84,6 +85,11 @@ export default async function PaginaLancamentos({
           {formatarDataComAno(periodoInicio)} – {formatarDataComAno(periodoFim)}
         </span>
         <span className="rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">{rotuloQuantidade}</span>
+        {apenasTipo && (
+          <span className="rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
+            {apenasTipo === "RECEITA" ? "Só entradas" : "Só saídas"}
+          </span>
+        )}
       </div>
 
       <TabelaEventos eventos={resultado.linhas} textoVazio="Nenhum lançamento encontrado nesse filtro." />

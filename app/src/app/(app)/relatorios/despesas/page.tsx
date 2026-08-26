@@ -15,9 +15,12 @@ export default async function PaginaRelatoriosDespesas({
   const contexto = await obterUsuarioETenantAtual();
   if ("erro" in contexto) redirect("/entrar");
 
-  const params = lerParametrosRelatorio(await searchParams);
+  const spBrutos = await searchParams;
+  const params = lerParametrosRelatorio(spBrutos);
   const supabase = await createClient();
-  const linhas = await buscarAnaliseCategorias(supabase, { tenantId: contexto.tenantId, ...params, tipo: "DESPESA", origemHref: "/relatorios/despesas" });
+  const qsAtual = new URLSearchParams(Object.entries(spBrutos).filter((par): par is [string, string] => par[1] !== undefined)).toString();
+  const origemHref = `/relatorios/despesas${qsAtual ? `?${qsAtual}` : ""}`;
+  const linhas = await buscarAnaliseCategorias(supabase, { tenantId: contexto.tenantId, ...params, tipo: "DESPESA", origemHref });
 
   return (
     <div className="flex w-full flex-col gap-6">

@@ -90,6 +90,7 @@ export default async function PaginaIndicadores() {
           linhas={donutClientes}
           dimensao="pessoa"
           regime="competencia"
+          tipo="RECEITA"
           periodoInicio={isoMenosMeses(12)}
           periodoFim={hoje}
           origemHref={origemHref}

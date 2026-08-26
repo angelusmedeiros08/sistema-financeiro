@@ -18,9 +18,12 @@ export default async function PaginaRelatoriosCentroCusto({
   const contexto = await obterUsuarioETenantAtual();
   if ("erro" in contexto) redirect("/entrar");
 
-  const params = lerParametrosRelatorio(await searchParams);
+  const spBrutos = await searchParams;
+  const params = lerParametrosRelatorio(spBrutos);
   const supabase = await createClient();
-  const linhas = await buscarCentroCusto(supabase, { tenantId: contexto.tenantId, ...params });
+  const qsAtual = new URLSearchParams(Object.entries(spBrutos).filter((par): par is [string, string] => par[1] !== undefined)).toString();
+  const origemHref = `/relatorios/centro-custo${qsAtual ? `?${qsAtual}` : ""}`;
+  const linhas = await buscarCentroCusto(supabase, { tenantId: contexto.tenantId, ...params, origemHref });
   const maiorSaldoAbsoluto = Math.max(...linhas.map((l) => Math.abs(l.saldo)), 1);
 
   return (

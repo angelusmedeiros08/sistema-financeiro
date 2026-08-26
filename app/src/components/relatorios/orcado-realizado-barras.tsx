@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { LinhaOrcadoRealizado } from "@/lib/orcamento/orcamento";
 import { formatarMoeda, formatarNumeroCompacto, formatarPercentual } from "@/lib/formatacao";
 import { cn } from "@/lib/utils";
@@ -39,7 +40,7 @@ export function OrcadoRealizadoBarras({ linhas }: { linhas: LinhaOrcadoRealizado
                 />
                 <span className="min-w-16 shrink-0 text-right text-[10px] tabular-nums text-muted-foreground">{formatarNumeroCompacto(linha.totalPrevisto)}</span>
               </div>
-              <div className="flex items-center gap-2">
+              <Link href={linha.hrefRealizado} className="flex items-center gap-2 rounded-md transition-colors hover:bg-muted/60">
                 <span className="w-16 shrink-0 text-[10px] text-muted-foreground">Realizado</span>
                 <TrilhoBarra
                   valorPercentual={linha.totalRealizado / maior}
@@ -49,7 +50,7 @@ export function OrcadoRealizadoBarras({ linhas }: { linhas: LinhaOrcadoRealizado
                 <span className="min-w-16 shrink-0 text-right text-[10px] font-semibold tabular-nums text-foreground">
                   {formatarNumeroCompacto(linha.totalRealizado)}
                 </span>
-              </div>
+              </Link>
             </div>
           </div>
         );

@@ -64,6 +64,10 @@ export async function buscarConcentracaoReceita(
       tipoEntidade: "pessoa",
       entidadeId: c.pessoaId,
       regime: "competencia",
+      // Este gráfico só soma RECEITA — sem esse filtro, uma pessoa que
+      // também é fornecedora mostraria em /lancamentos um total maior do
+      // que a fatia clicada (despesas dela entrando na conta).
+      tipo: "RECEITA",
       periodoInicio: dataInicio,
       periodoFim: dataFim,
       origemHref: params.origemHref,

@@ -1,5 +1,6 @@
 import type { Cliente, Regime } from "@/lib/relatorios/regime";
 import { buscarMovimento } from "@/lib/relatorios/regime";
+import { montarHrefLancamentos } from "@/lib/relatorios/drill-down";
 import type { Database } from "@/utils/supabase/database.types";
 
 type TipoCategoria = Database["public"]["Enums"]["tipo_categoria"];
@@ -109,6 +110,9 @@ export type LinhaOrcadoRealizado = {
   totalPrevisto: number;
   totalRealizado: number;
   desvioPercentual: number;
+  // Só o Realizado tem link — Previsto é meta cadastrada à mão (tabela
+  // orcamentos), não existe lançamento nenhum por trás pra mostrar.
+  hrefRealizado: string;
 };
 
 // Casa a meta (orcamentos) contra o movimento já realizado no mesmo
@@ -118,16 +122,14 @@ export type LinhaOrcadoRealizado = {
 // pra despesa e boa pra receita — a UI decide a cor conforme o tipo.
 export async function buscarOrcadoRealizado(
   supabase: Cliente,
-  params: { tenantId: string; ano: number; regime: Regime },
+  params: { tenantId: string; ano: number; regime: Regime; origemHref: string },
 ): Promise<LinhaOrcadoRealizado[]> {
+  const dataInicio = competenciaDoMes(params.ano, 1);
+  const dataFim = `${params.ano}-12-31`;
+
   const [grade, movimento] = await Promise.all([
     buscarGradeOrcamento(supabase, { tenantId: params.tenantId, ano: params.ano }),
-    buscarMovimento(supabase, {
-      tenantId: params.tenantId,
-      regime: params.regime,
-      dataInicio: competenciaDoMes(params.ano, 1),
-      dataFim: `${params.ano}-12-31`,
-    }),
+    buscarMovimento(supabase, { tenantId: params.tenantId, regime: params.regime, dataInicio, dataFim }),
   ]);
 
   const realizadoPorCategoriaEMes = new Map<string, number>();
@@ -155,6 +157,14 @@ export async function buscarOrcadoRealizado(
         totalPrevisto,
         totalRealizado,
         desvioPercentual: totalPrevisto > 0 ? (totalRealizado - totalPrevisto) / totalPrevisto : 0,
+        hrefRealizado: montarHrefLancamentos({
+          tipoEntidade: "categoria",
+          entidadeId: linha.categoriaId,
+          regime: params.regime,
+          periodoInicio: dataInicio,
+          periodoFim: dataFim,
+          origemHref: params.origemHref,
+        }),
       };
     })
     .filter((linha) => linha.totalPrevisto > 0 || linha.totalRealizado > 0);

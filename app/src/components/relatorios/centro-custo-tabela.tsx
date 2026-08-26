@@ -5,6 +5,12 @@
 // precisa ficar do lado do cliente. Sem ícone por linha — centro de custo
 // não é uma entidade/categoria com identidade visual própria (ao contrário
 // de receita/despesa de lançamento), então célula-líder é só o nome.
+//
+// Entradas/Saídas são links pros lançamentos que formam aquela soma —
+// Saldo não (é uma subtração, não existe "os lançamentos do saldo") — por
+// isso a linha inteira não vira `linkPara` como nas outras tabelas, cada
+// valor tem seu próprio destino.
+import Link from "next/link";
 import type { LinhaCentroCusto } from "@/lib/relatorios/centro-custo";
 import { formatarNumeroCompacto, formatarPercentual } from "@/lib/formatacao";
 import { TabelaLista, criarColunaLista, ValorLista } from "@/components/tabela/tabela-lista";
@@ -24,13 +30,21 @@ const colunas = helper.columns([
     id: "entradas",
     header: "Entradas",
     meta: { numerica: true },
-    cell: (info) => <span className="font-semibold tabular-nums text-positivo">{formatarNumeroCompacto(info.getValue())}</span>,
+    cell: (info) => (
+      <Link href={info.row.original.hrefEntradas} className="font-semibold tabular-nums text-positivo hover:underline">
+        {formatarNumeroCompacto(info.getValue())}
+      </Link>
+    ),
   }),
   helper.accessor("saidas", {
     id: "saidas",
     header: "Saídas",
     meta: { numerica: true },
-    cell: (info) => <span className="font-semibold tabular-nums text-destructive">{formatarNumeroCompacto(info.getValue())}</span>,
+    cell: (info) => (
+      <Link href={info.row.original.hrefSaidas} className="font-semibold tabular-nums text-destructive hover:underline">
+        {formatarNumeroCompacto(info.getValue())}
+      </Link>
+    ),
   }),
   helper.accessor("saldo", {
     id: "saldo",

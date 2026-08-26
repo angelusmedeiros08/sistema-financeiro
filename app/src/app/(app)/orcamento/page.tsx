@@ -122,7 +122,7 @@ async function AbaComparativo({
   href: (overrides: Record<string, string>) => string;
   supabase: Awaited<ReturnType<typeof createClient>>;
 }) {
-  const linhas = await buscarOrcadoRealizado(supabase, { tenantId, ano, regime });
+  const linhas = await buscarOrcadoRealizado(supabase, { tenantId, ano, regime, origemHref: href({}) });
   const receitas = linhas.filter((l) => l.tipo === "RECEITA");
   const despesas = linhas.filter((l) => l.tipo === "DESPESA");
 

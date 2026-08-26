@@ -28,10 +28,20 @@ const PARAM_POR_TIPO: Record<TipoEntidadeDrillDown, string> = {
 // baixas.data_pagamento — "realizado" por natureza, não tem "previsto"
 // nem "competência") — carregado do mesmo jeito por simplicidade de
 // contrato, não porque toda dimensão precisa dele.
+//
+// `tipo` existe pra quando a fatia clicada já é, ela mesma, só uma fatia
+// de RECEITA ou só de DESPESA dentro da dimensão (ex.: "Entradas" e
+// "Saídas" de um centro de custo são duas fatias diferentes do mesmo
+// centro; sem o filtro, o total de /lancamentos somaria as duas juntas —
+// maior que qualquer uma das fatias, quebrando a garantia de bater exato).
+// Categoria/forma de pagamento nunca precisam disso (já são
+// type-exclusivas por natureza); pessoa precisa sempre que o gráfico de
+// origem também for (Concentração de Receita só soma RECEITA).
 export function montarHrefLancamentos(params: {
   tipoEntidade: TipoEntidadeDrillDown;
   entidadeId: string | string[] | null;
   regime: Regime;
+  tipo?: "RECEITA" | "DESPESA";
   periodoInicio: string;
   periodoFim: string;
   origemHref: string;
@@ -44,5 +54,6 @@ export function montarHrefLancamentos(params: {
     periodo_fim: params.periodoFim,
     voltar: params.origemHref,
   });
+  if (params.tipo) query.set("tipo", params.tipo);
   return `/lancamentos?${query.toString()}`;
 }
