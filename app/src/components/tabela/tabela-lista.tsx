@@ -138,6 +138,8 @@ interface TabelaListaProps<TData extends Record<string, any>> {
   acoes?: (linha: TData) => ReactNode;
   /** Linha inteira clicável, navegando pro href retornado — sem coluna de ação. Pra listas onde clicar em qualquer parte da linha já é o fluxo natural (ex: ir pro detalhe da pessoa). */
   linkPara?: (linha: TData) => string;
+  /** Desliga o realce de fundo ao passar o mouse na linha inteira — pra tabelas onde só ALGUMAS células são clicáveis (não `linkPara`, links próprios dentro de células específicas), pra não sugerir que a linha inteira navega quando não navega (achado em revisão de código: centro-custo-tabela.tsx). Sem efeito se `linkPara` estiver presente. */
+  hoverLinha?: boolean;
 }
 
 export function TabelaLista<TData extends Record<string, any>>({
@@ -150,6 +152,7 @@ export function TabelaLista<TData extends Record<string, any>>({
   textoVazio = "Nada encontrado.",
   acoes,
   linkPara,
+  hoverLinha = true,
 }: TabelaListaProps<TData>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
@@ -256,7 +259,7 @@ export function TabelaLista<TData extends Record<string, any>>({
               </tr>
             ) : (
               linhas.map((row) => (
-                <tr key={row.id} className={cn("group border-b border-border last:border-none hover:bg-muted/40", linkPara && "cursor-pointer")}>
+                <tr key={row.id} className={cn("group border-b border-border last:border-none", hoverLinha && "hover:bg-muted/40", linkPara && "cursor-pointer")}>
                   {row.getAllCells().map((cell, i) => (
                     <td
                       key={cell.id}

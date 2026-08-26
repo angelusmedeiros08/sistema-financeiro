@@ -9,7 +9,10 @@
 // Entradas/Saídas são links pros lançamentos que formam aquela soma —
 // Saldo não (é uma subtração, não existe "os lançamentos do saldo") — por
 // isso a linha inteira não vira `linkPara` como nas outras tabelas, cada
-// valor tem seu próprio destino.
+// valor tem seu próprio destino. `hoverLinha={false}` some com o realce de
+// fundo da linha inteira (achado em revisão de código: sem isso, passar o
+// mouse sobre "Centro de custo"/"Saldo" parecia convidar a clicar em
+// qualquer lugar, mas só Entradas/Saídas navegam de verdade).
 import Link from "next/link";
 import type { LinhaCentroCusto } from "@/lib/relatorios/centro-custo";
 import { formatarNumeroCompacto, formatarPercentual } from "@/lib/formatacao";
@@ -68,6 +71,7 @@ export function CentroCustoTabela({ linhas }: { linhas: LinhaCentroCusto[] }) {
       columns={colunas}
       buscaPlaceholder="Buscar centro de custo…"
       textoVazio="Nenhum lançamento rateado por centro de custo no período selecionado."
+      hoverLinha={false}
     />
   );
 }

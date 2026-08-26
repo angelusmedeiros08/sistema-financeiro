@@ -86,7 +86,12 @@ export async function buscarLancamentosFiltrados(
   }
 }
 
-async function buscarNome(supabase: Cliente, tabela: "categorias_financeiras" | "centros_custo" | "pessoas", tenantId: string, id: string): Promise<string> {
+async function buscarNome(
+  supabase: Cliente,
+  tabela: "categorias_financeiras" | "centros_custo" | "pessoas" | "formas_pagamento",
+  tenantId: string,
+  id: string,
+): Promise<string> {
   const { data } = await supabase.from(tabela).select("nome").eq("id", id).eq("tenant_id", tenantId).maybeSingle();
   return data?.nome ?? "-";
 }
@@ -121,13 +126,17 @@ async function buscarPorMovimento(
     .filter((l) => !opcoes.apenasTipo || l.tipo === opcoes.apenasTipo)
     .filter((l) => (valor === "nenhuma" ? l[opcoes.campo] === null : l[opcoes.campo] !== null && valor.includes(l[opcoes.campo] as string)));
 
-  if (linhas.length === 0) return VAZIO(valor === "nenhuma" ? opcoes.rotuloNenhuma : "-");
+  // Resolvido ANTES do early-return de "sem resultado" — um centro de
+  // custo/categoria real com 0 lançamentos no filtro (ex.: Entradas de um
+  // centro que só teve despesa) ainda merece aparecer pelo nome de
+  // verdade, não um "-" genérico (achado em revisão de código).
+  const rotulo = valor === "nenhuma" ? opcoes.rotuloNenhuma : valor.length > 1 ? opcoes.rotuloVarios : await opcoes.buscarRotulo(valor[0]);
+
+  if (linhas.length === 0) return VAZIO(rotulo);
 
   const total = linhas.reduce((soma, l) => soma + l.valor, 0);
   const valorPorEvento = new Map<string, number>();
   for (const l of linhas) valorPorEvento.set(l.eventoFinanceiroId, (valorPorEvento.get(l.eventoFinanceiroId) ?? 0) + l.valor);
-
-  const rotulo = valor === "nenhuma" ? opcoes.rotuloNenhuma : valor.length > 1 ? opcoes.rotuloVarios : await opcoes.buscarRotulo(valor[0]);
 
   return { linhas: await buscarEventosPorId(supabase, tenantId, valorPorEvento), total, quantidade: valorPorEvento.size, rotulo };
 }
@@ -150,7 +159,22 @@ async function buscarPorFormaPagamento(
 
   const { data } = await query;
   const baixas = data ?? [];
-  if (baixas.length === 0) return VAZIO(valor === "nenhuma" ? "Não informado" : "-");
+
+  // valor.length checado ANTES de olhar o nome — uma "Outras" com 2+ ids
+  // não pode virar o nome da primeira baixa só porque ela por acaso tem
+  // nome (achado ao vivo: "Cartão" sozinho representando Cartão + Cartão de
+  // Crédito juntos, escondendo que é um agregado). Resolvido a partir de
+  // `formas_pagamento` direto (não de `baixas[0]`) pra não virar "-" numa
+  // forma real que simplesmente não teve baixa no período (achado em
+  // revisão de código).
+  const rotulo =
+    valor === "nenhuma"
+      ? "Não informado"
+      : valor.length > 1
+        ? "Várias formas de pagamento"
+        : await buscarNome(supabase, "formas_pagamento", tenantId, valor[0]);
+
+  if (baixas.length === 0) return VAZIO(rotulo);
 
   const total = baixas.reduce((soma, b) => soma + Number(b.valor_pago), 0);
   const valorPorEvento = new Map<string, number>();
@@ -158,11 +182,6 @@ async function buscarPorFormaPagamento(
     const eventoId = b.parcelas!.evento_financeiro_id;
     valorPorEvento.set(eventoId, (valorPorEvento.get(eventoId) ?? 0) + Number(b.valor_pago));
   }
-  // valor.length checado ANTES de olhar o nome — uma "Outras" com 2+ ids
-  // não pode virar o nome da primeira baixa só porque ela por acaso tem
-  // nome (achado ao vivo: "Cartão" sozinho representando Cartão + Cartão de
-  // Crédito juntos, escondendo que é um agregado).
-  const rotulo = valor === "nenhuma" ? "Não informado" : valor.length > 1 ? "Várias formas de pagamento" : (baixas[0].formas_pagamento?.nome ?? "-");
 
   return { linhas: await buscarEventosPorId(supabase, tenantId, valorPorEvento), total, quantidade: baixas.length, rotulo };
 }
