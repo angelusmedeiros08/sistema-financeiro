@@ -243,8 +243,16 @@ export function PassoRevisao({
                     ) : (
                       <CheckCircle size={16} weight="fill" className="text-positivo" />
                     )}
-                    {l.erros.length > 0 && <p className="mt-0.5 max-w-40 text-xs text-muted-foreground">{l.erros.join(" ")}</p>}
-                    {l.avisos.length > 0 && <p className="mt-0.5 max-w-40 text-xs text-amber-700 dark:text-amber-400">{l.avisos.join(" ")}</p>}
+                    {l.erros.length > 0 && (
+                      <p className="mt-0.5 max-w-40 truncate text-xs text-muted-foreground" title={l.erros.join(" ")}>
+                        {l.erros.join(" ")}
+                      </p>
+                    )}
+                    {l.avisos.length > 0 && (
+                      <p className="mt-0.5 max-w-40 truncate text-xs text-amber-700 dark:text-amber-400" title={l.avisos.join(" ")}>
+                        {l.avisos.join(" ")}
+                      </p>
+                    )}
                   </TableCell>
                   <TableCell>
                     <Input className="h-7 w-36 text-xs" value={l.nome} onChange={(e) => editarCampo(l.linha, "nome", e.target.value)} />

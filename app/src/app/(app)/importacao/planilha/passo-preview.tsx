@@ -235,7 +235,9 @@ export function PassoPreview({
                 <TableCell>
                   <StatusIcone status={l.status} />
                   {(l.erros.length > 0 || l.avisos.length > 0) && (
-                    <p className="mt-0.5 max-w-40 text-xs text-muted-foreground">{[...l.erros, ...l.avisos].join(" ")}</p>
+                    <p className="mt-0.5 max-w-40 truncate text-xs text-muted-foreground" title={[...l.erros, ...l.avisos].join(" ")}>
+                      {[...l.erros, ...l.avisos].join(" ")}
+                    </p>
                   )}
                 </TableCell>
                 <TableCell>
