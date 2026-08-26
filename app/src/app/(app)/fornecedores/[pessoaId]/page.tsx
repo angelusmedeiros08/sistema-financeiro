@@ -6,13 +6,16 @@ import { DetalhePessoa } from "@/components/pessoas/detalhe-pessoa";
 
 export default async function PaginaDetalheFornecedor({
   params,
+  searchParams,
 }: {
   params: Promise<{ pessoaId: string }>;
+  searchParams: Promise<{ voltar?: string }>;
 }) {
   const contexto = await obterUsuarioETenantAtual();
   if ("erro" in contexto) redirect("/entrar");
 
   const { pessoaId } = await params;
+  const { voltar } = await searchParams;
   const supabase = await createClient();
 
   const [pessoa, camposPersonalizados, lancamentos] = await Promise.all([
@@ -24,6 +27,6 @@ export default async function PaginaDetalheFornecedor({
   if (!pessoa) notFound();
 
   return (
-    <DetalhePessoa pessoa={pessoa} camposPersonalizados={camposPersonalizados} lancamentos={lancamentos} caminhoBase="fornecedores" />
+    <DetalhePessoa pessoa={pessoa} camposPersonalizados={camposPersonalizados} lancamentos={lancamentos} caminhoBase="fornecedores" voltar={voltar} />
   );
 }
