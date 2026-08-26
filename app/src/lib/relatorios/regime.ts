@@ -10,6 +10,7 @@ export type Regime = "competencia" | "previsto" | "realizado";
 export type Granularidade = "dia" | "semana" | "mes" | "trimestre" | "ano";
 
 export type MovimentoLinha = {
+  eventoFinanceiroId: string;
   categoriaId: string | null;
   centroCustoId: string | null;
   contaFinanceiraId: string | null;
@@ -30,7 +31,7 @@ export async function buscarMovimento(
   if (params.regime === "realizado") {
     const { data } = await supabase
       .from("vw_movimento_realizado")
-      .select("categoria_id, centro_custo_id, conta_financeira_id, pessoa_id, tipo, valor, data_pagamento")
+      .select("evento_financeiro_id, categoria_id, centro_custo_id, conta_financeira_id, pessoa_id, tipo, valor, data_pagamento")
       .eq("tenant_id", params.tenantId)
       .gte("data_pagamento", params.dataInicio)
       .lte("data_pagamento", params.dataFim);
@@ -38,6 +39,7 @@ export async function buscarMovimento(
     return (data ?? [])
       .filter((l) => l.tipo && l.data_pagamento)
       .map((l) => ({
+        eventoFinanceiroId: l.evento_financeiro_id!,
         categoriaId: l.categoria_id,
         centroCustoId: l.centro_custo_id,
         contaFinanceiraId: l.conta_financeira_id,
@@ -51,7 +53,7 @@ export async function buscarMovimento(
   const coluna = params.regime === "competencia" ? "data_competencia" : "data_vencimento";
   const { data } = await supabase
     .from("vw_movimento_competencia_previsto")
-    .select("categoria_id, centro_custo_id, conta_financeira_id, pessoa_id, tipo, valor, data_competencia, data_vencimento")
+    .select("evento_financeiro_id, categoria_id, centro_custo_id, conta_financeira_id, pessoa_id, tipo, valor, data_competencia, data_vencimento")
     .eq("tenant_id", params.tenantId)
     .gte(coluna, params.dataInicio)
     .lte(coluna, params.dataFim);
@@ -59,6 +61,7 @@ export async function buscarMovimento(
   return (data ?? [])
     .filter((l) => l.tipo)
     .map((l) => ({
+      eventoFinanceiroId: l.evento_financeiro_id!,
       categoriaId: l.categoria_id,
       centroCustoId: l.centro_custo_id,
       contaFinanceiraId: l.conta_financeira_id,

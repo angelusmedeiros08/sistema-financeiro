@@ -73,6 +73,11 @@ export async function buscarDistribuicaoFormaPagamento(
         href: montarHrefLancamentos({
           tipoEntidade: "forma_pagamento",
           entidadeId: formaPagamentoId,
+          // Ignorado por /lancamentos pra esta dimensão (forma de pagamento
+          // é sempre baseada em baixas.data_pagamento, sem noção de
+          // "previsto"/"competência") — "realizado" só por ser o rótulo
+          // mais correto pro contrato de URL, nunca é lido de volta.
+          regime: "realizado",
           periodoInicio: dataInicio,
           periodoFim: dataFim,
           origemHref: params.origemHref,

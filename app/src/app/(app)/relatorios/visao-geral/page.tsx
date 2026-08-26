@@ -156,6 +156,7 @@ export default async function PaginaRelatoriosVisaoGeral({
           titulo="Top receitas"
           linhas={topReceitas}
           dimensao="categoria"
+          regime={params.regime}
           periodoInicio={params.dataInicio}
           periodoFim={params.dataFim}
           origemHref={origemHref}
@@ -164,6 +165,7 @@ export default async function PaginaRelatoriosVisaoGeral({
           titulo="Top despesas"
           linhas={topDespesas}
           dimensao="categoria"
+          regime={params.regime}
           periodoInicio={params.dataInicio}
           periodoFim={params.dataFim}
           origemHref={origemHref}

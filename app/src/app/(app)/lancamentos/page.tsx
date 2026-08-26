@@ -4,6 +4,7 @@ import { ArrowLeft } from "@phosphor-icons/react/dist/ssr";
 import { createClient } from "@/utils/supabase/server";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
 import { buscarLancamentosFiltrados, type FiltroLancamentos } from "@/lib/relatorios/lancamentos-filtrados";
+import type { Regime } from "@/lib/relatorios/regime";
 import { TabelaEventos } from "@/components/lancamentos/tabela-eventos";
 import { formatarMoeda, formatarDataComAno } from "@/lib/formatacao";
 
@@ -18,10 +19,23 @@ const DIMENSOES = [
   { param: "pessoa_id", dimensao: "pessoa" as const },
 ];
 
+const REGIMES: Regime[] = ["competencia", "previsto", "realizado"];
+
 function parseValor(bruto: string | undefined): string[] | "nenhuma" | null {
   if (!bruto) return null;
   if (bruto === "nenhuma") return "nenhuma";
   return bruto.split(",").filter(Boolean);
+}
+
+// `voltar` vem cru da querystring — só aceita caminho interno (começa com
+// "/", não é "//algo" — esse é o truque clássico de URL "protocol-relative"
+// pra escapar do domínio). Sem essa checagem, um link
+// `?voltar=https://phishing.example.com` levaria o botão "Voltar pro
+// relatório" pra fora do sistema (achado em revisão de código).
+function caminhoInternoSeguro(bruto: string | undefined): string | null {
+  if (!bruto) return null;
+  if (!bruto.startsWith("/") || bruto.startsWith("//")) return null;
+  return bruto;
 }
 
 export default async function PaginaLancamentos({
@@ -33,13 +47,15 @@ export default async function PaginaLancamentos({
   if ("erro" in contexto) redirect("/entrar");
 
   const sp = await searchParams;
-  const { periodo_inicio: periodoInicio, periodo_fim: periodoFim, voltar } = sp;
+  const { periodo_inicio: periodoInicio, periodo_fim: periodoFim } = sp;
+  const voltar = caminhoInternoSeguro(sp.voltar);
+  const regime: Regime = REGIMES.includes(sp.regime as Regime) ? (sp.regime as Regime) : "competencia";
 
   const dimensaoAtiva = DIMENSOES.find((d) => sp[d.param] !== undefined);
   const valor = dimensaoAtiva ? parseValor(sp[dimensaoAtiva.param]) : null;
   if (!dimensaoAtiva || !valor || !periodoInicio || !periodoFim) notFound();
 
-  const filtro: FiltroLancamentos = { dimensao: dimensaoAtiva.dimensao, valor };
+  const filtro: FiltroLancamentos = { dimensao: dimensaoAtiva.dimensao, valor, regime };
 
   const supabase = await createClient();
   const resultado = await buscarLancamentosFiltrados(supabase, { tenantId: contexto.tenantId, filtro, periodoInicio, periodoFim });

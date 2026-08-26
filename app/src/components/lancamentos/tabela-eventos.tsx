@@ -14,10 +14,14 @@ type EventoLinha = {
   valor_total: number;
   parcelas: { status: string; data_vencimento: string }[] | null;
   rateio_categoria: { categorias_financeiras: { nome: string } | null }[] | null;
-  // Só usado quando a tabela mistura receita e despesa na mesma lista (tela
-  // de Lançamentos filtrados) — Despesas/Receitas nunca precisam disso,
-  // já sabem o tipo pelo `caminhoBase` fixo.
+  // Os 2 campos abaixo só vêm preenchidos na tela de Lançamentos filtrados
+  // (mistura receita/despesa, e o evento pode estar dividido entre mais de
+  // uma categoria/forma de pagamento) — Despesas/Receitas nunca os passam.
   tipo?: "RECEITA" | "DESPESA";
+  // Fração do evento que corresponde ao filtro ativo — mostrada no lugar de
+  // valor_total quando presente, pra linha não exibir o valor cheio de um
+  // evento que só está aqui parcialmente (ex.: metade pago em Pix).
+  valorFiltrado?: number;
 };
 
 const helper = criarColunaLista<EventoLinha>();
@@ -71,7 +75,7 @@ const colunas = helper.columns([
       );
     },
   }),
-  helper.accessor("valor_total", {
+  helper.accessor((e) => e.valorFiltrado ?? e.valor_total, {
     id: "valor",
     header: "Valor",
     meta: { numerica: true },

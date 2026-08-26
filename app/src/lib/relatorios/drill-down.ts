@@ -6,6 +6,8 @@
 // /fornecedores) — revertido: quem clica numa fatia de pessoa quer ver os
 // lançamentos dela direto, não pousar na tela de cadastro (achado ao vivo,
 // não em brainstorming). Todo tipo de entidade cai igual em /lancamentos.
+import type { Regime } from "./regime";
+
 export type TipoEntidadeDrillDown = "pessoa" | "categoria" | "forma_pagamento" | "centro_custo";
 
 const PARAM_POR_TIPO: Record<TipoEntidadeDrillDown, string> = {
@@ -21,9 +23,15 @@ const PARAM_POR_TIPO: Record<TipoEntidadeDrillDown, string> = {
 // nenhum por trás). Sem chamada ao banco — pode rodar tanto no servidor
 // quanto direto no componente de gráfico (client), pro caso da fatia
 // "Outras" agregar ids que o servidor nunca viu juntos numa linha só.
+//
+// `regime` é ignorado pela dimensão forma_pagamento (sempre baseada em
+// baixas.data_pagamento — "realizado" por natureza, não tem "previsto"
+// nem "competência") — carregado do mesmo jeito por simplicidade de
+// contrato, não porque toda dimensão precisa dele.
 export function montarHrefLancamentos(params: {
   tipoEntidade: TipoEntidadeDrillDown;
   entidadeId: string | string[] | null;
+  regime: Regime;
   periodoInicio: string;
   periodoFim: string;
   origemHref: string;
@@ -31,6 +39,7 @@ export function montarHrefLancamentos(params: {
   const valorParam = Array.isArray(params.entidadeId) ? params.entidadeId.join(",") : (params.entidadeId ?? "nenhuma");
   const query = new URLSearchParams({
     [PARAM_POR_TIPO[params.tipoEntidade]]: valorParam,
+    regime: params.regime,
     periodo_inicio: params.periodoInicio,
     periodo_fim: params.periodoFim,
     voltar: params.origemHref,

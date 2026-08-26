@@ -63,6 +63,7 @@ export async function buscarConcentracaoReceita(
     href: montarHrefLancamentos({
       tipoEntidade: "pessoa",
       entidadeId: c.pessoaId,
+      regime: "competencia",
       periodoInicio: dataInicio,
       periodoFim: dataFim,
       origemHref: params.origemHref,

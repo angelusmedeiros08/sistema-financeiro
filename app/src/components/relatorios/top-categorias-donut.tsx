@@ -9,6 +9,7 @@ import { localPoint } from "@visx/event";
 import { formatarMoeda, formatarNumeroAbreviado, formatarPercentual } from "@/lib/formatacao";
 import type { LinhaAnaliseCategoria } from "@/lib/relatorios/analise-despesas";
 import { montarHrefLancamentos, type TipoEntidadeDrillDown } from "@/lib/relatorios/drill-down";
+import type { Regime } from "@/lib/relatorios/regime";
 
 // Rosca com até 5 fatias + "Outras" agregando o resto — estilo validado no
 // companion de brainstorming (preferido a ranking em barra e a treemap).
@@ -33,29 +34,37 @@ type Fatia = { rotulo: string; total: number; cor: string; href: string };
 // trazem o próprio href pronto do servidor (linha.href), só o agregado
 // "Outras" precisa ser montado aqui, porque é uma combinação de ids que
 // nenhuma linha isolada representa sozinha.
-type ContextoDrillDown = { dimensao: TipoEntidadeDrillDown; periodoInicio: string; periodoFim: string; origemHref: string };
+type ContextoDrillDown = { dimensao: TipoEntidadeDrillDown; regime: Regime; periodoInicio: string; periodoFim: string; origemHref: string };
 
 function agregarFatias(linhas: LinhaAnaliseCategoria[], contexto: ContextoDrillDown): Fatia[] {
   const ordenadas = [...linhas].sort((a, b) => b.total - a.total);
   const principais = ordenadas.slice(0, MAX_FATIAS_NOMEADAS);
   const resto = ordenadas.slice(MAX_FATIAS_NOMEADAS);
-  const totalResto = resto.reduce((soma, l) => soma + l.total, 0);
 
   const fatias: Fatia[] = principais.map((linha, i) => ({ rotulo: linha.categoriaNome, total: linha.total, cor: PALETA[i], href: linha.href }));
-  if (totalResto > 0) {
-    // Um id nulo dentro do "resto" (bucket "Não informado" ranqueado baixo
-    // o bastante pra não entrar no top 5) fica de fora da lista — não dá
-    // pra combinar "estes ids" com "sem esse dado" no mesmo filtro; caso
-    // raro, resolvido no lado seguro (fatia clicável, só não 100% completa).
-    const idsResto = resto.map((l) => l.entidadeId).filter((id): id is string => id !== null);
+
+  // O bucket "Não informado"/"Sem pessoa" (id nulo) nunca entra no
+  // agregado "Outras" — misturar "estes ids" com "sem esse dado" no mesmo
+  // link não é possível (o total de "Outras" ficaria maior que a soma dos
+  // ids que o link de fato carrega, achado em revisão de código). Se ele
+  // ficou de fora do top 5, vira fatia própria, fora da contagem de 5 —
+  // continua sempre clicável e com o total certo.
+  const semId = resto.find((l) => l.entidadeId === null);
+  if (semId) fatias.push({ rotulo: semId.categoriaNome, total: semId.total, cor: "#9CA3AF", href: semId.href });
+
+  const restoComId = resto.filter((l) => l.entidadeId !== null);
+  const totalRestoComId = restoComId.reduce((soma, l) => soma + l.total, 0);
+  if (totalRestoComId > 0) {
+    const idsResto = restoComId.map((l) => l.entidadeId as string);
     const href = montarHrefLancamentos({
       tipoEntidade: contexto.dimensao,
       entidadeId: idsResto,
+      regime: contexto.regime,
       periodoInicio: contexto.periodoInicio,
       periodoFim: contexto.periodoFim,
       origemHref: contexto.origemHref,
     });
-    fatias.push({ rotulo: "Outras", total: totalResto, cor: PALETA[PALETA.length - 1], href });
+    fatias.push({ rotulo: "Outras", total: totalRestoComId, cor: PALETA[PALETA.length - 1], href });
   }
   return fatias;
 }
@@ -75,6 +84,7 @@ export function TopCategoriasDonut({
   titulo,
   linhas,
   dimensao,
+  regime,
   periodoInicio,
   periodoFim,
   origemHref,
@@ -82,12 +92,13 @@ export function TopCategoriasDonut({
   titulo: string;
   linhas: LinhaAnaliseCategoria[];
   dimensao: TipoEntidadeDrillDown;
+  regime: Regime;
   periodoInicio: string;
   periodoFim: string;
   origemHref: string;
 }) {
   const router = useRouter();
-  const fatias = agregarFatias(linhas, { dimensao, periodoInicio, periodoFim, origemHref });
+  const fatias = agregarFatias(linhas, { dimensao, regime, periodoInicio, periodoFim, origemHref });
   const total = fatias.reduce((soma, f) => soma + f.total, 0);
   const [hoverIndice, setHoverIndice] = useState<number | null>(null);
 

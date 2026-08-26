@@ -59,6 +59,7 @@ export async function buscarAnaliseCategorias(
         href: montarHrefLancamentos({
           tipoEntidade: "categoria",
           entidadeId: categoriaId,
+          regime: params.regime,
           periodoInicio: params.dataInicio,
           periodoFim: params.dataFim,
           origemHref: params.origemHref,

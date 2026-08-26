@@ -89,6 +89,7 @@ export default async function PaginaIndicadores() {
           titulo="Top clientes por receita (últimos 12 meses)"
           linhas={donutClientes}
           dimensao="pessoa"
+          regime="competencia"
           periodoInicio={isoMenosMeses(12)}
           periodoFim={hoje}
           origemHref={origemHref}
@@ -122,6 +123,7 @@ export default async function PaginaIndicadores() {
             titulo="Distribuição por forma de pagamento (últimos 6 meses)"
             linhas={donutFormaPagamento}
             dimensao="forma_pagamento"
+            regime="realizado"
             periodoInicio={isoMenosMeses(6)}
             periodoFim={hoje}
             origemHref={origemHref}
