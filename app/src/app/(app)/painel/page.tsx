@@ -222,33 +222,38 @@ export default async function PaginaPainel() {
           ) : (
             <ul className="flex flex-col">
               {dados.eventosRecentes.map((evento) => (
-                <li key={evento.id} className="flex items-center gap-3 border-b border-border py-2.5 last:border-none">
-                  <span
-                    className={
-                      "flex size-8 shrink-0 items-center justify-center rounded-lg " +
-                      (evento.tipo === "RECEITA" ? "bg-positivo" : "bg-destructive")
-                    }
+                <li key={evento.id} className="border-b border-border last:border-none">
+                  <Link
+                    href={evento.tipo === "RECEITA" ? `/receitas/${evento.id}` : `/despesas/${evento.id}`}
+                    className="-mx-2 flex items-center gap-3 rounded-lg px-2 py-2.5 hover:bg-muted/40"
                   >
-                    {evento.tipo === "RECEITA" ? (
-                      <HandCoins size={15} weight="bold" className="text-white" />
-                    ) : (
-                      <Wallet size={15} weight="bold" className="text-white" />
+                    <span
+                      className={
+                        "flex size-8 shrink-0 items-center justify-center rounded-lg " +
+                        (evento.tipo === "RECEITA" ? "bg-positivo" : "bg-destructive")
+                      }
+                    >
+                      {evento.tipo === "RECEITA" ? (
+                        <HandCoins size={15} weight="bold" className="text-white" />
+                      ) : (
+                        <Wallet size={15} weight="bold" className="text-white" />
+                      )}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-foreground">{evento.descricao ?? "Sem descrição"}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {evento.tipo === "RECEITA" ? "Receita" : "Despesa"} · {tempoRelativo(evento.dataCompetencia)}
+                      </p>
+                    </div>
+                    {evento.status && (
+                      <Badge className={cn("border-none font-semibold", COR_STATUS_PARCELA[evento.status])}>
+                        {ROTULO_STATUS_PARCELA[evento.status] ?? evento.status}
+                      </Badge>
                     )}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-foreground">{evento.descricao ?? "Sem descrição"}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {evento.tipo === "RECEITA" ? "Receita" : "Despesa"} · {tempoRelativo(evento.dataCompetencia)}
-                    </p>
-                  </div>
-                  {evento.status && (
-                    <Badge className={cn("border-none font-semibold", COR_STATUS_PARCELA[evento.status])}>
-                      {ROTULO_STATUS_PARCELA[evento.status] ?? evento.status}
-                    </Badge>
-                  )}
-                  <span className="text-right text-sm font-semibold tabular-nums text-foreground">
-                    {formatarMoeda(evento.valor_total)}
-                  </span>
+                    <span className="text-right text-sm font-semibold tabular-nums text-foreground">
+                      {formatarMoeda(evento.valor_total)}
+                    </span>
+                  </Link>
                 </li>
               ))}
             </ul>
