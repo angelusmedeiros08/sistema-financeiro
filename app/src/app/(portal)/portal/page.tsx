@@ -46,7 +46,7 @@ export default async function PaginaPortal() {
           detalhe={`Vencido: ${formatarMoeda(dados.vencidosPagar.vencidoTotal)} · Vence hoje: ${formatarMoeda(dados.vencidosPagar.venceHojeTotal)}`}
         />
         <StatCard variant="sage" label="Pago (mês)" valor={formatarMoeda(dados.pagoDoMes)} />
-        <StatCard variant="coral" label="Resultado do mês" valor={formatarMoeda(dados.resultadoDoMes)} />
+        <StatCard variant="coral" label="Resultado do mês" valor={formatarMoeda(dados.resultadoDoMes.liquido)} />
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.3fr_1fr]">

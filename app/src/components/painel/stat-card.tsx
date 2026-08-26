@@ -42,9 +42,13 @@ type StatCardProps = VariantProps<typeof cartaoVariantes> & {
   // direto de um vídeo do sócio do usuário ("ver o total → entender o que
   // forma aquele total"). Sem href, comportamento idêntico ao de antes.
   href?: string;
+  // Conteúdo extra depois do sparkline — usado quando o número do card é
+  // uma subtração (ex.: Resultado do mês) e não pode virar link ele mesmo,
+  // mas as duas parcelas que o compõem podem (Receitas/Despesas do mês).
+  children?: React.ReactNode;
 };
 
-export function StatCard({ label, valor, detalhe, variant, delta, serie, icon: Icon, href }: StatCardProps) {
+export function StatCard({ label, valor, detalhe, variant, delta, serie, icon: Icon, href, children }: StatCardProps) {
   const v = variant ?? "sage";
   const deltaPositivo = typeof delta === "number" && delta >= 0;
   const corDelta = v === "hero" ? "text-white" : deltaPositivo ? "text-positivo" : "text-destructive";
@@ -92,6 +96,8 @@ export function StatCard({ label, valor, detalhe, variant, delta, serie, icon: I
           <Sparkline dados={serie} cor={corSpark} />
         </div>
       )}
+
+      {children}
 
       {href && (
         <ArrowRight

@@ -66,6 +66,22 @@ export default async function PaginaPainel() {
     rotulo: `Pago em ${nomeMes}`,
     origemHref,
   });
+  const hrefReceitasDoMes = montarHrefLancamentosSemDimensao({
+    regime: "competencia",
+    tipo: "RECEITA",
+    periodoInicio: mesInicio,
+    periodoFim: mesFim,
+    rotulo: `Receitas de ${nomeMes}`,
+    origemHref,
+  });
+  const hrefDespesasDoMes = montarHrefLancamentosSemDimensao({
+    regime: "competencia",
+    tipo: "DESPESA",
+    periodoInicio: mesInicio,
+    periodoFim: mesFim,
+    rotulo: `Despesas de ${nomeMes}`,
+    origemHref,
+  });
 
   return (
     <div className="mx-auto grid max-w-[1400px] grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
@@ -106,13 +122,22 @@ export default async function PaginaPainel() {
           <div className="lg:col-span-7">
             <MotionCard index={1}>
               <StatCard
-                variant={dados.resultadoDoMes >= 0 ? "teal" : "coral"}
+                variant={dados.resultadoDoMes.liquido >= 0 ? "teal" : "coral"}
                 label="Resultado do mês"
-                valor={formatarMoeda(dados.resultadoDoMes)}
+                valor={formatarMoeda(dados.resultadoDoMes.liquido)}
                 detalhe="Receitas menos despesas no mês corrente, por competência"
                 delta={dados.resultadoDeltaPercentual}
                 serie={dados.fluxo.map((f) => f.receitas - f.despesas)}
-              />
+              >
+                <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs font-semibold">
+                  <Link href={hrefReceitasDoMes} className="text-positivo hover:underline">
+                    Receitas: {formatarMoeda(dados.resultadoDoMes.receitas)}
+                  </Link>
+                  <Link href={hrefDespesasDoMes} className="text-destructive hover:underline">
+                    Despesas: {formatarMoeda(dados.resultadoDoMes.despesas)}
+                  </Link>
+                </div>
+              </StatCard>
             </MotionCard>
           </div>
         </div>

@@ -78,7 +78,13 @@ async function obterPendentesPorTipo(
   };
 }
 
-async function obterResultadoDoMes(supabase: Cliente, tenantId: string, pessoaId?: string): Promise<number> {
+export type ResultadoDoMes = { liquido: number; receitas: number; despesas: number };
+
+// Receitas/despesas separadas (não só o líquido) — Resultado do mês ganhou 2
+// linhas linkáveis pro Painel clicável (ver spec 2026-08-26-painel-clicavel);
+// o líquido em si continua sem link (é subtração, não soma direta de
+// lançamentos — mesmo precedente de "Saldo" em Centro de Custo).
+async function obterResultadoDoMes(supabase: Cliente, tenantId: string, pessoaId?: string): Promise<ResultadoDoMes> {
   let query = supabase
     .from("eventos_financeiros")
     .select("tipo, valor_total")
@@ -90,12 +96,18 @@ async function obterResultadoDoMes(supabase: Cliente, tenantId: string, pessoaId
 
   const { data } = await query;
 
-  if (!data) return 0;
-
-  return data.reduce(
-    (acc, e) => acc + (e.tipo === "RECEITA" ? Number(e.valor_total) : -Number(e.valor_total)),
-    0,
-  );
+  const resultado: ResultadoDoMes = { liquido: 0, receitas: 0, despesas: 0 };
+  for (const e of data ?? []) {
+    const valor = Number(e.valor_total);
+    if (e.tipo === "RECEITA") {
+      resultado.receitas += valor;
+      resultado.liquido += valor;
+    } else {
+      resultado.despesas += valor;
+      resultado.liquido -= valor;
+    }
+  }
+  return resultado;
 }
 
 // Quanto já virou caixa de fato este mês — reaproveita o mesmo mecanismo de
@@ -263,7 +275,7 @@ export async function obterDadosPainel(supabase: Cliente, tenantId: string, pess
     recebidoDoMes: recebidoPago.recebido,
     pagoDoMes: recebidoPago.pago,
     saldoSerieSeisMeses: reconstruirSerieSaldo(saldoEmCaixa, fluxo),
-    resultadoDeltaPercentual: resultadoMesAnterior !== undefined ? deltaPercentual(resultadoDoMes, resultadoMesAnterior) : undefined,
+    resultadoDeltaPercentual: resultadoMesAnterior !== undefined ? deltaPercentual(resultadoDoMes.liquido, resultadoMesAnterior) : undefined,
     primeirosPassos,
   };
 }
