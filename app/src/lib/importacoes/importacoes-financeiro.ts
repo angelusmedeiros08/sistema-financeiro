@@ -84,11 +84,16 @@ export async function registrarItensPendentesFinanceira(
   return { itensPorLinha };
 }
 
+// Propaga erro de UPDATE (em vez de void) — mesmo padrão de
+// atualizarItemImportacao (importacoes.ts). Sem isso, um UPDATE que falhar
+// silenciosamente (ex.: policy de RLS faltando, gotcha recorrente já
+// documentado neste projeto) deixaria o item preso em "pendente" sem
+// nenhum sinal de que algo deu errado (achado em revisão de código).
 export async function atualizarItemImportacaoFinanceira(
   supabase: Cliente,
   params: { item_id: string; status: "sucesso" | "erro"; evento_financeiro_id?: string | null; erro?: string | null },
-): Promise<void> {
-  await supabase
+): Promise<{ sucesso: true } | { erro: string }> {
+  const { error } = await supabase
     .from("importacoes_itens")
     .update({
       status: params.status,
@@ -96,10 +101,16 @@ export async function atualizarItemImportacaoFinanceira(
       erro: params.erro ?? null,
     })
     .eq("id", params.item_id);
+
+  if (error) return { erro: error.message };
+  return { sucesso: true };
 }
 
 export async function finalizarImportacaoFinanceira(supabase: Cliente, params: { importacao_id: string }): Promise<void> {
-  await supabase.from("importacoes").update({ status: "concluida" }).eq("id", params.importacao_id);
+  // processando_desde: null libera o lock de reivindicarProcessamento
+  // (importacoes.ts) — sem isso o lote ficaria bloqueado pra um novo
+  // Retomar até a janela de 10 minutos expirar mesmo já tendo terminado.
+  await supabase.from("importacoes").update({ status: "concluida", processando_desde: null }).eq("id", params.importacao_id);
 }
 
 type ItemAReverter = { item_id: string; evento_id: string; descricao: string; valor: number };

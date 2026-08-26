@@ -6,9 +6,9 @@ import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
 import {
   buscarItensParaRetomar,
   marcarImportacaoRetomando,
+  reivindicarProcessamento,
   preverDesfazerImportacaoPessoas,
   desfazerImportacaoPessoas,
-  type ItemImportacao,
   type PreviaDesfazerImportacaoPessoas,
   type ResultadoDesfazerImportacaoPessoas,
 } from "@/lib/importacoes/importacoes";
@@ -24,49 +24,53 @@ import {
   type ResultadoDesfazerFinanceira,
 } from "@/lib/importacoes/importacoes-financeiro";
 
-export async function prepararRetomadaAction(importacaoId: string): Promise<{ itens: ItemImportacao[] } | { erro: string }> {
+// Roda o lote inteiro de retomada dentro de UMA Server Action, do início
+// ao fim — antes, "Retomar" era um loop client-side (uma chamada por item)
+// exatamente igual ao padrão que o resto desta leva eliminou pra
+// importação normal (achado em revisão de código: sair da tela no meio de
+// um Retomar reintroduzia o mesmo risco). `tipo` é derivado aqui, no
+// servidor, a partir do próprio registro — nunca de um parâmetro vindo do
+// cliente (achado em revisão de código: um `tipo` adulterado ou
+// desatualizado podia rodar o commit errado sobre o item errado). O lock
+// de reivindicarProcessamento garante que uma segunda aba/sessão não possa
+// rodar isto ao mesmo tempo que a importação original ainda está em voo.
+export async function retomarImportacaoAction(importacaoId: string): Promise<{ processados: number } | { erro: string }> {
   const contexto = await obterUsuarioETenantAtual();
   if ("erro" in contexto) return { erro: contexto.erro };
 
   const supabase = await createClient();
+
+  const { data: importacao } = await supabase
+    .from("importacoes")
+    .select("tipo")
+    .eq("id", importacaoId)
+    .eq("tenant_id", contexto.tenantId)
+    .maybeSingle();
+  if (!importacao) return { erro: "Importação não encontrada." };
+
+  const lock = await reivindicarProcessamento(supabase, { tenant_id: contexto.tenantId, importacao_id: importacaoId });
+  if ("erro" in lock) return lock;
+
   const itens = await buscarItensParaRetomar(supabase, { tenant_id: contexto.tenantId, importacao_id: importacaoId });
   if (itens.length === 0) return { erro: "Não há linhas pendentes ou com erro pra retomar." };
 
   await marcarImportacaoRetomando(supabase, { importacao_id: importacaoId });
-  return { itens };
-}
 
-// Reaproveita a mesma action de commit por linha usada no assistente
-// original — o item já existe (criado quando o lote nasceu), só falta
-// commitar de novo. dados_normalizados foi salvo com o formato certo pro
-// tipo do lote (ParametrosImportarLinhaPessoa ou LinhaParaImportar), então
-// dá pra repassar direto — mas o tipo precisa vir de fora, senão um lote
-// financeiro sempre caía no importador de Pessoas (achado em revisão de
-// código; ver spec 2026-08-26-importacao-execucao-servidor).
-export async function retomarItemAction(
-  itemId: string,
-  dados: unknown,
-  tipo: "financeiro" | "pessoas",
-): Promise<{ evento_id: string } | { pessoa_id: string } | { erro: string }> {
-  if (tipo === "financeiro") return retomarItemFinanceiroAction(itemId, dados as LinhaParaImportar);
-  return importarLinhaPessoaAction(itemId, dados as ParametrosImportarLinhaPessoa);
-}
-
-// Mesmo motivo do retomarItemAction acima — sem o tipo, uma retomada
-// financeira também acabava marcando o lote pelo caminho de Pessoas.
-export async function finalizarRetomadaAction(
-  importacaoId: string,
-  status: "concluida" | "cancelada",
-  tipo: "financeiro" | "pessoas",
-): Promise<{ sucesso: true } | { erro: string }> {
-  if (tipo === "financeiro") {
-    const contexto = await obterUsuarioETenantAtual();
-    if ("erro" in contexto) return { erro: contexto.erro };
-    const supabase = await createClient();
-    await finalizarImportacaoFinanceira(supabase, { importacao_id: importacaoId });
-    return { sucesso: true };
+  for (const item of itens) {
+    if (importacao.tipo === "financeiro") {
+      await retomarItemFinanceiroAction(item.id, item.dadosNormalizados as unknown as LinhaParaImportar);
+    } else {
+      await importarLinhaPessoaAction(item.id, item.dadosNormalizados as unknown as ParametrosImportarLinhaPessoa);
+    }
   }
-  return finalizarImportacaoPessoasAction(importacaoId, status);
+
+  if (importacao.tipo === "financeiro") {
+    await finalizarImportacaoFinanceira(supabase, { importacao_id: importacaoId });
+  } else {
+    await finalizarImportacaoPessoasAction(importacaoId, "concluida");
+  }
+
+  return { processados: itens.length };
 }
 
 export async function preverDesfazerImportacaoAction(importacaoId: string): Promise<PreviaDesfazerImportacaoPessoas | { erro: string }> {

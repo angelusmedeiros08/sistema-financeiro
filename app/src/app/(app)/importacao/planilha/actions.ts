@@ -1,11 +1,13 @@
 "use server";
 
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/utils/supabase/server";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
 import { buscarChavesDuplicatas } from "@/lib/importacao/duplicatas";
 import { criarEntidadeAprovada, type EntidadeNova } from "@/lib/importacao/resolucao";
 import { commitarLinhaImportacao, type ParametrosCommitLinha } from "@/lib/importacao/commit";
+import { reivindicarProcessamento } from "@/lib/importacoes/importacoes";
 import {
   iniciarImportacaoFinanceira,
   registrarEntidadeCriada,
@@ -13,7 +15,9 @@ import {
   atualizarItemImportacaoFinanceira,
   finalizarImportacaoFinanceira,
 } from "@/lib/importacoes/importacoes-financeiro";
-import type { Json } from "@/utils/supabase/database.types";
+import type { Database, Json } from "@/utils/supabase/database.types";
+
+type Cliente = SupabaseClient<Database>;
 
 // Só as datas que aparecem no arquivo — nunca a tabela inteira do tenant.
 export async function verificarDuplicatasAction(datasCompetencia: string[]): Promise<{ chaves: string[] } | { erro: string }> {
@@ -80,8 +84,37 @@ export async function criarEntidadesAprovadasAction(
   return { resultados };
 }
 
-export type LinhaParaImportar = Omit<ParametrosCommitLinha, "tenant_id" | "criado_por"> & { linhaNumero?: number };
+export type LinhaParaImportar = Omit<ParametrosCommitLinha, "tenant_id" | "criado_por"> & { linhaNumero: number };
 export type ResultadoLinhaImportacao = { sucesso: boolean; erro?: string };
+
+// Commit de uma linha + atualização do item de rastreio — compartilhado
+// entre a execução principal (abaixo) e retomarItemFinanceiroAction, pra
+// não duplicar a mesma sequência "commitar, depois marcar sucesso/erro"
+// em dois lugares (achado em revisão de código: as duas cópias podiam
+// divergir silenciosamente).
+async function processarLinhaFinanceira(
+  supabase: Cliente,
+  tenantId: string,
+  criadoPor: string,
+  itemId: string,
+  dados: LinhaParaImportar,
+): Promise<{ evento_id: string } | { erro: string }> {
+  const { linhaNumero: _linhaNumero, ...paramsCommit } = dados;
+  const resultado = await commitarLinhaImportacao(supabase, {
+    ...paramsCommit,
+    tenant_id: tenantId,
+    criado_por: criadoPor,
+  });
+
+  await atualizarItemImportacaoFinanceira(supabase, {
+    item_id: itemId,
+    status: "erro" in resultado ? "erro" : "sucesso",
+    evento_financeiro_id: "erro" in resultado ? null : resultado.evento_id,
+    erro: "erro" in resultado ? resultado.erro : null,
+  });
+
+  return resultado;
+}
 
 // Roda o lote inteiro dentro de UMA Server Action, do início ao fim, no
 // servidor — antes, o cliente chamava uma ação por linha num loop
@@ -104,13 +137,19 @@ export async function executarImportacaoFinanceiraAction(
   // Item "pendente" de cada linha, registrado ANTES de qualquer commit —
   // só assim uma queda do servidor no meio do loop deixa rastro de quanto
   // faltou (e dado suficiente pra retomar depois). Ver
-  // registrarItensPendentesFinanceira.
+  // registrarItensPendentesFinanceira. Também reivindica o lock de
+  // processamento — impede uma segunda aba/sessão de rodar Retomar
+  // enquanto esta execução ainda está em voo (achado em revisão de
+  // código: duplicaria baixa/lançamento).
   let itensPorLinha: Record<number, string> = {};
   if (importacaoId) {
+    const lock = await reivindicarProcessamento(supabase, { tenant_id: contexto.tenantId, importacao_id: importacaoId });
+    if ("erro" in lock) return { erro: lock.erro };
+
     const registro = await registrarItensPendentesFinanceira(supabase, {
       importacao_id: importacaoId,
       tenant_id: contexto.tenantId,
-      linhas: linhas.filter((l) => l.linhaNumero !== undefined).map((l) => ({ linha_numero: l.linhaNumero as number, dados: l as unknown as Json })),
+      linhas: linhas.map((l) => ({ linha_numero: l.linhaNumero, dados: l as unknown as Json })),
     });
     if ("erro" in registro) return { erro: registro.erro };
     itensPorLinha = registro.itensPorLinha;
@@ -118,21 +157,16 @@ export async function executarImportacaoFinanceiraAction(
 
   const resultados: ResultadoLinhaImportacao[] = [];
 
-  for (const { linhaNumero, ...paramsCommit } of linhas) {
-    const resultado = await commitarLinhaImportacao(supabase, {
-      ...paramsCommit,
-      tenant_id: contexto.tenantId,
-      criado_por: contexto.user.id,
-    });
-
-    const itemId = linhaNumero !== undefined ? itensPorLinha[linhaNumero] : undefined;
+  for (const linha of linhas) {
+    const itemId = itensPorLinha[linha.linhaNumero];
+    let resultado: { evento_id: string } | { erro: string };
     if (itemId) {
-      await atualizarItemImportacaoFinanceira(supabase, {
-        item_id: itemId,
-        status: "erro" in resultado ? "erro" : "sucesso",
-        evento_financeiro_id: "erro" in resultado ? null : resultado.evento_id,
-        erro: "erro" in resultado ? resultado.erro : null,
-      });
+      resultado = await processarLinhaFinanceira(supabase, contexto.tenantId, contexto.user.id, itemId, linha);
+    } else {
+      // Só acontece sem importacaoId (sem rastreio, ex.: chamada de teste) —
+      // sem item pra atualizar, commita direto.
+      const { linhaNumero: _linhaNumero, ...paramsCommit } = linha;
+      resultado = await commitarLinhaImportacao(supabase, { ...paramsCommit, tenant_id: contexto.tenantId, criado_por: contexto.user.id });
     }
 
     resultados.push("erro" in resultado ? { sucesso: false, erro: resultado.erro } : { sucesso: true });
@@ -152,21 +186,7 @@ export async function retomarItemFinanceiroAction(itemId: string, dados: LinhaPa
   if ("erro" in contexto) return { erro: contexto.erro };
 
   const supabase = await createClient();
-  const { linhaNumero: _linhaNumero, ...paramsCommit } = dados;
-  const resultado = await commitarLinhaImportacao(supabase, {
-    ...paramsCommit,
-    tenant_id: contexto.tenantId,
-    criado_por: contexto.user.id,
-  });
-
-  await atualizarItemImportacaoFinanceira(supabase, {
-    item_id: itemId,
-    status: "erro" in resultado ? "erro" : "sucesso",
-    evento_financeiro_id: "erro" in resultado ? null : resultado.evento_id,
-    erro: "erro" in resultado ? resultado.erro : null,
-  });
-
-  return resultado;
+  return processarLinhaFinanceira(supabase, contexto.tenantId, contexto.user.id, itemId, dados);
 }
 
 // Chamado uma vez no fim do wizard, depois que todas as linhas passaram

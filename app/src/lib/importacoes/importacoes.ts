@@ -82,6 +82,41 @@ export async function iniciarImportacao(
   };
 }
 
+// 10 minutos é bem mais que o tempo real de processar até 500 linhas
+// (testado ao vivo: 40 linhas levaram poucos segundos) — folga generosa
+// pra nunca confundir "ainda rodando de verdade" com "travou", mas curta
+// o bastante pra uma queda real do servidor não deixar o lote inacessível
+// por muito tempo.
+const JANELA_PROCESSAMENTO_MS = 10 * 60 * 1000;
+
+// Reivindica o direito de processar um lote — UPDATE condicional atômico:
+// só marca `processando_desde` se ninguém mais estiver processando agora
+// (campo nulo) ou se a marca anterior já passou da janela de segurança
+// (sinal de queda real do servidor, não de execução em andamento). Sem
+// isso, abrir o histórico numa segunda aba durante uma importação grande
+// e clicar Retomar processaria as mesmas linhas em paralelo — achado em
+// revisão de código: duplicaria baixa/recebimento no financeiro (
+// registrarBaixa não é idempotente) e criaria cliente/fornecedor
+// duplicado em Pessoas (sem dedup nenhum no caminho "criar"). Compartilhado
+// entre os dois tipos de importação — a tabela `importacoes` é a mesma.
+export async function reivindicarProcessamento(
+  supabase: Cliente,
+  params: { tenant_id: string; importacao_id: string },
+): Promise<{ ok: true } | { erro: string }> {
+  const limite = new Date(Date.now() - JANELA_PROCESSAMENTO_MS).toISOString();
+  const { data, error } = await supabase
+    .from("importacoes")
+    .update({ processando_desde: new Date().toISOString() })
+    .eq("id", params.importacao_id)
+    .eq("tenant_id", params.tenant_id)
+    .or(`processando_desde.is.null,processando_desde.lt.${limite}`)
+    .select("id");
+
+  if (error) return { erro: error.message };
+  if (!data || data.length === 0) return { erro: "Esta importação já está sendo processada em outra aba ou sessão." };
+  return { ok: true };
+}
+
 export async function atualizarItemImportacao(
   supabase: Cliente,
   params: { item_id: string; status: "sucesso" | "erro"; pessoa_id?: string | null; erro?: string | null },
@@ -99,7 +134,10 @@ export async function finalizarImportacao(
   supabase: Cliente,
   params: { importacao_id: string; status: "concluida" | "cancelada" },
 ): Promise<{ sucesso: true } | { erro: string }> {
-  const { error } = await supabase.from("importacoes").update({ status: params.status }).eq("id", params.importacao_id);
+  // Libera o lock de reivindicarProcessamento — sem isso, o lote ficaria
+  // bloqueado pra um novo Retomar até a janela de 10 minutos expirar
+  // mesmo depois de terminar com sucesso.
+  const { error } = await supabase.from("importacoes").update({ status: params.status, processando_desde: null }).eq("id", params.importacao_id);
   if (error) return { erro: error.message };
   return { sucesso: true };
 }
