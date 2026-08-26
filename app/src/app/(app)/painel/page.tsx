@@ -18,6 +18,7 @@ import { formatarMoeda } from "@/lib/formatacao";
 import { cn } from "@/lib/utils";
 import { ROTULO_STATUS_PARCELA, COR_STATUS_PARCELA } from "@/lib/status-parcela";
 import { buscarIndicadoresRealizacao, buscarSerieIndicadoresRealizacao, mesAtual } from "@/lib/relatorios/indicadores-gauge";
+import { montarHrefLancamentosSemDimensao } from "@/lib/relatorios/drill-down";
 
 function tempoRelativo(dataIso: string): string {
   return formatDistanceToNowStrict(new Date(dataIso + "T00:00:00"), { addSuffix: true, locale: ptBR });
@@ -38,6 +39,33 @@ export default async function PaginaPainel() {
   ]);
 
   const hoje = new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" });
+  const hojeIso = new Date().toISOString().slice(0, 10);
+  const nomeMes = new Date(mesInicio + "T00:00:00").toLocaleDateString("pt-BR", { month: "long" });
+  const origemHref = "/painel";
+
+  const hrefSaldoEmCaixa = montarHrefLancamentosSemDimensao({
+    regime: "realizado",
+    periodoInicio: "1900-01-01",
+    periodoFim: hojeIso,
+    rotulo: "Todo o histórico",
+    origemHref,
+  });
+  const hrefRecebidoDoMes = montarHrefLancamentosSemDimensao({
+    regime: "realizado",
+    tipo: "RECEITA",
+    periodoInicio: mesInicio,
+    periodoFim: mesFim,
+    rotulo: `Recebido em ${nomeMes}`,
+    origemHref,
+  });
+  const hrefPagoDoMes = montarHrefLancamentosSemDimensao({
+    regime: "realizado",
+    tipo: "DESPESA",
+    periodoInicio: mesInicio,
+    periodoFim: mesFim,
+    rotulo: `Pago em ${nomeMes}`,
+    origemHref,
+  });
 
   return (
     <div className="mx-auto grid max-w-[1400px] grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
@@ -71,6 +99,7 @@ export default async function PaginaPainel() {
                 label="Saldo em caixa"
                 valor={formatarMoeda(dados.saldoEmCaixa)}
                 serie={dados.saldoSerieSeisMeses}
+                href={hrefSaldoEmCaixa}
               />
             </MotionCard>
           </div>
@@ -100,7 +129,7 @@ export default async function PaginaPainel() {
             />
           </MotionCard>
           <MotionCard index={3}>
-            <StatCard variant="azul" icon={Coins} label="Recebido (mês)" valor={formatarMoeda(dados.recebidoDoMes)} />
+            <StatCard variant="azul" icon={Coins} label="Recebido (mês)" valor={formatarMoeda(dados.recebidoDoMes)} href={hrefRecebidoDoMes} />
           </MotionCard>
           <MotionCard index={4}>
             <StatCard
@@ -113,7 +142,7 @@ export default async function PaginaPainel() {
             />
           </MotionCard>
           <MotionCard index={5}>
-            <StatCard variant="roxo" icon={Wallet} label="Pago (mês)" valor={formatarMoeda(dados.pagoDoMes)} />
+            <StatCard variant="roxo" icon={Wallet} label="Pago (mês)" valor={formatarMoeda(dados.pagoDoMes)} href={hrefPagoDoMes} />
           </MotionCard>
         </div>
 

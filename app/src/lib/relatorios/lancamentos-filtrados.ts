@@ -9,7 +9,7 @@
 // (mesmo raciocínio de distribuicao-forma-pagamento.ts — nunca existiu
 // "forma de pagamento" em regime previsto/competência).
 import type { Cliente, Regime } from "./regime";
-import { buscarMovimento } from "./regime";
+import { buscarMovimento, valorComSinal } from "./regime";
 
 export type LinhaLancamentoFiltrado = {
   id: string;
@@ -134,7 +134,14 @@ async function buscarTodoMovimento(
 
   if (linhas.length === 0) return VAZIO(rotulo);
 
-  const total = linhas.reduce((soma, l) => soma + l.valor, 0);
+  // Sem `apenasTipo` a lista mistura RECEITA e DESPESA — "total" precisa ser
+  // o saldo líquido (com sinal), não a soma bruta dos dois lados (achado
+  // testando Saldo em caixa ao vivo: R$ 189.905,00 de volume ≠ R$ 76.026,00
+  // de saldo). Com `apenasTipo`, todas as linhas já são do mesmo tipo — soma
+  // sem sinal, mesmo padrão que todo o resto do drill-down já usa (total
+  // sempre positivo, o chip "Só entradas"/"Só saídas" já comunica a direção;
+  // achado testando "Pago do mês" ao vivo, que virou negativo por engano).
+  const total = linhas.reduce((soma, l) => soma + (apenasTipo ? l.valor : valorComSinal(l)), 0);
   const valorPorEvento = new Map<string, number>();
   for (const l of linhas) valorPorEvento.set(l.eventoFinanceiroId, (valorPorEvento.get(l.eventoFinanceiroId) ?? 0) + l.valor);
 
