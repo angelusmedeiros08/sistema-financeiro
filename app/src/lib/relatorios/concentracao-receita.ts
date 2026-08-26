@@ -1,9 +1,10 @@
 import type { Cliente } from "./regime";
 import { buscarMovimento } from "./regime";
+import { montarHrefLancamentos } from "./drill-down";
 
 export type NivelRiscoConcentracao = "ALTO" | "MEDIO" | "BAIXO";
 
-export type ClienteConcentracao = { pessoaId: string | null; nome: string; valor: number; percentual: number };
+export type ClienteConcentracao = { pessoaId: string | null; nome: string; valor: number; percentual: number; href: string };
 
 export type ConcentracaoReceita = {
   topClientes: ClienteConcentracao[];
@@ -23,7 +24,7 @@ function isoMenosMeses(meses: number): string {
 // metade ou mais da receita da janela classificam como ALTO.
 export async function buscarConcentracaoReceita(
   supabase: Cliente,
-  params: { tenantId: string; mesesJanela?: number },
+  params: { tenantId: string; mesesJanela?: number; origemHref: string },
 ): Promise<ConcentracaoReceita> {
   const mesesJanela = params.mesesJanela ?? 12;
   const dataInicio = isoMenosMeses(mesesJanela);
@@ -57,5 +58,16 @@ export async function buscarConcentracaoReceita(
   const percentualTop3 = ordenado.slice(0, 3).reduce((soma, c) => soma + c.percentual, 0);
   const nivelRisco: NivelRiscoConcentracao = percentualTop3 >= 0.5 ? "ALTO" : percentualTop3 >= 0.3 ? "MEDIO" : "BAIXO";
 
-  return { topClientes: ordenado.slice(0, 5), percentualTop3, nivelRisco };
+  const topClientes = ordenado.slice(0, 5).map((c) => ({
+    ...c,
+    href: montarHrefLancamentos({
+      tipoEntidade: "pessoa",
+      entidadeId: c.pessoaId,
+      periodoInicio: dataInicio,
+      periodoFim: dataFim,
+      origemHref: params.origemHref,
+    }),
+  }));
+
+  return { topClientes, percentualTop3, nivelRisco };
 }

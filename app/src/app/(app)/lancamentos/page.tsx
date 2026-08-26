@@ -5,10 +5,9 @@ import { createClient } from "@/utils/supabase/server";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
 import { buscarLancamentosFiltrados, type FiltroLancamentos } from "@/lib/relatorios/lancamentos-filtrados";
 import { TabelaEventos } from "@/components/lancamentos/tabela-eventos";
-import { formatarMoeda, formatarDataCurta } from "@/lib/formatacao";
+import { formatarMoeda, formatarDataComAno } from "@/lib/formatacao";
 
-// Destino de todo clique em gráfico que não seja pessoa (pessoa vai direto
-// pro extrato dela — ver drill-down.ts). Sempre exatamente uma dessas 4
+// Destino de todo clique em gráfico — sempre exatamente uma dessas 4
 // dimensões chega por vez; a ordem aqui só define qual vence se mais de uma
 // vier junto (não deveria acontecer, mas categoria/forma de pagamento são
 // as mais específicas, ficam na frente).
@@ -66,7 +65,7 @@ export default async function PaginaLancamentos({
 
       <div className="flex flex-wrap gap-1.5">
         <span className="rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
-          {formatarDataCurta(periodoInicio)} – {formatarDataCurta(periodoFim)}
+          {formatarDataComAno(periodoInicio)} – {formatarDataComAno(periodoFim)}
         </span>
         <span className="rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">{rotuloQuantidade}</span>
       </div>

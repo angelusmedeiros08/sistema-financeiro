@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Pie } from "@visx/shape";
 import { Group } from "@visx/group";
 import { useTooltip, useTooltipInPortal, defaultStyles } from "@visx/tooltip";
 import { localPoint } from "@visx/event";
 import { formatarMoeda, formatarNumeroAbreviado, formatarPercentual } from "@/lib/formatacao";
 import type { LinhaAnaliseCategoria } from "@/lib/relatorios/analise-despesas";
+import { montarHrefLancamentos, type TipoEntidadeDrillDown } from "@/lib/relatorios/drill-down";
 
 // Rosca com até 5 fatias + "Outras" agregando o resto — estilo validado no
 // companion de brainstorming (preferido a ranking em barra e a treemap).
@@ -25,16 +27,36 @@ const MAX_FATIAS_NOMEADAS = 5;
 // reais, sem distorção.
 const FRACAO_MINIMA_FATIA = 0.02;
 
-type Fatia = { rotulo: string; total: number; cor: string };
+type Fatia = { rotulo: string; total: number; cor: string; href: string };
 
-function agregarFatias(linhas: LinhaAnaliseCategoria[]): Fatia[] {
+// Contexto pra montar o link da fatia "Outras" — as fatias nomeadas já
+// trazem o próprio href pronto do servidor (linha.href), só o agregado
+// "Outras" precisa ser montado aqui, porque é uma combinação de ids que
+// nenhuma linha isolada representa sozinha.
+type ContextoDrillDown = { dimensao: TipoEntidadeDrillDown; periodoInicio: string; periodoFim: string; origemHref: string };
+
+function agregarFatias(linhas: LinhaAnaliseCategoria[], contexto: ContextoDrillDown): Fatia[] {
   const ordenadas = [...linhas].sort((a, b) => b.total - a.total);
   const principais = ordenadas.slice(0, MAX_FATIAS_NOMEADAS);
   const resto = ordenadas.slice(MAX_FATIAS_NOMEADAS);
   const totalResto = resto.reduce((soma, l) => soma + l.total, 0);
 
-  const fatias: Fatia[] = principais.map((linha, i) => ({ rotulo: linha.categoriaNome, total: linha.total, cor: PALETA[i] }));
-  if (totalResto > 0) fatias.push({ rotulo: "Outras", total: totalResto, cor: PALETA[PALETA.length - 1] });
+  const fatias: Fatia[] = principais.map((linha, i) => ({ rotulo: linha.categoriaNome, total: linha.total, cor: PALETA[i], href: linha.href }));
+  if (totalResto > 0) {
+    // Um id nulo dentro do "resto" (bucket "Não informado" ranqueado baixo
+    // o bastante pra não entrar no top 5) fica de fora da lista — não dá
+    // pra combinar "estes ids" com "sem esse dado" no mesmo filtro; caso
+    // raro, resolvido no lado seguro (fatia clicável, só não 100% completa).
+    const idsResto = resto.map((l) => l.entidadeId).filter((id): id is string => id !== null);
+    const href = montarHrefLancamentos({
+      tipoEntidade: contexto.dimensao,
+      entidadeId: idsResto,
+      periodoInicio: contexto.periodoInicio,
+      periodoFim: contexto.periodoFim,
+      origemHref: contexto.origemHref,
+    });
+    fatias.push({ rotulo: "Outras", total: totalResto, cor: PALETA[PALETA.length - 1], href });
+  }
   return fatias;
 }
 
@@ -49,8 +71,23 @@ const estiloTooltip = {
   boxShadow: "0 8px 20px rgba(0,0,0,0.14)",
 };
 
-export function TopCategoriasDonut({ titulo, linhas }: { titulo: string; linhas: LinhaAnaliseCategoria[] }) {
-  const fatias = agregarFatias(linhas);
+export function TopCategoriasDonut({
+  titulo,
+  linhas,
+  dimensao,
+  periodoInicio,
+  periodoFim,
+  origemHref,
+}: {
+  titulo: string;
+  linhas: LinhaAnaliseCategoria[];
+  dimensao: TipoEntidadeDrillDown;
+  periodoInicio: string;
+  periodoFim: string;
+  origemHref: string;
+}) {
+  const router = useRouter();
+  const fatias = agregarFatias(linhas, { dimensao, periodoInicio, periodoFim, origemHref });
   const total = fatias.reduce((soma, f) => soma + f.total, 0);
   const [hoverIndice, setHoverIndice] = useState<number | null>(null);
 
@@ -93,6 +130,7 @@ export function TopCategoriasDonut({ titulo, linhas }: { titulo: string; linhas:
                         showTooltip({ tooltipData: arc.data, tooltipLeft: coords.x, tooltipTop: coords.y });
                       }}
                       onMouseLeave={aoFecharHover}
+                      onClick={() => router.push(arc.data.href)}
                     />
                   ))
                 }
@@ -116,7 +154,8 @@ export function TopCategoriasDonut({ titulo, linhas }: { titulo: string; linhas:
                 key={fatia.rotulo}
                 onMouseEnter={() => setHoverIndice(i)}
                 onMouseLeave={aoFecharHover}
-                className={"flex cursor-default items-center gap-2 rounded-md px-1 py-0.5 text-xs transition-colors " + (hoverIndice === i ? "bg-muted" : "")}
+                onClick={() => router.push(fatia.href)}
+                className={"flex cursor-pointer items-center gap-2 rounded-md px-1 py-0.5 text-xs transition-colors " + (hoverIndice === i ? "bg-muted" : "")}
               >
                 <span className="size-2.5 shrink-0 rounded-full" style={{ background: fatia.cor }} />
                 <span className="flex-1 truncate text-muted-foreground">{fatia.rotulo}</span>

@@ -1,14 +1,12 @@
 // Decide pra onde um clique num gráfico leva — único lugar do sistema que
 // sabe montar essa URL, pra nenhuma função de relatório reimplementar a
 // lógica de "como vira um link" (ver spec 2026-08-25-drill-down-graficos).
-import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database } from "@/utils/supabase/database.types";
-
-type Cliente = SupabaseClient<Database>;
-
+//
+// Pessoa já teve um destino próprio (o extrato dela em /clientes ou
+// /fornecedores) — revertido: quem clica numa fatia de pessoa quer ver os
+// lançamentos dela direto, não pousar na tela de cadastro (achado ao vivo,
+// não em brainstorming). Todo tipo de entidade cai igual em /lancamentos.
 export type TipoEntidadeDrillDown = "pessoa" | "categoria" | "forma_pagamento" | "centro_custo";
-
-export type DestinoDrillDown = { tipo: "pessoa"; href: string } | { tipo: "lancamentos"; href: string };
 
 const PARAM_POR_TIPO: Record<TipoEntidadeDrillDown, string> = {
   pessoa: "pessoa_id",
@@ -20,29 +18,16 @@ const PARAM_POR_TIPO: Record<TipoEntidadeDrillDown, string> = {
 // entidadeId aceita 3 formas: um id (fatia nomeada normal), uma lista de ids
 // (fatia "Outras", que o donut agrega quando há mais de 5 categorias/
 // pessoas/formas) ou null (bucket "Não informado"/"Sem pessoa", sem id
-// nenhum por trás). Só o caso de um único id de pessoa tem destino próprio
-// (o extrato dela); todo o resto — lista, null, ou qualquer outro tipo de
-// entidade — cai na tela genérica de Lançamentos filtrados.
-export async function resolverDestinoDrillDown(
-  supabase: Cliente,
-  params: {
-    tenantId: string;
-    tipoEntidade: TipoEntidadeDrillDown;
-    entidadeId: string | string[] | null;
-    periodoInicio: string;
-    periodoFim: string;
-    origemHref: string;
-  },
-): Promise<DestinoDrillDown> {
-  if (params.tipoEntidade === "pessoa" && typeof params.entidadeId === "string") {
-    const href = await hrefDoExtratoPessoa(supabase, {
-      tenantId: params.tenantId,
-      pessoaId: params.entidadeId,
-      origemHref: params.origemHref,
-    });
-    return { tipo: "pessoa", href };
-  }
-
+// nenhum por trás). Sem chamada ao banco — pode rodar tanto no servidor
+// quanto direto no componente de gráfico (client), pro caso da fatia
+// "Outras" agregar ids que o servidor nunca viu juntos numa linha só.
+export function montarHrefLancamentos(params: {
+  tipoEntidade: TipoEntidadeDrillDown;
+  entidadeId: string | string[] | null;
+  periodoInicio: string;
+  periodoFim: string;
+  origemHref: string;
+}): string {
   const valorParam = Array.isArray(params.entidadeId) ? params.entidadeId.join(",") : (params.entidadeId ?? "nenhuma");
   const query = new URLSearchParams({
     [PARAM_POR_TIPO[params.tipoEntidade]]: valorParam,
@@ -50,18 +35,5 @@ export async function resolverDestinoDrillDown(
     periodo_fim: params.periodoFim,
     voltar: params.origemHref,
   });
-  return { tipo: "lancamentos", href: `/lancamentos?${query.toString()}` };
-}
-
-// CLIENTE e FORNECEDOR/TRANSPORTADORA moram em telas separadas
-// (/clientes/[pessoaId] vs /fornecedores/[pessoaId]) mesmo sendo a mesma
-// tabela por baixo — uma pessoa com os dois perfis prioriza CLIENTE, porque
-// todo gráfico que hoje leva a um clique de pessoa (concentração de
-// receita) é sobre dinheiro entrando, contexto de cliente.
-async function hrefDoExtratoPessoa(supabase: Cliente, params: { tenantId: string; pessoaId: string; origemHref: string }): Promise<string> {
-  const { data: pessoa } = await supabase.from("pessoas").select("perfis").eq("id", params.pessoaId).eq("tenant_id", params.tenantId).maybeSingle();
-
-  const caminhoBase = pessoa?.perfis?.includes("CLIENTE") ? "clientes" : "fornecedores";
-  const query = new URLSearchParams({ voltar: params.origemHref });
-  return `/${caminhoBase}/${params.pessoaId}?${query.toString()}`;
+  return `/lancamentos?${query.toString()}`;
 }

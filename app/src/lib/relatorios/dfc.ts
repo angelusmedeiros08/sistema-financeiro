@@ -133,9 +133,13 @@ export async function buscarComposicaoFluxoCaixa(supabase: Cliente, params: { te
   const dataInicio = `${params.ano}-01-01`;
   const dataFim = `${params.ano}-12-31`;
 
+  // origemHref exigido pela assinatura mas nunca usado aqui — agruparTopN
+  // abaixo descarta o href junto com o resto de LinhaAnaliseCategoria,
+  // esta composição não é renderizada como donut clicável (ver spec, fora
+  // do escopo da 1ª leva).
   const [receitas, despesas] = await Promise.all([
-    buscarAnaliseCategorias(supabase, { tenantId: params.tenantId, regime: "realizado", dataInicio, dataFim, tipo: "RECEITA" }),
-    buscarAnaliseCategorias(supabase, { tenantId: params.tenantId, regime: "realizado", dataInicio, dataFim, tipo: "DESPESA" }),
+    buscarAnaliseCategorias(supabase, { tenantId: params.tenantId, regime: "realizado", dataInicio, dataFim, tipo: "RECEITA", origemHref: "/relatorios/dfc" }),
+    buscarAnaliseCategorias(supabase, { tenantId: params.tenantId, regime: "realizado", dataInicio, dataFim, tipo: "DESPESA", origemHref: "/relatorios/dfc" }),
   ]);
 
   function agruparTopN(linhas: typeof receitas, rotuloResto: string): CategoriaFluxo[] {

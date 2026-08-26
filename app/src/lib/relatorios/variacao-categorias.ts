@@ -31,9 +31,11 @@ export async function buscarVariacaoCategorias(
   const atual = mesAtual();
   const anterior = mesAnterior();
 
+  // origemHref exigido pela assinatura mas nunca usado — esta lista
+  // (ListaVariacaoCategorias) não é um donut clicável.
   const [linhasAtual, linhasAnterior] = await Promise.all([
-    buscarAnaliseCategorias(supabase, { tenantId: params.tenantId, regime: "competencia", dataInicio: atual.inicio, dataFim: atual.fim, tipo: params.tipo }),
-    buscarAnaliseCategorias(supabase, { tenantId: params.tenantId, regime: "competencia", dataInicio: anterior.inicio, dataFim: anterior.fim, tipo: params.tipo }),
+    buscarAnaliseCategorias(supabase, { tenantId: params.tenantId, regime: "competencia", dataInicio: atual.inicio, dataFim: atual.fim, tipo: params.tipo, origemHref: "/indicadores" }),
+    buscarAnaliseCategorias(supabase, { tenantId: params.tenantId, regime: "competencia", dataInicio: anterior.inicio, dataFim: anterior.fim, tipo: params.tipo, origemHref: "/indicadores" }),
   ]);
 
   const anteriorPorId = new Map(linhasAnterior.map((l) => [l.categoriaId, l.total]));

@@ -1,4 +1,5 @@
 import type { Cliente } from "./regime";
+import { montarHrefLancamentos } from "./drill-down";
 
 export type LinhaDistribuicaoFormaPagamento = {
   formaPagamentoId: string | null;
@@ -6,6 +7,7 @@ export type LinhaDistribuicaoFormaPagamento = {
   valorTotal: number;
   percentualDoTotal: number;
   atrasoMedioDias: number;
+  href: string;
 };
 
 function isoMenosMeses(meses: number): string {
@@ -27,7 +29,7 @@ function diasEntre(dataVencimento: string, dataPagamento: string): number {
 // heurística) agrupam em "Não informado" em vez de sumirem do total.
 export async function buscarDistribuicaoFormaPagamento(
   supabase: Cliente,
-  params: { tenantId: string; mesesJanela?: number },
+  params: { tenantId: string; mesesJanela?: number; origemHref: string },
 ): Promise<LinhaDistribuicaoFormaPagamento[]> {
   const mesesJanela = params.mesesJanela ?? 6;
   const dataInicio = isoMenosMeses(mesesJanela);
@@ -60,12 +62,22 @@ export async function buscarDistribuicaoFormaPagamento(
   const total = [...porForma.values()].reduce((soma, v) => soma + v.valorTotal, 0);
 
   return [...porForma.entries()]
-    .map(([chave, acumulado]) => ({
-      formaPagamentoId: chave === "__nao_informado__" ? null : chave,
-      nome: acumulado.nome,
-      valorTotal: acumulado.valorTotal,
-      percentualDoTotal: total > 0 ? acumulado.valorTotal / total : 0,
-      atrasoMedioDias: acumulado.valorTotal > 0 ? acumulado.somaPonderadaAtraso / acumulado.valorTotal : 0,
-    }))
+    .map(([chave, acumulado]) => {
+      const formaPagamentoId = chave === "__nao_informado__" ? null : chave;
+      return {
+        formaPagamentoId,
+        nome: acumulado.nome,
+        valorTotal: acumulado.valorTotal,
+        percentualDoTotal: total > 0 ? acumulado.valorTotal / total : 0,
+        atrasoMedioDias: acumulado.valorTotal > 0 ? acumulado.somaPonderadaAtraso / acumulado.valorTotal : 0,
+        href: montarHrefLancamentos({
+          tipoEntidade: "forma_pagamento",
+          entidadeId: formaPagamentoId,
+          periodoInicio: dataInicio,
+          periodoFim: dataFim,
+          origemHref: params.origemHref,
+        }),
+      };
+    })
     .sort((a, b) => b.valorTotal - a.valorTotal);
 }

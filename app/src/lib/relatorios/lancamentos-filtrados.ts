@@ -82,7 +82,11 @@ async function buscarPorFormaPagamento(
 
   const total = baixas.reduce((soma, b) => soma + Number(b.valor_pago), 0);
   const eventoIds = [...new Set(baixas.map((b) => b.parcelas!.evento_financeiro_id))];
-  const rotulo = valor === "nenhuma" ? "Não informado" : (baixas[0].formas_pagamento?.nome ?? (valor.length > 1 ? "Várias formas de pagamento" : "-"));
+  // valor.length checado ANTES de olhar o nome — uma "Outras" com 2+ ids
+  // não pode virar o nome da primeira baixa só porque ela por acaso tem
+  // nome (achado ao vivo: "Cartão" sozinho representando Cartão + Cartão de
+  // Crédito juntos, escondendo que é um agregado).
+  const rotulo = valor === "nenhuma" ? "Não informado" : valor.length > 1 ? "Várias formas de pagamento" : (baixas[0].formas_pagamento?.nome ?? "-");
 
   return { linhas: await buscarEventosPorId(supabase, tenantId, eventoIds), total, quantidade: baixas.length, rotulo };
 }
@@ -109,7 +113,7 @@ async function buscarPorCategoria(
 
   const total = rateios.reduce((soma, r) => soma + Number(r.valor), 0);
   const eventoIds = [...new Set(rateios.map((r) => r.evento_financeiro_id))];
-  const rotulo = valor === "nenhuma" ? "Sem categoria" : (rateios[0].categorias_financeiras?.nome ?? (valor.length > 1 ? "Outras categorias" : "-"));
+  const rotulo = valor === "nenhuma" ? "Sem categoria" : valor.length > 1 ? "Outras categorias" : (rateios[0].categorias_financeiras?.nome ?? "-");
 
   return { linhas: await buscarEventosPorId(supabase, tenantId, eventoIds), total, quantidade: eventoIds.length, rotulo };
 }
@@ -149,14 +153,16 @@ async function buscarPorCentroCusto(
 
   const total = rateios.reduce((soma, r) => soma + Number(r.valor), 0);
   const eventoIds = [...new Set(rateios.map((r) => r.rateio_categoria!.evento_financeiro_id))];
-  const rotulo = rateios[0].centros_custo?.nome ?? (valor.length > 1 ? "Outros centros de custo" : "-");
+  const rotulo = valor.length > 1 ? "Outros centros de custo" : (rateios[0].centros_custo?.nome ?? "-");
 
   return { linhas: await buscarEventosPorId(supabase, tenantId, eventoIds), total, quantidade: eventoIds.length, rotulo };
 }
 
 // Só chega aqui com lista (fatia "Outras") ou null ("Sem pessoa") — uma
-// única pessoa nunca cai em /lancamentos, o helper de drill-down manda
-// direto pro extrato dela (ver drill-down.ts).
+// clicar numa única pessoa nomeada também cai aqui (não no extrato dela —
+// achado ao vivo: quem clica num gráfico quer ver os lançamentos, não a
+// tela de cadastro), então "um id só" também é um caso real, não só
+// lista/null.
 async function buscarPorPessoa(
   supabase: Cliente,
   tenantId: string,
@@ -176,7 +182,16 @@ async function buscarPorPessoa(
   const { data } = await query;
   const linhas = data ?? [];
   const total = linhas.reduce((soma, e) => soma + Number(e.valor_total), 0);
-  const rotulo = valor === "nenhuma" ? "Sem pessoa vinculada" : "Outras pessoas";
+
+  let rotulo: string;
+  if (valor === "nenhuma") {
+    rotulo = "Sem pessoa vinculada";
+  } else if (valor.length === 1) {
+    const { data: pessoa } = await supabase.from("pessoas").select("nome").eq("id", valor[0]).eq("tenant_id", tenantId).maybeSingle();
+    rotulo = pessoa?.nome ?? "-";
+  } else {
+    rotulo = "Outras pessoas";
+  }
 
   return { linhas, total, quantidade: linhas.length, rotulo };
 }

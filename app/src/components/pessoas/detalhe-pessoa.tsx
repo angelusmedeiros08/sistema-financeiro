@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { ArrowLeft } from "@phosphor-icons/react/dist/ssr";
 import type { DadosPessoa, CampoPersonalizadoDefinicao, EventoPessoa } from "@/lib/pessoas/buscar-pessoa";
 import { PessoaForm } from "./pessoa-form";
 import { EnderecosSecao } from "./enderecos-secao";
@@ -19,33 +18,21 @@ export function DetalhePessoa({
   camposPersonalizados,
   lancamentos,
   caminhoBase,
-  voltar,
 }: {
   pessoa: DadosPessoa;
   camposPersonalizados: CampoPersonalizadoDefinicao[];
   lancamentos: EventoPessoa[];
   caminhoBase: "clientes" | "fornecedores";
-  // Presente só quando a navegação vem de um clique de drill-down num
-  // gráfico (ver spec 2026-08-25-drill-down-graficos) — substitui o
-  // breadcrumb normal pelo link de volta pro relatório de origem.
-  voltar?: string;
 }) {
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-6">
-      {voltar ? (
-        <Link href={voltar} className="flex w-fit items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground">
-          <ArrowLeft size={14} />
-          Voltar pro relatório
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <Link href={`/${caminhoBase}`} className="hover:text-foreground">
+          {caminhoBase === "clientes" ? "Clientes" : "Fornecedores"}
         </Link>
-      ) : (
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Link href={`/${caminhoBase}`} className="hover:text-foreground">
-            {caminhoBase === "clientes" ? "Clientes" : "Fornecedores"}
-          </Link>
-          <span>/</span>
-          <span className="text-foreground">{pessoa.nome}</span>
-        </div>
-      )}
+        <span>/</span>
+        <span className="text-foreground">{pessoa.nome}</span>
+      </div>
 
       <div className="flex items-center gap-3">
         <span

@@ -17,7 +17,7 @@ export default async function PaginaRelatoriosDespesas({
 
   const params = lerParametrosRelatorio(await searchParams);
   const supabase = await createClient();
-  const linhas = await buscarAnaliseCategorias(supabase, { tenantId: contexto.tenantId, ...params, tipo: "DESPESA" });
+  const linhas = await buscarAnaliseCategorias(supabase, { tenantId: contexto.tenantId, ...params, tipo: "DESPESA", origemHref: "/relatorios/despesas" });
 
   return (
     <div className="flex w-full flex-col gap-6">

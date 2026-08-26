@@ -31,10 +31,17 @@ export default async function PaginaRelatoriosVisaoGeral({
   if ("erro" in contexto) redirect("/entrar");
   const { tenantId } = contexto;
 
-  const params = lerParametrosRelatorio(await searchParams);
+  const spBrutos = await searchParams;
+  const params = lerParametrosRelatorio(spBrutos);
   const supabase = await createClient();
 
   const { inicio: mesInicio, fim: mesFim } = mesAtual();
+
+  // Preserva regime/período/granularidade selecionados na URL — quem clica
+  // numa fatia e depois em "Voltar pro relatório" cai na mesma visão que
+  // estava vendo, não num /relatorios/visao-geral genérico sem filtro.
+  const qsAtual = new URLSearchParams(Object.entries(spBrutos).filter((par): par is [string, string] => par[1] !== undefined)).toString();
+  const origemHref = `/relatorios/visao-geral${qsAtual ? `?${qsAtual}` : ""}`;
 
   const [dre, fluxo, pontoEquilibrio, agingReceita, agingDespesa, resumoReceber, resumoPagar, indicadoresCAR, indicadoresCAP, serieCAR, serieCAP, topReceitas, topDespesas, concentracao, saldoProjetado] =
     await Promise.all([
@@ -49,9 +56,9 @@ export default async function PaginaRelatoriosVisaoGeral({
       buscarIndicadoresRealizacao(supabase, { tenantId, tipo: "DESPESA", mesInicio, mesFim }),
       buscarSerieIndicadoresRealizacao(supabase, { tenantId, tipo: "RECEITA", meses: 6 }),
       buscarSerieIndicadoresRealizacao(supabase, { tenantId, tipo: "DESPESA", meses: 6 }),
-      buscarAnaliseCategorias(supabase, { tenantId, ...params, tipo: "RECEITA" }),
-      buscarAnaliseCategorias(supabase, { tenantId, ...params, tipo: "DESPESA" }),
-      buscarConcentracaoReceita(supabase, { tenantId }),
+      buscarAnaliseCategorias(supabase, { tenantId, ...params, tipo: "RECEITA", origemHref }),
+      buscarAnaliseCategorias(supabase, { tenantId, ...params, tipo: "DESPESA", origemHref }),
+      buscarConcentracaoReceita(supabase, { tenantId, origemHref }),
       buscarSaldoProjetado(supabase, tenantId),
     ]);
 
@@ -145,8 +152,22 @@ export default async function PaginaRelatoriosVisaoGeral({
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <TopCategoriasDonut titulo="Top receitas" linhas={topReceitas} />
-        <TopCategoriasDonut titulo="Top despesas" linhas={topDespesas} />
+        <TopCategoriasDonut
+          titulo="Top receitas"
+          linhas={topReceitas}
+          dimensao="categoria"
+          periodoInicio={params.dataInicio}
+          periodoFim={params.dataFim}
+          origemHref={origemHref}
+        />
+        <TopCategoriasDonut
+          titulo="Top despesas"
+          linhas={topDespesas}
+          dimensao="categoria"
+          periodoInicio={params.dataInicio}
+          periodoFim={params.dataFim}
+          origemHref={origemHref}
+        />
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">

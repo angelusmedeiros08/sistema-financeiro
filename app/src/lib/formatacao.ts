@@ -60,3 +60,14 @@ export function formatarDataCurta(isoDate: string): string {
     month: "short",
   });
 }
+
+// Com ano — pra período que pode passar de 12 meses (ex: janela da
+// Concentração de Receita), onde "26 de ago." sozinho não diz se é 2025 ou
+// 2026.
+export function formatarDataComAno(isoDate: string): string {
+  return new Date(isoDate + "T00:00:00").toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}

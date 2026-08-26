@@ -23,37 +23,49 @@ export default async function PaginaIndicadores() {
 
   const supabase = await createClient();
 
+  const origemHref = "/indicadores";
+  const hoje = new Date().toISOString().slice(0, 10);
+  const isoMenosMeses = (meses: number) => {
+    const data = new Date();
+    data.setMonth(data.getMonth() - meses);
+    return data.toISOString().slice(0, 10);
+  };
+
   const [saldoProjetado, serieSaldo, concentracao, variacaoReceitas, variacaoDespesas, pmr, pmp, agingReceber, agingPagar, distribuicaoFormaPagamento] = await Promise.all([
     buscarSaldoProjetado(supabase, tenantId),
     buscarSerieSaldoProjetado(supabase, tenantId),
-    buscarConcentracaoReceita(supabase, { tenantId }),
+    buscarConcentracaoReceita(supabase, { tenantId, origemHref }),
     buscarVariacaoCategorias(supabase, { tenantId, tipo: "RECEITA" }),
     buscarVariacaoCategorias(supabase, { tenantId, tipo: "DESPESA" }),
     buscarPMR(supabase, { tenantId }),
     buscarPMP(supabase, { tenantId }),
     buscarAging(supabase, { tenantId, tipo: "RECEITA" }),
     buscarAging(supabase, { tenantId, tipo: "DESPESA" }),
-    buscarDistribuicaoFormaPagamento(supabase, { tenantId }),
+    buscarDistribuicaoFormaPagamento(supabase, { tenantId, origemHref }),
   ]);
 
   const projecaoD7 = saldoProjetado.projecoes.find((p) => p.dias === 7);
 
   const donutClientes = concentracao.topClientes.map((c, i) => ({
     categoriaId: c.pessoaId ?? `sem-pessoa-${i}`,
+    entidadeId: c.pessoaId,
     categoriaNome: c.nome,
     ehCustoFixo: false,
     total: c.valor,
     percentualDoTotal: c.percentual,
     percentualAcumulado: 0,
+    href: c.href,
   }));
 
   const donutFormaPagamento = distribuicaoFormaPagamento.map((f, i) => ({
     categoriaId: f.formaPagamentoId ?? `nao-informado-${i}`,
+    entidadeId: f.formaPagamentoId,
     categoriaNome: f.nome,
     ehCustoFixo: false,
     total: f.valorTotal,
     percentualDoTotal: f.percentualDoTotal,
     percentualAcumulado: 0,
+    href: f.href,
   }));
 
   return (
@@ -73,7 +85,14 @@ export default async function PaginaIndicadores() {
           <h2 className="font-heading text-base font-bold text-foreground">Meu risco está concentrado?</h2>
           <BadgeRiscoConcentracao nivelRisco={concentracao.nivelRisco} percentualTop3={concentracao.percentualTop3} />
         </div>
-        <TopCategoriasDonut titulo="Top clientes por receita (últimos 12 meses)" linhas={donutClientes} />
+        <TopCategoriasDonut
+          titulo="Top clientes por receita (últimos 12 meses)"
+          linhas={donutClientes}
+          dimensao="pessoa"
+          periodoInicio={isoMenosMeses(12)}
+          periodoFim={hoje}
+          origemHref={origemHref}
+        />
       </section>
 
       <section className="rounded-2xl bg-card shadow-card p-6">
@@ -99,7 +118,14 @@ export default async function PaginaIndicadores() {
       <section className="rounded-2xl bg-card shadow-card p-6">
         <h2 className="mb-4 font-heading text-base font-bold text-foreground">Como me pagam?</h2>
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <TopCategoriasDonut titulo="Distribuição por forma de pagamento (últimos 6 meses)" linhas={donutFormaPagamento} />
+          <TopCategoriasDonut
+            titulo="Distribuição por forma de pagamento (últimos 6 meses)"
+            linhas={donutFormaPagamento}
+            dimensao="forma_pagamento"
+            periodoInicio={isoMenosMeses(6)}
+            periodoFim={hoje}
+            origemHref={origemHref}
+          />
           <div className="rounded-2xl bg-card shadow-card p-5">
             <h3 className="mb-4 font-heading text-sm font-bold text-foreground">Atraso médio por forma</h3>
             {distribuicaoFormaPagamento.length === 0 ? (
