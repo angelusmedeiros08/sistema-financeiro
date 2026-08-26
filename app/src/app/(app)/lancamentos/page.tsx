@@ -52,17 +52,29 @@ export default async function PaginaLancamentos({
   const regime: Regime = REGIMES.includes(sp.regime as Regime) ? (sp.regime as Regime) : "competencia";
   const apenasTipo = sp.tipo === "RECEITA" || sp.tipo === "DESPESA" ? sp.tipo : undefined;
 
-  const dimensaoAtiva = DIMENSOES.find((d) => sp[d.param] !== undefined);
-  const valor = dimensaoAtiva ? parseValor(sp[dimensaoAtiva.param]) : null;
-  if (!dimensaoAtiva || !valor || !periodoInicio || !periodoFim) notFound();
+  if (!periodoInicio || !periodoFim) notFound();
 
-  const filtro: FiltroLancamentos = { dimensao: dimensaoAtiva.dimensao, valor, regime, apenasTipo };
+  const dimensaoAtiva = DIMENSOES.find((d) => sp[d.param] !== undefined);
+  let filtro: FiltroLancamentos;
+  if (dimensaoAtiva) {
+    const valor = parseValor(sp[dimensaoAtiva.param]);
+    if (!valor) notFound();
+    filtro = { dimensao: dimensaoAtiva.dimensao, valor, regime, apenasTipo };
+  } else if (sp.rotulo) {
+    // Sem dimensão nenhuma — Saldo em caixa, Recebido/Pago do mês etc.
+    // `rotulo` presente é o que distingue esse caso de uma URL malformada
+    // (sem nenhum parâmetro de dimensão nem `rotulo`, que continua caindo
+    // em notFound() — nunca mostra "todos os lançamentos" por acidente).
+    filtro = { regime, apenasTipo, rotulo: sp.rotulo };
+  } else {
+    notFound();
+  }
 
   const supabase = await createClient();
   const resultado = await buscarLancamentosFiltrados(supabase, { tenantId: contexto.tenantId, filtro, periodoInicio, periodoFim });
 
   const rotuloQuantidade =
-    dimensaoAtiva.dimensao === "forma_pagamento"
+    dimensaoAtiva?.dimensao === "forma_pagamento"
       ? `${resultado.quantidade} pagamento${resultado.quantidade === 1 ? "" : "s"}`
       : `${resultado.quantidade} lançamento${resultado.quantidade === 1 ? "" : "s"}`;
 

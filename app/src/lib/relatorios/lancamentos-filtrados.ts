@@ -31,15 +31,26 @@ export type LinhaLancamentoFiltrado = {
 // array com mais de 1 item = fatia "Outras" (vários ids agregados).
 type ValorFiltro = string[] | "nenhuma";
 
-export type FiltroLancamentos = {
-  dimensao: "categoria" | "forma_pagamento" | "centro_custo" | "pessoa";
-  valor: ValorFiltro;
-  // Ignorado por "forma_pagamento" — ver comentário no topo do arquivo.
-  regime: Regime;
-  // Presente quando a fatia clicada já era, ela mesma, só de um tipo (ex.:
-  // "Entradas" de um centro de custo) — ver comentário em drill-down.ts.
-  apenasTipo?: "RECEITA" | "DESPESA";
-};
+// Union discriminada por `dimensao` — o caso sem dimensão (Saldo em caixa,
+// Recebido/Pago do mês etc., ver spec 2026-08-26-painel-clicavel) não tem
+// entidade nenhuma pra recortar nem pra derivar rótulo, então `rotulo` vem
+// explícito de quem chama.
+export type FiltroLancamentos =
+  | {
+      dimensao: "categoria" | "forma_pagamento" | "centro_custo" | "pessoa";
+      valor: ValorFiltro;
+      // Ignorado por "forma_pagamento" — ver comentário no topo do arquivo.
+      regime: Regime;
+      // Presente quando a fatia clicada já era, ela mesma, só de um tipo
+      // (ex.: "Entradas" de um centro de custo) — ver comentário em drill-down.ts.
+      apenasTipo?: "RECEITA" | "DESPESA";
+    }
+  | {
+      dimensao?: undefined;
+      regime: Regime;
+      apenasTipo?: "RECEITA" | "DESPESA";
+      rotulo: string;
+    };
 
 export type ResultadoLancamentosFiltrados = {
   linhas: LinhaLancamentoFiltrado[];
@@ -57,6 +68,8 @@ export async function buscarLancamentosFiltrados(
 ): Promise<ResultadoLancamentosFiltrados> {
   const { tenantId, filtro, periodoInicio, periodoFim } = params;
   switch (filtro.dimensao) {
+    case undefined:
+      return buscarTodoMovimento(supabase, tenantId, filtro.regime, periodoInicio, periodoFim, filtro.apenasTipo, filtro.rotulo);
     case "forma_pagamento":
       return buscarPorFormaPagamento(supabase, tenantId, filtro.valor, periodoInicio, periodoFim);
     case "categoria":
@@ -101,6 +114,31 @@ async function buscarEventosPorId(supabase: Cliente, tenantId: string, valorFilt
   if (eventoIds.length === 0) return [];
   const { data } = await supabase.from("eventos_financeiros").select(SELECT_EVENTO).eq("tenant_id", tenantId).in("id", eventoIds);
   return (data ?? []).map((e) => ({ ...e, valorFiltrado: valorFiltradoPorEvento.get(e.id) ?? e.valor_total }));
+}
+
+// Sem dimensão nenhuma — todo o movimento de um regime/tipo/período, sem
+// recortar por categoria/centro/pessoa (Saldo em caixa, Recebido/Pago do
+// mês, Receitas/Despesas do mês, ver spec 2026-08-26-painel-clicavel). Não
+// há entidade pra derivar rótulo, por isso `rotulo` vem de quem chama.
+async function buscarTodoMovimento(
+  supabase: Cliente,
+  tenantId: string,
+  regime: Regime,
+  periodoInicio: string,
+  periodoFim: string,
+  apenasTipo: "RECEITA" | "DESPESA" | undefined,
+  rotulo: string,
+): Promise<ResultadoLancamentosFiltrados> {
+  const movimento = await buscarMovimento(supabase, { tenantId, regime, dataInicio: periodoInicio, dataFim: periodoFim });
+  const linhas = movimento.filter((l) => !apenasTipo || l.tipo === apenasTipo);
+
+  if (linhas.length === 0) return VAZIO(rotulo);
+
+  const total = linhas.reduce((soma, l) => soma + l.valor, 0);
+  const valorPorEvento = new Map<string, number>();
+  for (const l of linhas) valorPorEvento.set(l.eventoFinanceiroId, (valorPorEvento.get(l.eventoFinanceiroId) ?? 0) + l.valor);
+
+  return { linhas: await buscarEventosPorId(supabase, tenantId, valorPorEvento), total, quantidade: valorPorEvento.size, rotulo };
 }
 
 // categoria/centro de custo/pessoa: mesma forma de filtrar+somar, só muda

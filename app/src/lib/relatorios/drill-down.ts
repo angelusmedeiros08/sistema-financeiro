@@ -57,3 +57,27 @@ export function montarHrefLancamentos(params: {
   if (params.tipo) query.set("tipo", params.tipo);
   return `/lancamentos?${query.toString()}`;
 }
+
+// Variante sem dimensão nenhuma — todo o movimento de um regime/tipo/
+// período, sem recortar por categoria/centro/pessoa (Saldo em caixa,
+// Recebido/Pago do mês, Receitas/Despesas do mês do Painel; ver spec
+// 2026-08-26-painel-clicavel). Sem entidade pra derivar rótulo, por isso
+// `rotulo` é obrigatório e viaja na própria URL.
+export function montarHrefLancamentosSemDimensao(params: {
+  regime: Regime;
+  tipo?: "RECEITA" | "DESPESA";
+  periodoInicio: string;
+  periodoFim: string;
+  rotulo: string;
+  origemHref: string;
+}): string {
+  const query = new URLSearchParams({
+    regime: params.regime,
+    periodo_inicio: params.periodoInicio,
+    periodo_fim: params.periodoFim,
+    rotulo: params.rotulo,
+    voltar: params.origemHref,
+  });
+  if (params.tipo) query.set("tipo", params.tipo);
+  return `/lancamentos?${query.toString()}`;
+}
