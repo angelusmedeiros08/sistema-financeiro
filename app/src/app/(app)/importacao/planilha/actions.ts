@@ -78,44 +78,57 @@ export async function criarEntidadesAprovadasAction(
   return { resultados };
 }
 
-export type ParametrosImportarLinha = Omit<ParametrosCommitLinha, "tenant_id" | "criado_por"> & { importacaoId?: string; linhaNumero?: number };
+export type LinhaParaImportar = Omit<ParametrosCommitLinha, "tenant_id" | "criado_por"> & { linhaNumero?: number };
+export type ResultadoLinhaImportacao = { sucesso: boolean; erro?: string };
 
-export async function importarLinhaAction(params: ParametrosImportarLinha): Promise<{ evento_id: string } | { erro: string }> {
+// Roda o lote inteiro dentro de UMA Server Action, do início ao fim, no
+// servidor — antes, o cliente chamava uma ação por linha num loop
+// (importarLinhaAction) e só ele sabia quando tinha terminado, chamando
+// finalizarImportacaoFinanceiraAction no fim. Se o usuário saísse da tela
+// no meio, o loop continuava rodando escondido (navegação dentro do app
+// não derruba a promise) ou parava pela metade sem nunca finalizar (fechar
+// a aba), deixando o lote travado em "em_andamento" pra sempre. Ver spec
+// 2026-08-26-importacao-execucao-servidor — sair da tela agora nunca mais
+// interrompe nada, porque a operação inteira é uma única requisição.
+export async function executarImportacaoFinanceiraAction(
+  importacaoId: string | null,
+  linhas: LinhaParaImportar[],
+): Promise<{ resultados: ResultadoLinhaImportacao[] } | { erro: string }> {
   const contexto = await obterUsuarioETenantAtual();
   if ("erro" in contexto) return { erro: contexto.erro };
 
   const supabase = await createClient();
-  const { importacaoId, linhaNumero, ...paramsCommit } = params;
-  const resultado = await commitarLinhaImportacao(supabase, {
-    ...paramsCommit,
-    tenant_id: contexto.tenantId,
-    criado_por: contexto.user.id,
-  });
+  const resultados: ResultadoLinhaImportacao[] = [];
 
-  if (importacaoId && linhaNumero !== undefined) {
-    await registrarItemImportacaoFinanceira(supabase, {
-      importacao_id: importacaoId,
+  for (const { linhaNumero, ...paramsCommit } of linhas) {
+    const resultado = await commitarLinhaImportacao(supabase, {
+      ...paramsCommit,
       tenant_id: contexto.tenantId,
-      linha_numero: linhaNumero,
-      status: "erro" in resultado ? "erro" : "sucesso",
-      evento_financeiro_id: "erro" in resultado ? null : resultado.evento_id,
-      erro: "erro" in resultado ? resultado.erro : null,
+      criado_por: contexto.user.id,
     });
+
+    if (importacaoId && linhaNumero !== undefined) {
+      await registrarItemImportacaoFinanceira(supabase, {
+        importacao_id: importacaoId,
+        tenant_id: contexto.tenantId,
+        linha_numero: linhaNumero,
+        status: "erro" in resultado ? "erro" : "sucesso",
+        evento_financeiro_id: "erro" in resultado ? null : resultado.evento_id,
+        erro: "erro" in resultado ? resultado.erro : null,
+      });
+    }
+
+    resultados.push("erro" in resultado ? { sucesso: false, erro: resultado.erro } : { sucesso: true });
   }
 
-  return resultado;
-}
+  if (importacaoId) await finalizarImportacaoFinanceira(supabase, { importacao_id: importacaoId });
 
-export async function finalizarImportacaoFinanceiraAction(importacaoId: string): Promise<void> {
-  const contexto = await obterUsuarioETenantAtual();
-  if ("erro" in contexto) return;
-  const supabase = await createClient();
-  await finalizarImportacaoFinanceira(supabase, { importacao_id: importacaoId });
+  return { resultados };
 }
 
 // Chamado uma vez no fim do wizard, depois que todas as linhas passaram
-// (com sucesso ou erro) por importarLinhaAction — evita revalidar a cada
-// linha em arquivos grandes.
+// (com sucesso ou erro) por executarImportacaoFinanceiraAction — evita
+// revalidar a cada linha em arquivos grandes.
 export async function revalidarPosImportacaoAction(): Promise<void> {
   revalidatePath("/despesas");
   revalidatePath("/receitas");

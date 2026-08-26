@@ -6,7 +6,7 @@ import { CheckCircle, DownloadSimple, XCircle } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { baixarArquivoTexto } from "@/lib/importacao/download";
 import { COLUNAS_TEMPLATE } from "@/lib/importacao/template";
-import { importarLinhaAction, revalidarPosImportacaoAction, finalizarImportacaoFinanceiraAction } from "./actions";
+import { executarImportacaoFinanceiraAction, revalidarPosImportacaoAction } from "./actions";
 import type { LinhaPronta } from "./passo-preview";
 
 type ResultadoLinha = { linha: LinhaPronta; sucesso: boolean; erro?: string };
@@ -24,9 +24,9 @@ export function PassoResultado({
   importacaoId: string | null;
   onReiniciar: () => void;
 }) {
-  const [feitos, setFeitos] = useState(0);
   const [resultados, setResultados] = useState<ResultadoLinha[]>([]);
   const [concluido, setConcluido] = useState(false);
+  const [erroGeral, setErroGeral] = useState("");
   const iniciado = useRef(false);
 
   useEffect(() => {
@@ -34,9 +34,9 @@ export function PassoResultado({
     iniciado.current = true;
 
     (async () => {
-      const acumulados: ResultadoLinha[] = [];
-      for (const item of linhas) {
-        const resultado = await importarLinhaAction({
+      const resposta = await executarImportacaoFinanceiraAction(
+        importacaoId,
+        linhas.map((item) => ({
           conta_financeira_id: contaFinanceiraId,
           import_key: item.linha.importKey,
           descricao: item.linha.descricao,
@@ -49,17 +49,21 @@ export function PassoResultado({
           pessoa_id: item.pessoaId,
           centro_custo_id: item.centroCustoId,
           forma_pagamento_id: item.formaPagamentoId,
-          importacaoId: importacaoId ?? undefined,
           linhaNumero: item.linha.linha,
-        });
+        })),
+      );
 
-        acumulados.push("erro" in resultado ? { linha: item, sucesso: false, erro: resultado.erro } : { linha: item, sucesso: true });
-        setResultados([...acumulados]);
-        setFeitos((f) => f + 1);
+      if ("erro" in resposta) {
+        setErroGeral(resposta.erro);
+      } else {
+        setResultados(
+          linhas.map((item, i) => {
+            const r = resposta.resultados[i];
+            return r.sucesso ? { linha: item, sucesso: true } : { linha: item, sucesso: false, erro: r.erro };
+          }),
+        );
+        await revalidarPosImportacaoAction();
       }
-
-      if (importacaoId) await finalizarImportacaoFinanceiraAction(importacaoId);
-      await revalidarPosImportacaoAction();
       setConcluido(true);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -67,7 +71,7 @@ export function PassoResultado({
 
   const sucessos = resultados.filter((r) => r.sucesso).length;
   const falhas = resultados.filter((r) => !r.sucesso);
-  const percentual = linhas.length > 0 ? Math.round((feitos / linhas.length) * 100) : 100;
+  const percentual = concluido ? 100 : 0;
 
   function baixarErros() {
     const cabecalho = COLUNAS_TEMPLATE.map((c) => c.rotulo).join(";") + ";Motivo do erro";
@@ -94,16 +98,16 @@ export function PassoResultado({
     <div className="flex flex-col gap-6 rounded-2xl bg-card shadow-card p-6">
       <div>
         <h2 className="text-sm font-bold text-foreground">5. Importando</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {concluido ? "Importação concluída." : `Processando linha ${feitos} de ${linhas.length}...`}
-        </p>
+        <p className="mt-1 text-sm text-muted-foreground">{concluido ? "Importação concluída." : "Processando..."}</p>
       </div>
 
       <div className="h-2 overflow-hidden rounded-full bg-muted">
         <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${percentual}%` }} />
       </div>
 
-      {concluido && (
+      {erroGeral && <p className="text-sm text-destructive">Falha ao importar: {erroGeral}</p>}
+
+      {concluido && !erroGeral && (
         <>
           <p className="text-xs text-muted-foreground">
             {totalLinhasArquivo} linhas na planilha → {linhas.length} chegaram prontas na importação → {sucessos} importadas
