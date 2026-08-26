@@ -6,7 +6,15 @@ import { ArrowClockwise } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { prepararRetomadaAction, retomarItemAction, finalizarRetomadaAction } from "../actions";
 
-export function RetomarPainel({ importacaoId, contagemPendente }: { importacaoId: string; contagemPendente: number }) {
+export function RetomarPainel({
+  importacaoId,
+  contagemPendente,
+  tipo,
+}: {
+  importacaoId: string;
+  contagemPendente: number;
+  tipo: "financeiro" | "pessoas";
+}) {
   const router = useRouter();
   const [rodando, setRodando] = useState(false);
   const [progresso, setProgresso] = useState({ feitos: 0, total: 0 });
@@ -27,11 +35,11 @@ export function RetomarPainel({ importacaoId, contagemPendente }: { importacaoId
       setProgresso({ feitos: 0, total: preparo.itens.length });
       for (let i = 0; i < preparo.itens.length; i++) {
         const item = preparo.itens[i];
-        await retomarItemAction(item.id, item.dadosNormalizados);
+        await retomarItemAction(item.id, item.dadosNormalizados, tipo);
         setProgresso({ feitos: i + 1, total: preparo.itens.length });
       }
 
-      await finalizarRetomadaAction(importacaoId, "concluida");
+      await finalizarRetomadaAction(importacaoId, "concluida", tipo);
       router.refresh();
     } catch {
       setErro("Falha inesperada ao retomar a importação. Tente de novo.");

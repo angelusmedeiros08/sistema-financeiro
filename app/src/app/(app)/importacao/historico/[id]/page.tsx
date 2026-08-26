@@ -35,7 +35,14 @@ export default async function PaginaDetalheImportacao({ params }: { params: Prom
   const { importacao, itens } = resultado;
   const itensComErro = itens.filter((it) => it.status === "erro");
   const contagemPendente = importacao.erros + importacao.pendentes;
-  const podeRetomar = (importacao.status === "concluida" || importacao.status === "cancelada") && contagemPendente > 0;
+  // "em_andamento" entra na lista — com a execução rodando inteira no
+  // servidor (ver spec 2026-08-26-importacao-execucao-servidor), esse
+  // status só sobra de uma queda real do servidor no meio do loop, nunca
+  // mais de alguém ter saído da tela. Antes, era exatamente o estado em
+  // que Retomar nunca aparecia, porque a checagem original só cobria o
+  // caso — já resolvido — de o cliente terminar de orquestrar o loop
+  // sozinho (achado em revisão de código).
+  const podeRetomar = (importacao.status === "concluida" || importacao.status === "cancelada" || importacao.status === "em_andamento") && contagemPendente > 0;
 
   const itensCriadosSucesso = itens.filter((it) => it.acao === "criar" && it.status === "sucesso");
   const contagemAtiva = itensCriadosSucesso.filter((it) => !it.desfeitoEm).length;
@@ -77,7 +84,7 @@ export default async function PaginaDetalheImportacao({ params }: { params: Prom
 
       {(podeRetomar || itensCriadosSucesso.length > 0) && (
         <div className="flex flex-wrap items-start gap-6 rounded-2xl bg-card shadow-card p-4">
-          {podeRetomar && <RetomarPainel importacaoId={importacao.id} contagemPendente={contagemPendente} />}
+          {podeRetomar && <RetomarPainel importacaoId={importacao.id} contagemPendente={contagemPendente} tipo={importacao.tipo} />}
           {itensCriadosSucesso.length > 0 && importacao.tipo === "financeiro" && <DesfazerPainelFinanceiro importacaoId={importacao.id} />}
           {itensCriadosSucesso.length > 0 && importacao.tipo === "pessoas" && <DesfazerPainel importacaoId={importacao.id} contagemAtiva={contagemAtiva} />}
         </div>

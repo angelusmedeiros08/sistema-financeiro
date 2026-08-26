@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/utils/supabase/admin";
-import type { Database } from "@/utils/supabase/database.types";
+import type { Database, Json } from "@/utils/supabase/database.types";
 import { estornarEventoFinanceiro } from "@/lib/contabil/evento-financeiro";
 
 type Cliente = SupabaseClient<Database>;
@@ -51,20 +51,51 @@ export async function registrarEntidadeCriada(
   });
 }
 
-export async function registrarItemImportacaoFinanceira(
+// Um item "pendente" por linha, criado ANTES de qualquer commit rodar —
+// mesmo padrão que o import de Pessoas já usa (ver iniciarImportacao em
+// importacoes.ts). Sem isso, uma linha nunca tentada (por queda do
+// servidor no meio do loop) simplesmente não existe em importacoes_itens,
+// escondendo quanto ficou faltando; e sem `dados_normalizados` guardando o
+// dado real da linha (não mais `{}`), não tem como reprocessar depois —
+// os dois eram os dois motivos do Retomar estar quebrado pro financeiro
+// (ver spec 2026-08-26-importacao-execucao-servidor).
+export async function registrarItensPendentesFinanceira(
   supabase: Cliente,
-  params: { importacao_id: string; tenant_id: string; linha_numero: number; status: "sucesso" | "erro"; evento_financeiro_id?: string | null; erro?: string | null },
+  params: { importacao_id: string; tenant_id: string; linhas: { linha_numero: number; dados: Json }[] },
+): Promise<{ itensPorLinha: Record<number, string> } | { erro: string }> {
+  const { data, error } = await supabase
+    .from("importacoes_itens")
+    .insert(
+      params.linhas.map((l) => ({
+        importacao_id: params.importacao_id,
+        tenant_id: params.tenant_id,
+        linha_numero: l.linha_numero,
+        acao: "criar" as const,
+        dados_normalizados: l.dados,
+        status: "pendente" as const,
+      })),
+    )
+    .select("id, linha_numero");
+
+  if (error || !data) return { erro: error?.message ?? "Falha ao registrar as linhas da importação." };
+
+  const itensPorLinha: Record<number, string> = {};
+  for (const item of data) itensPorLinha[item.linha_numero] = item.id;
+  return { itensPorLinha };
+}
+
+export async function atualizarItemImportacaoFinanceira(
+  supabase: Cliente,
+  params: { item_id: string; status: "sucesso" | "erro"; evento_financeiro_id?: string | null; erro?: string | null },
 ): Promise<void> {
-  await supabase.from("importacoes_itens").insert({
-    importacao_id: params.importacao_id,
-    tenant_id: params.tenant_id,
-    linha_numero: params.linha_numero,
-    acao: "criar",
-    dados_normalizados: {},
-    status: params.status,
-    evento_financeiro_id: params.evento_financeiro_id ?? null,
-    erro: params.erro ?? null,
-  });
+  await supabase
+    .from("importacoes_itens")
+    .update({
+      status: params.status,
+      evento_financeiro_id: params.evento_financeiro_id ?? null,
+      erro: params.erro ?? null,
+    })
+    .eq("id", params.item_id);
 }
 
 export async function finalizarImportacaoFinanceira(supabase: Cliente, params: { importacao_id: string }): Promise<void> {

@@ -9,9 +9,11 @@ import { commitarLinhaImportacao, type ParametrosCommitLinha } from "@/lib/impor
 import {
   iniciarImportacaoFinanceira,
   registrarEntidadeCriada,
-  registrarItemImportacaoFinanceira,
+  registrarItensPendentesFinanceira,
+  atualizarItemImportacaoFinanceira,
   finalizarImportacaoFinanceira,
 } from "@/lib/importacoes/importacoes-financeiro";
+import type { Json } from "@/utils/supabase/database.types";
 
 // Só as datas que aparecem no arquivo — nunca a tabela inteira do tenant.
 export async function verificarDuplicatasAction(datasCompetencia: string[]): Promise<{ chaves: string[] } | { erro: string }> {
@@ -98,6 +100,22 @@ export async function executarImportacaoFinanceiraAction(
   if ("erro" in contexto) return { erro: contexto.erro };
 
   const supabase = await createClient();
+
+  // Item "pendente" de cada linha, registrado ANTES de qualquer commit —
+  // só assim uma queda do servidor no meio do loop deixa rastro de quanto
+  // faltou (e dado suficiente pra retomar depois). Ver
+  // registrarItensPendentesFinanceira.
+  let itensPorLinha: Record<number, string> = {};
+  if (importacaoId) {
+    const registro = await registrarItensPendentesFinanceira(supabase, {
+      importacao_id: importacaoId,
+      tenant_id: contexto.tenantId,
+      linhas: linhas.filter((l) => l.linhaNumero !== undefined).map((l) => ({ linha_numero: l.linhaNumero as number, dados: l as unknown as Json })),
+    });
+    if ("erro" in registro) return { erro: registro.erro };
+    itensPorLinha = registro.itensPorLinha;
+  }
+
   const resultados: ResultadoLinhaImportacao[] = [];
 
   for (const { linhaNumero, ...paramsCommit } of linhas) {
@@ -107,11 +125,10 @@ export async function executarImportacaoFinanceiraAction(
       criado_por: contexto.user.id,
     });
 
-    if (importacaoId && linhaNumero !== undefined) {
-      await registrarItemImportacaoFinanceira(supabase, {
-        importacao_id: importacaoId,
-        tenant_id: contexto.tenantId,
-        linha_numero: linhaNumero,
+    const itemId = linhaNumero !== undefined ? itensPorLinha[linhaNumero] : undefined;
+    if (itemId) {
+      await atualizarItemImportacaoFinanceira(supabase, {
+        item_id: itemId,
         status: "erro" in resultado ? "erro" : "sucesso",
         evento_financeiro_id: "erro" in resultado ? null : resultado.evento_id,
         erro: "erro" in resultado ? resultado.erro : null,
@@ -124,6 +141,32 @@ export async function executarImportacaoFinanceiraAction(
   if (importacaoId) await finalizarImportacaoFinanceira(supabase, { importacao_id: importacaoId });
 
   return { resultados };
+}
+
+// Reprocessa uma única linha que ficou pendente/com erro (ver Retomar, em
+// historico/actions.ts) — o item já existe (criado em
+// registrarItensPendentesFinanceira quando o lote rodou), só falta
+// commitar de novo com o mesmo dado que foi persistido.
+export async function retomarItemFinanceiroAction(itemId: string, dados: LinhaParaImportar): Promise<{ evento_id: string } | { erro: string }> {
+  const contexto = await obterUsuarioETenantAtual();
+  if ("erro" in contexto) return { erro: contexto.erro };
+
+  const supabase = await createClient();
+  const { linhaNumero: _linhaNumero, ...paramsCommit } = dados;
+  const resultado = await commitarLinhaImportacao(supabase, {
+    ...paramsCommit,
+    tenant_id: contexto.tenantId,
+    criado_por: contexto.user.id,
+  });
+
+  await atualizarItemImportacaoFinanceira(supabase, {
+    item_id: itemId,
+    status: "erro" in resultado ? "erro" : "sucesso",
+    evento_financeiro_id: "erro" in resultado ? null : resultado.evento_id,
+    erro: "erro" in resultado ? resultado.erro : null,
+  });
+
+  return resultado;
 }
 
 // Chamado uma vez no fim do wizard, depois que todas as linhas passaram

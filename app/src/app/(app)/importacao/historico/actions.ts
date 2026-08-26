@@ -14,9 +14,12 @@ import {
 } from "@/lib/importacoes/importacoes";
 import { importarLinhaPessoaAction, finalizarImportacaoPessoasAction } from "../pessoas/actions";
 import type { ParametrosImportarLinhaPessoa } from "../pessoas/actions";
+import { retomarItemFinanceiroAction } from "../planilha/actions";
+import type { LinhaParaImportar } from "../planilha/actions";
 import {
   preverDesfazerImportacaoFinanceira,
   desfazerImportacaoFinanceira,
+  finalizarImportacaoFinanceira,
   type PreviaDesfazerFinanceira,
   type ResultadoDesfazerFinanceira,
 } from "@/lib/importacoes/importacoes-financeiro";
@@ -35,13 +38,34 @@ export async function prepararRetomadaAction(importacaoId: string): Promise<{ it
 
 // Reaproveita a mesma action de commit por linha usada no assistente
 // original — o item já existe (criado quando o lote nasceu), só falta
-// commitar de novo. dados_normalizados foi salvo com o mesmo formato de
-// ParametrosImportarLinhaPessoa, então dá pra repassar direto.
-export async function retomarItemAction(itemId: string, dados: unknown): Promise<{ pessoa_id: string } | { erro: string }> {
+// commitar de novo. dados_normalizados foi salvo com o formato certo pro
+// tipo do lote (ParametrosImportarLinhaPessoa ou LinhaParaImportar), então
+// dá pra repassar direto — mas o tipo precisa vir de fora, senão um lote
+// financeiro sempre caía no importador de Pessoas (achado em revisão de
+// código; ver spec 2026-08-26-importacao-execucao-servidor).
+export async function retomarItemAction(
+  itemId: string,
+  dados: unknown,
+  tipo: "financeiro" | "pessoas",
+): Promise<{ evento_id: string } | { pessoa_id: string } | { erro: string }> {
+  if (tipo === "financeiro") return retomarItemFinanceiroAction(itemId, dados as LinhaParaImportar);
   return importarLinhaPessoaAction(itemId, dados as ParametrosImportarLinhaPessoa);
 }
 
-export async function finalizarRetomadaAction(importacaoId: string, status: "concluida" | "cancelada"): Promise<{ sucesso: true } | { erro: string }> {
+// Mesmo motivo do retomarItemAction acima — sem o tipo, uma retomada
+// financeira também acabava marcando o lote pelo caminho de Pessoas.
+export async function finalizarRetomadaAction(
+  importacaoId: string,
+  status: "concluida" | "cancelada",
+  tipo: "financeiro" | "pessoas",
+): Promise<{ sucesso: true } | { erro: string }> {
+  if (tipo === "financeiro") {
+    const contexto = await obterUsuarioETenantAtual();
+    if ("erro" in contexto) return { erro: contexto.erro };
+    const supabase = await createClient();
+    await finalizarImportacaoFinanceira(supabase, { importacao_id: importacaoId });
+    return { sucesso: true };
+  }
   return finalizarImportacaoPessoasAction(importacaoId, status);
 }
 
