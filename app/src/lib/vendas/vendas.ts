@@ -162,6 +162,12 @@ export async function criarVenda(
 // Substitui todos os itens de uma venda (apaga e reinsere) — só é chamado
 // enquanto a venda está em RASCUNHO/ENVIADO; o trigger trg_travar_itens_venda_terminal
 // bloqueia isso depois de APROVADO/RECUSADO como segunda linha de defesa.
+//
+// DELETE + INSERT rodam dentro da RPC `substituir_itens_venda`, na mesma
+// transação — antes eram duas chamadas PostgREST separadas: se o INSERT
+// falhasse (produto_servico_id inválido/excluído entre a página carregar
+// e o submit, violando FK), o DELETE já tinha sido efetivado e a venda
+// ficava com zero itens persistidos (achado em revisão de código).
 export async function substituirItensVenda(
   supabase: Cliente,
   params: { tenantId: string; vendaId: string; itens: ItemVendaEntrada[] },
@@ -169,30 +175,17 @@ export async function substituirItensVenda(
   const erroItens = validarItens(params.itens);
   if (erroItens) return erroItens;
 
-  const { data: produtos } = await supabase
-    .from("produtos_servicos")
-    .select("id, nome")
-    .eq("tenant_id", params.tenantId)
-    .in("id", params.itens.map((i) => i.produtoServicoId));
-
-  const nomesPorId = new Map((produtos ?? []).map((p) => [p.id, p.nome]));
-
-  const { error: erroDelete } = await supabase.from("venda_itens").delete().eq("venda_id", params.vendaId);
-  if (erroDelete) return erroDelete.message;
-
-  const { error: erroInsert } = await supabase.from("venda_itens").insert(
-    params.itens.map((item) => ({
-      tenant_id: params.tenantId,
-      venda_id: params.vendaId,
+  const { error } = await supabase.rpc("substituir_itens_venda", {
+    p_tenant_id: params.tenantId,
+    p_venda_id: params.vendaId,
+    p_itens: params.itens.map((item) => ({
       produto_servico_id: item.produtoServicoId,
-      descricao: nomesPorId.get(item.produtoServicoId) ?? "",
       quantidade: item.quantidade,
       preco_unitario: item.precoUnitario,
     })),
-  );
-  if (erroInsert) return erroInsert.message;
+  });
 
-  return null;
+  return error?.message ?? null;
 }
 
 export async function editarCabecalhoVenda(

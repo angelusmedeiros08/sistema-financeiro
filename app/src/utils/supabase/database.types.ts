@@ -2227,6 +2227,10 @@ export type Database = {
         }
         Returns: string
       }
+      substituir_itens_venda: {
+        Args: { p_itens: Json; p_tenant_id: string; p_venda_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       acao_item_importacao: "criar" | "atualizar"
