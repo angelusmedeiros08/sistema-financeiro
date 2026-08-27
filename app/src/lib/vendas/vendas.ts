@@ -1,6 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/utils/supabase/database.types";
-import { criarEventoFinanceiro } from "@/lib/contabil/evento-financeiro";
 
 type Cliente = SupabaseClient<Database>;
 type StatusVenda = Database["public"]["Enums"]["status_venda"];
@@ -259,58 +258,27 @@ export async function recusarVenda(supabase: Cliente, params: { tenantId: string
   return { sucesso: true };
 }
 
-// Único gatilho financeiro do módulo: agrega os itens por categoria
-// financeira do produto/serviço (soma quem cai na mesma categoria) e chama
-// o motor já existente — ganha parcelamento/pessoa/forma de pagamento sem
-// nenhum código novo de lançamento. Ver seção "Máquina de estado" do spec.
+// Agrega os itens por categoria financeira do produto/serviço (soma quem
+// cai na mesma categoria) e cria o evento financeiro — ganha parcelamento/
+// pessoa/forma de pagamento sem nenhum código novo de lançamento. Ver
+// seção "Máquina de estado" do spec.
+//
+// Roda inteiro dentro da RPC `aprovar_venda`, numa única transação, que
+// trava a linha da venda (FOR UPDATE) antes de checar o status — antes,
+// o evento financeiro era criado ANTES do UPDATE que marca APROVADO, e
+// esse UPDATE não tinha guarda de status: duplo clique/duas abas passavam
+// ambas pela checagem antes de qualquer uma gravar APROVADO, cada uma
+// criando seu próprio evento e duplicando a receita da mesma venda
+// (achado em revisão de código). Com o lock no banco, a segunda chamada
+// concorrente bloqueia até a primeira terminar e então é corretamente
+// rejeitada (status já não é mais RASCUNHO/ENVIADO).
 export async function aprovarVenda(supabase: Cliente, params: { tenantId: string; vendaId: string; criadoPor?: string }): Promise<Resultado> {
-  const { data: venda } = await supabase
-    .from("vendas")
-    .select("id, status, pessoa_id, data_emissao, numero_parcelas, primeiro_vencimento, numero, venda_itens(produto_servico_id, valor_total)")
-    .eq("id", params.vendaId)
-    .eq("tenant_id", params.tenantId)
-    .maybeSingle();
-
-  if (!venda) return { erro: "Venda não encontrada." };
-  if (venda.status !== "RASCUNHO" && venda.status !== "ENVIADO") return { erro: "Só é possível aprovar uma venda em rascunho ou enviada." };
-  if (!venda.venda_itens || venda.venda_itens.length === 0) return { erro: "Adicione ao menos um item antes de aprovar." };
-  if (!venda.primeiro_vencimento) return { erro: "Informe o primeiro vencimento antes de aprovar." };
-
-  const produtoIds = [...new Set(venda.venda_itens.map((i) => i.produto_servico_id))];
-  const { data: produtos } = await supabase.from("produtos_servicos").select("id, categoria_financeira_id").in("id", produtoIds);
-  const categoriaPorProduto = new Map((produtos ?? []).map((p) => [p.id, p.categoria_financeira_id]));
-
-  const somaPorCategoria = new Map<string, number>();
-  for (const item of venda.venda_itens) {
-    const categoriaId = categoriaPorProduto.get(item.produto_servico_id);
-    if (!categoriaId) return { erro: "Item aponta pra um produto/serviço sem categoria financeira válida." };
-    somaPorCategoria.set(categoriaId, (somaPorCategoria.get(categoriaId) ?? 0) + Number(item.valor_total));
-  }
-
-  const categorias = [...somaPorCategoria.entries()].map(([categoria_id, valor]) => ({ categoria_id, valor: Math.round(valor * 100) / 100 }));
-  const valorTotal = categorias.reduce((acc, c) => acc + c.valor, 0);
-
-  const resultadoEvento = await criarEventoFinanceiro(supabase, {
-    tenant_id: params.tenantId,
-    tipo: "RECEITA",
-    descricao: `Venda #${venda.numero}`,
-    valor_total: valorTotal,
-    data_competencia: venda.data_emissao,
-    categorias,
-    pessoa_id: venda.pessoa_id,
-    numero_parcelas: venda.numero_parcelas,
-    primeiro_vencimento: venda.primeiro_vencimento,
-    criado_por: params.criadoPor,
+  const { data, error } = await supabase.rpc("aprovar_venda", {
+    p_tenant_id: params.tenantId,
+    p_venda_id: params.vendaId,
+    ...(params.criadoPor ? { p_criado_por: params.criadoPor } : {}),
   });
 
-  if ("erro" in resultadoEvento) return resultadoEvento;
-
-  const { error: erroUpdate } = await supabase
-    .from("vendas")
-    .update({ status: "APROVADO", evento_financeiro_id: resultadoEvento.evento_id })
-    .eq("id", params.vendaId)
-    .eq("tenant_id", params.tenantId);
-
-  if (erroUpdate) return { erro: erroUpdate.message };
+  if (error || !data) return { erro: error?.message ?? "Falha ao aprovar a venda." };
   return { sucesso: true };
 }

@@ -16,6 +16,15 @@ export type PartidaEntrada = {
 // coisa desbalanceada de qualquer forma, então isto nunca "engana" a
 // integridade dos dados — só evita repetir o insert de lançamento+partidas
 // em cada fluxo (criar despesa, dar baixa, estornar).
+//
+// Os dois INSERTs (lancamentos, depois partidas) rodam dentro da RPC
+// `registrar_lancamento`, na mesma transação — antes eram duas chamadas
+// PostgREST separadas, sem rollback entre elas: se a de partidas falhasse
+// depois da de lancamentos ter sucesso, sobrava um lançamento órfão sem
+// partida nenhuma. Numa retentativa de estornar, a checagem de reentrância
+// (que só olha se existe a linha em `lancamentos`) encontrava esse órfão e
+// pulava a criação do estorno de verdade — o razão nunca era revertido, mas
+// o sistema marcava como se tivesse sido (achado em revisão de código).
 export async function registrarLancamento(
   supabase: Cliente,
   params: {
@@ -42,40 +51,20 @@ export async function registrarLancamento(
     return { erro: "Lançamento desbalanceado: débito e crédito não coincidem." };
   }
 
-  const { data: lancamento, error: erroLancamento } = await supabase
-    .from("lancamentos")
-    .insert({
-      tenant_id: params.tenant_id,
-      data_competencia: params.data_competencia,
-      descricao: params.descricao,
-      origem: params.origem,
-      referencia_id: params.referencia_id,
-      criado_por: params.criado_por,
-      estornado_de_id: params.estornado_de_id,
-    })
-    .select("id")
-    .single();
+  const { data: lancamentoId, error } = await supabase.rpc("registrar_lancamento", {
+    p_tenant_id: params.tenant_id,
+    p_data_competencia: params.data_competencia,
+    p_descricao: params.descricao,
+    p_origem: params.origem,
+    p_partidas: params.partidas.map((p) => ({ conta_contabil_id: p.conta_contabil_id, tipo: p.tipo, valor: p.valor })),
+    ...(params.referencia_id ? { p_referencia_id: params.referencia_id } : {}),
+    ...(params.criado_por ? { p_criado_por: params.criado_por } : {}),
+    ...(params.estornado_de_id ? { p_estornado_de_id: params.estornado_de_id } : {}),
+  });
 
-  if (erroLancamento || !lancamento) {
-    return { erro: erroLancamento?.message ?? "Falha ao criar lançamento." };
+  if (error || !lancamentoId) {
+    return { erro: error?.message ?? "Falha ao registrar lançamento." };
   }
 
-  // tenant_id aqui é redundante em runtime (o gatilho trg_partidas_definir_tenant
-  // sempre sobrescreve com o tenant_id do lançamento), mas o tipo gerado exige
-  // a coluna por ela ser NOT NULL sem default — o TypeScript não enxerga o gatilho.
-  const { error: erroPartidas } = await supabase.from("partidas").insert(
-    params.partidas.map((p) => ({
-      lancamento_id: lancamento.id,
-      tenant_id: params.tenant_id,
-      conta_contabil_id: p.conta_contabil_id,
-      tipo: p.tipo,
-      valor: p.valor,
-    })),
-  );
-
-  if (erroPartidas) {
-    return { erro: erroPartidas.message };
-  }
-
-  return { lancamento_id: lancamento.id };
+  return { lancamento_id: lancamentoId };
 }

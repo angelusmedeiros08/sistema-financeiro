@@ -2184,6 +2184,10 @@ export type Database = {
       }
     }
     Functions: {
+      aprovar_venda: {
+        Args: { p_criado_por?: string; p_tenant_id: string; p_venda_id: string }
+        Returns: string
+      }
       criar_evento_financeiro: {
         Args: {
           p_categorias: Json
@@ -2198,6 +2202,19 @@ export type Database = {
           p_tenant_id: string
           p_tipo: Database["public"]["Enums"]["tipo_categoria"]
           p_valor_total: number
+        }
+        Returns: string
+      }
+      registrar_lancamento: {
+        Args: {
+          p_criado_por?: string
+          p_data_competencia: string
+          p_descricao: string
+          p_estornado_de_id?: string
+          p_origem: Database["public"]["Enums"]["origem_lancamento"]
+          p_partidas: Json
+          p_referencia_id?: string
+          p_tenant_id: string
         }
         Returns: string
       }
