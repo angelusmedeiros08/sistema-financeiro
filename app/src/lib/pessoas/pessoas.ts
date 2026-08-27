@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, Json } from "@/utils/supabase/database.types";
+import { validarCpfCnpj } from "@/lib/pagamentos/cpf-cnpj";
 
 type Cliente = SupabaseClient<Database>;
 type TipoEndereco = Database["public"]["Enums"]["tipo_endereco"];
@@ -26,6 +27,10 @@ export async function criarPessoa(
   const nome = params.nome.trim();
   if (!nome) return { erro: "Nome é obrigatório." };
   if (params.perfis.length === 0) return { erro: "Selecione ao menos um perfil (cliente ou fornecedor)." };
+  // Checksum real (dígito verificador), não só formato — a importação em
+  // massa já valida isso (lib/pessoas/importacao/validacao.ts), o cadastro
+  // manual pulava essa checagem (achado em revisão de código).
+  if (params.documento && !validarCpfCnpj(params.documento)) return { erro: "CPF ou CNPJ inválido." };
 
   const { data, error } = await supabase
     .from("pessoas")
@@ -67,6 +72,9 @@ export async function atualizarPessoa(
   }
   if (campos.perfis !== undefined && campos.perfis.length === 0) {
     return { erro: "Selecione ao menos um perfil (cliente ou fornecedor)." };
+  }
+  if (campos.documento && !validarCpfCnpj(campos.documento)) {
+    return { erro: "CPF ou CNPJ inválido." };
   }
 
   const { error } = await supabase.from("pessoas").update(campos).eq("id", pessoa_id).eq("tenant_id", tenant_id);

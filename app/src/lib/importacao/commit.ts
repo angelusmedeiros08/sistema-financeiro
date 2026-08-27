@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/utils/supabase/database.types";
-import { criarEventoFinanceiro } from "@/lib/contabil/evento-financeiro";
+import { criarEventoFinanceiro, confirmarPosseDePessoa } from "@/lib/contabil/evento-financeiro";
 import { registrarBaixa } from "@/lib/contabil/baixa";
 
 type Cliente = SupabaseClient<Database>;
@@ -30,6 +30,13 @@ export type ParametrosCommitLinha = {
 // dar baixa de novo duplicaria o lançamento de baixa (registrarBaixa não é
 // idempotente por chave, só criarEventoFinanceiro é — Seção 3 da spec).
 export async function commitarLinhaImportacao(supabase: Cliente, params: ParametrosCommitLinha): Promise<{ evento_id: string } | { erro: string }> {
+  // pessoa_id vem da linha da planilha (resolvida na etapa de Cadastros do
+  // wizard, mas ainda assim um valor externo chegando na Server Action) —
+  // nunca aceito sem confirmar posse, mesmo padrão que o fluxo manual de
+  // Nova Despesa/Receita já usa (achado em revisão de código: a importação
+  // pulava essa checagem, diferente do resto do sistema).
+  const pessoaId = params.pessoa_id ? await confirmarPosseDePessoa(supabase, params.tenant_id, params.pessoa_id) : null;
+
   const resultadoEvento = await criarEventoFinanceiro(supabase, {
     tenant_id: params.tenant_id,
     tipo: params.tipo,
@@ -37,7 +44,7 @@ export async function commitarLinhaImportacao(supabase: Cliente, params: Paramet
     valor_total: params.valor_total,
     data_competencia: params.data_competencia,
     categorias: [{ categoria_id: params.categoria_id, valor: params.valor_total, centro_custo_id: params.centro_custo_id ?? undefined }],
-    pessoa_id: params.pessoa_id,
+    pessoa_id: pessoaId,
     numero_parcelas: 1,
     primeiro_vencimento: params.data_vencimento,
     criado_por: params.criado_por,

@@ -9,6 +9,17 @@ import { hojeIsoBrasil } from "@/lib/data-brasil";
 type Cliente = SupabaseClient<Database>;
 type TipoCategoria = Database["public"]["Enums"]["tipo_categoria"];
 
+// Confirma posse antes de aceitar um pessoa_id vindo de fora (formulário,
+// linha de importação) — sem isso, um pessoa_id de outro tenant passaria
+// batido: nem a RPC criar_evento_financeiro, nem a FK (pessoas(id) não é
+// tenant-scoped), nem a RLS de INSERT em eventos_financeiros (não checa
+// posse de pessoa_id) barram isso sozinhas (achado em revisão de código —
+// a importação financeira pulava esta checagem, diferente do fluxo manual).
+export async function confirmarPosseDePessoa(supabase: Cliente, tenantId: string, pessoaId: string): Promise<string | null> {
+  const { data } = await supabase.from("pessoas").select("id").eq("id", pessoaId).eq("tenant_id", tenantId).maybeSingle();
+  return data?.id ?? null;
+}
+
 // Resolve o pessoa_id de um lançamento: usa o existente se veio um ID, cria
 // um cadastro mínimo se veio só um nome digitado (fluxo de "criar na hora"
 // do combobox), ou retorna null se nenhum dos dois foi informado — pessoa é
@@ -19,12 +30,7 @@ export async function resolverPessoaId(
   params: { pessoaId?: string; nomeNovaPessoa?: string; documentoNovaPessoa?: string; perfil: "CLIENTE" | "FORNECEDOR" },
 ): Promise<string | null> {
   if (params.pessoaId) {
-    // confirma posse antes de aceitar o ID vindo do formulário — sem isso,
-    // um pessoa_id de outro tenant passaria batido até virar um vínculo
-    // quebrado (ex.: convite de portal apontando pra pessoa inexistente no
-    // tenant do convite).
-    const { data } = await supabase.from("pessoas").select("id").eq("id", params.pessoaId).eq("tenant_id", tenantId).maybeSingle();
-    return data?.id ?? null;
+    return confirmarPosseDePessoa(supabase, tenantId, params.pessoaId);
   }
 
   const nome = params.nomeNovaPessoa?.trim();

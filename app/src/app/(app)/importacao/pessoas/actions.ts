@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/utils/supabase/server";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
 import { commitarLinhaPessoa, type ParametrosCommitLinhaPessoa } from "@/lib/pessoas/importacao/commit";
-import { iniciarImportacao, atualizarItemImportacao, finalizarImportacao } from "@/lib/importacoes/importacoes";
+import { iniciarImportacao, atualizarItemImportacao, finalizarImportacao, reivindicarProcessamento } from "@/lib/importacoes/importacoes";
 import type { Json } from "@/utils/supabase/database.types";
 
 export type ParametrosImportarLinhaPessoa = Omit<ParametrosCommitLinhaPessoa, "tenant_id">;
@@ -72,6 +72,20 @@ export async function executarImportacaoPessoasAction(
 ): Promise<{ importacaoId: string; resultados: ResultadoLinhaImportacaoPessoa[] } | { erro: string }> {
   const inicio = await iniciarImportacaoPessoasAction(nomeArquivo, linhas);
   if ("erro" in inicio) return inicio;
+
+  // Mesmo lock que a importação financeira já usa (achado em revisão de
+  // código: faltava aqui) — não impede duas abas criarem dois LOTES
+  // diferentes do zero (cada `iniciarImportacaoPessoasAction` acima já
+  // nasce com seu próprio importacao_id), mas impede que este mesmo lote
+  // seja processado duas vezes em paralelo (ex.: um retry de rede
+  // reenviando esta mesma Server Action). A proteção contra pessoa
+  // duplicada em si é o trigger de documento único (ver migration
+  // bloqueia_documento_pessoa_duplicado).
+  const contexto = await obterUsuarioETenantAtual();
+  if ("erro" in contexto) return contexto;
+  const supabase = await createClient();
+  const lock = await reivindicarProcessamento(supabase, { tenant_id: contexto.tenantId, importacao_id: inicio.importacao_id });
+  if ("erro" in lock) return lock;
 
   const resultados: ResultadoLinhaImportacaoPessoa[] = [];
   for (const item of linhas) {
