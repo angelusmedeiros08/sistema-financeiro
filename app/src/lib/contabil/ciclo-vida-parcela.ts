@@ -102,11 +102,12 @@ export async function cancelarParcela(
   supabase: Cliente,
   params: { tenant_id: string; parcela_id: string; motivo: string },
 ): Promise<{ sucesso: true } | { erro: string }> {
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("parcelas")
     .update({ status: "CANCELADO", motivo_cancelamento: params.motivo })
     .eq("id", params.parcela_id)
-    .eq("tenant_id", params.tenant_id);
+    .eq("tenant_id", params.tenant_id)
+    .select("id");
 
   if (error) {
     if (error.message.includes("já tem baixa registrada")) {
@@ -114,6 +115,10 @@ export async function cancelarParcela(
     }
     return { erro: error.message };
   }
+  // Sem isso, um UPDATE bloqueado em silêncio (gotcha de RLS já
+  // documentado neste projeto: 0 linhas, sem erro de SQL) retornava
+  // sucesso mesmo com a parcela intocada (achado em revisão de código).
+  if (!data || data.length === 0) return { erro: "Parcela não encontrada." };
 
   return { sucesso: true };
 }
@@ -155,13 +160,19 @@ export async function renegociarParcela(
 
   if (erroHistorico) return { erro: erroHistorico.message };
 
-  const { error: erroUpdate } = await supabase
+  const { data: parcelaAtualizada, error: erroUpdate } = await supabase
     .from("parcelas")
     .update({ data_vencimento: params.nova_data_vencimento, status: "RENEGOCIADO" })
     .eq("id", params.parcela_id)
-    .eq("tenant_id", params.tenant_id);
+    .eq("tenant_id", params.tenant_id)
+    .select("id");
 
   if (erroUpdate) return { erro: erroUpdate.message };
+  // O histórico em `renegociacoes` já foi gravado acima — sem checar
+  // linhas afetadas aqui, um UPDATE bloqueado em silêncio (mesmo gotcha
+  // de RLS já documentado no projeto) deixava o histórico dizendo
+  // "renegociado" com a parcela real intocada (achado em revisão de código).
+  if (!parcelaAtualizada || parcelaAtualizada.length === 0) return { erro: "Falha ao atualizar a parcela — nenhuma linha foi alterada." };
 
   return { sucesso: true };
 }

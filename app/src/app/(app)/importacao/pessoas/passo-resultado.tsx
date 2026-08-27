@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { CheckCircle, DownloadSimple, Spinner, XCircle } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
-import { baixarArquivoTexto } from "@/lib/importacao/download";
+import { baixarArquivoTexto, linhaCsvSegura } from "@/lib/importacao/download";
 import { COLUNAS_TEMPLATE_FIXAS } from "@/lib/pessoas/importacao/template";
 import { executarImportacaoPessoasAction, revalidarPosImportacaoPessoasAction } from "./actions";
 import type { LinhaPronta } from "./passo-revisao";
@@ -24,26 +24,36 @@ export function PassoResultado({ linhas, nomeArquivo, onReiniciar }: { linhas: L
     iniciado.current = true;
 
     (async () => {
-      const resposta = await executarImportacaoPessoasAction(
-        nomeArquivo || "importação sem nome",
-        linhas.map((l) => ({ ...l, linhaNumero: l.linhaNumero })),
-      );
+      // try/catch em volta da chamada inteira — sem isso, uma falha de
+      // rede/timeout na Server Action (exceção de verdade, não um
+      // `{erro}` de retorno) deixava a tela presa em "executando" pra
+      // sempre, sem nenhum sinal pro usuário (achado em revisão de
+      // código — Retomar/Desfazer já tratavam isso, este fluxo não).
+      try {
+        const resposta = await executarImportacaoPessoasAction(
+          nomeArquivo || "importação sem nome",
+          linhas.map((l) => ({ ...l, linhaNumero: l.linhaNumero })),
+        );
 
-      if ("erro" in resposta) {
-        setErroFatal(resposta.erro);
+        if ("erro" in resposta) {
+          setErroFatal(resposta.erro);
+          setFase("erro-fatal");
+          return;
+        }
+
+        setImportacaoId(resposta.importacaoId);
+        setResultados(
+          linhas.map((item, i) => {
+            const r = resposta.resultados[i];
+            return r.sucesso ? { linha: item, sucesso: true } : { linha: item, sucesso: false, erro: r.erro };
+          }),
+        );
+        await revalidarPosImportacaoPessoasAction();
+        setFase("concluido");
+      } catch {
+        setErroFatal("Falha inesperada ao importar. Veja o Histórico de importações para conferir o que já foi processado.");
         setFase("erro-fatal");
-        return;
       }
-
-      setImportacaoId(resposta.importacaoId);
-      setResultados(
-        linhas.map((item, i) => {
-          const r = resposta.resultados[i];
-          return r.sucesso ? { linha: item, sucesso: true } : { linha: item, sucesso: false, erro: r.erro };
-        }),
-      );
-      await revalidarPosImportacaoPessoasAction();
-      setFase("concluido");
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -56,10 +66,10 @@ export function PassoResultado({ linhas, nomeArquivo, onReiniciar }: { linhas: L
   // texto bruto original) — suficiente pra reenviar depois de corrigir, já
   // que os valores aqui são os que de fato seriam gravados.
   function baixarErros() {
-    const cabecalho = COLUNAS_TEMPLATE_FIXAS.map((c) => c.rotulo).join(";") + ";Motivo do erro";
+    const cabecalho = linhaCsvSegura([...COLUNAS_TEMPLATE_FIXAS.map((c) => c.rotulo), "Motivo do erro"]);
     const linhasCsv = falhas.map((f) => {
       const l = f.linha;
-      return [
+      return linhaCsvSegura([
         l.nome,
         l.perfisNovos.join(","),
         l.documento ?? "",
@@ -78,7 +88,7 @@ export function PassoResultado({ linhas, nomeArquivo, onReiniciar }: { linhas: L
         l.contato?.email ?? "",
         l.contato?.telefone ?? "",
         f.erro ?? "",
-      ].join(";");
+      ]);
     });
     baixarArquivoTexto("linhas-com-erro.csv", [cabecalho, ...linhasCsv].join("\n") + "\n");
   }

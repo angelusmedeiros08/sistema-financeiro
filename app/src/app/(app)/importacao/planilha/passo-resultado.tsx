@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { CheckCircle, DownloadSimple, Spinner, XCircle } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
-import { baixarArquivoTexto } from "@/lib/importacao/download";
+import { baixarArquivoTexto, linhaCsvSegura } from "@/lib/importacao/download";
 import { COLUNAS_TEMPLATE } from "@/lib/importacao/template";
 import { executarImportacaoFinanceiraAction, revalidarPosImportacaoAction } from "./actions";
 import type { LinhaPronta } from "./passo-preview";
@@ -34,37 +34,48 @@ export function PassoResultado({
     iniciado.current = true;
 
     (async () => {
-      const resposta = await executarImportacaoFinanceiraAction(
-        importacaoId,
-        linhas.map((item) => ({
-          conta_financeira_id: contaFinanceiraId,
-          import_key: item.linha.importKey,
-          descricao: item.linha.descricao,
-          valor_total: item.linha.valorNumero as number,
-          data_competencia: item.linha.dataCompetenciaIso as string,
-          data_vencimento: item.linha.dataVencimentoIso ?? (item.linha.dataCompetenciaIso as string),
-          data_pagamento: item.linha.dataPagamentoIso,
-          tipo: item.tipo,
-          categoria_id: item.categoriaId,
-          pessoa_id: item.pessoaId,
-          centro_custo_id: item.centroCustoId,
-          forma_pagamento_id: item.formaPagamentoId,
-          linhaNumero: item.linha.linha,
-        })),
-      );
-
-      if ("erro" in resposta) {
-        setErroGeral(resposta.erro);
-      } else {
-        setResultados(
-          linhas.map((item, i) => {
-            const r = resposta.resultados[i];
-            return r.sucesso ? { linha: item, sucesso: true } : { linha: item, sucesso: false, erro: r.erro };
-          }),
+      // try/catch em volta da chamada inteira — sem isso, uma falha de
+      // rede/timeout na Server Action (não um `{erro}` de retorno, uma
+      // exceção de verdade) deixava `concluido` false pra sempre: o
+      // spinner "Importando... não feche a página" ficava preso
+      // indefinidamente, sem nenhum sinal pro usuário (achado em revisão
+      // de código — Retomar/Desfazer já tratavam isso, este fluxo não).
+      try {
+        const resposta = await executarImportacaoFinanceiraAction(
+          importacaoId,
+          linhas.map((item) => ({
+            conta_financeira_id: contaFinanceiraId,
+            import_key: item.linha.importKey,
+            descricao: item.linha.descricao,
+            valor_total: item.linha.valorNumero as number,
+            data_competencia: item.linha.dataCompetenciaIso as string,
+            data_vencimento: item.linha.dataVencimentoIso ?? (item.linha.dataCompetenciaIso as string),
+            data_pagamento: item.linha.dataPagamentoIso,
+            tipo: item.tipo,
+            categoria_id: item.categoriaId,
+            pessoa_id: item.pessoaId,
+            centro_custo_id: item.centroCustoId,
+            forma_pagamento_id: item.formaPagamentoId,
+            linhaNumero: item.linha.linha,
+          })),
         );
-        await revalidarPosImportacaoAction();
+
+        if ("erro" in resposta) {
+          setErroGeral(resposta.erro);
+        } else {
+          setResultados(
+            linhas.map((item, i) => {
+              const r = resposta.resultados[i];
+              return r.sucesso ? { linha: item, sucesso: true } : { linha: item, sucesso: false, erro: r.erro };
+            }),
+          );
+          await revalidarPosImportacaoAction();
+        }
+      } catch {
+        setErroGeral("Falha inesperada ao importar. Veja o Histórico de importações para conferir o que já foi processado.");
+      } finally {
+        setConcluido(true);
       }
-      setConcluido(true);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -73,10 +84,10 @@ export function PassoResultado({
   const falhas = resultados.filter((r) => !r.sucesso);
 
   function baixarErros() {
-    const cabecalho = COLUNAS_TEMPLATE.map((c) => c.rotulo).join(";") + ";Motivo do erro";
+    const cabecalho = linhaCsvSegura([...COLUNAS_TEMPLATE.map((c) => c.rotulo), "Motivo do erro"]);
     const linhasCsv = falhas.map((f) => {
       const l = f.linha.linha;
-      return [
+      return linhaCsvSegura([
         l.dataCompetencia,
         l.valor,
         l.categoria,
@@ -88,7 +99,7 @@ export function PassoResultado({
         l.centroCusto,
         l.formaPagamento,
         f.erro ?? "",
-      ].join(";");
+      ]);
     });
     baixarArquivoTexto("linhas-com-erro.csv", [cabecalho, ...linhasCsv].join("\n") + "\n");
   }

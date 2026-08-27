@@ -235,26 +235,34 @@ export async function editarCabecalhoVenda(
 }
 
 export async function enviarOrcamento(supabase: Cliente, params: { tenantId: string; vendaId: string }): Promise<Resultado> {
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("vendas")
     .update({ status: "ENVIADO" })
     .eq("id", params.vendaId)
     .eq("tenant_id", params.tenantId)
-    .eq("status", "RASCUNHO");
+    .eq("status", "RASCUNHO")
+    .select("id");
 
   if (error) return { erro: error.message };
+  // `.eq("status", "RASCUNHO")` é a guarda de estado, não só um filtro — sem
+  // checar linhas afetadas, uma venda que já não estava mais em RASCUNHO
+  // (corrida entre abas, ou já enviada antes) retornava sucesso mesmo sem
+  // ter mudado nada (achado em revisão de código).
+  if (!data || data.length === 0) return { erro: "Só é possível enviar uma venda em rascunho." };
   return { sucesso: true };
 }
 
 export async function recusarVenda(supabase: Cliente, params: { tenantId: string; vendaId: string }): Promise<Resultado> {
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("vendas")
     .update({ status: "RECUSADO" })
     .eq("id", params.vendaId)
     .eq("tenant_id", params.tenantId)
-    .in("status", ["RASCUNHO", "ENVIADO"]);
+    .in("status", ["RASCUNHO", "ENVIADO"])
+    .select("id");
 
   if (error) return { erro: error.message };
+  if (!data || data.length === 0) return { erro: "Só é possível recusar uma venda em rascunho ou enviada." };
   return { sucesso: true };
 }
 

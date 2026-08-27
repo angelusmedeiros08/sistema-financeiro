@@ -377,8 +377,20 @@ export async function estornarEventoFinanceiro(
   // pagar/receber" nos relatórios).
   const pendentes = parcelasAtuais.filter((p) => p.status === "PENDENTE" || p.status === "ATRASADO");
   for (const p of pendentes) {
-    const { error: erroCancelar } = await supabase.from("parcelas").update({ status: "CANCELADO", motivo_cancelamento: params.motivo }).eq("id", p.id);
+    const { data: canceladas, error: erroCancelar } = await supabase
+      .from("parcelas")
+      .update({ status: "CANCELADO", motivo_cancelamento: params.motivo })
+      .eq("id", p.id)
+      .select("id");
     if (erroCancelar) return { erro: `Lançamento estornado, mas falha ao cancelar parcela: ${erroCancelar.message}` };
+    // O comentário acima já diz que isso não pode ser descartado em
+    // silêncio — mas o código só checava `error`, não linhas afetadas
+    // (mesmo gotcha de RLS já documentado no projeto: 0 linhas, sem erro
+    // de SQL). Sem essa checagem, a parcela ficava PENDENTE pra sempre
+    // mesmo com o evento oficialmente estornado (achado em revisão de código).
+    if (!canceladas || canceladas.length === 0) {
+      return { erro: "Lançamento estornado, mas a parcela não foi cancelada (nenhuma linha alterada)." };
+    }
   }
 
   // WHERE estornado_em is null: mesma proteção de atomicidade-por-guarda de

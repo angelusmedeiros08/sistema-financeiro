@@ -8,6 +8,24 @@
 // volta sem perceber, o arquivo inteiro vira windows-1252 (achado
 // investigando o relato de nomes com acento/caractere errado depois de
 // preencher o modelo).
+// Escapa uma célula pra CSV com segurança: sempre entre aspas (protege
+// contra ";"/quebra de linha embutida no dado — sem isso uma célula com
+// ";" desloca as colunas seguintes) e, se o valor começa com =, +, -, @,
+// TAB ou CR (os prefixos que Excel/Sheets interpretam como fórmula), um
+// apóstrofo na frente força leitura como texto — mitigação padrão de
+// injeção de fórmula via CSV (achado em revisão de código: o CSV de
+// "linhas com erro" reabria texto bruto vindo da planilha do próprio
+// usuário sem nenhum escape, então uma célula como "=CMD|'/c calc'!A1"
+// executava ao reabrir no Excel).
+function celulaCsvSegura(valor: string): string {
+  const texto = /^[=+\-@\t\r]/.test(valor) ? `'${valor}` : valor;
+  return `"${texto.replace(/"/g, '""')}"`;
+}
+
+export function linhaCsvSegura(campos: string[]): string {
+  return campos.map(celulaCsvSegura).join(";");
+}
+
 export function baixarArquivoTexto(nomeArquivo: string, conteudo: string, mime = "text/csv;charset=utf-8"): void {
   const blob = new Blob(["﻿" + conteudo], { type: mime });
   const url = URL.createObjectURL(blob);
