@@ -45,9 +45,9 @@ export async function enviarResumoEquipe(params: {
 
   try {
     await transportador.sendMail({
-      from: `"Sistema Financeiro" <${remetente}>`,
+      from: `"Finanssi" <${remetente}>`,
       to: params.email,
-      subject: "Resumo do dia — Sistema Financeiro",
+      subject: "Resumo do dia — Finanssi",
       html: `
         <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
           <h2 style="color: #111827;">Olá, ${params.nome}</h2>
@@ -77,7 +77,7 @@ export async function enviarCobrancaCliente(params: {
 
   try {
     await transportador.sendMail({
-      from: `"Sistema Financeiro" <${remetente}>`,
+      from: `"Finanssi" <${remetente}>`,
       to: params.email,
       subject: "Lembrete: sua parcela vence em breve",
       html: `

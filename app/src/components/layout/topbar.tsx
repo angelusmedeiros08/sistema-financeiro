@@ -48,7 +48,7 @@ export function Topbar({
       </Sheet>
 
       <span className="hidden shrink-0 font-heading text-[15px] font-bold tracking-tight text-foreground lg:inline">
-        Núcleo
+        Finanssi
       </span>
 
       <div className="hidden min-w-0 flex-1 justify-center lg:flex">

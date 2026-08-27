@@ -14,21 +14,21 @@ export function AuthShell({
           aria-hidden
           className="pointer-events-none absolute -right-24 -top-24 size-96 rounded-full bg-gradient-to-br from-[#D8583A] to-[#A87C1F] opacity-20 blur-3xl"
         />
-        <span className="font-heading text-lg font-bold tracking-tight">Núcleo</span>
+        <span className="font-heading text-lg font-bold tracking-tight">Finanssi</span>
 
         <p className="relative max-w-sm font-heading text-2xl font-bold leading-snug tracking-tight text-white">
           Cada lançamento gera partidas dobradas corretas, automaticamente.
         </p>
 
         <p className="relative text-sm text-white/50">
-          Núcleo financeiro multi-tenant · construído sobre um livro-razão de verdade.
+          Finanssi · núcleo financeiro multi-tenant, construído sobre um livro-razão de verdade.
         </p>
       </div>
 
       <div className="flex flex-1 items-center justify-center bg-background px-4 py-10">
         <div className="w-full max-w-sm">
           <div className="mb-8 lg:hidden">
-            <span className="font-heading text-lg font-bold tracking-tight text-foreground">Núcleo</span>
+            <span className="font-heading text-lg font-bold tracking-tight text-foreground">Finanssi</span>
           </div>
 
           <h1 className="mb-1.5 font-heading text-2xl font-bold tracking-tight text-foreground">{titulo}</h1>

@@ -28,8 +28,8 @@ const fonteCorpo = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Sistema Financeiro",
-  description: "Núcleo financeiro multi-tenant",
+  title: "Finanssi",
+  description: "Finanssi — núcleo financeiro multi-tenant",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

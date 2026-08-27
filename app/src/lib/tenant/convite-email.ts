@@ -42,7 +42,7 @@ export async function enviarEmailConvite(params: {
 
   try {
     await transportador.sendMail({
-      from: `"Sistema Financeiro" <${remetente}>`,
+      from: `"Finanssi" <${remetente}>`,
       to: params.email,
       subject: `Convite para ${params.tenantNome}`,
       html: `

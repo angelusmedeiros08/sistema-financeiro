@@ -3,5 +3,5 @@
 // usuário até agora. Confirmar o valor real antes de qualquer teste com
 // dinheiro de verdade (mesmo sandbox usa esse valor no Checkout gerado).
 export const VALOR_PLANO_MENSAL = 197;
-export const DESCRICAO_PLANO = "Assinatura Núcleo — mensal";
+export const DESCRICAO_PLANO = "Assinatura Finanssi — mensal";
 export const TRIAL_DIAS = 7;
