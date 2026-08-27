@@ -227,6 +227,16 @@ async function gerarOcorrenciasDaRegra(
       primeiro_vencimento: proximaData,
       criado_por: regra.criado_por ?? undefined,
       regra_recorrencia_id: regra.id,
+      // Chave determinística (regra + data da ocorrência) — o UPDATE de
+      // `ocorrencias_geradas` só persiste uma vez, no fim do loop inteiro;
+      // se a função serverless for interrompida no meio (timeout, sem
+      // `maxDuration` configurado), o contador fica desatualizado e a
+      // próxima execução do cron recalcularia a mesma ocorrência a partir
+      // do zero. Com import_key, o RPC criar_evento_financeiro (que já
+      // devolve o evento existente em vez de recriar, ver Seção 3 da spec
+      // de importação) torna essa regeneração idempotente — achado em
+      // revisão de código.
+      import_key: `recorrencia:${regra.id}:${proximaData}`,
     });
 
     if ("erro" in resultado) {
