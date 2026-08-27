@@ -1,12 +1,15 @@
 import type { Cliente } from "./regime";
+import { hojeIsoBrasil } from "@/lib/data-brasil";
 
-// Janela do mês corrente (UTC) — mesmo recorte que `obterResultadoDoMes` e
-// `obterRecebidoPagoDoMes` usam (painel/dados.ts), só que também precisa
-// do último dia aqui.
+// Janela do mês corrente, a partir da data de hoje no fuso de Brasília
+// (nunca `new Date().getUTCMonth()` direto — vira o mês errado na última
+// noite do mês, ver lib/data-brasil.ts) — mesmo recorte que
+// `obterResultadoDoMes` e `obterRecebidoPagoDoMes` usam (painel/dados.ts),
+// só que também precisa do último dia aqui.
 export function mesAtual(): { inicio: string; fim: string } {
-  const hoje = new Date();
-  const inicio = new Date(Date.UTC(hoje.getUTCFullYear(), hoje.getUTCMonth(), 1));
-  const fim = new Date(Date.UTC(hoje.getUTCFullYear(), hoje.getUTCMonth() + 1, 0));
+  const [ano, mes] = hojeIsoBrasil().split("-").map(Number);
+  const inicio = new Date(Date.UTC(ano, mes - 1, 1));
+  const fim = new Date(Date.UTC(ano, mes, 0));
   return { inicio: inicio.toISOString().slice(0, 10), fim: fim.toISOString().slice(0, 10) };
 }
 
@@ -61,9 +64,9 @@ export async function buscarSerieIndicadoresRealizacao(
   supabase: Cliente,
   params: { tenantId: string; tipo: "RECEITA" | "DESPESA"; meses: number },
 ): Promise<PontoIndicadorRealizacao[]> {
-  const hoje = new Date();
-  const inicioJanela = new Date(Date.UTC(hoje.getUTCFullYear(), hoje.getUTCMonth() - (params.meses - 1), 1));
-  const fimJanela = new Date(Date.UTC(hoje.getUTCFullYear(), hoje.getUTCMonth() + 1, 0));
+  const [ano, mes] = hojeIsoBrasil().split("-").map(Number);
+  const inicioJanela = new Date(Date.UTC(ano, mes - 1 - (params.meses - 1), 1));
+  const fimJanela = new Date(Date.UTC(ano, mes, 0));
 
   const { data } = await supabase
     .from("parcelas")
@@ -75,7 +78,7 @@ export async function buscarSerieIndicadoresRealizacao(
 
   const buckets = new Map<string, { total: number; pago: number; pagoEmAtraso: number }>();
   for (let i = params.meses - 1; i >= 0; i--) {
-    const chave = new Date(Date.UTC(hoje.getUTCFullYear(), hoje.getUTCMonth() - i, 1)).toISOString().slice(0, 7);
+    const chave = new Date(Date.UTC(ano, mes - 1 - i, 1)).toISOString().slice(0, 7);
     buckets.set(chave, { total: 0, pago: 0, pagoEmAtraso: 0 });
   }
 

@@ -4,28 +4,29 @@ import { CODIGO_CAIXA_E_BANCOS } from "@/lib/contabil/plano-padrao";
 import { buscarResumoVencimentos } from "@/lib/relatorios/aging";
 import { buscarMovimento } from "@/lib/relatorios/regime";
 import { mesAtual } from "@/lib/relatorios/indicadores-gauge";
+import { hojeIsoBrasil } from "@/lib/data-brasil";
+import { somarDias } from "@/lib/relatorios/saldo-projetado";
 
 type Cliente = SupabaseClient<Database>;
 
 function isoHoje(): string {
-  return new Date().toISOString().slice(0, 10);
+  return hojeIsoBrasil();
 }
 
 function isoDaquiA(dias: number): string {
-  const data = new Date();
-  data.setDate(data.getDate() + dias);
-  return data.toISOString().slice(0, 10);
+  return somarDias(hojeIsoBrasil(), dias);
 }
 
-// Construído em UTC direto (mesmo padrão de `mesAtual()`), não via
-// `new Date()` local + `.toISOString()` — a versão local dava mês errado
-// (dia 2 em vez de dia 1) nas últimas horas do dia num fuso atrás de UTC
-// (ex.: Brasil, 21h–23h59), porque a conversão pra UTC empurra a data pro
-// dia seguinte (achado em revisão de código).
+// A correção anterior (Date.UTC em vez de local + toISOString) resolvia só
+// metade do problema: mesmo em UTC puro, `new Date().getUTCMonth()` ainda
+// calcula o mês a partir da hora UTC — que nas últimas horas do dia no
+// horário de Brasília (21h–23h59) já é o dia/mês seguinte em UTC. A raiz é
+// "hoje" ter que vir do fuso de Brasília desde o início (hojeIsoBrasil), não
+// só a aritmética de data ser feita em UTC (achado numa auditoria de fuso
+// horário mais ampla, ver lib/data-brasil.ts).
 function inicioDoMes(offsetMeses = 0): string {
-  const hoje = new Date();
-  const data = new Date(Date.UTC(hoje.getUTCFullYear(), hoje.getUTCMonth() + offsetMeses, 1));
-  return data.toISOString().slice(0, 10);
+  const [ano, mes] = hojeIsoBrasil().split("-").map(Number);
+  return new Date(Date.UTC(ano, mes - 1 + offsetMeses, 1)).toISOString().slice(0, 10);
 }
 
 // saldo = soma de débitos - soma de créditos na conta contábil "Caixa e

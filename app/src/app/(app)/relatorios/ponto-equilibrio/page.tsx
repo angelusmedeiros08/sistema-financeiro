@@ -8,6 +8,7 @@ import { RelatoriosSubNav } from "../sub-nav";
 import { EvolucaoPontoEquilibrioChart } from "@/components/relatorios/evolucao-ponto-equilibrio-chart";
 import { formatarMoeda, formatarPercentual } from "@/lib/formatacao";
 import { cn } from "@/lib/utils";
+import { hojeIsoBrasil } from "@/lib/data-brasil";
 
 const REGIMES: { valor: Regime; rotulo: string }[] = [
   { valor: "competencia", rotulo: "Competência" },
@@ -31,7 +32,8 @@ export default async function PaginaRelatoriosPontoEquilibrio({
   const sp = await searchParams;
   const regime: Regime = REGIMES.some((r) => r.valor === sp.regime) ? (sp.regime as Regime) : "competencia";
   const baseMC: BaseMC = BASES_MC.some((b) => b.valor === sp.base) ? (sp.base as BaseMC) : "receita_liquida";
-  const ano = Number(sp.ano) || new Date().getFullYear();
+  const [anoHoje, mesHoje] = hojeIsoBrasil().split("-").map(Number);
+  const ano = Number(sp.ano) || anoHoje;
 
   const supabase = await createClient();
   const meses = mesesDoAno(ano);
@@ -40,8 +42,8 @@ export default async function PaginaRelatoriosPontoEquilibrio({
       tenantId: contexto.tenantId,
       regime,
       baseMC,
-      dataInicio: meses[new Date().getMonth()]?.inicio ?? meses[0].inicio,
-      dataFim: meses[new Date().getMonth()]?.fim ?? meses[0].fim,
+      dataInicio: meses[mesHoje - 1]?.inicio ?? meses[0].inicio,
+      dataFim: meses[mesHoje - 1]?.fim ?? meses[0].fim,
     }),
     buscarEvolucaoPontoEquilibrio(supabase, { tenantId: contexto.tenantId, regime, baseMC, meses }),
   ]);

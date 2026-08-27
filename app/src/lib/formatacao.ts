@@ -1,3 +1,5 @@
+import { FUSO_BRASIL } from "./data-brasil";
+
 const formatadorMoeda = new Intl.NumberFormat("pt-BR", {
   style: "currency",
   currency: "BRL",
@@ -69,5 +71,21 @@ export function formatarDataComAno(isoDate: string): string {
     day: "2-digit",
     month: "short",
     year: "numeric",
+  });
+}
+
+// Pra timestamp de verdade (`criado_em`/`atualizado_em`, com hora — não uma
+// data corrida tipo `data_vencimento`), sempre com `timeZone` explícito: sem
+// isso, `toLocaleDateString` renderizado num Server Component usa o fuso do
+// processo Node (UTC na Vercel, não Brasília) — bug real, achado ao vivo
+// (hora exibida 3h adiantada). Ver lib/data-brasil.ts.
+export function formatarDataHoraBrasil(isoDatetime: string): string {
+  return new Date(isoDatetime).toLocaleString("pt-BR", {
+    timeZone: FUSO_BRASIL,
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   });
 }

@@ -9,6 +9,7 @@ import { DreControles } from "./dre-controles";
 import { WaterfallDre } from "@/components/relatorios/waterfall-dre";
 import { IndicadoresDreChart } from "@/components/relatorios/indicadores-dre-chart";
 import { DreMatrizTabela } from "@/components/relatorios/dre-matriz-tabela";
+import { hojeIsoBrasil } from "@/lib/data-brasil";
 
 const REGIMES: { valor: Regime; rotulo: string }[] = [
   { valor: "competencia", rotulo: "Competência" },
@@ -32,7 +33,7 @@ export default async function PaginaRelatoriosDre({
 
   const sp = await searchParams;
   const regime: Regime = REGIMES.some((r) => r.valor === sp.regime) ? (sp.regime as Regime) : "competencia";
-  const ano = Number(sp.ano) || new Date().getFullYear();
+  const ano = Number(sp.ano) || Number(hojeIsoBrasil().slice(0, 4));
   const detalhado = sp.detalhe !== "0";
   const aba = ABAS.some((a) => a.valor === sp.aba) ? sp.aba! : "matriz";
 

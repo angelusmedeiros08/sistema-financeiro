@@ -1,4 +1,5 @@
 import type { Regime, Granularidade } from "./regime";
+import { hojeIsoBrasil } from "@/lib/data-brasil";
 
 export type ParametrosRelatorio = {
   regime: Regime;
@@ -7,15 +8,9 @@ export type ParametrosRelatorio = {
   dataFim: string;
 };
 
-function isoHoje(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
 function isoInicioDoMes(offsetMeses: number): string {
-  const data = new Date();
-  data.setDate(1);
-  data.setMonth(data.getMonth() + offsetMeses);
-  return data.toISOString().slice(0, 10);
+  const [ano, mes] = hojeIsoBrasil().split("-").map(Number);
+  return new Date(Date.UTC(ano, mes - 1 + offsetMeses, 1)).toISOString().slice(0, 10);
 }
 
 const REGIMES: Regime[] = ["competencia", "previsto", "realizado"];
@@ -31,6 +26,6 @@ export function lerParametrosRelatorio(searchParams: Record<string, string | und
     ? (searchParams.granularidade as Granularidade)
     : "mes";
   const dataInicio = searchParams.data_inicio || isoInicioDoMes(-5);
-  const dataFim = searchParams.data_fim || isoHoje();
+  const dataFim = searchParams.data_fim || hojeIsoBrasil();
   return { regime, granularidade, dataInicio, dataFim };
 }

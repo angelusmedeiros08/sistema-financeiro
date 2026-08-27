@@ -1,11 +1,11 @@
 import type { Cliente } from "./regime";
+import { hojeIsoBrasil } from "@/lib/data-brasil";
 
 export type PrazoMedio = { dias: number; quantidadeBaixas: number };
 
 function isoMenosMeses(meses: number): string {
-  const data = new Date();
-  data.setMonth(data.getMonth() - meses);
-  return data.toISOString().slice(0, 10);
+  const [ano, mes, dia] = hojeIsoBrasil().split("-").map(Number);
+  return new Date(Date.UTC(ano, mes - 1 - meses, dia)).toISOString().slice(0, 10);
 }
 
 function diasEntre(dataVencimento: string, dataPagamento: string): number {
@@ -20,7 +20,7 @@ function diasEntre(dataVencimento: string, dataPagamento: string): number {
 // sinal real, não ruído.
 async function buscarPrazoMedio(supabase: Cliente, params: { tenantId: string; tipo: "RECEITA" | "DESPESA"; mesesJanela: number }): Promise<PrazoMedio> {
   const dataInicio = isoMenosMeses(params.mesesJanela);
-  const dataFim = new Date().toISOString().slice(0, 10);
+  const dataFim = hojeIsoBrasil();
 
   const { data } = await supabase
     .from("parcelas")

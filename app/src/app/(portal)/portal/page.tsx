@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { formatarMoeda } from "@/lib/formatacao";
 import { cn } from "@/lib/utils";
 import { ROTULO_STATUS_PARCELA, COR_STATUS_PARCELA } from "@/lib/status-parcela";
+import { hojeIsoBrasil } from "@/lib/data-brasil";
 
 // Mesmíssima leitura de dados do painel interno (obterDadosPainel é pura
 // apresentação, sem nenhuma ação de escrita) — só o shell ao redor muda.
@@ -21,7 +22,7 @@ export default async function PaginaPortal() {
   const supabase = await createClient();
   const dados = await obterDadosPainel(supabase, contexto.tenantId, contexto.pessoaId ?? undefined);
 
-  const hoje = new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" });
+  const hoje = new Date(hojeIsoBrasil() + "T00:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" });
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6">

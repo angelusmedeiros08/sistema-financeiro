@@ -1,6 +1,7 @@
 import type { Cliente } from "./regime";
 import { buscarMovimento } from "./regime";
 import { montarHrefLancamentos } from "./drill-down";
+import { hojeIsoBrasil } from "@/lib/data-brasil";
 
 export type NivelRiscoConcentracao = "ALTO" | "MEDIO" | "BAIXO";
 
@@ -13,9 +14,8 @@ export type ConcentracaoReceita = {
 };
 
 function isoMenosMeses(meses: number): string {
-  const data = new Date();
-  data.setMonth(data.getMonth() - meses);
-  return data.toISOString().slice(0, 10);
+  const [ano, mes, dia] = hojeIsoBrasil().split("-").map(Number);
+  return new Date(Date.UTC(ano, mes - 1 - meses, dia)).toISOString().slice(0, 10);
 }
 
 // "Quanto da minha receita depende de poucos clientes" — nenhum concorrente
@@ -28,7 +28,7 @@ export async function buscarConcentracaoReceita(
 ): Promise<ConcentracaoReceita> {
   const mesesJanela = params.mesesJanela ?? 12;
   const dataInicio = isoMenosMeses(mesesJanela);
-  const dataFim = new Date().toISOString().slice(0, 10);
+  const dataFim = hojeIsoBrasil();
 
   const [movimento, { data: pessoas }] = await Promise.all([
     buscarMovimento(supabase, { tenantId: params.tenantId, regime: "competencia", dataInicio, dataFim }),

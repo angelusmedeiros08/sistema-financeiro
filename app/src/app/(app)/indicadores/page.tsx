@@ -15,6 +15,7 @@ import { BadgeRiscoConcentracao } from "@/components/relatorios/badge-risco-conc
 import { BadgeRupturaSaldo } from "@/components/relatorios/badge-ruptura-saldo";
 import { formatarMoeda, formatarPercentual } from "@/lib/formatacao";
 import { cn } from "@/lib/utils";
+import { hojeIsoBrasil } from "@/lib/data-brasil";
 
 export default async function PaginaIndicadores() {
   const contexto = await obterUsuarioETenantAtual();
@@ -24,11 +25,10 @@ export default async function PaginaIndicadores() {
   const supabase = await createClient();
 
   const origemHref = "/indicadores";
-  const hoje = new Date().toISOString().slice(0, 10);
+  const hoje = hojeIsoBrasil();
   const isoMenosMeses = (meses: number) => {
-    const data = new Date();
-    data.setMonth(data.getMonth() - meses);
-    return data.toISOString().slice(0, 10);
+    const [ano, mes, dia] = hoje.split("-").map(Number);
+    return new Date(Date.UTC(ano, mes - 1 - meses, dia)).toISOString().slice(0, 10);
   };
 
   const [saldoProjetado, serieSaldo, concentracao, variacaoReceitas, variacaoDespesas, pmr, pmp, agingReceber, agingPagar, distribuicaoFormaPagamento] = await Promise.all([

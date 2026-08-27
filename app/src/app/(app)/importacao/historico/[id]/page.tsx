@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
 import { buscarImportacao } from "@/lib/importacoes/importacoes";
+import { formatarDataHoraBrasil } from "@/lib/formatacao";
 import type { Json } from "@/utils/supabase/database.types";
 import { BadgeStatusImportacao } from "../badge-status";
 import { RetomarPainel } from "./retomar-painel";
@@ -58,7 +59,7 @@ export default async function PaginaDetalheImportacao({ params }: { params: Prom
         </div>
         <p className="mt-1 text-sm text-muted-foreground">
           {ROTULO_TIPO[importacao.tipo] ?? importacao.tipo} · importado por {importacao.criadoPorNome ?? "-"} em{" "}
-          {new Date(importacao.criadoEm).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+          {formatarDataHoraBrasil(importacao.criadoEm)}
         </p>
       </div>
 

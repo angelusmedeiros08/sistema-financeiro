@@ -7,6 +7,7 @@ import type { Regime } from "@/lib/relatorios/regime";
 import { GradeOrcamento } from "./grade-orcamento";
 import { OrcadoRealizadoBarras } from "@/components/relatorios/orcado-realizado-barras";
 import { cn } from "@/lib/utils";
+import { hojeIsoBrasil } from "@/lib/data-brasil";
 
 const ABAS = [
   { valor: "cadastro", rotulo: "Cadastro de meta" },
@@ -30,7 +31,7 @@ export default async function PaginaOrcamento({
   const sp = await searchParams;
   const aba = ABAS.some((a) => a.valor === sp.aba) ? sp.aba! : "cadastro";
   const regime: Regime = REGIMES.some((r) => r.valor === sp.regime) ? (sp.regime as Regime) : "competencia";
-  const ano = Number(sp.ano) || new Date().getFullYear();
+  const ano = Number(sp.ano) || Number(hojeIsoBrasil().slice(0, 4));
 
   const supabase = await createClient();
 

@@ -1,5 +1,6 @@
 import type { Cliente, MovimentoLinha } from "./regime";
 import { buscarMovimento } from "./regime";
+import { hojeIsoBrasil } from "@/lib/data-brasil";
 
 export type ProjecaoSaldo = { dias: number; saldo: number; ruptura: boolean };
 export type SaldoProjetado = { saldoAtual: number; projecoes: ProjecaoSaldo[]; limiar: number };
@@ -43,7 +44,7 @@ function saldoResidual(parcela: { valor: number; baixas: { valor_pago: number; e
 // horizonte, contra o limiar de segurança do tenant — usado tanto pelo card
 // de /indicadores quanto pelo cron de alerta (que só olha o D+7).
 export async function buscarSaldoProjetado(supabase: Cliente, tenantId: string): Promise<SaldoProjetado> {
-  const hojeIso = new Date().toISOString().slice(0, 10);
+  const hojeIso = hojeIsoBrasil();
   const limiteMax = somarDias(hojeIso, Math.max(...HORIZONTES));
 
   const [contas, tenant, movimentoRealizado, receitasAbertas, despesasAbertas] = await Promise.all([
@@ -94,7 +95,7 @@ function saldoNoDia(movimentos: MovimentoLinha[], saldoAtual: number, hojeIso: s
 // duas séries do mesmo gráfico, com o ponto de hoje presente nas duas
 // (mesmo valor) pra a linha conectar sem buraco no meio.
 export async function buscarSerieSaldoProjetado(supabase: Cliente, tenantId: string): Promise<{ pontos: PontoSerieSaldo[]; limiar: number }> {
-  const hojeIso = new Date().toISOString().slice(0, 10);
+  const hojeIso = hojeIsoBrasil();
   const inicioHistorico = somarDias(hojeIso, PASSADO_DIAS[0]);
   const fimProjecao = somarDias(hojeIso, FUTURO_DIAS[FUTURO_DIAS.length - 1]);
 

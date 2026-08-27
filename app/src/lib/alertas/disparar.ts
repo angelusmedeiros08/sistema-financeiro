@@ -4,6 +4,7 @@ import { buscarSaldoProjetado, somarDias } from "@/lib/relatorios/saldo-projetad
 import { buscarVencimentosProximos, buscarMembrosEquipeAtivos, type ParcelaVencimento } from "./vencimentos";
 import { jaEnviadoHoje, registrarEnvio } from "./dedup";
 import { enviarResumoEquipe, enviarCobrancaCliente } from "./alertas-email";
+import { hojeIsoBrasil } from "@/lib/data-brasil";
 
 type Cliente = SupabaseClient<Database>;
 
@@ -22,7 +23,7 @@ function agruparPorPessoa(parcelas: ParcelaVencimento[]): Map<string, ParcelaVen
 // Atravessa todos os tenants numa passada só, igual gerarOcorrenciasPendentes
 // já faz pra recorrência — cada linha já carrega o próprio tenant_id.
 export async function dispararAlertasDiarios(supabase: Cliente): Promise<{ resumosEnviados: number; cobrancasEnviadas: number; erros: string[] }> {
-  const hojeIso = new Date().toISOString().slice(0, 10);
+  const hojeIso = hojeIsoBrasil();
   const d3Iso = somarDias(hojeIso, 3);
 
   const [{ data: tenants }, vencimentos] = await Promise.all([

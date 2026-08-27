@@ -7,13 +7,13 @@ import { ErroAsaas } from "@/lib/asaas/cliente-http";
 import { validarCpfCnpj } from "./cpf-cnpj";
 import { registrarTentativaAssinatura } from "./rate-limit";
 import { VALOR_PLANO_MENSAL, DESCRICAO_PLANO, TRIAL_DIAS } from "./plano";
+import { hojeIsoBrasil } from "@/lib/data-brasil";
+import { somarDias } from "@/lib/relatorios/saldo-projetado";
 
 type ResultadoAssinar = { erro: string };
 
 function dataISO(diasAPartirDeHoje: number): string {
-  const data = new Date();
-  data.setDate(data.getDate() + diasAPartirDeHoje);
-  return data.toISOString().slice(0, 10);
+  return somarDias(hojeIsoBrasil(), diasAPartirDeHoje);
 }
 
 function obterIpDaRequisicao(cabecalhos: Headers): string {

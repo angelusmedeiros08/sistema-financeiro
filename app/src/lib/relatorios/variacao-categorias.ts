@@ -2,6 +2,7 @@ import type { Cliente } from "./regime";
 import type { Database } from "@/utils/supabase/database.types";
 import { buscarAnaliseCategorias } from "./analise-despesas";
 import { mesAtual } from "./indicadores-gauge";
+import { hojeIsoBrasil } from "@/lib/data-brasil";
 
 type TipoCategoria = Database["public"]["Enums"]["tipo_categoria"];
 
@@ -14,9 +15,9 @@ export type LinhaVariacaoCategoria = {
 };
 
 function mesAnterior(): { inicio: string; fim: string } {
-  const hoje = new Date();
-  const inicio = new Date(Date.UTC(hoje.getUTCFullYear(), hoje.getUTCMonth() - 1, 1));
-  const fim = new Date(Date.UTC(hoje.getUTCFullYear(), hoje.getUTCMonth(), 0));
+  const [ano, mes] = hojeIsoBrasil().split("-").map(Number);
+  const inicio = new Date(Date.UTC(ano, mes - 2, 1));
+  const fim = new Date(Date.UTC(ano, mes - 1, 0));
   return { inicio: inicio.toISOString().slice(0, 10), fim: fim.toISOString().slice(0, 10) };
 }
 

@@ -4,6 +4,8 @@ import { createClient } from "@/utils/supabase/server";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
 import { buscarContasBancarias } from "@/lib/relatorios/contas-bancarias";
 import { buscarResumoVencimentos } from "@/lib/relatorios/aging";
+import { hojeIsoBrasil } from "@/lib/data-brasil";
+import { somarDias } from "@/lib/relatorios/saldo-projetado";
 import { ConfiguracoesSubNav } from "../sub-nav";
 import { NovaContaFinanceiraForm } from "./nova-conta-form";
 import { TabelaContasFinanceiras } from "./tabela-contas-financeiras";
@@ -87,11 +89,8 @@ async function AbaContas({ tenantId, supabase }: { tenantId: string; supabase: A
 // de configuração, não precisa do seletor de Regime/Granularidade da seção
 // de Relatórios.
 async function VisaoGeralContasFinanceiras({ tenantId, supabase }: { tenantId: string; supabase: Awaited<ReturnType<typeof createClient>> }) {
-  const hoje = new Date();
-  const dataFim = hoje.toISOString().slice(0, 10);
-  const inicio = new Date(hoje);
-  inicio.setDate(inicio.getDate() - 30);
-  const dataInicio = inicio.toISOString().slice(0, 10);
+  const dataFim = hojeIsoBrasil();
+  const dataInicio = somarDias(dataFim, -30);
 
   const [contas, resumoReceber, resumoPagar] = await Promise.all([
     buscarContasBancarias(supabase, { tenantId, regime: "competencia", dataInicio, dataFim }),

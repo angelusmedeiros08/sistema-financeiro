@@ -7,6 +7,7 @@ import { RelatoriosSubNav } from "../sub-nav";
 import { DfcControles } from "./dfc-controles";
 import { ComposicaoFluxoCaixa } from "@/components/relatorios/composicao-fluxo-caixa";
 import { DfcMatrizTabela } from "@/components/relatorios/dfc-matriz-tabela";
+import { hojeIsoBrasil } from "@/lib/data-brasil";
 
 export default async function PaginaRelatoriosDfc({
   searchParams,
@@ -17,7 +18,7 @@ export default async function PaginaRelatoriosDfc({
   if ("erro" in contexto) redirect("/entrar");
 
   const sp = await searchParams;
-  const ano = Number(sp.ano) || new Date().getFullYear();
+  const ano = Number(sp.ano) || Number(hojeIsoBrasil().slice(0, 4));
 
   const supabase = await createClient();
   const [linhas, composicaoFluxo] = await Promise.all([

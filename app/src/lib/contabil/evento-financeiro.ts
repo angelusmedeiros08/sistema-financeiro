@@ -4,6 +4,7 @@ import { buscarContaGenericaPorTipo } from "./plano-contas";
 import { criarCategoria } from "./categorias";
 import { registrarLancamento } from "./ledger";
 import { estornarBaixa } from "./ciclo-vida-parcela";
+import { hojeIsoBrasil } from "@/lib/data-brasil";
 
 type Cliente = SupabaseClient<Database>;
 type TipoCategoria = Database["public"]["Enums"]["tipo_categoria"];
@@ -336,7 +337,7 @@ export async function estornarEventoFinanceiro(
 
     const resultadoLancamento = await registrarLancamento(supabase, {
       tenant_id: params.tenant_id,
-      data_competencia: new Date().toISOString().slice(0, 10),
+      data_competencia: hojeIsoBrasil(),
       descricao: `Estorno: ${lancamentoOriginal.descricao}`,
       origem: "ESTORNO",
       estornado_de_id: lancamentoOriginal.id,

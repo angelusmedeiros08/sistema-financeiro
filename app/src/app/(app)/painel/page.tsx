@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { ROTULO_STATUS_PARCELA, COR_STATUS_PARCELA } from "@/lib/status-parcela";
 import { buscarIndicadoresRealizacao, buscarSerieIndicadoresRealizacao, mesAtual } from "@/lib/relatorios/indicadores-gauge";
 import { montarHrefLancamentosSemDimensao } from "@/lib/relatorios/drill-down";
+import { hojeIsoBrasil } from "@/lib/data-brasil";
 
 function tempoRelativo(dataIso: string): string {
   return formatDistanceToNowStrict(new Date(dataIso + "T00:00:00"), { addSuffix: true, locale: ptBR });
@@ -38,8 +39,12 @@ export default async function PaginaPainel() {
     buscarSerieIndicadoresRealizacao(supabase, { tenantId: contexto.tenantId, tipo: "DESPESA", meses: 6 }),
   ]);
 
-  const hoje = new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" });
-  const hojeIso = new Date().toISOString().slice(0, 10);
+  // hojeIso já é a data certa (fuso Brasília, ver lib/data-brasil.ts) — o
+  // rótulo por extenso reaproveita o mesmo truque de formatarDataComAno
+  // (parse e format sem timeZone explícito, os dois usando o fuso padrão do
+  // processo): não passar timeZone aqui de novo evitaria deslocar de volta.
+  const hojeIso = hojeIsoBrasil();
+  const hoje = new Date(hojeIso + "T00:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" });
   const nomeMes = new Date(mesInicio + "T00:00:00").toLocaleDateString("pt-BR", { month: "long" });
   const origemHref = "/painel";
 

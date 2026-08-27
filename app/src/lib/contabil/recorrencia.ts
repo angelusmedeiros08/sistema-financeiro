@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/utils/supabase/database.types";
 import { criarEventoFinanceiro, type LinhaCategoria } from "./evento-financeiro";
+import { hojeIsoBrasil } from "@/lib/data-brasil";
 
 type Cliente = SupabaseClient<Database>;
 type TipoCategoria = Database["public"]["Enums"]["tipo_categoria"];
@@ -105,8 +106,7 @@ export async function criarRegraRecorrencia(
   // automaticamente" que uma ocorrência normal do job teria.
   const { data: regraCriada } = await supabase.from("regras_recorrencia").select("*").eq("id", data.id).single();
   if (regraCriada) {
-    const hoje = new Date().toISOString().slice(0, 10);
-    await gerarOcorrenciasDaRegra(supabase, regraCriada, hoje);
+    await gerarOcorrenciasDaRegra(supabase, regraCriada, hojeIsoBrasil());
   }
 
   return { regra_id: data.id };
@@ -260,7 +260,7 @@ async function gerarOcorrenciasDaRegra(
 export async function gerarOcorrenciasPendentes(
   supabase: Cliente,
 ): Promise<{ ocorrencias_geradas: number; erros: string[] }> {
-  const hoje = new Date().toISOString().slice(0, 10);
+  const hoje = hojeIsoBrasil();
   const limiteJanela = avancarData(hoje, "DIA", JANELA_ROLANTE_DIAS);
 
   const { data: regras, error } = await supabase.from("regras_recorrencia").select("*").eq("ativa", true);

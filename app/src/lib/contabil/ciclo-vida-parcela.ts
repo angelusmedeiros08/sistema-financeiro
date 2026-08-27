@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/utils/supabase/database.types";
 import { registrarLancamento, type PartidaEntrada } from "./ledger";
+import { hojeIsoBrasil } from "@/lib/data-brasil";
 
 type Cliente = SupabaseClient<Database>;
 
@@ -65,7 +66,7 @@ export async function estornarBaixa(
 
     const resultadoLancamento = await registrarLancamento(supabase, {
       tenant_id: params.tenant_id,
-      data_competencia: new Date().toISOString().slice(0, 10),
+      data_competencia: hojeIsoBrasil(),
       descricao: `Estorno: ${lancamentoOriginal.descricao}`,
       origem: "ESTORNO",
       estornado_de_id: lancamentoOriginal.id,

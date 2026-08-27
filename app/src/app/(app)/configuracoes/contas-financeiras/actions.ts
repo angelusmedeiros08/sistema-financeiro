@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/utils/supabase/server";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
+import { hojeIsoBrasil } from "@/lib/data-brasil";
 
 type ResultadoAcao = { erro: string } | { sucesso: true };
 
@@ -29,7 +30,7 @@ export async function criarContaFinanceira(formData: FormData): Promise<Resultad
     tipo,
     banco: banco || null,
     saldo_inicial: saldoInicial,
-    saldo_inicial_data: saldoInicial !== 0 ? new Date().toISOString().slice(0, 10) : null,
+    saldo_inicial_data: saldoInicial !== 0 ? hojeIsoBrasil() : null,
   });
 
   if (error) return { erro: error.message };

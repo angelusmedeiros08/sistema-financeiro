@@ -1,5 +1,6 @@
 import type { Cliente } from "./regime";
 import { montarHrefLancamentos } from "./drill-down";
+import { hojeIsoBrasil } from "@/lib/data-brasil";
 
 export type LinhaDistribuicaoFormaPagamento = {
   formaPagamentoId: string | null;
@@ -11,9 +12,8 @@ export type LinhaDistribuicaoFormaPagamento = {
 };
 
 function isoMenosMeses(meses: number): string {
-  const data = new Date();
-  data.setMonth(data.getMonth() - meses);
-  return data.toISOString().slice(0, 10);
+  const [ano, mes, dia] = hojeIsoBrasil().split("-").map(Number);
+  return new Date(Date.UTC(ano, mes - 1 - meses, dia)).toISOString().slice(0, 10);
 }
 
 function diasEntre(dataVencimento: string, dataPagamento: string): number {
@@ -33,7 +33,7 @@ export async function buscarDistribuicaoFormaPagamento(
 ): Promise<LinhaDistribuicaoFormaPagamento[]> {
   const mesesJanela = params.mesesJanela ?? 6;
   const dataInicio = isoMenosMeses(mesesJanela);
-  const dataFim = new Date().toISOString().slice(0, 10);
+  const dataFim = hojeIsoBrasil();
 
   const { data } = await supabase
     .from("baixas")

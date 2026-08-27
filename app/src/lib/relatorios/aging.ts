@@ -1,4 +1,6 @@
 import type { Cliente } from "./regime";
+import { hojeIsoBrasil } from "@/lib/data-brasil";
+import { somarDias } from "./saldo-projetado";
 
 // Fonte única do critério "vencido"/"vence em N dias" — usado tanto pelos
 // cards (buscarResumoVencimentos/obterPendentesPorTipo) quanto pelo filtro
@@ -8,10 +10,8 @@ export const STATUS_VENCIDO = ["PENDENTE", "RECEBIDO_PARCIAL", "ATRASADO"] as co
 export const STATUS_VENCE_EM_30 = ["PENDENTE"] as const;
 
 export function limitesJanelaVencimento(diasLimite: number): { hojeIso: string; limiteIso: string } {
-  const hoje = new Date();
-  const limite = new Date(hoje);
-  limite.setDate(limite.getDate() + diasLimite);
-  return { hojeIso: hoje.toISOString().slice(0, 10), limiteIso: limite.toISOString().slice(0, 10) };
+  const hojeIso = hojeIsoBrasil();
+  return { hojeIso, limiteIso: somarDias(hojeIso, diasLimite) };
 }
 
 // Faixas fixas, mesmo recorte da planilha de referência (Seção 3.4 do
@@ -45,17 +45,21 @@ export type AgingResultado = {
 
 type ParcelaEmAberto = { valor: number; dataVencimento: string };
 
-function diasDeAtraso(dataVencimento: string, hoje: Date): number {
-  const vencimento = new Date(dataVencimento + "T00:00:00Z");
-  return Math.floor((hoje.getTime() - vencimento.getTime()) / (1000 * 60 * 60 * 24));
+// Diferença em dias entre duas datas corridas — sempre comparando string
+// ISO com string ISO (não instante contra meia-noite UTC), pra "hoje" ser
+// sempre hojeIsoBrasil() e nunca `new Date()` direto (ver lib/data-brasil.ts).
+function diasDeAtraso(dataVencimento: string, hojeIso: string): number {
+  const vencimento = new Date(dataVencimento + "T00:00:00Z").getTime();
+  const hoje = new Date(hojeIso + "T00:00:00Z").getTime();
+  return Math.floor((hoje - vencimento) / (1000 * 60 * 60 * 24));
 }
 
-function classificar(parcelas: ParcelaEmAberto[], hoje: Date): AgingResultado {
+function classificar(parcelas: ParcelaEmAberto[], hojeIso: string): AgingResultado {
   const vencido = FAIXAS_VENCIDO.map((f) => ({ rotulo: f.rotulo, total: 0, quantidade: 0 }));
   const aVencer = FAIXAS_A_VENCER.map((f) => ({ rotulo: f.rotulo, total: 0, quantidade: 0 }));
 
   for (const parcela of parcelas) {
-    const atraso = diasDeAtraso(parcela.dataVencimento, hoje);
+    const atraso = diasDeAtraso(parcela.dataVencimento, hojeIso);
     if (atraso >= 0) {
       const i = FAIXAS_VENCIDO.findIndex((f) => atraso >= f.min && atraso <= f.max);
       if (i !== -1) {
@@ -101,7 +105,7 @@ export async function buscarAging(
     return { valor: Number(p.valor) - pago, dataVencimento: p.data_vencimento };
   });
 
-  return classificar(parcelas, new Date());
+  return classificar(parcelas, hojeIsoBrasil());
 }
 
 export type ResumoVencimentos = {
@@ -134,9 +138,9 @@ export async function buscarResumoVencimentos(
 
   const { data } = await query;
 
-  const hoje = new Date();
-  const hojeIso = hoje.toISOString().slice(0, 10);
-  const fimDoMesIso = new Date(Date.UTC(hoje.getUTCFullYear(), hoje.getUTCMonth() + 1, 0)).toISOString().slice(0, 10);
+  const hojeIso = hojeIsoBrasil();
+  const [anoHoje, mesHoje] = hojeIso.split("-").map(Number);
+  const fimDoMesIso = new Date(Date.UTC(anoHoje, mesHoje, 0)).toISOString().slice(0, 10);
   const resumo: ResumoVencimentos = {
     vencidoTotal: 0,
     vencidoQuantidade: 0,
@@ -182,7 +186,7 @@ export async function buscarAgingPorParticipante(
     .eq("eventos_financeiros.tipo", params.tipo)
     .in("status", STATUS_VENCIDO);
 
-  const hoje = new Date();
+  const hojeIso = hojeIsoBrasil();
   const porPessoa = new Map<string, AgingPorParticipante>();
 
   for (const p of data ?? []) {
@@ -190,7 +194,7 @@ export async function buscarAgingPorParticipante(
     const saldo = Number(p.valor) - pago;
     const pessoa = p.eventos_financeiros?.pessoas;
     const chave = pessoa?.id ?? "__sem_pessoa__";
-    const atraso = Math.max(0, diasDeAtraso(p.data_vencimento, hoje));
+    const atraso = Math.max(0, diasDeAtraso(p.data_vencimento, hojeIso));
 
     const atual = porPessoa.get(chave) ?? {
       pessoaId: pessoa?.id ?? null,
