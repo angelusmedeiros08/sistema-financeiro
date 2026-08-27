@@ -89,7 +89,15 @@ export async function buscarPontoEquilibrio(
   const receitaLiquida = receitaOperacional - deducoesReceita;
   const baseEscolhida = params.baseMC === "receita_operacional" ? receitaOperacional : receitaLiquida;
 
-  const margemContribuicao = receitaTotal - gastosVariaveis;
+  // Antes usava receitaTotal (bruta, com dedução ainda somada) aqui —
+  // resíduo de antes das deduções existirem no cálculo (só tinham sido
+  // aplicadas ao denominador da margem %, nunca a este numerador). Divergia
+  // da própria "Margem de contribuição" da DRE (que já desconta dedução) e,
+  // dependendo do tipo cadastrado pra categoria de dedução, podia superestimar
+  // em até 2x o valor da dedução (achado em revisão de código). Usar a mesma
+  // baseEscolhida do denominador mantém numerador e percentual consistentes
+  // entre si e com a DRE.
+  const margemContribuicao = baseEscolhida - gastosVariaveis;
   const margemContribuicaoPercentual = baseEscolhida > 0 ? margemContribuicao / baseEscolhida : 0;
   const pontoEquilibrio = margemContribuicaoPercentual > 0 ? gastosFixos / margemContribuicaoPercentual : 0;
 

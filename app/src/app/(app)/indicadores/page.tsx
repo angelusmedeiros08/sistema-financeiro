@@ -46,7 +46,7 @@ export default async function PaginaIndicadores() {
 
   const projecaoD7 = saldoProjetado.projecoes.find((p) => p.dias === 7);
 
-  const donutClientes = concentracao.topClientes.map((c, i) => ({
+  const donutClientes = concentracao.clientes.map((c, i) => ({
     categoriaId: c.pessoaId ?? `sem-pessoa-${i}`,
     entidadeId: c.pessoaId,
     categoriaNome: c.nome,

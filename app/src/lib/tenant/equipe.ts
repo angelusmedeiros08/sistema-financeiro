@@ -158,13 +158,25 @@ export async function cancelarConvitePendente(
     return { erro: "Só administradores podem cancelar convites." };
   }
 
-  const { error: erroVinculo } = await supabase
+  // Confirma que o DELETE de fato removeu um vínculo DESTE tenant antes de
+  // seguir pro passo global (contar vínculos em qualquer tenant e, se
+  // zero, apagar a conta de auth) — sem isso, um usuario_id sem vínculo
+  // real com este tenant (ex. um convite órfão de outro tenant, criado
+  // quando o e-mail de convite falhou depois do usuário já existir em
+  // auth.users) fazia o DELETE afetar 0 linhas em silêncio e a função
+  // seguia adiante do mesmo jeito, podendo apagar a conta de autenticação
+  // de uma pessoa de outra empresa (achado em revisão de código).
+  const { data: vinculoRemovido, error: erroVinculo } = await supabase
     .from("usuario_tenant")
     .delete()
     .eq("tenant_id", params.tenant_id)
-    .eq("usuario_id", params.usuario_id);
+    .eq("usuario_id", params.usuario_id)
+    .select("usuario_id");
 
   if (erroVinculo) return { erro: erroVinculo.message };
+  if (!vinculoRemovido || vinculoRemovido.length === 0) {
+    return { erro: "Convite não encontrado neste tenant." };
+  }
 
   const admin = createAdminClient();
   const { count } = await admin

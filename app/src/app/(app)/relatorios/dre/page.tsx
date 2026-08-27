@@ -72,7 +72,7 @@ export default async function PaginaRelatoriosDre({
           <h2 className="mb-1 font-heading text-base font-bold text-foreground">Indicadores: evolução no ano</h2>
           <p className="mb-5 text-xs text-muted-foreground">
             Margem de contribuição, margem bruta, EBITDA e margem líquida, todas em % sobre a receita líquida.
-            Leitura direta das linhas 7, 8, 11 e 20 da matriz, mês a mês.
+            Leitura direta das linhas correspondentes da matriz, mês a mês — mesmo se você reordenar a estrutura da DRE.
           </p>
           <IndicadoresDreChart dados={indicadores} altura={420} />
         </div>

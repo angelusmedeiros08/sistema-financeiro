@@ -4,6 +4,7 @@ import type { Database } from "@/utils/supabase/database.types";
 
 type TipoCalcLinhaDre = Database["public"]["Enums"]["tipo_linha_dre"];
 export type IdDfcLinhaDre = Database["public"]["Enums"]["id_dfc_linha_dre"];
+type ConceitoFixoLinhaDre = Database["public"]["Enums"]["conceito_fixo_linha_dre"];
 type Resultado = { sucesso: true } | { erro: string };
 
 const NOMES_MES = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
@@ -17,7 +18,14 @@ export type LinhaDreResultado = {
   valorAcumulado: number;
 };
 
-type LinhaComCategorias = { id: string; ordem: number; rotulo: string; tipo_calc: TipoCalcLinhaDre; linha_dre_categorias: { categoria_id: string }[] };
+type LinhaComCategorias = {
+  id: string;
+  ordem: number;
+  rotulo: string;
+  tipo_calc: TipoCalcLinhaDre;
+  conceito_fixo: ConceitoFixoLinhaDre | null;
+  linha_dre_categorias: { categoria_id: string }[];
+};
 
 // Motor único da cascata do DRE — roda uma vez por "coluna" (um período
 // único, um mês da matriz, ou o total do ano). FOLHA soma direto as
@@ -57,7 +65,7 @@ async function buscarLinhasEMovimento(supabase: Cliente, params: { tenantId: str
   const [{ data: linhas }, movimento] = await Promise.all([
     supabase
       .from("linhas_dre")
-      .select("id, ordem, rotulo, tipo_calc, linha_dre_categorias(categoria_id)")
+      .select("id, ordem, rotulo, tipo_calc, conceito_fixo, linha_dre_categorias(categoria_id)")
       .eq("tenant_id", params.tenantId)
       .order("ordem"),
     buscarMovimento(supabase, params),
@@ -104,6 +112,7 @@ export type LinhaDreMatriz = {
   ordem: number;
   rotulo: string;
   tipoCalc: TipoCalcLinhaDre;
+  conceitoFixo: ConceitoFixoLinhaDre | null;
   meses: number[];
   total: number;
   avPercentual: number;
@@ -141,7 +150,14 @@ export async function buscarDREMatriz(
   });
   const colunaTotal = calcularCascata(linhas, somaPorCategoriaAno);
 
-  const totalReceitasOperacionais = linhas.length > 0 ? (colunaTotal.get(linhas[0].id) ?? 0) : 0;
+  // Achada pelo papel semântico da linha (conceito_fixo), nunca por
+  // posição (linhas[0]) — `ordem` é livremente reescrita pelas setas ↑/↓
+  // de Configurações → Estrutura de DRE, então "a linha de menor ordem"
+  // deixa de ser Receitas operacionais assim que o usuário reordena
+  // qualquer coisa pra posição 1, invertendo os sinais de toda a coluna
+  // AV% em silêncio (achado em revisão de código).
+  const linhaReceitaOperacional = linhas.find((l) => l.conceito_fixo === "RECEITA_OPERACIONAL");
+  const totalReceitasOperacionais = linhaReceitaOperacional ? (colunaTotal.get(linhaReceitaOperacional.id) ?? 0) : 0;
 
   return linhas.map((linha) => {
     const total = colunaTotal.get(linha.id) ?? 0;
@@ -150,6 +166,7 @@ export async function buscarDREMatriz(
       ordem: linha.ordem,
       rotulo: linha.rotulo,
       tipoCalc: linha.tipo_calc,
+      conceitoFixo: linha.conceito_fixo,
       meses: colunasMensais.map((c) => c.get(linha.id) ?? 0),
       total,
       avPercentual: totalReceitasOperacionais !== 0 ? total / totalReceitasOperacionais : 0,
@@ -160,19 +177,23 @@ export async function buscarDREMatriz(
 export type IndicadorMensal = { chave: string; mc: number; margemBruta: number; ebitda: number; margemLiquida: number };
 
 // Indicadores mensais — todos derivados de linhas que já existem na matriz
-// (ordem 4 = Receita líquida, 7 = Margem de contribuição, 8 = Lucro Bruto,
-// 11 = EBITDA, 20 = Lucro líquido), nenhum cálculo novo inventado.
+// (achadas pelo papel semântico conceito_fixo, nunca por posição de
+// `ordem` — essa é livremente reescrita pelas setas ↑/↓ de Configurações →
+// Estrutura de DRE, então uma posição fixa como "ordem 11 = EBITDA"
+// rotulava um valor errado sob o rótulo certo assim que o usuário
+// reordenava qualquer linha, sem erro nenhum — achado em revisão de
+// código), nenhum cálculo novo inventado.
 export async function buscarDREIndicadores(
   supabase: Cliente,
   params: { tenantId: string; regime: Regime; ano: number },
 ): Promise<IndicadorMensal[]> {
   const matriz = await buscarDREMatriz(supabase, params);
-  const porOrdem = new Map(matriz.map((l) => [l.ordem, l]));
-  const receitaLiquida = porOrdem.get(4);
-  const mc = porOrdem.get(7);
-  const lucroBruto = porOrdem.get(8);
-  const ebitda = porOrdem.get(11);
-  const lucroLiquido = porOrdem.get(20);
+  const porConceito = new Map(matriz.filter((l) => l.conceitoFixo).map((l) => [l.conceitoFixo, l]));
+  const receitaLiquida = porConceito.get("RECEITA_LIQUIDA");
+  const mc = porConceito.get("MARGEM_CONTRIBUICAO");
+  const lucroBruto = porConceito.get("LUCRO_BRUTO");
+  const ebitda = porConceito.get("EBITDA");
+  const lucroLiquido = porConceito.get("LUCRO_LIQUIDO");
 
   return Array.from({ length: 12 }, (_, i) => {
     const base = receitaLiquida?.meses[i] ?? 0;
@@ -258,6 +279,15 @@ export async function editarIdDfcLinhaDre(
 }
 
 export async function removerLinhaDre(supabase: Cliente, params: { tenantId: string; linhaId: string }): Promise<Resultado> {
+  // Linha com conceito_fixo é uma das 6 que buscarDREMatriz/
+  // buscarDREIndicadores acham pelo papel semântico (Receita líquida,
+  // Margem de contribuição, EBITDA...) — excluir uma delas quebra AV% ou
+  // um indicador inteiro (some do gráfico, sem erro nenhum), então fica
+  // fora do que pode ser removido pela tela (achado em revisão de código,
+  // mesmo raciocínio da correção de conceito_fixo).
+  const { data: linha } = await supabase.from("linhas_dre").select("conceito_fixo").eq("id", params.linhaId).eq("tenant_id", params.tenantId).maybeSingle();
+  if (linha?.conceito_fixo) return { erro: "Esta linha faz parte do cálculo de indicadores e não pode ser removida." };
+
   const { error } = await supabase.from("linhas_dre").delete().eq("id", params.linhaId).eq("tenant_id", params.tenantId);
   if (error) return { erro: error.message };
   return { sucesso: true };
@@ -342,30 +372,37 @@ export async function desvincularCategoriaDre(
 // não configuração final: nenhuma linha nasce com categoria vinculada aqui
 // (esse vínculo é feito no provisionamento do tenant, que sabe quais
 // categorias existem).
-export const MODELO_COMPLETO_DRE: { ordem: number; rotulo: string; tipoCalc: TipoCalcLinhaDre; waterfallPapel: number | null; idDfc: IdDfcLinhaDre | null }[] = [
-  { ordem: 1, rotulo: "Receitas operacionais", tipoCalc: "FOLHA", waterfallPapel: 1, idDfc: "OPERACIONAL_ENTRADA" },
-  { ordem: 2, rotulo: "Devoluções", tipoCalc: "FOLHA", waterfallPapel: 2, idDfc: "OPERACIONAL_SAIDA" },
-  { ordem: 3, rotulo: "Tributos sobre a venda", tipoCalc: "FOLHA", waterfallPapel: 2, idDfc: "OPERACIONAL_SAIDA" },
-  { ordem: 4, rotulo: "Receita líquida", tipoCalc: "SUBTOTAL", waterfallPapel: 3, idDfc: null },
-  { ordem: 5, rotulo: "Custos variáveis", tipoCalc: "FOLHA", waterfallPapel: 2, idDfc: "OPERACIONAL_SAIDA" },
-  { ordem: 6, rotulo: "Despesas variáveis", tipoCalc: "FOLHA", waterfallPapel: 2, idDfc: "OPERACIONAL_SAIDA" },
-  { ordem: 7, rotulo: "Margem de contribuição", tipoCalc: "SUBTOTAL", waterfallPapel: 3, idDfc: null },
-  { ordem: 8, rotulo: "Lucro Bruto", tipoCalc: "SUBTOTAL_ALTERNATIVO", waterfallPapel: 3, idDfc: null },
-  { ordem: 9, rotulo: "Custos fixos", tipoCalc: "FOLHA", waterfallPapel: 2, idDfc: "OPERACIONAL_SAIDA" },
-  { ordem: 10, rotulo: "Despesas fixas", tipoCalc: "FOLHA", waterfallPapel: 2, idDfc: "OPERACIONAL_SAIDA" },
-  { ordem: 11, rotulo: "EBITDA", tipoCalc: "SUBTOTAL", waterfallPapel: 3, idDfc: null },
-  { ordem: 12, rotulo: "Depreciação e amortização", tipoCalc: "FOLHA", waterfallPapel: 2, idDfc: null },
-  { ordem: 13, rotulo: "Lucro Operacional", tipoCalc: "SUBTOTAL", waterfallPapel: 3, idDfc: null },
-  { ordem: 14, rotulo: "Receitas não operacionais", tipoCalc: "FOLHA", waterfallPapel: 4, idDfc: "NAO_OPERACIONAL_ENTRADA" },
-  { ordem: 16, rotulo: "Despesas não operacionais", tipoCalc: "FOLHA", waterfallPapel: 2, idDfc: "NAO_OPERACIONAL_SAIDA" },
-  { ordem: 17, rotulo: "Resultado não operacional", tipoCalc: "RESULTADO_NAO_OPERACIONAL", waterfallPapel: 5, idDfc: null },
-  { ordem: 18, rotulo: "Lucro antes dos impostos", tipoCalc: "SUBTOTAL", waterfallPapel: 3, idDfc: null },
-  { ordem: 19, rotulo: "Tributos sobre o lucro", tipoCalc: "FOLHA", waterfallPapel: 2, idDfc: "OPERACIONAL_SAIDA" },
-  { ordem: 20, rotulo: "Lucro líquido", tipoCalc: "SUBTOTAL", waterfallPapel: 2, idDfc: null },
-  { ordem: 21, rotulo: "Investimentos em Imobilizado", tipoCalc: "FOLHA", waterfallPapel: 2, idDfc: "INVESTIMENTO" },
-  { ordem: 22, rotulo: "Empréstimos e Dívidas", tipoCalc: "FOLHA", waterfallPapel: 2, idDfc: "FINANCIAMENTO" },
-  { ordem: 23, rotulo: "Retirada de Lucros", tipoCalc: "FOLHA", waterfallPapel: 0, idDfc: "FINANCIAMENTO" },
-  { ordem: 24, rotulo: "Lucro / Prejuízo Final", tipoCalc: "SUBTOTAL", waterfallPapel: 3, idDfc: null },
+export const MODELO_COMPLETO_DRE: {
+  ordem: number;
+  rotulo: string;
+  tipoCalc: TipoCalcLinhaDre;
+  waterfallPapel: number | null;
+  idDfc: IdDfcLinhaDre | null;
+  conceitoFixo: ConceitoFixoLinhaDre | null;
+}[] = [
+  { ordem: 1, rotulo: "Receitas operacionais", tipoCalc: "FOLHA", waterfallPapel: 1, idDfc: "OPERACIONAL_ENTRADA", conceitoFixo: "RECEITA_OPERACIONAL" },
+  { ordem: 2, rotulo: "Devoluções", tipoCalc: "FOLHA", waterfallPapel: 2, idDfc: "OPERACIONAL_SAIDA", conceitoFixo: null },
+  { ordem: 3, rotulo: "Tributos sobre a venda", tipoCalc: "FOLHA", waterfallPapel: 2, idDfc: "OPERACIONAL_SAIDA", conceitoFixo: null },
+  { ordem: 4, rotulo: "Receita líquida", tipoCalc: "SUBTOTAL", waterfallPapel: 3, idDfc: null, conceitoFixo: "RECEITA_LIQUIDA" },
+  { ordem: 5, rotulo: "Custos variáveis", tipoCalc: "FOLHA", waterfallPapel: 2, idDfc: "OPERACIONAL_SAIDA", conceitoFixo: null },
+  { ordem: 6, rotulo: "Despesas variáveis", tipoCalc: "FOLHA", waterfallPapel: 2, idDfc: "OPERACIONAL_SAIDA", conceitoFixo: null },
+  { ordem: 7, rotulo: "Margem de contribuição", tipoCalc: "SUBTOTAL", waterfallPapel: 3, idDfc: null, conceitoFixo: "MARGEM_CONTRIBUICAO" },
+  { ordem: 8, rotulo: "Lucro Bruto", tipoCalc: "SUBTOTAL_ALTERNATIVO", waterfallPapel: 3, idDfc: null, conceitoFixo: "LUCRO_BRUTO" },
+  { ordem: 9, rotulo: "Custos fixos", tipoCalc: "FOLHA", waterfallPapel: 2, idDfc: "OPERACIONAL_SAIDA", conceitoFixo: null },
+  { ordem: 10, rotulo: "Despesas fixas", tipoCalc: "FOLHA", waterfallPapel: 2, idDfc: "OPERACIONAL_SAIDA", conceitoFixo: null },
+  { ordem: 11, rotulo: "EBITDA", tipoCalc: "SUBTOTAL", waterfallPapel: 3, idDfc: null, conceitoFixo: "EBITDA" },
+  { ordem: 12, rotulo: "Depreciação e amortização", tipoCalc: "FOLHA", waterfallPapel: 2, idDfc: null, conceitoFixo: null },
+  { ordem: 13, rotulo: "Lucro Operacional", tipoCalc: "SUBTOTAL", waterfallPapel: 3, idDfc: null, conceitoFixo: null },
+  { ordem: 14, rotulo: "Receitas não operacionais", tipoCalc: "FOLHA", waterfallPapel: 4, idDfc: "NAO_OPERACIONAL_ENTRADA", conceitoFixo: null },
+  { ordem: 16, rotulo: "Despesas não operacionais", tipoCalc: "FOLHA", waterfallPapel: 2, idDfc: "NAO_OPERACIONAL_SAIDA", conceitoFixo: null },
+  { ordem: 17, rotulo: "Resultado não operacional", tipoCalc: "RESULTADO_NAO_OPERACIONAL", waterfallPapel: 5, idDfc: null, conceitoFixo: null },
+  { ordem: 18, rotulo: "Lucro antes dos impostos", tipoCalc: "SUBTOTAL", waterfallPapel: 3, idDfc: null, conceitoFixo: null },
+  { ordem: 19, rotulo: "Tributos sobre o lucro", tipoCalc: "FOLHA", waterfallPapel: 2, idDfc: "OPERACIONAL_SAIDA", conceitoFixo: null },
+  { ordem: 20, rotulo: "Lucro líquido", tipoCalc: "SUBTOTAL", waterfallPapel: 2, idDfc: null, conceitoFixo: "LUCRO_LIQUIDO" },
+  { ordem: 21, rotulo: "Investimentos em Imobilizado", tipoCalc: "FOLHA", waterfallPapel: 2, idDfc: "INVESTIMENTO", conceitoFixo: null },
+  { ordem: 22, rotulo: "Empréstimos e Dívidas", tipoCalc: "FOLHA", waterfallPapel: 2, idDfc: "FINANCIAMENTO", conceitoFixo: null },
+  { ordem: 23, rotulo: "Retirada de Lucros", tipoCalc: "FOLHA", waterfallPapel: 0, idDfc: "FINANCIAMENTO", conceitoFixo: null },
+  { ordem: 24, rotulo: "Lucro / Prejuízo Final", tipoCalc: "SUBTOTAL", waterfallPapel: 3, idDfc: null, conceitoFixo: null },
 ];
 
 export async function aplicarModeloCompletoDre(supabase: Cliente, params: { tenantId: string }): Promise<Resultado> {
@@ -380,6 +417,7 @@ export async function aplicarModeloCompletoDre(supabase: Cliente, params: { tena
       tipo_calc: linha.tipoCalc,
       waterfall_papel: linha.waterfallPapel,
       id_dfc: linha.idDfc,
+      conceito_fixo: linha.conceitoFixo,
     })),
   );
   if (error) return { erro: error.message };

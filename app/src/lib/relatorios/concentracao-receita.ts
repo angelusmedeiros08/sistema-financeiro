@@ -8,7 +8,7 @@ export type NivelRiscoConcentracao = "ALTO" | "MEDIO" | "BAIXO";
 export type ClienteConcentracao = { pessoaId: string | null; nome: string; valor: number; percentual: number; href: string };
 
 export type ConcentracaoReceita = {
-  topClientes: ClienteConcentracao[];
+  clientes: ClienteConcentracao[];
   percentualTop3: number;
   nivelRisco: NivelRiscoConcentracao;
 };
@@ -58,7 +58,14 @@ export async function buscarConcentracaoReceita(
   const percentualTop3 = ordenado.slice(0, 3).reduce((soma, c) => soma + c.percentual, 0);
   const nivelRisco: NivelRiscoConcentracao = percentualTop3 >= 0.5 ? "ALTO" : percentualTop3 >= 0.3 ? "MEDIO" : "BAIXO";
 
-  const topClientes = ordenado.slice(0, 5).map((c) => ({
+  // Lista COMPLETA, não só os 5 maiores — TopCategoriasDonut espera todas
+  // as fatias e faz ele mesmo o corte top-5 + bucket "Outras"
+  // (agregarFatias), mesmo contrato que Distribuição por Forma de
+  // Pagamento já respeita. Cortar aqui antes deixava "Outras" sempre
+  // vazio e inflava o percentual de cada fatia (dividia pela soma só dos
+  // 5 maiores, não pelo total real) sempre que havia mais de 5 clientes
+  // no período (achado em revisão de código).
+  const clientes = ordenado.map((c) => ({
     ...c,
     href: montarHrefLancamentos({
       tipoEntidade: "pessoa",
@@ -74,5 +81,5 @@ export async function buscarConcentracaoReceita(
     }),
   }));
 
-  return { topClientes, percentualTop3, nivelRisco };
+  return { clientes, percentualTop3, nivelRisco };
 }

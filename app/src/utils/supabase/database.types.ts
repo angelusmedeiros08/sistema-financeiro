@@ -1005,6 +1005,9 @@ export type Database = {
       }
       linhas_dre: {
         Row: {
+          conceito_fixo:
+            | Database["public"]["Enums"]["conceito_fixo_linha_dre"]
+            | null
           criado_em: string
           id: string
           id_dfc: Database["public"]["Enums"]["id_dfc_linha_dre"] | null
@@ -1015,6 +1018,9 @@ export type Database = {
           waterfall_papel: number | null
         }
         Insert: {
+          conceito_fixo?:
+            | Database["public"]["Enums"]["conceito_fixo_linha_dre"]
+            | null
           criado_em?: string
           id?: string
           id_dfc?: Database["public"]["Enums"]["id_dfc_linha_dre"] | null
@@ -1025,6 +1031,9 @@ export type Database = {
           waterfall_papel?: number | null
         }
         Update: {
+          conceito_fixo?:
+            | Database["public"]["Enums"]["conceito_fixo_linha_dre"]
+            | null
           criado_em?: string
           id?: string
           id_dfc?: Database["public"]["Enums"]["id_dfc_linha_dre"] | null
@@ -2221,6 +2230,13 @@ export type Database = {
     }
     Enums: {
       acao_item_importacao: "criar" | "atualizar"
+      conceito_fixo_linha_dre:
+        | "RECEITA_OPERACIONAL"
+        | "RECEITA_LIQUIDA"
+        | "MARGEM_CONTRIBUICAO"
+        | "LUCRO_BRUTO"
+        | "EBITDA"
+        | "LUCRO_LIQUIDO"
       escopo_campo_personalizado: "CLIENTE" | "FORNECEDOR" | "AMBOS"
       forma_anexo: "ARQUIVO" | "LINK"
       id_dfc_linha_dre:
@@ -2414,6 +2430,14 @@ export const Constants = {
   public: {
     Enums: {
       acao_item_importacao: ["criar", "atualizar"],
+      conceito_fixo_linha_dre: [
+        "RECEITA_OPERACIONAL",
+        "RECEITA_LIQUIDA",
+        "MARGEM_CONTRIBUICAO",
+        "LUCRO_BRUTO",
+        "EBITDA",
+        "LUCRO_LIQUIDO",
+      ],
       escopo_campo_personalizado: ["CLIENTE", "FORNECEDOR", "AMBOS"],
       forma_anexo: ["ARQUIVO", "LINK"],
       id_dfc_linha_dre: [
