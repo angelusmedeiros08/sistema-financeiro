@@ -65,12 +65,12 @@ export default async function PaginaRelatoriosPontoEquilibrio({
       <div className="flex flex-wrap items-center gap-x-6 gap-y-3 rounded-xl border border-border bg-card px-4 py-3">
         <div className="flex items-center gap-2">
           <span className="text-xs font-semibold text-muted-foreground">Regime</span>
-          <div className="flex gap-1">
+          <div className="flex flex-wrap gap-1">
             {REGIMES.map((r) => (
               <Link key={r.valor} href={href({ regime: r.valor })}>
                 <span
                   className={cn(
-                    "rounded-full px-2.5 py-1 text-xs font-medium",
+                    "whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium",
                     regime === r.valor ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted",
                   )}
                 >
@@ -83,12 +83,12 @@ export default async function PaginaRelatoriosPontoEquilibrio({
 
         <div className="flex items-center gap-2">
           <span className="text-xs font-semibold text-muted-foreground">Base da MC%</span>
-          <div className="flex gap-1">
+          <div className="flex flex-wrap gap-1">
             {BASES_MC.map((b) => (
               <Link key={b.valor} href={href({ base: b.valor })}>
                 <span
                   className={cn(
-                    "rounded-full px-2.5 py-1 text-xs font-medium",
+                    "whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium",
                     baseMC === b.valor ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted",
                   )}
                 >

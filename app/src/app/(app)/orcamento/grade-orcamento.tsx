@@ -110,16 +110,16 @@ export function GradeOrcamento({ ano, linhas }: { ano: number; linhas: LinhaGrad
             const status = statusPorCategoria.get(linha.categoriaId);
             return (
               <details key={linha.categoriaId} className="group overflow-hidden rounded-xl border border-border bg-card">
-                <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 [&::-webkit-details-marker]:hidden">
-                  <span className="text-sm font-semibold text-foreground">{linha.categoriaNome}</span>
-                  <span className="flex items-center gap-2">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 [&::-webkit-details-marker]:hidden">
+                  <span className="min-w-0 truncate text-sm font-semibold text-foreground">{linha.categoriaNome}</span>
+                  <span className="flex shrink-0 items-center gap-2">
                     {status && (
-                      <span className={cn("text-[10px] font-medium", status === "erro" ? "text-destructive" : "text-muted-foreground")}>
+                      <span className={cn("whitespace-nowrap text-[10px] font-medium", status === "erro" ? "text-destructive" : "text-muted-foreground")}>
                         {status === "salvando" ? "salvando…" : status === "erro" ? "erro" : "salvo"}
                       </span>
                     )}
-                    <span className="text-xs font-semibold tabular-nums text-muted-foreground">R$ {formatarEdicao(totalAno(linha.categoriaId)) || "0,00"}</span>
-                    <CaretDown size={14} className="text-muted-foreground transition-transform group-open:rotate-180" />
+                    <span className="whitespace-nowrap text-xs font-semibold tabular-nums text-muted-foreground">R$ {formatarEdicao(totalAno(linha.categoriaId)) || "0,00"}</span>
+                    <CaretDown size={14} className="shrink-0 text-muted-foreground transition-transform group-open:rotate-180" />
                   </span>
                 </summary>
 
