@@ -179,7 +179,14 @@ export function TopCategoriasDonut({
                 onMouseEnter={() => setHoverIndice(i)}
                 onMouseLeave={aoFecharHover}
                 onClick={() => router.push(fatia.href)}
-                className={"flex cursor-pointer items-center gap-2 rounded-md px-1 py-0.5 text-xs transition-colors " + (hoverIndice === i ? "bg-muted" : "")}
+                // py-3 (~44px de altura total) no mobile — abaixo disso o alvo de
+                // toque fica menor que o mínimo recomendado (achado testando no
+                // painel de mobile: ~16px de altura, fácil errar o dedo). Some pra
+                // py-0.5 a partir de sm: no mouse a precisão não exige tanto, e a
+                // lista costuma ter várias linhas — manter compacta no desktop.
+                className={
+                  "flex cursor-pointer items-center gap-2 rounded-md px-1 py-3.5 text-xs transition-colors sm:py-0.5 " + (hoverIndice === i ? "bg-muted" : "")
+                }
               >
                 <span className="size-2.5 shrink-0 rounded-full" style={{ background: fatia.cor }} />
                 <span className="flex-1 truncate text-muted-foreground">{fatia.rotulo}</span>
