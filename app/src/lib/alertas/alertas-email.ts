@@ -1,8 +1,9 @@
 import "server-only";
 import { criarTransportadorBrevo, detalheErroSmtp } from "@/lib/email/transportador-brevo";
-import { formatarMoeda } from "@/lib/formatacao";
+import { formatarMoeda, formatarIndice } from "@/lib/formatacao";
 import type { ParcelaVencimento } from "./vencimentos";
 import type { SaldoProjetado } from "@/lib/relatorios/saldo-projetado";
+import type { LiquidezAproximada } from "@/lib/relatorios/liquidez-aproximada";
 
 function formatarDataBR(iso: string): string {
   return new Date(iso + "T00:00:00").toLocaleDateString("pt-BR");
@@ -21,6 +22,7 @@ export async function enviarResumoEquipe(params: {
   aPagar: ParcelaVencimento[];
   aReceber: ParcelaVencimento[];
   saldoProjetado: SaldoProjetado;
+  liquidez: LiquidezAproximada;
 }): Promise<{ sucesso: true } | { erro: string }> {
   const config = criarTransportadorBrevo();
   if ("erro" in config) return config;
@@ -28,6 +30,7 @@ export async function enviarResumoEquipe(params: {
 
   const projecaoD7 = params.saldoProjetado.projecoes.find((p) => p.dias === 7);
   const emRuptura = projecaoD7?.ruptura ?? false;
+  const liquidezEmRisco = params.liquidez.nivel === "RISCO";
 
   const secaoPagar =
     params.aPagar.length > 0
@@ -42,6 +45,13 @@ export async function enviarResumoEquipe(params: {
          ⚠️ Saldo projetado pra daqui 7 dias fica negativo: ${formatarMoeda(projecaoD7!.saldo)}.
        </p>`
     : "";
+  const secaoLiquidez = liquidezEmRisco
+    ? `<p style="background: #fef2f2; color: #991b1b; padding: 12px 16px; border-radius: 10px; font-size: 14px;">
+         ⚠️ Liquidez aproximada em risco: ${params.liquidez.indice === null ? "—" : formatarIndice(params.liquidez.indice)}
+         (${formatarMoeda(params.liquidez.caixaAtual)} em caixa + ${formatarMoeda(params.liquidez.aReceber30d)} a receber
+         ÷ ${formatarMoeda(params.liquidez.aPagar30d)} a pagar, próximos 30 dias).
+       </p>`
+    : "";
 
   try {
     await transportador.sendMail({
@@ -53,6 +63,7 @@ export async function enviarResumoEquipe(params: {
           <h2 style="color: #111827;">Olá, ${params.nome}</h2>
           <p style="color: #374151; font-size: 14px;">Isso é o que precisa da sua atenção hoje.</p>
           ${secaoRuptura}
+          ${secaoLiquidez}
           ${secaoPagar}
           ${secaoReceber}
         </div>

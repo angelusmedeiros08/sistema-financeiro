@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/utils/supabase/database.types";
 import { buscarSaldoProjetado, somarDias } from "@/lib/relatorios/saldo-projetado";
+import { buscarLiquidezAproximada } from "@/lib/relatorios/liquidez-aproximada";
 import { buscarVencimentosProximos, buscarMembrosEquipeAtivos, type ParcelaVencimento } from "./vencimentos";
 import { jaEnviadoHoje, registrarEnvio } from "./dedup";
 import { enviarResumoEquipe, enviarCobrancaCliente } from "./alertas-email";
@@ -40,16 +41,20 @@ export async function dispararAlertasDiarios(supabase: Cliente): Promise<{ resum
     const aPagar = doTenant.filter((v) => v.tipo === "DESPESA");
     const aReceber = doTenant.filter((v) => v.tipo === "RECEITA");
 
-    const saldoProjetado = await buscarSaldoProjetado(supabase, tenant.id);
+    const [saldoProjetado, liquidez] = await Promise.all([
+      buscarSaldoProjetado(supabase, tenant.id),
+      buscarLiquidezAproximada(supabase, tenant.id),
+    ]);
     const emRuptura = saldoProjetado.projecoes.find((p) => p.dias === 7)?.ruptura ?? false;
+    const liquidezEmRisco = liquidez.nivel === "RISCO";
 
-    if (aPagar.length > 0 || aReceber.length > 0 || emRuptura) {
+    if (aPagar.length > 0 || aReceber.length > 0 || emRuptura || liquidezEmRisco) {
       const membros = await buscarMembrosEquipeAtivos(supabase, tenant.id);
       for (const membro of membros) {
         const jaFoi = await jaEnviadoHoje(supabase, { tenantId: tenant.id, tipo: "resumo_equipe", destinatarioId: membro.usuarioId, referenciaData: hojeIso });
         if (jaFoi) continue;
 
-        const resultado = await enviarResumoEquipe({ email: membro.email, nome: membro.nome, aPagar, aReceber, saldoProjetado });
+        const resultado = await enviarResumoEquipe({ email: membro.email, nome: membro.nome, aPagar, aReceber, saldoProjetado, liquidez });
         if ("erro" in resultado) {
           erros.push(`resumo_equipe ${tenant.id}/${membro.usuarioId}: ${resultado.erro}`);
           continue;

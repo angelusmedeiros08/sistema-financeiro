@@ -47,6 +47,18 @@ export function formatarNumeroAbreviado(valor: number): string {
   return valor.toLocaleString("pt-BR", { maximumFractionDigits: 0 });
 }
 
+const formatadorIndice = new Intl.NumberFormat("pt-BR", {
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1,
+});
+
+// Índice adimensional (ex.: liquidez aproximada) — sempre 1 casa decimal,
+// vírgula em vez de ponto (diferente de dias.toFixed(1) usado em PMR/PMP,
+// onde o padrão já estabelecido não localiza o separador).
+export function formatarIndice(valor: number): string {
+  return formatadorIndice.format(valor);
+}
+
 const NOMES_MES_ABREVIADO = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
 
 // Recebe uma chave "AAAA-MM" (o que as buscas de série mensal já devolvem)

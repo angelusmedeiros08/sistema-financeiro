@@ -8,11 +8,15 @@ import { buscarPMR, buscarPMP } from "@/lib/relatorios/prazos-medios";
 import { buscarAging } from "@/lib/relatorios/aging";
 import { buscarDistribuicaoFormaPagamento } from "@/lib/relatorios/distribuicao-forma-pagamento";
 import { buscarSaldoProjetado, buscarSerieSaldoProjetado, type SaldoProjetado, type PontoSerieSaldo } from "@/lib/relatorios/saldo-projetado";
+import { buscarLiquidezAproximada } from "@/lib/relatorios/liquidez-aproximada";
 import { SaldoProjetadoChart } from "@/components/relatorios/saldo-projetado-chart";
 import { TopCategoriasDonut } from "@/components/relatorios/top-categorias-donut";
 import { AgingBarras } from "@/components/relatorios/aging-barras";
 import { BadgeRiscoConcentracao } from "@/components/relatorios/badge-risco-concentracao";
 import { BadgeRupturaSaldo } from "@/components/relatorios/badge-ruptura-saldo";
+import { BadgeSaudeFinanceira } from "@/components/relatorios/badge-saude-financeira";
+import { CardLiquidez } from "@/components/relatorios/card-liquidez";
+import { CardCicloConversaoCaixa } from "@/components/relatorios/card-ciclo-conversao-caixa";
 import { formatarMoeda, formatarPercentual } from "@/lib/formatacao";
 import { cn } from "@/lib/utils";
 import { hojeIsoBrasil } from "@/lib/data-brasil";
@@ -43,6 +47,7 @@ export default async function PaginaIndicadores() {
     agingReceber,
     agingPagar,
     distribuicaoFormaPagamento,
+    liquidez,
   ] = await Promise.all([
     buscarSaldoProjetado(supabase, tenantId),
     buscarSerieSaldoProjetado(supabase, tenantId),
@@ -55,9 +60,11 @@ export default async function PaginaIndicadores() {
     buscarAging(supabase, { tenantId, tipo: "RECEITA" }),
     buscarAging(supabase, { tenantId, tipo: "DESPESA" }),
     buscarDistribuicaoFormaPagamento(supabase, { tenantId, origemHref }),
+    buscarLiquidezAproximada(supabase, tenantId),
   ]);
 
   const projecaoD7 = saldoProjetado.projecoes.find((p) => p.dias === 7);
+  const cicloConversaoCaixa = pmr.dias - pmp.dias;
 
   const paraDonut = (pessoas: typeof concentracaoReceita.pessoas) =>
     pessoas.map((c, i) => ({
@@ -190,6 +197,17 @@ export default async function PaginaIndicadores() {
               </ul>
             )}
           </div>
+        </div>
+      </section>
+
+      <section className="rounded-2xl bg-card shadow-card p-6">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <h2 className="font-heading text-base font-bold text-foreground">Liquidez e ciclo de caixa</h2>
+          <BadgeSaudeFinanceira nivel={liquidez.nivel} indice={liquidez.indice} />
+        </div>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <CardLiquidez {...liquidez} />
+          <CardCicloConversaoCaixa dias={cicloConversaoCaixa} pmrDias={pmr.dias} pmpDias={pmp.dias} />
         </div>
       </section>
     </div>
