@@ -8,7 +8,7 @@ import { buscarPontoEquilibrio } from "@/lib/relatorios/ponto-equilibrio";
 import { buscarAging, buscarResumoVencimentos } from "@/lib/relatorios/aging";
 import { buscarIndicadoresRealizacao, buscarSerieIndicadoresRealizacao, mesAtual } from "@/lib/relatorios/indicadores-gauge";
 import { buscarAnaliseCategorias } from "@/lib/relatorios/analise-despesas";
-import { buscarConcentracaoReceita } from "@/lib/relatorios/concentracao-receita";
+import { buscarConcentracao } from "@/lib/relatorios/concentracao";
 import { buscarSaldoProjetado } from "@/lib/relatorios/saldo-projetado";
 import { RelatoriosSubNav } from "../sub-nav";
 import { RelatoriosControles } from "../controles";
@@ -58,7 +58,7 @@ export default async function PaginaRelatoriosVisaoGeral({
       buscarSerieIndicadoresRealizacao(supabase, { tenantId, tipo: "DESPESA", meses: 6 }),
       buscarAnaliseCategorias(supabase, { tenantId, ...params, tipo: "RECEITA", origemHref }),
       buscarAnaliseCategorias(supabase, { tenantId, ...params, tipo: "DESPESA", origemHref }),
-      buscarConcentracaoReceita(supabase, { tenantId, origemHref }),
+      buscarConcentracao(supabase, { tenantId, tipo: "RECEITA", origemHref }),
       buscarSaldoProjetado(supabase, tenantId),
     ]);
 

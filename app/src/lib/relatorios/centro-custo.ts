@@ -12,7 +12,7 @@ export type LinhaCentroCusto = {
   // Saldo é entradas−saidas — não existe uma lista de lançamentos cujo
   // total bate com essa subtração, então não tem link próprio. Entradas e
   // saídas são somas de verdade, cada uma com seu destino (mesmo raciocínio
-  // de pessoa em concentracao-receita.ts, via o filtro `tipo`).
+  // de pessoa em concentracao.ts, via o filtro `tipo`).
   hrefEntradas: string;
   hrefSaidas: string;
 };

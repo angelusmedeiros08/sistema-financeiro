@@ -2,13 +2,16 @@ import type { Cliente } from "./regime";
 import { buscarMovimento } from "./regime";
 import { montarHrefLancamentos } from "./drill-down";
 import { hojeIsoBrasil } from "@/lib/data-brasil";
+import type { Database } from "@/utils/supabase/database.types";
+
+type TipoCategoria = Database["public"]["Enums"]["tipo_categoria"];
 
 export type NivelRiscoConcentracao = "ALTO" | "MEDIO" | "BAIXO";
 
-export type ClienteConcentracao = { pessoaId: string | null; nome: string; valor: number; percentual: number; href: string };
+export type PessoaConcentracao = { pessoaId: string | null; nome: string; valor: number; percentual: number; href: string };
 
-export type ConcentracaoReceita = {
-  clientes: ClienteConcentracao[];
+export type ConcentracaoEntidade = {
+  pessoas: PessoaConcentracao[];
   percentualTop3: number;
   nivelRisco: NivelRiscoConcentracao;
 };
@@ -18,14 +21,17 @@ function isoMenosMeses(meses: number): string {
   return new Date(Date.UTC(ano, mes - 1 - meses, dia)).toISOString().slice(0, 10);
 }
 
-// "Quanto da minha receita depende de poucos clientes" — nenhum concorrente
-// pesquisado (docs/pesquisa-indicadores-financeiros-comparativo-mercado.md)
-// transforma isso num alerta de risco; aqui os 3 maiores clientes somando
-// metade ou mais da receita da janela classificam como ALTO.
-export async function buscarConcentracaoReceita(
+// "Quanto da minha receita/despesa depende de poucos clientes/fornecedores"
+// — nenhum concorrente pesquisado (docs/pesquisa-indicadores-financeiros-
+// comparativo-mercado.md) transforma isso num alerta de risco do lado da
+// receita; aqui os 3 maiores somando metade ou mais do total da janela
+// classificam como ALTO. Mesmo cálculo/limiar aplicado ao lado da despesa
+// (docs/pesquisa-indicadores-contabeis-fundamentos.md, seção 4) — generalizada
+// pra servir os dois (era buscarConcentracaoReceita, fixo em RECEITA).
+export async function buscarConcentracao(
   supabase: Cliente,
-  params: { tenantId: string; mesesJanela?: number; origemHref: string },
-): Promise<ConcentracaoReceita> {
+  params: { tenantId: string; tipo: TipoCategoria; mesesJanela?: number; origemHref: string },
+): Promise<ConcentracaoEntidade> {
   const mesesJanela = params.mesesJanela ?? 12;
   const dataInicio = isoMenosMeses(mesesJanela);
   const dataFim = hojeIsoBrasil();
@@ -39,7 +45,7 @@ export async function buscarConcentracaoReceita(
   const somaPorPessoa = new Map<string, number>();
 
   for (const linha of movimento) {
-    if (linha.tipo !== "RECEITA") continue;
+    if (linha.tipo !== params.tipo) continue;
     const chave = linha.pessoaId ?? "__sem_pessoa__";
     somaPorPessoa.set(chave, (somaPorPessoa.get(chave) ?? 0) + linha.valor);
   }
@@ -63,23 +69,24 @@ export async function buscarConcentracaoReceita(
   // (agregarFatias), mesmo contrato que Distribuição por Forma de
   // Pagamento já respeita. Cortar aqui antes deixava "Outras" sempre
   // vazio e inflava o percentual de cada fatia (dividia pela soma só dos
-  // 5 maiores, não pelo total real) sempre que havia mais de 5 clientes
-  // no período (achado em revisão de código).
-  const clientes = ordenado.map((c) => ({
+  // 5 maiores, não pelo total real) sempre que havia mais de 5
+  // clientes/fornecedores no período (achado em revisão de código).
+  const pessoasComHref = ordenado.map((c) => ({
     ...c,
     href: montarHrefLancamentos({
       tipoEntidade: "pessoa",
       entidadeId: c.pessoaId,
       regime: "competencia",
-      // Este gráfico só soma RECEITA — sem esse filtro, uma pessoa que
-      // também é fornecedora mostraria em /lancamentos um total maior do
-      // que a fatia clicada (despesas dela entrando na conta).
-      tipo: "RECEITA",
+      // Este gráfico só soma um tipo por vez (RECEITA ou DESPESA) — sem
+      // esse filtro, uma pessoa que é cliente e fornecedora ao mesmo
+      // tempo mostraria em /lancamentos um total maior do que a fatia
+      // clicada (o outro tipo de movimento entrando na conta).
+      tipo: params.tipo,
       periodoInicio: dataInicio,
       periodoFim: dataFim,
       origemHref: params.origemHref,
     }),
   }));
 
-  return { clientes, percentualTop3, nivelRisco };
+  return { pessoas: pessoasComHref, percentualTop3, nivelRisco };
 }

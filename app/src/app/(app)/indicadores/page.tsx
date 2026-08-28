@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { ArrowUp, ArrowDown } from "@phosphor-icons/react/dist/ssr";
 import { createClient } from "@/utils/supabase/server";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
-import { buscarConcentracaoReceita } from "@/lib/relatorios/concentracao-receita";
+import { buscarConcentracao } from "@/lib/relatorios/concentracao";
 import { buscarVariacaoCategorias } from "@/lib/relatorios/variacao-categorias";
 import { buscarPMR, buscarPMP } from "@/lib/relatorios/prazos-medios";
 import { buscarAging } from "@/lib/relatorios/aging";
@@ -31,10 +31,23 @@ export default async function PaginaIndicadores() {
     return new Date(Date.UTC(ano, mes - 1 - meses, dia)).toISOString().slice(0, 10);
   };
 
-  const [saldoProjetado, serieSaldo, concentracao, variacaoReceitas, variacaoDespesas, pmr, pmp, agingReceber, agingPagar, distribuicaoFormaPagamento] = await Promise.all([
+  const [
+    saldoProjetado,
+    serieSaldo,
+    concentracaoReceita,
+    concentracaoDespesa,
+    variacaoReceitas,
+    variacaoDespesas,
+    pmr,
+    pmp,
+    agingReceber,
+    agingPagar,
+    distribuicaoFormaPagamento,
+  ] = await Promise.all([
     buscarSaldoProjetado(supabase, tenantId),
     buscarSerieSaldoProjetado(supabase, tenantId),
-    buscarConcentracaoReceita(supabase, { tenantId, origemHref }),
+    buscarConcentracao(supabase, { tenantId, tipo: "RECEITA", origemHref }),
+    buscarConcentracao(supabase, { tenantId, tipo: "DESPESA", origemHref }),
     buscarVariacaoCategorias(supabase, { tenantId, tipo: "RECEITA" }),
     buscarVariacaoCategorias(supabase, { tenantId, tipo: "DESPESA" }),
     buscarPMR(supabase, { tenantId }),
@@ -46,16 +59,19 @@ export default async function PaginaIndicadores() {
 
   const projecaoD7 = saldoProjetado.projecoes.find((p) => p.dias === 7);
 
-  const donutClientes = concentracao.clientes.map((c, i) => ({
-    categoriaId: c.pessoaId ?? `sem-pessoa-${i}`,
-    entidadeId: c.pessoaId,
-    categoriaNome: c.nome,
-    ehCustoFixo: false,
-    total: c.valor,
-    percentualDoTotal: c.percentual,
-    percentualAcumulado: 0,
-    href: c.href,
-  }));
+  const paraDonut = (pessoas: typeof concentracaoReceita.pessoas) =>
+    pessoas.map((c, i) => ({
+      categoriaId: c.pessoaId ?? `sem-pessoa-${i}`,
+      entidadeId: c.pessoaId,
+      categoriaNome: c.nome,
+      ehCustoFixo: false,
+      total: c.valor,
+      percentualDoTotal: c.percentual,
+      percentualAcumulado: 0,
+      href: c.href,
+    }));
+  const donutClientes = paraDonut(concentracaoReceita.pessoas);
+  const donutFornecedores = paraDonut(concentracaoDespesa.pessoas);
 
   const donutFormaPagamento = distribuicaoFormaPagamento.map((f, i) => ({
     categoriaId: f.formaPagamentoId ?? `nao-informado-${i}`,
@@ -81,20 +97,46 @@ export default async function PaginaIndicadores() {
       </section>
 
       <section className="rounded-2xl bg-card shadow-card p-6">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <h2 className="font-heading text-base font-bold text-foreground">Concentração de receita</h2>
-          <BadgeRiscoConcentracao nivelRisco={concentracao.nivelRisco} percentualTop3={concentracao.percentualTop3} />
+        <h2 className="mb-4 font-heading text-base font-bold text-foreground">Concentração de receita e despesa</h2>
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <div>
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <h3 className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Receita</h3>
+              <BadgeRiscoConcentracao nivelRisco={concentracaoReceita.nivelRisco} percentualTop3={concentracaoReceita.percentualTop3} />
+            </div>
+            <TopCategoriasDonut
+              titulo="Top clientes por receita (últimos 12 meses)"
+              linhas={donutClientes}
+              dimensao="pessoa"
+              regime="competencia"
+              tipo="RECEITA"
+              periodoInicio={isoMenosMeses(12)}
+              periodoFim={hoje}
+              origemHref={origemHref}
+            />
+          </div>
+          <div>
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <h3 className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Despesa</h3>
+              <BadgeRiscoConcentracao
+                nivelRisco={concentracaoDespesa.nivelRisco}
+                percentualTop3={concentracaoDespesa.percentualTop3}
+                entidadeLabel="fornecedores"
+                totalLabel="despesa"
+              />
+            </div>
+            <TopCategoriasDonut
+              titulo="Top fornecedores por despesa (últimos 12 meses)"
+              linhas={donutFornecedores}
+              dimensao="pessoa"
+              regime="competencia"
+              tipo="DESPESA"
+              periodoInicio={isoMenosMeses(12)}
+              periodoFim={hoje}
+              origemHref={origemHref}
+            />
+          </div>
         </div>
-        <TopCategoriasDonut
-          titulo="Top clientes por receita (últimos 12 meses)"
-          linhas={donutClientes}
-          dimensao="pessoa"
-          regime="competencia"
-          tipo="RECEITA"
-          periodoInicio={isoMenosMeses(12)}
-          periodoFim={hoje}
-          origemHref={origemHref}
-        />
       </section>
 
       <section className="rounded-2xl bg-card shadow-card p-6">

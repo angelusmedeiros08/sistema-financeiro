@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { formatarPercentual } from "@/lib/formatacao";
 import { cn } from "@/lib/utils";
-import type { NivelRiscoConcentracao } from "@/lib/relatorios/concentracao-receita";
+import type { NivelRiscoConcentracao } from "@/lib/relatorios/concentracao";
 
 const ROTULO: Record<NivelRiscoConcentracao, string> = {
   ALTO: "Risco alto",
@@ -15,10 +15,20 @@ const COR: Record<NivelRiscoConcentracao, string> = {
   BAIXO: "bg-positivo/12 text-positivo-foreground",
 };
 
-export function BadgeRiscoConcentracao({ nivelRisco, percentualTop3 }: { nivelRisco: NivelRiscoConcentracao; percentualTop3: number }) {
+export function BadgeRiscoConcentracao({
+  nivelRisco,
+  percentualTop3,
+  entidadeLabel = "clientes",
+  totalLabel = "receita",
+}: {
+  nivelRisco: NivelRiscoConcentracao;
+  percentualTop3: number;
+  entidadeLabel?: "clientes" | "fornecedores";
+  totalLabel?: "receita" | "despesa";
+}) {
   return (
     <Badge className={cn("border-none font-semibold", COR[nivelRisco])}>
-      {ROTULO[nivelRisco]} · Top 3 clientes = {formatarPercentual(percentualTop3)} da receita
+      {ROTULO[nivelRisco]} · Top 3 {entidadeLabel} = {formatarPercentual(percentualTop3)} da {totalLabel}
     </Badge>
   );
 }
