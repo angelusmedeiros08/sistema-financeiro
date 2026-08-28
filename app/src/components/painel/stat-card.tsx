@@ -94,7 +94,19 @@ export function StatCard({ label, valor, detalhe, variant, delta, serie, icon: I
         )}
       </div>
 
-      <span className="min-w-0 break-words font-heading text-2xl font-bold leading-tight tracking-tight tabular-nums sm:text-[26px]">
+      {/* text-lg na base (não text-2xl) — a grade fica 2 colunas já em
+          375px (grid-cols-2, só vira 4 a partir de lg), e um valor de 5-6
+          dígitos em text-2xl não cabia numa linha: break-words então
+          quebrava bem no meio, entre a vírgula e os centavos ("R$ 69.368"
+          numa linha, "00" sozinho embaixo) — achado testando em mobile.
+          sm: sobe o tamanho porque ali a grade continua 2 colunas (mais
+          espaço por cartão). lg: NÃO sobe mais — a grade pula pra 4
+          colunas exatamente nesse breakpoint, e com a sidebar fixa cada
+          cartão fica tão estreito quanto (ou mais que) no mobile, então
+          um valor maior lá voltaria a quebrar em duas linhas (achado
+          medindo a largura real do cartão em 1280px: ~147px de conteúdo,
+          menor que os ~26px de fonte pediam). */}
+      <span className="min-w-0 break-words font-heading text-lg font-bold leading-tight tracking-tight tabular-nums sm:text-2xl lg:text-xl">
         {valor}
       </span>
 
