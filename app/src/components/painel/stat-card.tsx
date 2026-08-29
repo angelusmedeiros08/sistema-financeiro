@@ -32,7 +32,7 @@ const corChip: Record<string, string> = {
 type IconType = React.ComponentType<{ size?: number; weight?: "regular" | "bold" | "fill"; className?: string }>;
 
 type StatCardProps = VariantProps<typeof cartaoVariantes> & {
-  label: string;
+  label: React.ReactNode;
   valor: string;
   detalhe?: string;
   delta?: number;

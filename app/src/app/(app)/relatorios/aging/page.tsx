@@ -6,6 +6,7 @@ import { RelatoriosSubNav } from "../sub-nav";
 import { AgingBarras } from "@/components/relatorios/aging-barras";
 import { AgingParticipantesTabela } from "@/components/relatorios/aging-participantes-tabela";
 import { formatarMoeda, formatarNumeroCompacto } from "@/lib/formatacao";
+import { TermoComDica } from "@/components/formularios/termo-com-dica";
 
 export default async function PaginaRelatoriosAging() {
   const contexto = await obterUsuarioETenantAtual();
@@ -30,8 +31,8 @@ export default async function PaginaRelatoriosAging() {
       </p>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <AgingBarras titulo="Vencido: a receber" dados={agingReceita} />
-        <AgingBarras titulo="Vencido: a pagar" dados={agingDespesa} />
+        <AgingBarras titulo={<TermoComDica termo="aging">Vencido: a receber</TermoComDica>} dados={agingReceita} />
+        <AgingBarras titulo={<TermoComDica termo="aging">Vencido: a pagar</TermoComDica>} dados={agingDespesa} />
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">

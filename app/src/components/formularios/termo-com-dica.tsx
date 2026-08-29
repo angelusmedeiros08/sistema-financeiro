@@ -18,6 +18,10 @@ export function TermoComDica({ termo, children }: { termo: keyof typeof GLOSSARI
         <PopoverTrigger
           className="inline-flex size-4 shrink-0 items-center justify-center rounded-full text-muted-foreground/70 hover:text-foreground focus-visible:text-foreground focus-visible:outline-none"
           aria-label={`O que é ${info.titulo}?`}
+          // Vários lugares usam TermoComDica dentro do rótulo de um StatCard
+          // com `href` (o card inteiro é um <Link>) — sem isso, tocar no
+          // ícone navegava pro card em vez de abrir o popover.
+          onClick={(e) => e.stopPropagation()}
         >
           <Question size={14} weight="bold" />
         </PopoverTrigger>

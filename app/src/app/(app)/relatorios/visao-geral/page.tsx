@@ -18,6 +18,7 @@ import { WaterfallDre } from "@/components/relatorios/waterfall-dre";
 import { AgingBarras } from "@/components/relatorios/aging-barras";
 import { IndicadorGauge } from "@/components/relatorios/indicador-gauge";
 import { TopCategoriasDonut } from "@/components/relatorios/top-categorias-donut";
+import { TermoComDica } from "@/components/formularios/termo-com-dica";
 import { BadgeRiscoConcentracao } from "@/components/relatorios/badge-risco-concentracao";
 import { BadgeRupturaSaldo } from "@/components/relatorios/badge-ruptura-saldo";
 import { formatarMoeda, formatarPercentual } from "@/lib/formatacao";
@@ -106,7 +107,7 @@ export default async function PaginaRelatoriosVisaoGeral({
         />
         <StatCard
           variant="teal"
-          label="Ponto de equilíbrio"
+          label={<TermoComDica termo="ponto_equilibrio">Ponto de equilíbrio</TermoComDica>}
           valor={formatarMoeda(pontoEquilibrio.pontoEquilibrio)}
           detalhe={`Margem de contribuição: ${formatarPercentual(pontoEquilibrio.margemContribuicaoPercentual)}`}
           href="/relatorios/ponto-equilibrio"

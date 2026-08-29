@@ -12,12 +12,13 @@ import { useTooltip, useTooltipInPortal, defaultStyles } from "@visx/tooltip";
 import { localPoint } from "@visx/event";
 import type { IndicadorMensal } from "@/lib/relatorios/dre";
 import { formatarPercentual } from "@/lib/formatacao";
+import { TermoComDica } from "@/components/formularios/termo-com-dica";
 
 const SERIES = [
-  { chave: "mc", nome: "Margem de contribuição", cor: "#157F6B" },
-  { chave: "margemBruta", nome: "Margem bruta", cor: "#4C7DF0" },
-  { chave: "ebitda", nome: "EBITDA", cor: "#E3A62F" },
-  { chave: "margemLiquida", nome: "Margem líquida", cor: "#B45FC7" },
+  { chave: "mc", nome: "Margem de contribuição", cor: "#157F6B", termoGlossario: "margem_contribuicao" },
+  { chave: "margemBruta", nome: "Margem bruta", cor: "#4C7DF0", termoGlossario: "margem_bruta" },
+  { chave: "ebitda", nome: "EBITDA", cor: "#E3A62F", termoGlossario: "ebitda" },
+  { chave: "margemLiquida", nome: "Margem líquida", cor: "#B45FC7", termoGlossario: "margem_liquida" },
 ] as const;
 
 const MARGEM = { top: 16, right: 12, bottom: 24, left: 48 };
@@ -159,7 +160,7 @@ export function IndicadoresDreChart({ dados, altura = 220 }: { dados: IndicadorM
         {SERIES.map((serie) => (
           <span key={serie.chave} className="flex items-center gap-1.5">
             <span className="size-2 rounded-full" style={{ background: serie.cor }} />
-            {serie.nome}
+            <TermoComDica termo={serie.termoGlossario}>{serie.nome}</TermoComDica>
           </span>
         ))}
       </div>

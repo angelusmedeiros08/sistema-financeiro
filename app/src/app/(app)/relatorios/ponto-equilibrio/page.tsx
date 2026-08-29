@@ -9,6 +9,7 @@ import { EvolucaoPontoEquilibrioChart } from "@/components/relatorios/evolucao-p
 import { formatarMoeda, formatarPercentual } from "@/lib/formatacao";
 import { cn } from "@/lib/utils";
 import { hojeIsoBrasil } from "@/lib/data-brasil";
+import { TermoComDica } from "@/components/formularios/termo-com-dica";
 
 const REGIMES: { valor: Regime; rotulo: string }[] = [
   { valor: "competencia", rotulo: "Competência" },
@@ -113,11 +114,15 @@ export default async function PaginaRelatoriosPontoEquilibrio({
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div className="rounded-2xl bg-card shadow-card p-5">
-          <p className="mb-1 text-xs font-semibold text-muted-foreground">Ponto de equilíbrio (mês atual)</p>
+          <p className="mb-1 text-xs font-semibold text-muted-foreground">
+            <TermoComDica termo="ponto_equilibrio">Ponto de equilíbrio</TermoComDica> (mês atual)
+          </p>
           <p className="text-xl font-bold tabular-nums text-foreground">{formatarMoeda(pontoAtual.pontoEquilibrio)}</p>
         </div>
         <div className="rounded-2xl bg-card shadow-card p-5">
-          <p className="mb-1 text-xs font-semibold text-muted-foreground">Margem de contribuição</p>
+          <p className="mb-1 text-xs font-semibold text-muted-foreground">
+            <TermoComDica termo="margem_contribuicao">Margem de contribuição</TermoComDica>
+          </p>
           <p className="text-xl font-bold tabular-nums text-positivo">{formatarPercentual(pontoAtual.margemContribuicaoPercentual)}</p>
         </div>
         <div className="rounded-2xl bg-card shadow-card p-5">
