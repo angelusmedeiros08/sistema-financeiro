@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
+import { acessoLiberado } from "@/lib/pagamentos/plano";
 import { createClient } from "@/utils/supabase/server";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
@@ -8,6 +9,15 @@ export default async function LayoutApp({ children }: { children: React.ReactNod
   const contexto = await obterUsuarioETenantAtual();
   if ("erro" in contexto) {
     redirect("/entrar");
+  }
+
+  // Gate de assinatura — achado CRÍTICO em auditoria de segurança
+  // (29/08/2026): antes disso, nada verificava status_assinatura/trial em
+  // nenhuma camada, então cobrança nunca tinha efeito real sobre o acesso.
+  // Roda antes do redirect de papel abaixo — vale igual pra staff e
+  // cliente_portal, é o mesmo serviço sendo pago pelo tenant.
+  if (!acessoLiberado(contexto.statusAssinatura, contexto.trialTerminaEm)) {
+    redirect("/assinatura-pendente");
   }
 
   // dupla proteção (UX — a garantia real é a RLS por papel): cliente_portal

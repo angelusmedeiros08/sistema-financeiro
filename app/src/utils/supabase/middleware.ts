@@ -38,9 +38,11 @@ export async function updateSession(request: NextRequest) {
   // aceitar (a pessoa ainda não tem sessão até clicar "Aceitar" — ver
   // aceitarConvite() em (auth)/actions.ts), /assinar (rota pública de
   // checkout — Fatia 4 do fluxo de pagamento, ninguém tem sessão antes de
-  // pagar) e /api/cron/* (autenticado por segredo compartilhado, não sessão)
-  // são acessados por quem ainda não tem sessão — sem essas entradas o gate
-  // abaixo intercepta a requisição antes do route handler rodar.
+  // pagar), /api/cron/* e /api/webhooks/* (autenticados por segredo
+  // compartilhado, não sessão — o Asaas nunca vai ter cookie de sessão
+  // nosso) são acessados por quem ainda não tem sessão — sem essas
+  // entradas o gate abaixo intercepta a requisição antes do route handler
+  // rodar.
   const isAuthRoute =
     request.nextUrl.pathname.startsWith("/entrar") ||
     request.nextUrl.pathname.startsWith("/cadastro") ||
@@ -50,7 +52,8 @@ export async function updateSession(request: NextRequest) {
   const isPublicRoute =
     isAuthRoute ||
     request.nextUrl.pathname === "/" ||
-    request.nextUrl.pathname.startsWith("/api/cron");
+    request.nextUrl.pathname.startsWith("/api/cron") ||
+    request.nextUrl.pathname.startsWith("/api/webhooks");
 
   if (!user && !isPublicRoute) {
     const url = request.nextUrl.clone();

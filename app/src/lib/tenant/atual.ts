@@ -17,6 +17,12 @@ type ResultadoTenant =
       papel: Database["public"]["Enums"]["papel_usuario"];
       pessoaId: string | null;
       tenantsDisponiveis: TenantDisponivel[];
+      // Gate de assinatura (achado CRÍTICO em auditoria de segurança,
+      // 29/08/2026): cada layout (app/portal) decide o que fazer com isso —
+      // esta função só resolve o vínculo, não redireciona por si só, mesmo
+      // padrão já usado pra `papel`.
+      statusAssinatura: "trial" | "ativo" | "inadimplente" | "cancelado" | null;
+      trialTerminaEm: string | null;
     };
 
 // Um usuário pode ter vínculo ativo com mais de um tenant (ex.: sócio com
@@ -43,7 +49,7 @@ export const obterUsuarioETenantAtual = cache(async (): Promise<ResultadoTenant>
 
   const { data: vinculos, error } = await supabase
     .from("usuario_tenant")
-    .select("tenant_id, papel, pessoa_id, tenants(nome)")
+    .select("tenant_id, papel, pessoa_id, tenants(nome, status_assinatura, trial_termina_em)")
     .eq("usuario_id", user.id)
     .eq("ativo", true)
     .order("convidado_em");
@@ -63,5 +69,7 @@ export const obterUsuarioETenantAtual = cache(async (): Promise<ResultadoTenant>
     papel: vinculoEscolhido.papel,
     pessoaId: vinculoEscolhido.pessoa_id,
     tenantsDisponiveis: vinculos.map((v) => ({ id: v.tenant_id, nome: v.tenants?.nome ?? "" })),
+    statusAssinatura: (vinculoEscolhido.tenants?.status_assinatura as "trial" | "ativo" | "inadimplente" | "cancelado" | undefined) ?? null,
+    trialTerminaEm: vinculoEscolhido.tenants?.trial_termina_em ?? null,
   };
 });
