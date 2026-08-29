@@ -108,7 +108,7 @@ export async function registrarBaixa(
   const partidas: PartidaEntrada[] = [];
 
   if (tipoEvento === "RECEITA") {
-    const valorCaixa = params.valor_pago + juros + multa - desconto - taxa;
+    const valorCaixa = Math.round((params.valor_pago + juros + multa - desconto - taxa) * 100) / 100;
     if (valorCaixa <= 0) {
       return { erro: "O valor líquido recebido precisa ser maior que zero." };
     }
@@ -118,7 +118,7 @@ export async function registrarBaixa(
     if (desconto > 0) partidas.push({ conta_contabil_id: contaDescontosConcedidos, tipo: "DEBITO", valor: desconto });
     if (taxa > 0) partidas.push({ conta_contabil_id: contaDespesasFinanceiras, tipo: "DEBITO", valor: taxa });
   } else {
-    const valorCaixa = params.valor_pago + juros + multa + taxa - desconto;
+    const valorCaixa = Math.round((params.valor_pago + juros + multa + taxa - desconto) * 100) / 100;
     if (valorCaixa <= 0) {
       return { erro: "O valor líquido pago precisa ser maior que zero." };
     }

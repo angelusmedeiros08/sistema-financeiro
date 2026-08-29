@@ -22,7 +22,12 @@ export type ParseArquivoOk = { resultado: ResultadoParse; buffer: ArrayBuffer };
 export type ParseArquivoResultado = ParseArquivoOk | { erro: string };
 
 const LIMITE_TAMANHO_BYTES = 10 * 1024 * 1024;
-const LIMITE_LINHAS = 500;
+// Exportado — as Server Actions que executam a importação de fato
+// revalidam contra o mesmo número antes de processar (esta checagem aqui é
+// só client-side, dá feedback cedo na tela de upload, mas não impede
+// chamar a Server Action direto com mais linhas — achado em auditoria de
+// segurança, 29/08/2026).
+export const LIMITE_LINHAS = 500;
 
 export function validarArquivo(file: File): string | null {
   const nome = file.name.toLowerCase();

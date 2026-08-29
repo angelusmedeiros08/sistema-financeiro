@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/utils/supabase/server";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
 import { buscarChavesDuplicatas } from "@/lib/importacao/duplicatas";
+import { LIMITE_LINHAS } from "@/lib/importacao/parse";
 import { criarEntidadeAprovada, type EntidadeNova } from "@/lib/importacao/resolucao";
 import { commitarLinhaImportacao, type ParametrosCommitLinha } from "@/lib/importacao/commit";
 import { reivindicarProcessamento } from "@/lib/importacoes/importacoes";
@@ -67,6 +68,25 @@ export async function criarEntidadesAprovadasAction(
   if ("erro" in contexto) return { erro: contexto.erro };
 
   const supabase = await createClient();
+
+  // Confirma UMA vez, antes do loop, que importacaoId é de fato deste
+  // tenant — sem isso, a policy de INSERT de importacoes_entidades_criadas
+  // só valida o tenant_id da linha nova, nunca a referência, então um
+  // importacaoId forjado gravaria uma proveniência órfã apontando pra
+  // importação de outro tenant (achado em auditoria de segurança). Grava
+  // como se não tivesse vindo nenhum importacaoId — a criação da entidade
+  // em si continua normal, só a proveniência é que fica de fora.
+  let importacaoIdValidado = importacaoId;
+  if (importacaoIdValidado) {
+    const { data: importacao } = await supabase
+      .from("importacoes")
+      .select("id")
+      .eq("id", importacaoIdValidado)
+      .eq("tenant_id", contexto.tenantId)
+      .maybeSingle();
+    if (!importacao) importacaoIdValidado = undefined;
+  }
+
   const resultados: ResultadoEntidadeCriada[] = [];
 
   for (const item of itens) {
@@ -76,8 +96,8 @@ export async function criarEntidadesAprovadasAction(
       continue;
     }
     resultados.push({ valorOriginal: item.nome, tipo: item.tipo, id: resultado.id });
-    if (importacaoId) {
-      await registrarEntidadeCriada(supabase, { importacao_id: importacaoId, tenant_id: contexto.tenantId, tipo_entidade: item.tipo, entidade_id: resultado.id });
+    if (importacaoIdValidado) {
+      await registrarEntidadeCriada(supabase, { importacao_id: importacaoIdValidado, tenant_id: contexto.tenantId, tipo_entidade: item.tipo, entidade_id: resultado.id });
     }
   }
 
@@ -131,6 +151,15 @@ export async function executarImportacaoFinanceiraAction(
 ): Promise<{ resultados: ResultadoLinhaImportacao[] } | { erro: string }> {
   const contexto = await obterUsuarioETenantAtual();
   if ("erro" in contexto) return { erro: contexto.erro };
+
+  // O limite de linhas é checado no navegador na etapa de upload, mas nada
+  // impede chamar esta Server Action direto com mais — revalida aqui
+  // também (achado em auditoria de segurança: sem isso, um usuário
+  // autenticado podia disparar um loop de dezenas de milhares de RPCs numa
+  // única requisição).
+  if (linhas.length > LIMITE_LINHAS) {
+    return { erro: `Lote com ${linhas.length} linhas — o limite por importação é ${LIMITE_LINHAS}.` };
+  }
 
   const supabase = await createClient();
 

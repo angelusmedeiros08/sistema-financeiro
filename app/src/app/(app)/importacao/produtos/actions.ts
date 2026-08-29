@@ -7,6 +7,7 @@ import { createClient } from "@/utils/supabase/server";
 import { criarEntidadeAprovada } from "@/lib/importacao/resolucao";
 import { iniciarImportacao, reivindicarProcessamento, finalizarImportacao } from "@/lib/importacoes/importacoes";
 import { commitarLinhaProduto, type ParametrosCommitLinhaProduto } from "@/lib/importacao/produtos/commit";
+import { LIMITE_LINHAS } from "@/lib/importacao/parse";
 import type { Database, Json } from "@/utils/supabase/database.types";
 
 type Cliente = SupabaseClient<Database>;
@@ -63,6 +64,14 @@ export async function executarImportacaoProdutosAction(
 ): Promise<{ importacaoId: string; resultados: ResultadoLinhaImportacaoProduto[] } | { erro: string }> {
   const contexto = await obterUsuarioETenantAtual();
   if ("erro" in contexto) return { erro: contexto.erro };
+
+  // O limite de linhas é checado no navegador na etapa de upload, mas nada
+  // impede chamar esta Server Action direto com mais — revalida aqui
+  // também (achado em auditoria de segurança).
+  if (linhas.length > LIMITE_LINHAS) {
+    return { erro: `Lote com ${linhas.length} linhas — o limite por importação é ${LIMITE_LINHAS}.` };
+  }
+
   const supabase = await createClient();
 
   const inicio = await iniciarImportacao(supabase, {
