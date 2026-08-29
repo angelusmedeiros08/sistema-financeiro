@@ -5,9 +5,12 @@ import type { ResultadoParse } from "@/lib/importacao/parse";
 import type { ColunaChaveProduto, LinhaBrutaProduto } from "@/lib/importacao/produtos/tipos";
 import type { ResolucaoEntidade } from "@/lib/importacao/tipos";
 import { montarLinhasBrutasProduto } from "@/lib/importacao/produtos/template";
+import type { ProdutoExistente } from "@/lib/importacao/produtos/correspondencia";
 import { PassoUpload } from "./passo-upload";
 import { PassoMapeamento } from "./passo-mapeamento";
 import { PassoCadastros, type CategoriaReceita, type CategoriaNovaProduto } from "./passo-cadastros";
+import { PassoRevisao, type LinhaPronta } from "./passo-revisao";
+import { PassoResultado } from "./passo-resultado";
 
 type Etapa = "upload" | "mapeamento" | "cadastros" | "revisao" | "resultado";
 
@@ -23,16 +26,22 @@ const ESTADO_INICIAL = {
   etapa: "upload" as Etapa,
   buffer: null as ArrayBuffer | null,
   parse: null as ResultadoParse | null,
+  nomeArquivo: "",
   linhasTexto: [] as string[][],
   mapeamento: {} as Partial<Record<ColunaChaveProduto, number>>,
   linhasBrutas: [] as LinhaBrutaProduto[],
   resolucaoCategoria: null as Map<string, ResolucaoEntidade> | null,
+  linhasProntas: [] as LinhaPronta[],
 };
 
-// Fatias 1-4 do plano — Upload, Mapeamento e Cadastros funcionam de verdade.
-// Revisão/Resultado chegam na Fatia 5; até lá o botão "Continuar" de
-// Cadastros cai num placeholder honesto em vez de fingir que a etapa existe.
-export function ImportarProdutosWizard({ categoriasReceitaIniciais }: { categoriasReceitaIniciais: CategoriaReceita[] }) {
+// Todas as 5 fatias do plano prontas.
+export function ImportarProdutosWizard({
+  categoriasReceitaIniciais,
+  produtosExistentesIniciais,
+}: {
+  categoriasReceitaIniciais: CategoriaReceita[];
+  produtosExistentesIniciais: ProdutoExistente[];
+}) {
   const [estado, setEstado] = useState(ESTADO_INICIAL);
   const indiceAtual = ETAPAS.findIndex((e) => e.chave === estado.etapa);
 
@@ -58,7 +67,7 @@ export function ImportarProdutosWizard({ categoriasReceitaIniciais }: { categori
       </ol>
 
       {estado.etapa === "upload" && (
-        <PassoUpload onAvancar={({ buffer, parse }) => setEstado((s) => ({ ...s, etapa: "mapeamento", buffer, parse }))} />
+        <PassoUpload onAvancar={({ arquivo, buffer, parse }) => setEstado((s) => ({ ...s, etapa: "mapeamento", buffer, parse, nomeArquivo: arquivo.name }))} />
       )}
 
       {estado.etapa === "mapeamento" && estado.parse && (
@@ -83,11 +92,18 @@ export function ImportarProdutosWizard({ categoriasReceitaIniciais }: { categori
         />
       )}
 
-      {estado.etapa === "revisao" && (
-        <div className="rounded-2xl bg-card shadow-card p-6 text-sm text-muted-foreground">
-          {estado.linhasBrutas.length} linha(s), categoria resolvida para {estado.resolucaoCategoria?.size ?? 0} valor(es) — etapa Revisão chega na
-          próxima fatia do plano.
-        </div>
+      {estado.etapa === "revisao" && estado.resolucaoCategoria && (
+        <PassoRevisao
+          linhasBrutas={estado.linhasBrutas}
+          produtosExistentes={produtosExistentesIniciais}
+          resolucaoCategoria={estado.resolucaoCategoria}
+          onVoltar={() => setEstado((s) => ({ ...s, etapa: "cadastros" }))}
+          onImportar={(linhasProntas) => setEstado((s) => ({ ...s, etapa: "resultado", linhasProntas }))}
+        />
+      )}
+
+      {estado.etapa === "resultado" && (
+        <PassoResultado linhas={estado.linhasProntas} nomeArquivo={estado.nomeArquivo} onReiniciar={() => setEstado(ESTADO_INICIAL)} />
       )}
     </div>
   );
