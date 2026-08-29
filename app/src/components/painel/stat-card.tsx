@@ -165,8 +165,18 @@ export function StatCard({ label, valor, detalhe, variant, delta, serie, icon: I
     // do TermoComDica e capturava o clique de qualquer jeito, apesar do
     // pointer-events-none/auto já estarem corretos (achado ao vivo: o
     // ícone navegava pro relatório em vez de abrir o popover).
+    //
+    // `isolate` no container é igualmente essencial: sem criar um contexto
+    // de empilhamento PRÓPRIO aqui, `-z-10` compara o Link contra o que
+    // for a ancestralidade real de contexto mais próxima (potencialmente
+    // muito acima na árvore) — na prática, o Link ficava atrás até do
+    // PRÓPRIO fundo deste card, e clicar em qualquer lugar do cartão (não
+    // só no ícone) parava de navegar (achado ao vivo, via
+    // `document.elementFromPoint`: o clique resolvia pro `<div>` externo,
+    // nunca alcançava nem o conteúdo nem o Link). `isolate` limita a
+    // comparação de z-index aos filhos diretos deste card.
     return (
-      <div className={cn(cartaoVariantes({ variant }), "relative transition-shadow hover:shadow-lg")}>
+      <div className={cn(cartaoVariantes({ variant }), "relative isolate transition-shadow hover:shadow-lg")}>
         <Link
           href={href}
           aria-label={ariaLabel ?? (typeof label === "string" ? `${label}: ${valor}` : valor)}
