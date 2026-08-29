@@ -1,3 +1,5 @@
+export type ColunaChaveProduto = "nome" | "tipo" | "descricao" | "preco_venda" | "categoria" | "unidade_medida" | "codigo_referencia";
+
 // Linha bruta ainda em texto — LinhaBruta (lib/importacao/tipos.ts) é sobre
 // data/valor de lançamento financeiro, não serve pra um cadastro de
 // produto. Mesmo espírito de LinhaBrutaPessoa (lib/pessoas/importacao/tipos.ts),
