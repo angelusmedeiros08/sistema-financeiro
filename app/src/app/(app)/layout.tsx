@@ -51,8 +51,8 @@ export default async function LayoutApp({ children }: { children: React.ReactNod
           notificacoes={(alertas ?? []).map((a) => ({ id: a.id, tipo: a.tipo, enviadoEm: a.enviado_em }))}
         />
         <main className="flex-1 px-4 py-8 lg:px-8">
-          {children}
           <BotaoVoltar />
+          {children}
         </main>
       </div>
     </div>

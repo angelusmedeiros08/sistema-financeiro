@@ -60,6 +60,15 @@ Regra adotada: o botão só renderiza (nasce `null` fora disso) quando o pathnam
 - `pb-[env(safe-area-inset-bottom)]` — evita a barra ficar colada na área do indicador de home do iOS.
 - Regra de quando aparece (rota com 2+ segmentos, Seção 5) e o estado desabilitado sem histórico continuam exatamente iguais — só a posição/aparência mudou.
 
+## 8. Botão pequeno dentro do módulo (3ª revisão pós-teste ao vivo)
+
+**Correção em relação à versão anterior**: a barra fixa embaixo (Seção 6) também foi rejeitada ao vivo — "horrível", segundo o usuário. Pedido explícito, desta vez com pergunta prévia pra não errar de novo: botão **pequeno**, com **borda leve** (não o link discreto sem borda que algumas telas já usam, ex.: `despesas/[id]` tem `← Despesas` como link puro), no **canto superior esquerdo do próprio módulo** (não na Topbar, não uma barra separada), **rolando junto com o conteúdo** (não fixo).
+
+- Volta a ser `<Button variant="outline" size="sm">` (`h-7`, `components/ui/button.tsx`) — mesma família visual da versão de barra fixa, só menor. `ArrowLeft` 15px + texto "Voltar", `mb-4` pra separar do conteúdo da página logo abaixo.
+- Renderiza como **primeiro filho de `<main>`**, antes de `{children}` — normal-flow, sem `position:fixed`/`sticky`, sem container de largura própria (a página que já centraliza seu próprio conteúdo do jeito que escolher — `max-w-3xl`, `max-w-4xl`, etc. variam por tela).
+- Sem espaçador (não precisa mais — só existia pra compensar a barra fixa da Seção 6, que deixou de existir).
+- Regra de quando aparece (Seção 5) e estado desabilitado sem histórico continuam iguais.
+
 ## 7. Fora de escopo
 
 `(portal)/layout.tsx` (Topbar simplificada do portal do cliente) — o cliente do portal tem só 2 telas (`/portal`, `/portal/lancamentos`), a dor de "reabrir a sidebar" não se aplica do mesmo jeito; adicionar lá é um passo futuro simples de replicar, não incluído nesta leva a menos que o usuário peça. Lógica de rota-pai fixa por tela (a opção não escolhida — a regra de segmentos decide só *se* mostra o botão, nunca *pra onde* ele leva, que continua sendo sempre `router.back()`).

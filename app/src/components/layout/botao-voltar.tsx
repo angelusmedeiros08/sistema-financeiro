@@ -10,14 +10,13 @@ import { Button } from "@/components/ui/button";
 // rota nova automaticamente, sem precisar mapear a hierarquia de cada uma
 // das ~40 rotas do app).
 //
-// Barra fixa na parte de baixo da viewport (não um ícone na Topbar, ver
-// Seção 5 da spec — revisão pedida ao vivo pelo usuário: "embaixo, com o
-// nome Voltar, não uma seta sozinha"), renderizada como o ÚLTIMO filho de
-// `<main>` em (app)/layout.tsx — de propósito, não na Topbar. Um espaçador
-// normal (sem position:fixed) do tamanho exato da barra nasce junto, então
-// o fim do conteúdo de qualquer página nunca fica escondido atrás da barra
-// fixa, sem precisar coordenar um `padding-bottom` fixo no layout do lado
-// do servidor (que não sabe se esta página vai mostrar a barra ou não).
+// Botão pequeno, dentro do módulo (não na Topbar, não uma barra fixa — ver
+// Seção 8 da spec: 3ª revisão pedida ao vivo pelo usuário, as duas
+// primeiras tentativas — ícone na Topbar, depois barra fixa embaixo —
+// foram rejeitadas). Renderiza como PRIMEIRO filho de `<main>` em
+// (app)/layout.tsx, antes de `{children}` — rola junto com a página
+// (nunca fixed/sticky), sem container de largura própria (a página que já
+// centraliza seu próprio conteúdo com o max-w que escolher).
 export function BotaoVoltar() {
   const router = useRouter();
   const pathname = usePathname();
@@ -44,26 +43,15 @@ export function BotaoVoltar() {
   if (segmentos.length <= 1) return null;
 
   return (
-    <>
-      {/* Espaçador — mesma altura da barra fixa abaixo (h-20 = 64px de
-          barra + o padding vertical), garante que o último elemento real
-          da página nunca fique tapado. */}
-      <div className="h-20 shrink-0" aria-hidden />
-
-      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-card pb-[max(env(safe-area-inset-bottom),0px)] lg:left-[60px]">
-        <div className="mx-auto flex max-w-4xl items-center px-4 py-3 lg:px-8">
-          <Button
-            variant="outline"
-            size="lg"
-            disabled={!temHistorico}
-            onClick={() => router.back()}
-            className="w-full gap-2 lg:w-auto"
-          >
-            <ArrowLeft size={18} weight="bold" />
-            Voltar
-          </Button>
-        </div>
-      </div>
-    </>
+    <Button
+      variant="outline"
+      size="sm"
+      disabled={!temHistorico}
+      onClick={() => router.back()}
+      className="mb-4 gap-1.5"
+    >
+      <ArrowLeft size={15} weight="bold" />
+      Voltar
+    </Button>
   );
 }
