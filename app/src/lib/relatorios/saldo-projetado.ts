@@ -47,20 +47,22 @@ export async function buscarSaldoProjetado(supabase: Cliente, tenantId: string):
   const hojeIso = hojeIsoBrasil();
   const limiteMax = somarDias(hojeIso, Math.max(...HORIZONTES));
 
-  const [contas, tenant, movimentoRealizado, receitasAbertas, despesasAbertas] = await Promise.all([
+  const [contas, tenant, movimentoLiquido, receitasAbertas, despesasAbertas] = await Promise.all([
     supabase.from("contas_financeiras").select("saldo_inicial").eq("tenant_id", tenantId).eq("ativo", true),
     supabase.from("tenants").select("limiar_saldo_minimo_alerta").eq("id", tenantId).single(),
-    buscarMovimento(supabase, { tenantId, regime: "realizado", dataInicio: "1900-01-01", dataFim: hojeIso }),
+    supabase.rpc("movimento_liquido_realizado", { p_tenant_id: tenantId, p_data_fim: hojeIso }),
     buscarParcelasAbertas(supabase, tenantId, "RECEITA", limiteMax, hojeIso),
     buscarParcelasAbertas(supabase, tenantId, "DESPESA", limiteMax, hojeIso),
   ]);
 
   // Saldo atual é sempre regime realizado (dinheiro que de fato entrou/saiu
   // via baixa) — nunca previsto/competência, que incluiriam parcela ainda
-  // não paga e contariam o mesmo valor de novo na projeção.
+  // não paga e contariam o mesmo valor de novo na projeção. Movimento
+  // líquido agregado no Postgres (RPC movimento_liquido_realizado) — achado
+  // P0 de escalabilidade (25/08): buscava todo o histórico desde
+  // "1900-01-01" e somava em JS, sem limite conforme o tenant crescia.
   const saldoInicialTotal = (contas.data ?? []).reduce((soma, conta) => soma + Number(conta.saldo_inicial), 0);
-  const movimentoLiquido = movimentoRealizado.reduce((soma, linha) => soma + (linha.tipo === "RECEITA" ? linha.valor : -linha.valor), 0);
-  const saldoAtual = saldoInicialTotal + movimentoLiquido;
+  const saldoAtual = saldoInicialTotal + Number(movimentoLiquido.data ?? 0);
   const limiar = Number(tenant.data?.limiar_saldo_minimo_alerta ?? 0);
 
   const projecoes: ProjecaoSaldo[] = HORIZONTES.map((dias) => {
@@ -99,18 +101,22 @@ export async function buscarSerieSaldoProjetado(supabase: Cliente, tenantId: str
   const inicioHistorico = somarDias(hojeIso, PASSADO_DIAS[0]);
   const fimProjecao = somarDias(hojeIso, FUTURO_DIAS[FUTURO_DIAS.length - 1]);
 
-  const [contas, tenant, movimentoHistorico, movimentoAteHoje, receitasAbertas, despesasAbertas] = await Promise.all([
+  // movimentoHistorico é limitado aos últimos ~28 dias (só o que
+  // pontosPassado precisa pra recuar dia a dia) — permanece uma busca
+  // normal. saldoAtual usa a mesma RPC agregada de buscarSaldoProjetado,
+  // não um segundo fetch de todo o histórico (mesmo achado P0 de
+  // escalabilidade, 25/08).
+  const [contas, tenant, movimentoHistorico, movimentoLiquido, receitasAbertas, despesasAbertas] = await Promise.all([
     supabase.from("contas_financeiras").select("saldo_inicial").eq("tenant_id", tenantId).eq("ativo", true),
     supabase.from("tenants").select("limiar_saldo_minimo_alerta").eq("id", tenantId).single(),
     buscarMovimento(supabase, { tenantId, regime: "realizado", dataInicio: inicioHistorico, dataFim: hojeIso }),
-    buscarMovimento(supabase, { tenantId, regime: "realizado", dataInicio: "1900-01-01", dataFim: hojeIso }),
+    supabase.rpc("movimento_liquido_realizado", { p_tenant_id: tenantId, p_data_fim: hojeIso }),
     buscarParcelasAbertas(supabase, tenantId, "RECEITA", fimProjecao, hojeIso),
     buscarParcelasAbertas(supabase, tenantId, "DESPESA", fimProjecao, hojeIso),
   ]);
 
   const saldoInicialTotal = (contas.data ?? []).reduce((soma, conta) => soma + Number(conta.saldo_inicial), 0);
-  const movimentoLiquido = movimentoAteHoje.reduce((soma, linha) => soma + (linha.tipo === "RECEITA" ? linha.valor : -linha.valor), 0);
-  const saldoAtual = saldoInicialTotal + movimentoLiquido;
+  const saldoAtual = saldoInicialTotal + Number(movimentoLiquido.data ?? 0);
   const limiar = Number(tenant.data?.limiar_saldo_minimo_alerta ?? 0);
 
   // Hoje (dias=0) é um único ponto com realizado E projetado preenchidos —

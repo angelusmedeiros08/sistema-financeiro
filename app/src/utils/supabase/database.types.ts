@@ -2217,6 +2217,10 @@ export type Database = {
         }
         Returns: string
       }
+      movimento_liquido_realizado: {
+        Args: { p_data_fim: string; p_tenant_id: string }
+        Returns: number
+      }
       registrar_baixa: {
         Args: {
           p_conta_financeira_id: string
@@ -2248,6 +2252,10 @@ export type Database = {
           p_tenant_id: string
         }
         Returns: string
+      }
+      saldo_conta_contabil: {
+        Args: { p_conta_contabil_id: string; p_tenant_id: string }
+        Returns: number
       }
       substituir_itens_venda: {
         Args: { p_itens: Json; p_tenant_id: string; p_venda_id: string }

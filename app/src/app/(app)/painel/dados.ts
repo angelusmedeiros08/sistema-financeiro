@@ -32,6 +32,10 @@ function inicioDoMes(offsetMeses = 0): string {
 // saldo = soma de débitos - soma de créditos na conta contábil "Caixa e
 // Bancos" (natureza devedora) — é o próprio ledger de partida dobrada que
 // dá a fonte da verdade, não um campo de saldo armazenado em outro lugar.
+// Agregado no Postgres (RPC saldo_conta_contabil) em vez de buscar toda
+// partida da conta e somar em JS — achado P0 de escalabilidade (25/08):
+// crescia sem limite conforme o tenant acumulava histórico, na tela mais
+// visitada do sistema.
 async function obterSaldoEmCaixa(supabase: Cliente, tenantId: string): Promise<number> {
   const { data: contaCaixa } = await supabase
     .from("contas_contabeis")
@@ -42,18 +46,12 @@ async function obterSaldoEmCaixa(supabase: Cliente, tenantId: string): Promise<n
 
   if (!contaCaixa) return 0;
 
-  const { data: partidas } = await supabase
-    .from("partidas")
-    .select("tipo, valor")
-    .eq("tenant_id", tenantId)
-    .eq("conta_contabil_id", contaCaixa.id);
+  const { data: saldo } = await supabase.rpc("saldo_conta_contabil", {
+    p_tenant_id: tenantId,
+    p_conta_contabil_id: contaCaixa.id,
+  });
 
-  if (!partidas) return 0;
-
-  return partidas.reduce(
-    (acc, p) => acc + (p.tipo === "DEBITO" ? Number(p.valor) : -Number(p.valor)),
-    0,
-  );
+  return Number(saldo ?? 0);
 }
 
 async function obterPendentesPorTipo(
