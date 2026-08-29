@@ -1,5 +1,6 @@
 import "server-only";
 import { criarTransportadorBrevo, detalheErroSmtp } from "@/lib/email/transportador-brevo";
+import { escaparHtml } from "@/lib/email/escapar-html";
 
 const ROTULO_PAPEL: Record<string, string> = {
   admin: "Admin",
@@ -38,7 +39,8 @@ export async function enviarEmailConvite(params: {
   }
   const { transportador, remetente } = config;
 
-  const rotuloPapel = ROTULO_PAPEL[params.papel] ?? params.papel;
+  const rotuloPapel = escaparHtml(ROTULO_PAPEL[params.papel] ?? params.papel);
+  const tenantNome = escaparHtml(params.tenantNome);
 
   try {
     await transportador.sendMail({
@@ -49,7 +51,7 @@ export async function enviarEmailConvite(params: {
         <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
           <h2 style="color: #111827;">Você foi convidado</h2>
           <p style="color: #374151; font-size: 15px; line-height: 1.5;">
-            Você foi convidado para acessar o sistema financeiro de <strong>${params.tenantNome}</strong>
+            Você foi convidado para acessar o sistema financeiro de <strong>${tenantNome}</strong>
             como <strong>${rotuloPapel}</strong>.
           </p>
           <p style="margin: 32px 0;">

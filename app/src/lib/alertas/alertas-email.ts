@@ -1,5 +1,6 @@
 import "server-only";
 import { criarTransportadorBrevo, detalheErroSmtp } from "@/lib/email/transportador-brevo";
+import { escaparHtml } from "@/lib/email/escapar-html";
 import { formatarMoeda, formatarIndice } from "@/lib/formatacao";
 import type { ParcelaVencimento } from "./vencimentos";
 import type { SaldoProjetado } from "@/lib/relatorios/saldo-projetado";
@@ -10,7 +11,7 @@ function formatarDataBR(iso: string): string {
 }
 
 function linhaParcela(p: Pick<ParcelaVencimento, "descricao" | "dataVencimento" | "saldo">): string {
-  return `<li>${p.descricao} — vence em ${formatarDataBR(p.dataVencimento)} — ${formatarMoeda(p.saldo)}</li>`;
+  return `<li>${escaparHtml(p.descricao)} — vence em ${formatarDataBR(p.dataVencimento)} — ${formatarMoeda(p.saldo)}</li>`;
 }
 
 // Um dígest por membro da equipe, só nos dias em que há algo a dizer —
@@ -60,7 +61,7 @@ export async function enviarResumoEquipe(params: {
       subject: "Resumo do dia — Finanssi",
       html: `
         <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
-          <h2 style="color: #111827;">Olá, ${params.nome}</h2>
+          <h2 style="color: #111827;">Olá, ${escaparHtml(params.nome)}</h2>
           <p style="color: #374151; font-size: 14px;">Isso é o que precisa da sua atenção hoje.</p>
           ${secaoRuptura}
           ${secaoLiquidez}
@@ -93,7 +94,7 @@ export async function enviarCobrancaCliente(params: {
       subject: "Lembrete: sua parcela vence em breve",
       html: `
         <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
-          <h2 style="color: #111827;">Olá, ${params.nome}</h2>
+          <h2 style="color: #111827;">Olá, ${escaparHtml(params.nome)}</h2>
           <p style="color: #374151; font-size: 14px;">Este é um lembrete de que a parcela abaixo vence em breve:</p>
           <ul style="color: #374151; font-size: 14px;">${params.parcelas.map(linhaParcela).join("")}</ul>
         </div>
