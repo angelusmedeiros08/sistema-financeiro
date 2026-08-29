@@ -7,6 +7,7 @@ import {
   buscarItensParaRetomar,
   marcarImportacaoRetomando,
   reivindicarProcessamento,
+  finalizarImportacao,
   preverDesfazerImportacaoPessoas,
   desfazerImportacaoPessoas,
   type PreviaDesfazerImportacaoPessoas,
@@ -16,6 +17,8 @@ import { importarLinhaPessoaAction, finalizarImportacaoPessoasAction } from "../
 import type { ParametrosImportarLinhaPessoa } from "../pessoas/actions";
 import { retomarItemFinanceiroAction } from "../planilha/actions";
 import type { LinhaParaImportar } from "../planilha/actions";
+import { retomarItemProdutoAction } from "../produtos/actions";
+import type { LinhaParaImportarProduto } from "../produtos/actions";
 import {
   preverDesfazerImportacaoFinanceira,
   desfazerImportacaoFinanceira,
@@ -56,18 +59,27 @@ export async function retomarImportacaoAction(importacaoId: string): Promise<{ p
 
   await marcarImportacaoRetomando(supabase, { importacao_id: importacaoId });
 
+  // 3 ramos explícitos (não mais if/else binário) — o binário assumia
+  // "não-financeiro = pessoas", e um produtos import retomado caía por
+  // engano no branch de pessoas (achado em revisão de código: dado de
+  // produto sendo lido como se fosse pessoa, corrompendo ou quebrando a
+  // retomada). Cada tipo agora tem seu próprio caminho, sem fallback.
   for (const item of itens) {
     if (importacao.tipo === "financeiro") {
       await retomarItemFinanceiroAction(item.id, item.dadosNormalizados as unknown as LinhaParaImportar);
-    } else {
+    } else if (importacao.tipo === "pessoas") {
       await importarLinhaPessoaAction(item.id, item.dadosNormalizados as unknown as ParametrosImportarLinhaPessoa);
+    } else {
+      await retomarItemProdutoAction(item.id, item.dadosNormalizados as unknown as LinhaParaImportarProduto);
     }
   }
 
   if (importacao.tipo === "financeiro") {
     await finalizarImportacaoFinanceira(supabase, { importacao_id: importacaoId });
-  } else {
+  } else if (importacao.tipo === "pessoas") {
     await finalizarImportacaoPessoasAction(importacaoId, "concluida");
+  } else {
+    await finalizarImportacao(supabase, { importacao_id: importacaoId, status: "concluida" });
   }
 
   return { processados: itens.length };

@@ -14,7 +14,7 @@ type CardImportacao = {
 const CARDS: CardImportacao[] = [
   { titulo: "Lançamentos financeiros", descricao: "Receitas e despesas via planilha.", icon: Coins, href: "/importacao/planilha" },
   { titulo: "Clientes/Fornecedores", descricao: "Cadastro de pessoas via planilha.", icon: Users, href: "/importacao/pessoas" },
-  { titulo: "Produtos", descricao: "Em breve — o módulo de Produtos ainda não existe.", icon: Package },
+  { titulo: "Produtos", descricao: "Catálogo de produtos e serviços via planilha.", icon: Package, href: "/importacao/produtos" },
   { titulo: "Importar com IA", descricao: "Cole um texto ou envie um print e deixe a IA extrair os lançamentos.", icon: Sparkle, href: "/importacao/ia" },
 ];
 

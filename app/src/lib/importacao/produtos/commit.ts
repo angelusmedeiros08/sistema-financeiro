@@ -10,6 +10,14 @@ export type ParametrosCommitLinhaProduto = {
   acao: "criar" | "atualizar";
   produtoIdExistente: string | null;
   nome: string;
+  // Só true quando a correspondência foi por código exato ou nome idêntico
+  // — mesmo raciocínio de permitirAtualizarNome em commitarLinhaPessoa
+  // (lib/pessoas/importacao/commit.ts): correspondência aproximada (fuzzy)
+  // significa que o texto da própria linha pode ser só uma grafia diferente
+  // do produto encontrado (foi isso que fez ela "aproximar", não "bater
+  // exato"), então não é seguro usar como nome novo — só os outros campos
+  // (preço, categoria, etc.) são atualizados nesse caso, nunca o nome.
+  permitirAtualizarNome: boolean;
   tipo: TipoProdutoServico;
   descricao: string | null;
   precoVenda: number;
@@ -44,7 +52,7 @@ export async function commitarLinhaProduto(supabase: Cliente, params: Parametros
   // então sempre chegam aqui preenchidos — não precisam de fallback.
   const { data: atual, error: erroAtual } = await supabase
     .from("produtos_servicos")
-    .select("descricao, unidade_medida, codigo_referencia, ativo")
+    .select("nome, descricao, unidade_medida, codigo_referencia, ativo")
     .eq("id", params.produtoIdExistente)
     .eq("tenant_id", params.tenantId)
     .single();
@@ -57,7 +65,7 @@ export async function commitarLinhaProduto(supabase: Cliente, params: Parametros
   const resultado = await editarProdutoServico(supabase, {
     tenantId: params.tenantId,
     produtoServicoId: params.produtoIdExistente,
-    nome: params.nome,
+    nome: params.permitirAtualizarNome ? params.nome : atual.nome,
     descricao: params.descricao || atual.descricao,
     tipo: params.tipo,
     precoVenda: params.precoVenda,

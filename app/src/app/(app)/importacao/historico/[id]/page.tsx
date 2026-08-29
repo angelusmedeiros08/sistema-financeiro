@@ -14,6 +14,7 @@ import { TabelaErrosImportacao } from "./tabela-erros";
 const ROTULO_TIPO: Record<string, string> = {
   pessoas: "Clientes/Fornecedores",
   financeiro: "Lançamentos financeiros",
+  produtos: "Produtos",
 };
 
 function nomeDoItem(dados: Json): string {

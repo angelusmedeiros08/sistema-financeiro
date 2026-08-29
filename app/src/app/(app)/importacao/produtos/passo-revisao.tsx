@@ -53,26 +53,37 @@ export function PassoRevisao({
     return inicial;
   });
   const [incluidas, setIncluidas] = useState<Set<number>>(() => new Set(linhas.filter((l) => decisaoPadrao(l) !== null).map((l) => l.linha)));
+  // Linhas cuja Ação o usuário escolheu à mão (via mudarDecisao) — sem isso,
+  // editar qualquer outra célula da linha (ex.: corrigir um preço) recalcula
+  // decisaoPadrao() e sobrescreve em silêncio a escolha manual (achado em
+  // revisão de código: usuário troca pra "Criar novo produto" porque sabe
+  // que é diferente, corrige o preço, e a linha volta a apontar sozinha pro
+  // produto errado). Uma vez manual, a linha só muda de novo por outra ação
+  // manual — nunca mais por decisaoPadrao.
+  const [decisoesManuais, setDecisoesManuais] = useState<Set<number>>(() => new Set());
 
   function editarCampo(linhaNum: number, campo: "nome" | "tipo" | "precoVenda" | "codigoReferencia", texto: string) {
     setLinhas((atual) => {
       const atualizadas = atual.map((l) => (l.linha === linhaNum ? { ...l, [campo]: texto } : l));
       const revalidadas = validarLinhasProduto(atualizadas, produtosExistentes, resolucaoCategoria);
-      const linhaRevalidada = revalidadas.find((l) => l.linha === linhaNum)!;
-      const decisao = decisaoPadrao(linhaRevalidada);
-      setDecisoes((d) => ({ ...d, [linhaNum]: decisao }));
-      setIncluidas((inc) => {
-        const novo = new Set(inc);
-        if (decisao) novo.add(linhaNum);
-        else novo.delete(linhaNum);
-        return novo;
-      });
+      if (!decisoesManuais.has(linhaNum)) {
+        const linhaRevalidada = revalidadas.find((l) => l.linha === linhaNum)!;
+        const decisao = decisaoPadrao(linhaRevalidada);
+        setDecisoes((d) => ({ ...d, [linhaNum]: decisao }));
+        setIncluidas((inc) => {
+          const novo = new Set(inc);
+          if (decisao) novo.add(linhaNum);
+          else novo.delete(linhaNum);
+          return novo;
+        });
+      }
       return revalidadas;
     });
   }
 
   function mudarDecisao(linhaNum: number, decisao: DecisaoLinhaProduto) {
     setDecisoes((d) => ({ ...d, [linhaNum]: decisao }));
+    setDecisoesManuais((m) => new Set(m).add(linhaNum));
     setIncluidas((inc) => new Set(inc).add(linhaNum));
   }
 
@@ -93,10 +104,17 @@ export function PassoRevisao({
     const linhasProntas: LinhaPronta[] = prontas.map((l) => {
       const decisao = decisoes[l.linha]!;
       const categoriaId = resolucaoCategoria.get(normalizarTexto(l.categoria))?.entidadeId ?? "";
+      // Só confia na grafia da própria linha pra sobrescrever o nome quando
+      // a correspondência veio de código exato ou nome idêntico — aproximada
+      // (fuzzy) ou fraca significa que o texto pode ser só um erro de
+      // digitação do produto já cadastrado, não o nome real dele (mesma
+      // regra de permitirAtualizarNome em pessoas/passo-revisao.tsx).
+      const permitirAtualizarNome = ["exata_codigo", "exata_nome"].includes(l.correspondencia.tipo);
       return {
         linhaNumero: l.linha,
         acao: decisao.acao,
         produtoIdExistente: decisao.produtoId,
+        permitirAtualizarNome,
         nome: l.nome.trim(),
         tipo: l.tipoResolvido!,
         descricao: l.descricao.trim() || null,

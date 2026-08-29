@@ -1,12 +1,15 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
 import { createClient } from "@/utils/supabase/server";
 import { criarEntidadeAprovada } from "@/lib/importacao/resolucao";
 import { iniciarImportacao, reivindicarProcessamento, finalizarImportacao } from "@/lib/importacoes/importacoes";
 import { commitarLinhaProduto, type ParametrosCommitLinhaProduto } from "@/lib/importacao/produtos/commit";
-import type { Json } from "@/utils/supabase/database.types";
+import type { Database, Json } from "@/utils/supabase/database.types";
+
+type Cliente = SupabaseClient<Database>;
 
 // Reaproveita criarEntidadeAprovada (lib/importacao/resolucao.ts) — mesma
 // função que a etapa Cadastros de Lançamentos já usa pra criar categoria
@@ -22,6 +25,27 @@ export async function criarCategoriaReceitaProdutoAction(nome: string): Promise<
 
 export type LinhaParaImportarProduto = Omit<ParametrosCommitLinhaProduto, "tenantId"> & { linhaNumero: number };
 export type ResultadoLinhaImportacaoProduto = { sucesso: boolean; erro?: string };
+
+// Compartilhado entre a execução principal (abaixo) e retomarItemProdutoAction
+// (chamado do Retomar da Central de Importações) — mesma sequência "comitar,
+// depois marcar sucesso/erro no item" nos dois lugares, pra não divergir em
+// silêncio (mesmo motivo de processarLinhaFinanceira em ../planilha/actions.ts).
+async function processarLinhaProduto(
+  supabase: Cliente,
+  tenantId: string,
+  itemId: string,
+  dados: LinhaParaImportarProduto,
+): Promise<{ produto_id: string } | { erro: string }> {
+  const { linhaNumero: _linhaNumero, ...paramsCommit } = dados;
+  const resultado = await commitarLinhaProduto(supabase, { ...paramsCommit, tenantId });
+
+  await supabase
+    .from("importacoes_itens")
+    .update({ status: "erro" in resultado ? "erro" : "sucesso", erro: "erro" in resultado ? resultado.erro : null })
+    .eq("id", itemId);
+
+  return resultado;
+}
 
 // Uma Server Action só, do início ao fim (mesmo padrão de
 // executarImportacaoFinanceiraAction em ../planilha/actions.ts — ver spec
@@ -57,20 +81,31 @@ export async function executarImportacaoProdutosAction(
   const resultados: ResultadoLinhaImportacaoProduto[] = [];
 
   for (const linha of linhas) {
-    const { linhaNumero, ...paramsCommit } = linha;
-    const resultado = await commitarLinhaProduto(supabase, { ...paramsCommit, tenantId: contexto.tenantId });
-    const itemId = itemIdPorLinha.get(linhaNumero);
-    if (itemId) {
-      await supabase
-        .from("importacoes_itens")
-        .update({ status: "erro" in resultado ? "erro" : "sucesso", erro: "erro" in resultado ? resultado.erro : null })
-        .eq("id", itemId);
+    const itemId = itemIdPorLinha.get(linha.linhaNumero);
+    if (!itemId) {
+      resultados.push({ sucesso: false, erro: "Item de rastreio não encontrado." });
+      continue;
     }
+    const resultado = await processarLinhaProduto(supabase, contexto.tenantId, itemId, linha);
     resultados.push("erro" in resultado ? { sucesso: false, erro: resultado.erro } : { sucesso: true });
   }
 
   await finalizarImportacao(supabase, { importacao_id: inicio.importacao_id, status: "concluida" });
   return { importacaoId: inicio.importacao_id, resultados };
+}
+
+// Reprocessa um único item pendente/com erro — chamado do "Retomar" da
+// Central de Importações (app/src/app/(app)/importacao/historico/actions.ts),
+// mesmo padrão de retomarItemFinanceiroAction em ../planilha/actions.ts. Sem
+// isso, um produtos import retomado caía no branch de pessoas por engano
+// (achado em revisão de código) — dados de produto sendo lidos como se
+// fossem de pessoa.
+export async function retomarItemProdutoAction(itemId: string, dados: LinhaParaImportarProduto): Promise<{ produto_id: string } | { erro: string }> {
+  const contexto = await obterUsuarioETenantAtual();
+  if ("erro" in contexto) return { erro: contexto.erro };
+
+  const supabase = await createClient();
+  return processarLinhaProduto(supabase, contexto.tenantId, itemId, dados);
 }
 
 export async function revalidarPosImportacaoProdutosAction(): Promise<void> {

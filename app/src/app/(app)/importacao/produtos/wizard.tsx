@@ -43,6 +43,12 @@ export function ImportarProdutosWizard({
   produtosExistentesIniciais: ProdutoExistente[];
 }) {
   const [estado, setEstado] = useState(ESTADO_INICIAL);
+  // Fica no wizard, não dentro de PassoCadastros — a etapa é
+  // condicionalmente renderizada e desmonta ao ir pra Revisão, então um
+  // estado local ali perderia categorias criadas na mesma sessão assim que
+  // o usuário voltasse (achado em revisão de código). Mesmo padrão de
+  // entidadesExistentes em importacao/planilha/wizard.tsx.
+  const [categoriasReceita, setCategoriasReceita] = useState(categoriasReceitaIniciais);
   const indiceAtual = ETAPAS.findIndex((e) => e.chave === estado.etapa);
 
   return (
@@ -84,11 +90,14 @@ export function ImportarProdutosWizard({
       {estado.etapa === "cadastros" && (
         <PassoCadastros
           linhasBrutas={estado.linhasBrutas}
-          categoriasExistentesIniciais={categoriasReceitaIniciais}
+          categoriasExistentesIniciais={categoriasReceita}
           onVoltar={() => setEstado((s) => ({ ...s, etapa: "mapeamento" }))}
-          onAvancar={(resolucaoCategoria: Map<string, ResolucaoEntidade>, _categoriasNovas: CategoriaNovaProduto[]) =>
-            setEstado((s) => ({ ...s, etapa: "revisao", resolucaoCategoria }))
-          }
+          onAvancar={(resolucaoCategoria: Map<string, ResolucaoEntidade>, categoriasNovas: CategoriaNovaProduto[]) => {
+            if (categoriasNovas.length > 0) {
+              setCategoriasReceita((atual) => [...atual, ...categoriasNovas.map((c) => ({ id: c.id, nome: c.valorOriginal }))]);
+            }
+            setEstado((s) => ({ ...s, etapa: "revisao", resolucaoCategoria }));
+          }}
         />
       )}
 

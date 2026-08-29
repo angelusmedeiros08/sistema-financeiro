@@ -189,7 +189,7 @@ function LinhaCategoria({
   const valorAtual: ValorComboboxEntidade = !decisao
     ? null
     : decisao.acao === "criar_novo"
-      ? { tipo: "criar_novo" }
+      ? { tipo: "criar_novo", tipoCategoriaNova: decisao.tipoCategoriaNova }
       : decisao.entidadeId
         ? { tipo: "existente", id: decisao.entidadeId }
         : null;
