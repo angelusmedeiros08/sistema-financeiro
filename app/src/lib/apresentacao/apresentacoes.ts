@@ -38,7 +38,12 @@ export async function listarApresentacoes(supabase: Cliente, tenantId: string): 
   if (error || !data) return [];
 
   return data.map((a) => {
-    const slidesOrdenados = [...a.apresentacao_slides].sort((x, y) => x.ordem - y.ordem);
+    // Filtra contra o catálogo atual — mesma regra de obterApresentacaoComSlides
+    // (achado em revisão de código: sem isso, uma rota removida/renomeada do
+    // catálogo deixava a contagem daqui divergir do que a sessão de verdade
+    // mostra, e habilitava "Apresentar" apontando pra um slide que não carrega).
+    const slidesValidos = a.apresentacao_slides.filter((s) => itemCatalogoDaRota(s.rota) !== undefined);
+    const slidesOrdenados = slidesValidos.sort((x, y) => x.ordem - y.ordem);
     return {
       id: a.id,
       nome: a.nome,
@@ -58,20 +63,22 @@ export async function obterApresentacaoComSlides(
   supabase: Cliente,
   { tenantId, apresentacaoId }: { tenantId: string; apresentacaoId: string },
 ): Promise<ApresentacaoComSlides | null> {
-  const { data: apresentacao, error } = await supabase
-    .from("apresentacoes")
-    .select("id, nome, intervalo_segundos")
-    .eq("tenant_id", tenantId)
-    .eq("id", apresentacaoId)
-    .maybeSingle();
+  // As duas consultas rodam em paralelo — a segunda só precisa do id (que o
+  // chamador já tem), não de nenhum dado da primeira; RLS, não a primeira
+  // consulta, é quem protege o isolamento por tenant aqui (achado em revisão
+  // de código: rodar em série custava uma volta de rede inteira a mais no
+  // caminho mais usado da feature — carregar o editor ou iniciar uma sessão).
+  const [{ data: apresentacao, error: erroApresentacao }, { data: slides, error: erroSlides }] = await Promise.all([
+    supabase.from("apresentacoes").select("id, nome, intervalo_segundos").eq("tenant_id", tenantId).eq("id", apresentacaoId).maybeSingle(),
+    supabase.from("apresentacao_slides").select("id, ordem, rota, rotulo").eq("apresentacao_id", apresentacaoId).order("ordem"),
+  ]);
 
-  if (error || !apresentacao) return null;
-
-  const { data: slides } = await supabase
-    .from("apresentacao_slides")
-    .select("id, ordem, rota, rotulo")
-    .eq("apresentacao_id", apresentacaoId)
-    .order("ordem");
+  // Erro na segunda consulta antes não era checado — silenciosamente virava
+  // "apresentação encontrada, 0 slides", indistinguível de uma apresentação
+  // de verdade vazia (achado em revisão de código). Tratar como inacessível,
+  // igual à primeira consulta, é o que deixa o chamador (ApresentacaoShell)
+  // conseguir mostrar o aviso de "não existe mais/sem acesso".
+  if (erroApresentacao || !apresentacao || erroSlides) return null;
 
   return {
     id: apresentacao.id,

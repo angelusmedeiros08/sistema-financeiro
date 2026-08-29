@@ -5,7 +5,7 @@ import { ArrowUp, ArrowDown, X } from "@phosphor-icons/react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { cn } from "@/lib/utils";
+import { cn, moverItem } from "@/lib/utils";
 import type { LinhaDreConfig } from "@/lib/relatorios/dre";
 import {
   removerLinhaDreAction,
@@ -50,12 +50,8 @@ export function LinhaDreItem({
   const [pendente, iniciarTransicao] = useTransition();
 
   function mover(direcao: -1 | 1) {
-    const indiceAtual = todasIdsEmOrdem.indexOf(linha.id);
-    const indiceAlvo = indiceAtual + direcao;
-    if (indiceAlvo < 0 || indiceAlvo >= todasIdsEmOrdem.length) return;
-
-    const nova = [...todasIdsEmOrdem];
-    [nova[indiceAtual], nova[indiceAlvo]] = [nova[indiceAlvo], nova[indiceAtual]];
+    const nova = moverItem(todasIdsEmOrdem, todasIdsEmOrdem.indexOf(linha.id), direcao);
+    if (nova === todasIdsEmOrdem) return;
     iniciarTransicao(async () => {
       await reordenarLinhasDreAction(nova);
     });

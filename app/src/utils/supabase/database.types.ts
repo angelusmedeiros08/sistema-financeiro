@@ -2334,6 +2334,17 @@ export type Database = {
         Args: { p_conta_contabil_id: string; p_tenant_id: string }
         Returns: number
       }
+      salvar_apresentacao: {
+        Args: {
+          p_apresentacao_id: string
+          p_criado_por: string
+          p_intervalo_segundos: number
+          p_nome: string
+          p_slides: Json
+          p_tenant_id: string
+        }
+        Returns: string
+      }
       substituir_itens_venda: {
         Args: { p_itens: Json; p_tenant_id: string; p_venda_id: string }
         Returns: undefined

@@ -20,25 +20,37 @@ function validarDados({ nome, intervaloSegundos, rotas }: DadosApresentacao): { 
   return { ok: true };
 }
 
-// Substitui a lista inteira de slides (delete-and-reinsert por ordem — spec
-// Seção 5) em vez de diff incremental: a lista é tipicamente pequena (no
-// máximo as 11 telas do catálogo) e o formulário sempre envia o estado
-// completo já reordenado.
-async function substituirSlides(supabase: Awaited<ReturnType<typeof createClient>>, apresentacaoId: string, rotas: string[]) {
-  const { error: erroDelete } = await supabase.from("apresentacao_slides").delete().eq("apresentacao_id", apresentacaoId);
-  if (erroDelete) return { erro: erroDelete.message };
+// RPC `salvar_apresentacao` cria/atualiza a apresentação e substitui a lista
+// de slides inteira numa única transação de banco — achado em revisão de
+// código: fazer isso em dois passos separados (delete e insert do lado do
+// app) deixava uma falha entre os dois passos apagar os slides antigos sem
+// recuperação, e uma falha entre criar a apresentação e inserir seus slides
+// deixava uma linha "fantasma" com 0 slides.
+async function salvar(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  {
+    apresentacaoId,
+    tenantId,
+    criadoPor,
+    dados,
+  }: { apresentacaoId: string | null; tenantId: string; criadoPor: string; dados: DadosApresentacao },
+): Promise<ResultadoAcao> {
+  const slides = dados.rotas.map((rota, ordem) => ({ ordem, rota, rotulo: itemCatalogoDaRota(rota)!.rotulo }));
 
-  if (rotas.length === 0) return { erro: "" };
+  const { data, error } = await supabase.rpc("salvar_apresentacao", {
+    p_tenant_id: tenantId,
+    // Os tipos gerados marcam todo parâmetro de função como string
+    // obrigatória (limitação do gerador, não reflete que o parâmetro SQL
+    // aceita null) — cast necessário pra passar null de verdade na criação.
+    p_apresentacao_id: apresentacaoId as string,
+    p_nome: dados.nome.trim(),
+    p_intervalo_segundos: dados.intervaloSegundos,
+    p_criado_por: criadoPor,
+    p_slides: slides,
+  });
 
-  const { error: erroInsert } = await supabase.from("apresentacao_slides").insert(
-    rotas.map((rota, ordem) => ({
-      apresentacao_id: apresentacaoId,
-      ordem,
-      rota,
-      rotulo: itemCatalogoDaRota(rota)!.rotulo,
-    })),
-  );
-  return { erro: erroInsert?.message ?? "" };
+  if (error || !data) return { erro: error?.message ?? "Não foi possível salvar a apresentação." };
+  return { sucesso: true, id: data };
 }
 
 export async function criarApresentacao(dados: DadosApresentacao): Promise<ResultadoAcao> {
@@ -49,24 +61,16 @@ export async function criarApresentacao(dados: DadosApresentacao): Promise<Resul
   if ("erro" in contexto) return { erro: contexto.erro };
 
   const supabase = await createClient();
-  const { data: apresentacao, error } = await supabase
-    .from("apresentacoes")
-    .insert({
-      tenant_id: contexto.tenantId,
-      nome: dados.nome.trim(),
-      intervalo_segundos: dados.intervaloSegundos,
-      criado_por: contexto.user.id,
-    })
-    .select("id")
-    .single();
-
-  if (error || !apresentacao) return { erro: error?.message ?? "Não foi possível criar a apresentação." };
-
-  const resultadoSlides = await substituirSlides(supabase, apresentacao.id, dados.rotas);
-  if (resultadoSlides.erro) return { erro: resultadoSlides.erro };
+  const resultado = await salvar(supabase, {
+    apresentacaoId: null,
+    tenantId: contexto.tenantId,
+    criadoPor: contexto.user.id,
+    dados,
+  });
+  if ("erro" in resultado) return resultado;
 
   revalidatePath("/apresentacoes");
-  return { sucesso: true, id: apresentacao.id };
+  return resultado;
 }
 
 export async function atualizarApresentacao(apresentacaoId: string, dados: DadosApresentacao): Promise<ResultadoAcao> {
@@ -77,24 +81,17 @@ export async function atualizarApresentacao(apresentacaoId: string, dados: Dados
   if ("erro" in contexto) return { erro: contexto.erro };
 
   const supabase = await createClient();
-  const { error } = await supabase
-    .from("apresentacoes")
-    .update({
-      nome: dados.nome.trim(),
-      intervalo_segundos: dados.intervaloSegundos,
-      atualizado_em: new Date().toISOString(),
-    })
-    .eq("id", apresentacaoId)
-    .eq("tenant_id", contexto.tenantId);
-
-  if (error) return { erro: error.message };
-
-  const resultadoSlides = await substituirSlides(supabase, apresentacaoId, dados.rotas);
-  if (resultadoSlides.erro) return { erro: resultadoSlides.erro };
+  const resultado = await salvar(supabase, {
+    apresentacaoId,
+    tenantId: contexto.tenantId,
+    criadoPor: contexto.user.id,
+    dados,
+  });
+  if ("erro" in resultado) return resultado;
 
   revalidatePath("/apresentacoes");
   revalidatePath(`/apresentacoes/${apresentacaoId}`);
-  return { sucesso: true, id: apresentacaoId };
+  return resultado;
 }
 
 export async function excluirApresentacao(apresentacaoId: string): Promise<ResultadoAcao> {

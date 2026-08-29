@@ -19,12 +19,20 @@ export function ApresentacaoShell({ apresentacaoId, children }: { apresentacaoId
 
   const modo = (searchParams.get(PARAM_MODO) === "tv" ? "tv" : "apresentador") as ModoApresentacao;
   const pausado = searchParams.get(PARAM_PAUSADO) === "1";
-  const indiceBruto = Number(searchParams.get(PARAM_SLIDE) ?? "0");
+  // Number("abc") ou parâmetro ausente/corrompido vira NaN — sem o fallback,
+  // NaN se propagava até slides[NaN] (undefined) e quebrava a próxima
+  // navegação com TypeError (achado em revisão de código).
+  const indiceBrutoLido = Number(searchParams.get(PARAM_SLIDE) ?? "0");
+  const indiceBruto = Number.isFinite(indiceBrutoLido) ? indiceBrutoLido : 0;
 
-  // Busca os slides uma vez por sessão (a lista não muda enquanto a
-  // apresentação está sendo vista) — layouts não recebem searchParams, então
-  // essa leitura só pode acontecer aqui, num Client Component, via server
-  // action (lib/apresentacao/sessao-actions.ts).
+  // Busca os slides a cada troca de slide, não só uma vez por sessão — spec
+  // Seção 8 promete que excluir a apresentação em outra aba faz a "próxima
+  // navegação falhar... cai pra /apresentacoes com aviso"; buscar só no mount
+  // (chave só em apresentacaoId, que nunca muda durante a sessão) nunca
+  // detectava isso, deixando o Modo TV ciclando por dado já apagado
+  // indefinidamente (achado em revisão de código). Layouts não recebem
+  // searchParams, então essa leitura só pode acontecer aqui, num Client
+  // Component, via server action (lib/apresentacao/sessao-actions.ts).
   useEffect(() => {
     let cancelado = false;
     obterApresentacaoParaSessao(apresentacaoId).then((resultado) => {
@@ -33,7 +41,7 @@ export function ApresentacaoShell({ apresentacaoId, children }: { apresentacaoId
     return () => {
       cancelado = true;
     };
-  }, [apresentacaoId]);
+  }, [apresentacaoId, indiceBruto]);
 
   // useSyncExternalStore em vez de useEffect+setState — é o jeito correto de
   // sincronizar com uma API externa do navegador (evita o anti-padrão de
@@ -68,6 +76,20 @@ export function ApresentacaoShell({ apresentacaoId, children }: { apresentacaoId
 
   useEffect(() => {
     function aoTeclar(e: KeyboardEvent) {
+      // O slide é a página real, com seus próprios filtros (ex.: campo de
+      // data dos relatórios) — sem essa checagem, seta-esquerda pra mover o
+      // cursor dentro de um <input type="date"> ou Esc pra fechar um
+      // Popover/Select da própria tela também navegava/saía da apresentação
+      // (achado em revisão de código). `data-radix-popper-content-wrapper`
+      // cobre Popover/Select/DropdownMenu — todos os primitivos do Radix
+      // baseados em Popper usados no resto do sistema.
+      const alvo = e.target;
+      if (
+        alvo instanceof HTMLElement &&
+        alvo.closest("input, textarea, select, [contenteditable='true'], [role='dialog'], [data-radix-popper-content-wrapper]")
+      ) {
+        return;
+      }
       if (e.key === "Escape") sair();
       if (e.key === "ArrowRight") irPara(indiceAtual + 1);
       if (e.key === "ArrowLeft") irPara(indiceAtual - 1);

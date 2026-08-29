@@ -1,8 +1,9 @@
 "use client";
 
 import { Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { PARAM_APRESENTACAO } from "@/lib/apresentacao/sessao";
+import { rotaValida } from "@/lib/apresentacao/catalogo";
 import { ApresentacaoShell } from "@/components/apresentacao/apresentacao-shell";
 import { BotaoVoltar } from "@/components/layout/botao-voltar";
 
@@ -30,10 +31,18 @@ function ChromeNormal({ sidebar, topbar, children }: PropsChrome) {
 }
 
 function ChromeInterno(props: PropsChrome) {
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const apresentacaoId = searchParams.get(PARAM_APRESENTACAO);
 
-  if (apresentacaoId) {
+  // Só entra em modo apresentação se a rota atual for uma das telas do
+  // catálogo — sem isso, um `?apresentacao=...` sobrando (favorito antigo,
+  // link colado fora de contexto) em QUALQUER uma das 70+ rotas do app
+  // (ex.: /configuracoes) prendia a página inteira atrás da tela de "essa
+  // apresentação não existe" do ApresentacaoShell, já que ele só renderiza
+  // {children} quando a apresentação carrega com sucesso (achado em revisão
+  // de código).
+  if (apresentacaoId && rotaValida(pathname)) {
     return <ApresentacaoShell apresentacaoId={apresentacaoId}>{props.children}</ApresentacaoShell>;
   }
 

@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { CATALOGO_SLIDES, type CategoriaSlide, itemCatalogoDaRota } from "@/lib/apresentacao/catalogo";
+import { moverItem } from "@/lib/utils";
 import { criarApresentacao, atualizarApresentacao } from "./actions";
 
 const CATEGORIAS: CategoriaSlide[] = ["Painel", "Indicadores", "Relatórios"];
@@ -27,13 +28,7 @@ export function ApresentacaoForm({ existente }: { existente?: ApresentacaoExiste
   }
 
   function mover(indice: number, direcao: -1 | 1) {
-    setSelecionadas((atual) => {
-      const alvo = indice + direcao;
-      if (alvo < 0 || alvo >= atual.length) return atual;
-      const nova = [...atual];
-      [nova[indice], nova[alvo]] = [nova[alvo], nova[indice]];
-      return nova;
-    });
+    setSelecionadas((atual) => moverItem(atual, indice, direcao));
   }
 
   function salvar() {
