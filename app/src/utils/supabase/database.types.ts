@@ -160,6 +160,83 @@ export type Database = {
           },
         ]
       }
+      apresentacao_slides: {
+        Row: {
+          apresentacao_id: string
+          id: string
+          ordem: number
+          rota: string
+          rotulo: string
+        }
+        Insert: {
+          apresentacao_id: string
+          id?: string
+          ordem: number
+          rota: string
+          rotulo: string
+        }
+        Update: {
+          apresentacao_id?: string
+          id?: string
+          ordem?: number
+          rota?: string
+          rotulo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "apresentacao_slides_apresentacao_id_fkey"
+            columns: ["apresentacao_id"]
+            isOneToOne: false
+            referencedRelation: "apresentacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      apresentacoes: {
+        Row: {
+          atualizado_em: string
+          criado_em: string
+          criado_por: string | null
+          id: string
+          intervalo_segundos: number
+          nome: string
+          tenant_id: string
+        }
+        Insert: {
+          atualizado_em?: string
+          criado_em?: string
+          criado_por?: string | null
+          id?: string
+          intervalo_segundos?: number
+          nome: string
+          tenant_id: string
+        }
+        Update: {
+          atualizado_em?: string
+          criado_em?: string
+          criado_por?: string | null
+          id?: string
+          intervalo_segundos?: number
+          nome?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "apresentacoes_criado_por_fkey"
+            columns: ["criado_por"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "apresentacoes_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       baixas: {
         Row: {
           conta_financeira_id: string | null
