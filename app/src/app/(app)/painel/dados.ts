@@ -254,9 +254,22 @@ async function obterPrimeirosPassos(supabase: Cliente, tenantId: string): Promis
   };
 }
 
-export async function obterDadosPainel(supabase: Cliente, tenantId: string, pessoaId?: string) {
+// incluirSaldoEmCaixa=false pro portal do cliente: saldo em caixa é uma
+// dimensão da empresa inteira (ver comentário em obterSaldoEmCaixa), não dá
+// pra recortar por pessoa — mostrar pro cliente do portal seria expor o
+// caixa consolidado de todos os outros clientes do mesmo tenant (achado em
+// auditoria de segurança, 29/08). A RLS de partidas/contas_contabeis já
+// bloqueia esse SELECT pra cliente_portal, então nem vale a pena rodar a
+// query: ela só voltaria vazia.
+export async function obterDadosPainel(
+  supabase: Cliente,
+  tenantId: string,
+  pessoaId?: string,
+  opts?: { incluirSaldoEmCaixa?: boolean },
+) {
+  const incluirSaldoEmCaixa = opts?.incluirSaldoEmCaixa ?? true;
   const [saldoEmCaixa, aReceber, aPagar, resultadoDoMes, fluxo, eventosRecentes, vencidosReceber, vencidosPagar, recebidoPago, primeirosPassos] = await Promise.all([
-    obterSaldoEmCaixa(supabase, tenantId),
+    incluirSaldoEmCaixa ? obterSaldoEmCaixa(supabase, tenantId) : Promise.resolve(0),
     obterPendentesPorTipo(supabase, tenantId, "RECEITA", pessoaId),
     obterPendentesPorTipo(supabase, tenantId, "DESPESA", pessoaId),
     obterResultadoDoMes(supabase, tenantId, pessoaId),
@@ -282,7 +295,7 @@ export async function obterDadosPainel(supabase: Cliente, tenantId: string, pess
     vencidosPagar,
     recebidoDoMes: recebidoPago.recebido,
     pagoDoMes: recebidoPago.pago,
-    saldoSerieSeisMeses: reconstruirSerieSaldo(saldoEmCaixa, fluxo),
+    saldoSerieSeisMeses: incluirSaldoEmCaixa ? reconstruirSerieSaldo(saldoEmCaixa, fluxo) : [],
     resultadoDeltaPercentual: resultadoMesAnterior !== undefined ? deltaPercentual(resultadoDoMes.liquido, resultadoMesAnterior) : undefined,
     primeirosPassos,
   };

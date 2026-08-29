@@ -20,7 +20,10 @@ export default async function PaginaPortal() {
   if ("erro" in contexto) redirect("/entrar");
 
   const supabase = await createClient();
-  const dados = await obterDadosPainel(supabase, contexto.tenantId, contexto.pessoaId ?? undefined);
+  // Sem saldo em caixa aqui de propósito: é o caixa consolidado da empresa
+  // inteira, não da pessoa — mostrar pro cliente do portal vazaria o
+  // resultado agregado de todos os outros clientes do mesmo tenant.
+  const dados = await obterDadosPainel(supabase, contexto.tenantId, contexto.pessoaId ?? undefined, { incluirSaldoEmCaixa: false });
 
   const hoje = new Date(hojeIsoBrasil() + "T00:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" });
 
@@ -32,7 +35,6 @@ export default async function PaginaPortal() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <StatCard variant="hero" label="Saldo em caixa" valor={formatarMoeda(dados.saldoEmCaixa)} />
         <StatCard
           variant="teal"
           label="A receber (30 dias)"
