@@ -4,7 +4,7 @@ import { acessoLiberado } from "@/lib/pagamentos/plano";
 import { createClient } from "@/utils/supabase/server";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
-import { BotaoVoltar } from "@/components/layout/botao-voltar";
+import { AppChromeShell } from "@/components/layout/app-chrome-shell";
 
 export default async function LayoutApp({ children }: { children: React.ReactNode }) {
   const contexto = await obterUsuarioETenantAtual();
@@ -40,9 +40,9 @@ export default async function LayoutApp({ children }: { children: React.ReactNod
   ]);
 
   return (
-    <div className="flex min-h-screen">
-      <Sidebar emailUsuario={contexto.user.email ?? undefined} />
-      <div className="flex min-w-0 flex-1 flex-col">
+    <AppChromeShell
+      sidebar={<Sidebar emailUsuario={contexto.user.email ?? undefined} />}
+      topbar={
         <Topbar
           tenantNome={contexto.tenantNome}
           tenantId={contexto.tenantId}
@@ -50,11 +50,9 @@ export default async function LayoutApp({ children }: { children: React.ReactNod
           nome={usuario?.nome ?? contexto.user.email ?? ""}
           notificacoes={(alertas ?? []).map((a) => ({ id: a.id, tipo: a.tipo, enviadoEm: a.enviado_em }))}
         />
-        <main className="flex-1 px-4 py-8 lg:px-8">
-          <BotaoVoltar />
-          {children}
-        </main>
-      </div>
-    </div>
+      }
+    >
+      {children}
+    </AppChromeShell>
   );
 }
