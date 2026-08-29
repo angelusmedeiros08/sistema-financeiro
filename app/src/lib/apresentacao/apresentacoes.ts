@@ -9,6 +9,7 @@ export type ApresentacaoResumo = {
   nome: string;
   intervaloSegundos: number;
   totalSlides: number;
+  primeiraRota: string | null;
 };
 
 export type SlideApresentacao = {
@@ -30,18 +31,22 @@ export type ApresentacaoComSlides = {
 export async function listarApresentacoes(supabase: Cliente, tenantId: string): Promise<ApresentacaoResumo[]> {
   const { data, error } = await supabase
     .from("apresentacoes")
-    .select("id, nome, intervalo_segundos, apresentacao_slides(count)")
+    .select("id, nome, intervalo_segundos, apresentacao_slides(rota, ordem)")
     .eq("tenant_id", tenantId)
     .order("nome");
 
   if (error || !data) return [];
 
-  return data.map((a) => ({
-    id: a.id,
-    nome: a.nome,
-    intervaloSegundos: a.intervalo_segundos,
-    totalSlides: a.apresentacao_slides[0]?.count ?? 0,
-  }));
+  return data.map((a) => {
+    const slidesOrdenados = [...a.apresentacao_slides].sort((x, y) => x.ordem - y.ordem);
+    return {
+      id: a.id,
+      nome: a.nome,
+      intervaloSegundos: a.intervalo_segundos,
+      totalSlides: slidesOrdenados.length,
+      primeiraRota: slidesOrdenados[0]?.rota ?? null,
+    };
+  });
 }
 
 // Usado pelo editor (pré-carregar o formulário) e pelo runtime do

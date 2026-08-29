@@ -19,6 +19,7 @@ import {
   CaretRight,
   CaretLeft,
   Star,
+  Presentation,
 } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -84,6 +85,7 @@ const ITENS_NAV: ItemNav[] = [
   { href: "/comercial", label: "Comercial", icon: ShoppingCart, disponivel: true, secao: "Gestão", subItens: SUB_ITENS_COMERCIAL },
   { href: "/analise", label: "Análise", icon: ChartBar, disponivel: true, secao: "Gestão", subItens: SUB_ITENS_ANALISE },
   { href: "/relatorios", label: "Relatórios", icon: ChartLineUp, disponivel: true, secao: "Sistema", subItens: SUB_ITENS_RELATORIOS },
+  { href: "/apresentacoes", label: "Apresentação", icon: Presentation, disponivel: true, secao: "Sistema" },
   { href: "/importacao", label: "Importação", icon: UploadSimple, disponivel: true, secao: "Sistema" },
   { href: "/configuracoes", label: "Configurações", icon: GearSix, disponivel: true, secao: "Sistema", subItens: SUB_ITENS_CONFIGURACOES },
 ];
