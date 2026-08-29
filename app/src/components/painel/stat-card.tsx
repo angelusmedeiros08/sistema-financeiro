@@ -38,6 +38,12 @@ type StatCardProps = VariantProps<typeof cartaoVariantes> & {
   delta?: number;
   serie?: number[];
   icon?: IconType;
+  // Só relevante com `href` e só obrigatório na prática quando `label` não
+  // é string (ex.: envolvido em TermoComDica) — o `<Link>` do card vira um
+  // overlay sem conteúdo visível (ver comentário em cima do branch
+  // `if (href)`), então precisa de um nome acessível explícito; não dá pra
+  // derivar de um ReactNode arbitrário.
+  ariaLabel?: string;
 } & (
     | {
         // Card vira link pros lançamentos/relatório que compõem o número —
@@ -61,7 +67,7 @@ type StatCardProps = VariantProps<typeof cartaoVariantes> & {
       }
   );
 
-export function StatCard({ label, valor, detalhe, variant, delta, serie, icon: Icon, href, children }: StatCardProps) {
+export function StatCard({ label, valor, detalhe, variant, delta, serie, icon: Icon, href, ariaLabel, children }: StatCardProps) {
   const v = variant ?? "sage";
   const deltaPositivo = typeof delta === "number" && delta >= 0;
   const corDelta = v === "hero" ? "text-white" : deltaPositivo ? "text-positivo" : "text-destructive";
@@ -141,10 +147,25 @@ export function StatCard({ label, valor, detalhe, variant, delta, serie, icon: I
   );
 
   if (href) {
+    // Link vira um overlay cobrindo o card inteiro (`absolute inset-0`),
+    // não um wrapper em volta de `conteudo` — um card com TermoComDica no
+    // label aninharia um <button> dentro do <a>, o que navegadores tratam
+    // como HTML inválido: a árvore de acessibilidade colapsa o botão
+    // interno, tornando-o inalcançável por teclado/leitor de tela (achado
+    // ao vivo testando o ícone de dica dentro deste card). `conteudo` fica
+    // por cima (`pointer-events-none`, `display: contents` pra não quebrar
+    // o layout flex) — clique em qualquer área sem elemento interativo cai
+    // no Link por baixo; só o `<button>` do TermoComDica reativa os
+    // próprios eventos de ponteiro e intercepta o clique antes do Link.
     return (
-      <Link href={href} className={cn(cartaoVariantes({ variant }), "transition-shadow hover:shadow-lg")}>
-        {conteudo}
-      </Link>
+      <div className={cn(cartaoVariantes({ variant }), "relative transition-shadow hover:shadow-lg")}>
+        <Link
+          href={href}
+          aria-label={ariaLabel ?? (typeof label === "string" ? `${label}: ${valor}` : valor)}
+          className="absolute inset-0"
+        />
+        <div className="pointer-events-none contents">{conteudo}</div>
+      </div>
     );
   }
 

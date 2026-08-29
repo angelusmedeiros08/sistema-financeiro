@@ -16,11 +16,14 @@ export function TermoComDica({ termo, children }: { termo: keyof typeof GLOSSARI
       {children}
       <Popover>
         <PopoverTrigger
-          className="inline-flex size-4 shrink-0 items-center justify-center rounded-full text-muted-foreground/70 hover:text-foreground focus-visible:text-foreground focus-visible:outline-none"
+          // pointer-events-auto: quando TermoComDica está dentro do rótulo
+          // de um StatCard com `href`, o conteúdo do card inteiro fica
+          // pointer-events-none (ver stat-card.tsx) — só este botão
+          // reativa o próprio clique, o resto do rótulo continua "vazando"
+          // o clique pro <Link> por baixo. Sem efeito nos demais usos (fora
+          // desse contexto, pointer-events já é auto por padrão).
+          className="pointer-events-auto inline-flex size-4 shrink-0 items-center justify-center rounded-full text-muted-foreground/70 hover:text-foreground focus-visible:text-foreground focus-visible:outline-none"
           aria-label={`O que é ${info.titulo}?`}
-          // Vários lugares usam TermoComDica dentro do rótulo de um StatCard
-          // com `href` (o card inteiro é um <Link>) — sem isso, tocar no
-          // ícone navegava pro card em vez de abrir o popover.
           onClick={(e) => e.stopPropagation()}
         >
           <Question size={14} weight="bold" />

@@ -108,6 +108,7 @@ export default async function PaginaRelatoriosVisaoGeral({
         <StatCard
           variant="teal"
           label={<TermoComDica termo="ponto_equilibrio">Ponto de equilíbrio</TermoComDica>}
+          ariaLabel="Ponto de equilíbrio"
           valor={formatarMoeda(pontoEquilibrio.pontoEquilibrio)}
           detalhe={`Margem de contribuição: ${formatarPercentual(pontoEquilibrio.margemContribuicaoPercentual)}`}
           href="/relatorios/ponto-equilibrio"
