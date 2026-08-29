@@ -37,6 +37,7 @@ Já decidimos RLS como mecanismo central de isolamento (`docs` da arquitetura). 
 - **`service_role` key nunca sai do servidor** — regra arquitetural: toda operação privilegiada roda em server action/API route, nunca em chamada client-side com essa chave. Lint/CI check pra bloquear a string aparecendo em qualquer bundle client.
 - **Certificado digital A1 do cliente é o segredo mais sensível do sistema inteiro** — é a chave privada que autentica com a SEFAZ em nome da empresa. Decisão de design: **evitar armazenar o certificado bruto na nossa infraestrutura sempre que possível** — preferir que o gateway (Focus NFe) segure e opere o certificado, e nós só guardamos uma referência/token de acesso a ele. Se em algum caso for inevitável guardar o arquivo, ele precisa estar criptografado em repouso, nunca aparecer em log, e acesso restrito por role.
 - Nenhum dado sensível (senha, token, CPF/CNPJ completo, chave de acesso de NF-e) em `console.log` ou ferramenta de observabilidade — logging estruturado com redação automática de campos conhecidos como sensíveis.
+- **`CRON_SECRET`** (segredo compartilhado que autentica `/api/cron/*` — endpoints que rodam operação administrativa sobre todos os tenants de uma vez, comparados com `timingSafeEqual`) precisa ter pelo menos 256 bits de entropia: gerar com `openssl rand -hex 32`. `timingSafeEqual` protege contra timing attack, não contra um valor curto/adivinhável — a força do segredo em si é responsabilidade de quem provisiona o Vault secret.
 
 ## 5. Supply chain — relevante justamente por como vamos construir isto
 
