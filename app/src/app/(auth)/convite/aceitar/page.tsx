@@ -10,6 +10,20 @@ const ROTULO_PAPEL: Record<string, string> = {
   cliente_portal: "Cliente (portal)",
 };
 
+// tenant/papel vêm crus da querystring e o token só é validado de verdade no
+// submit do formulário (design de propósito — token de generateLink não dá
+// pra "espiar" sem consumir) — até lá, essa tela é alcançável por qualquer
+// um com um link forjado, com texto arbitrário nesses campos. `papel` tem
+// domínio fechado, então cai num rótulo genérico se não bater com nenhuma
+// chave conhecida (em vez de ecoar o valor cru). `tenantNome` não tem
+// domínio fechado (é nome de empresa de verdade), então só limita tamanho e
+// remove quebra de linha — reduz o espaço pra uma frase de phishing longa,
+// sem quebrar nome de empresa legítimo (achado em auditoria de segurança).
+function tenantExibicaoSegura(bruto: string): string {
+  const semQuebra = bruto.replace(/[\r\n\t]+/g, " ").trim();
+  return semQuebra.length > 60 ? `${semQuebra.slice(0, 60)}…` : semQuebra;
+}
+
 // Página intermediária de propósito: só existe pra exigir um clique de
 // verdade num botão antes de consumir o token de convite. Se o token fosse
 // consumido só por carregar a página (como no fluxo antigo, que apontava
@@ -38,13 +52,14 @@ export default async function PaginaAceitarConvite({
     );
   }
 
-  const rotuloPapel = ROTULO_PAPEL[papel] ?? papel;
+  const rotuloPapel = ROTULO_PAPEL[papel] ?? "";
+  const tenantExibicao = tenantNome ? tenantExibicaoSegura(tenantNome) : "";
 
   return (
     <AuthShell titulo="Você foi convidado" subtitulo={email}>
       <div className="space-y-4">
         <p className="text-sm text-muted-foreground">
-          Você foi convidado pra acessar o sistema financeiro{tenantNome ? ` de ${tenantNome}` : ""}
+          Você foi convidado pra acessar o sistema financeiro{tenantExibicao ? ` de ${tenantExibicao}` : ""}
           {rotuloPapel ? ` como ${rotuloPapel}` : ""}.
         </p>
 

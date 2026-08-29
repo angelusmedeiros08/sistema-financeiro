@@ -7,6 +7,7 @@ import { buscarLancamentosFiltrados, type FiltroLancamentos } from "@/lib/relato
 import type { Regime } from "@/lib/relatorios/regime";
 import { TabelaEventos } from "@/components/lancamentos/tabela-eventos";
 import { formatarMoeda, formatarDataComAno } from "@/lib/formatacao";
+import { caminhoInternoSeguro } from "@/lib/caminho-seguro";
 
 // Destino de todo clique em gráfico — sempre exatamente uma dessas 4
 // dimensões chega por vez; a ordem aqui só define qual vence se mais de uma
@@ -27,16 +28,6 @@ function parseValor(bruto: string | undefined): string[] | "nenhuma" | null {
   return bruto.split(",").filter(Boolean);
 }
 
-// `voltar` vem cru da querystring — só aceita caminho interno (começa com
-// "/", não é "//algo" — esse é o truque clássico de URL "protocol-relative"
-// pra escapar do domínio). Sem essa checagem, um link
-// `?voltar=https://phishing.example.com` levaria o botão "Voltar pro
-// relatório" pra fora do sistema (achado em revisão de código).
-function caminhoInternoSeguro(bruto: string | undefined): string | null {
-  if (!bruto) return null;
-  if (!bruto.startsWith("/") || bruto.startsWith("//")) return null;
-  return bruto;
-}
 
 // `rotulo` vem cru da querystring no caso sem dimensão (Saldo em caixa,
 // Recebido/Pago do mês etc.) e vira o <h1> da página — sem validação, um

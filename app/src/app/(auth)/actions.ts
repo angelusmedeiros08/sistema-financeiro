@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { provisionarTenantNovo } from "@/lib/tenant/provisionar";
+import { caminhoInternoSeguro } from "@/lib/caminho-seguro";
 import { CADASTRO_PUBLICO_ATIVO } from "./config";
 
 type ResultadoAcao = { erro: string } | { sucesso: true; mensagem: string };
@@ -100,7 +101,7 @@ export async function aceitarConvite(formData: FormData): Promise<never> {
     redirect("/entrar?erro=link_invalido");
   }
 
-  redirect(next.startsWith("/") && !next.startsWith("//") ? next : "/convite/definir-senha");
+  redirect(caminhoInternoSeguro(next) ?? "/convite/definir-senha");
 }
 
 // Chamada pela tela que o link de convite leva depois do /auth/confirm já
