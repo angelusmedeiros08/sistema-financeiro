@@ -168,6 +168,7 @@ export type Database = {
           estornado_em: string | null
           forma_pagamento_id: string | null
           id: string
+          idempotency_key: string | null
           lancamento_id: string | null
           parcela_id: string
           tenant_id: string
@@ -184,6 +185,7 @@ export type Database = {
           estornado_em?: string | null
           forma_pagamento_id?: string | null
           id?: string
+          idempotency_key?: string | null
           lancamento_id?: string | null
           parcela_id: string
           tenant_id: string
@@ -200,6 +202,7 @@ export type Database = {
           estornado_em?: string | null
           forma_pagamento_id?: string | null
           id?: string
+          idempotency_key?: string | null
           lancamento_id?: string | null
           parcela_id?: string
           tenant_id?: string
@@ -2211,6 +2214,25 @@ export type Database = {
           p_tenant_id: string
           p_tipo: Database["public"]["Enums"]["tipo_categoria"]
           p_valor_total: number
+        }
+        Returns: string
+      }
+      registrar_baixa: {
+        Args: {
+          p_conta_financeira_id: string
+          p_criado_por?: string
+          p_data_pagamento: string
+          p_descricao: string
+          p_forma_pagamento_id?: string
+          p_idempotency_key?: string
+          p_parcela_id: string
+          p_partidas: Json
+          p_tenant_id: string
+          p_valor_desconto: number
+          p_valor_juros: number
+          p_valor_multa: number
+          p_valor_pago: number
+          p_valor_taxa: number
         }
         Returns: string
       }

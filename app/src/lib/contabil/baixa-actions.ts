@@ -31,6 +31,7 @@ export async function darBaixa(formData: FormData): Promise<ResultadoAcao> {
 
   const { nome: metodo_pagamento } = await resolverFormaPagamentoIdSimples(supabase, contexto.tenantId, formData);
   const forma_pagamento_id = String(formData.get("forma_pagamento_id") ?? "") || undefined;
+  const idempotency_key = String(formData.get("idempotency_key") ?? "") || undefined;
 
   const resultado = await registrarBaixa(supabase, {
     tenant_id: contexto.tenantId,
@@ -45,6 +46,7 @@ export async function darBaixa(formData: FormData): Promise<ResultadoAcao> {
     metodo_pagamento: metodo_pagamento ?? undefined,
     forma_pagamento_id,
     criado_por: contexto.user.id,
+    idempotency_key,
   });
 
   if ("erro" in resultado) return { erro: resultado.erro };

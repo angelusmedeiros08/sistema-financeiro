@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/utils/supabase/database.types";
-import { registrarLancamento, type PartidaEntrada } from "./ledger";
+import type { PartidaEntrada } from "./ledger";
 import {
   CODIGO_CAIXA_E_BANCOS,
   CODIGO_CONTAS_A_RECEBER,
@@ -26,6 +26,15 @@ export type ParametrosBaixa = {
   metodo_pagamento?: string;
   forma_pagamento_id?: string;
   criado_por?: string;
+  // Gerada uma vez por sessão de formulário (crypto.randomUUID() no
+  // client) — um reenvio com a MESMA chave (duplo clique, retry de rede)
+  // devolve a baixa já criada em vez de duplicar o lançamento contábil.
+  // Baixa integral, estorno e aprovar venda já tinham proteção equivalente
+  // contra corrida (FOR UPDATE / guarda atômica); baixa parcial não tinha
+  // nenhuma, porque o valor pago abaixo do saldo residual deixa duas
+  // requisições concorrentes passarem pela trava de saldo com sucesso
+  // (achado em auditoria de segurança, 29/08/2026).
+  idempotency_key?: string;
 };
 
 // Dá baixa (total ou parcial) numa parcela: monta o lançamento contábil com
@@ -128,41 +137,34 @@ export async function registrarBaixa(
     if (desconto > 0) partidas.push({ conta_contabil_id: contaDescontosObtidos, tipo: "CREDITO", valor: desconto });
   }
 
-  const resultadoLancamento = await registrarLancamento(supabase, {
-    tenant_id: params.tenant_id,
-    data_competencia: params.data_pagamento,
-    descricao: `Baixa: ${parcela.eventos_financeiros?.descricao ?? "lançamento"}`,
-    origem: "MANUAL",
-    referencia_id: parcela.id,
-    criado_por: params.criado_por,
-    partidas,
-  });
-
-  if ("erro" in resultadoLancamento) {
-    return { erro: resultadoLancamento.erro };
+  const somaDebito = partidas.filter((p) => p.tipo === "DEBITO").reduce((acc, p) => acc + p.valor, 0);
+  const somaCredito = partidas.filter((p) => p.tipo === "CREDITO").reduce((acc, p) => acc + p.valor, 0);
+  if (Math.round((somaDebito - somaCredito) * 100) !== 0) {
+    return { erro: "Lançamento desbalanceado: débito e crédito não coincidem." };
   }
 
-  // a trava de saldo residual contra baixa acima do valor em aberto é
-  // garantida por trigger no banco (constraint real), não por checagem aqui.
-  const { data: baixa, error: erroBaixa } = await supabase
-    .from("baixas")
-    .insert({
-      tenant_id: params.tenant_id,
-      parcela_id: params.parcela_id,
-      data_pagamento: params.data_pagamento,
-      valor_pago: params.valor_pago,
-      valor_juros: juros,
-      valor_multa: multa,
-      valor_desconto: desconto,
-      valor_taxa: taxa,
-      conta_financeira_id: params.conta_financeira_id,
-      forma_pagamento_id: params.forma_pagamento_id ?? null,
-      lancamento_id: resultadoLancamento.lancamento_id,
-    })
-    .select("id")
-    .single();
+  // registrar_baixa (RPC) faz lançamento + partidas + baixa numa única
+  // transação, e devolve a baixa já existente sem duplicar nada quando
+  // idempotency_key repete — a trava de saldo residual contra baixa acima
+  // do valor em aberto continua garantida por trigger no banco.
+  const { data: baixaId, error: erroBaixa } = await supabase.rpc("registrar_baixa", {
+    p_tenant_id: params.tenant_id,
+    p_parcela_id: params.parcela_id,
+    p_data_pagamento: params.data_pagamento,
+    p_valor_pago: params.valor_pago,
+    p_valor_juros: juros,
+    p_valor_multa: multa,
+    p_valor_desconto: desconto,
+    p_valor_taxa: taxa,
+    p_conta_financeira_id: params.conta_financeira_id,
+    p_descricao: `Baixa: ${parcela.eventos_financeiros?.descricao ?? "lançamento"}`,
+    p_partidas: partidas.map((p) => ({ conta_contabil_id: p.conta_contabil_id, tipo: p.tipo, valor: p.valor })),
+    ...(params.forma_pagamento_id ? { p_forma_pagamento_id: params.forma_pagamento_id } : {}),
+    ...(params.criado_por ? { p_criado_por: params.criado_por } : {}),
+    ...(params.idempotency_key ? { p_idempotency_key: params.idempotency_key } : {}),
+  });
 
-  if (erroBaixa || !baixa) {
+  if (erroBaixa || !baixaId) {
     return { erro: erroBaixa?.message ?? "Falha ao registrar baixa." };
   }
 
@@ -177,7 +179,7 @@ export async function registrarBaixa(
       .eq("tenant_id", params.tenant_id);
   }
 
-  return { baixa_id: baixa.id };
+  return { baixa_id: baixaId };
 }
 
 // Mesmo fluxo "criar na hora" já usado pra centro de custo/categoria/pessoa

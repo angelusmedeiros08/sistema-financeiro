@@ -39,6 +39,12 @@ export function FormularioBaixa({
 }) {
   const [mostrarComposicao, setMostrarComposicao] = useState(false);
   const router = useRouter();
+  // Uma chave por montagem do formulário — a tela navega embora após o
+  // sucesso (não reaproveita a mesma instância pra um lançamento novo), só
+  // precisa deduplicar duplo clique/retry de rede dentro do MESMO envio
+  // (achado em auditoria de segurança: baixa parcial não tinha nenhuma
+  // proteção contra isso, diferente de baixa integral/estorno/venda).
+  const [chaveIdempotencia] = useState(() => crypto.randomUUID());
 
   const [estado, formAction, pendente] = useActionState(async (_: typeof estadoInicial, formData: FormData) => {
     const resultado = await darBaixa(formData);
@@ -60,6 +66,7 @@ export function FormularioBaixa({
 
       <form action={formAction} className="flex flex-col gap-4 rounded-2xl bg-card shadow-card p-5">
         <input type="hidden" name="parcela_id" value={parcelaId} />
+        <input type="hidden" name="idempotency_key" value={chaveIdempotencia} />
 
         <div className="rounded-xl border border-border bg-muted/40 p-3 text-sm">
           <p className="font-medium text-foreground">{descricao}</p>

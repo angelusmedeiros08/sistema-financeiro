@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useMemo, useState } from "react";
 import { CaretDown } from "@phosphor-icons/react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -44,6 +44,13 @@ export function EventoFinanceiroForm({
   const [valorTexto, setValorTexto] = useState("");
   const [rateioAtivo, setRateioAtivo] = useState(false);
   const [rateioValido, setRateioValido] = useState(false);
+  // Muda só quando o formulário remonta (lançamento novo) — um duplo clique
+  // ou reenvio de rede no MESMO envio manda a mesma chave duas vezes, e
+  // criarEventoFinanceiro (via p_import_key) devolve o evento já criado em
+  // vez de duplicar o lançamento contábil (achado em auditoria de
+  // segurança: só a importação em lote tinha essa proteção, o formulário
+  // manual não tinha nenhuma).
+  const chaveIdempotencia = useMemo(() => crypto.randomUUID(), [chaveFormulario]);
 
   const valorNumerico = Number(valorTexto.replace(",", ".")) || 0;
 
@@ -62,6 +69,8 @@ export function EventoFinanceiroForm({
       action={formAction}
       className="grid gap-4 rounded-2xl bg-card shadow-card p-5 sm:grid-cols-2"
     >
+      <input type="hidden" name="idempotency_key" value={chaveIdempotencia} />
+
       <div className="space-y-1.5 sm:col-span-2">
         <Label htmlFor="descricao">Descrição</Label>
         <Input

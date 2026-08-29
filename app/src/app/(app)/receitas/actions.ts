@@ -27,6 +27,7 @@ export async function criarReceita(formData: FormData): Promise<ResultadoAcao> {
   const numeroParcelas = Number(formData.get("numero_parcelas") ?? "1") || 1;
   const pessoaId = String(formData.get("pessoa_id") ?? "") || undefined;
   const pessoaNomeNovo = String(formData.get("pessoa_nome_novo") ?? "") || undefined;
+  const idempotencyKey = String(formData.get("idempotency_key") ?? "") || undefined;
 
   const valor = Number(valorTexto);
   if (!descricao || !dataVencimento || !Number.isFinite(valor) || valor <= 0) {
@@ -70,6 +71,7 @@ export async function criarReceita(formData: FormData): Promise<ResultadoAcao> {
     numero_parcelas: numeroParcelas,
     primeiro_vencimento: dataVencimento,
     criado_por: user.id,
+    import_key: idempotencyKey,
   });
 
   if ("erro" in resultado) {
