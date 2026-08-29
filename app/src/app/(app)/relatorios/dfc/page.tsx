@@ -5,6 +5,7 @@ import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
 import { buscarDFCMatriz, buscarComposicaoFluxoCaixa } from "@/lib/relatorios/dfc";
 import { RelatoriosSubNav } from "../sub-nav";
 import { DfcControles } from "./dfc-controles";
+import { emModoApresentacao } from "@/lib/apresentacao/sessao";
 import { ComposicaoFluxoCaixa } from "@/components/relatorios/composicao-fluxo-caixa";
 import { DfcMatrizTabela } from "@/components/relatorios/dfc-matriz-tabela";
 import { hojeIsoBrasil } from "@/lib/data-brasil";
@@ -19,6 +20,7 @@ export default async function PaginaRelatoriosDfc({
 
   const sp = await searchParams;
   const ano = Number(sp.ano) || Number(hojeIsoBrasil().slice(0, 4));
+  const emApresentacao = emModoApresentacao(sp);
 
   const supabase = await createClient();
   const [linhas, composicaoFluxo] = await Promise.all([
@@ -30,9 +32,11 @@ export default async function PaginaRelatoriosDfc({
     <div className="flex w-full flex-col gap-6">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h1 className="text-xl font-bold tracking-tight text-foreground">Relatórios</h1>
-        <Link href="/configuracoes/estrutura-dre" className="text-xs font-semibold text-primary hover:underline">
-          Configurar estrutura da DRE
-        </Link>
+        {!emApresentacao && (
+          <Link href="/configuracoes/estrutura-dre" className="text-xs font-semibold text-primary hover:underline">
+            Configurar estrutura da DRE
+          </Link>
+        )}
       </div>
 
       <RelatoriosSubNav />

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { PARAM_APRESENTACAO } from "@/lib/apresentacao/sessao";
 
 const GRUPOS = [
   {
@@ -32,6 +33,9 @@ const GRUPOS = [
   },
 ] as const;
 
+const TODOS_ITENS: { href: string; rotulo: string }[] = [];
+for (const grupo of GRUPOS) TODOS_ITENS.push(...grupo.itens);
+
 // Sub-nav agrupada por categoria (3ª rodada de mockup no companion visual,
 // docs/superpowers/specs/2026-08-21-reforma-visual-tabelas-design.md não
 // cobre isso — decisão tomada direto em chat) — 9 pills soltas numa linha
@@ -45,6 +49,16 @@ export function RelatoriosSubNav() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const query = searchParams.toString();
+
+  // Em modo apresentação, a navegação entre relatórios não faz sentido (a
+  // ordem já foi definida na apresentação) e só atrapalha o foco no
+  // conteúdo — mostra só o nome do relatório atual, sem os links.
+  if (searchParams.get(PARAM_APRESENTACAO) !== null) {
+    const itemAtivo = TODOS_ITENS.find((item) => pathname.startsWith(item.href));
+    return itemAtivo ? (
+      <p className="border-b border-border pb-4 text-xs font-bold tracking-wider text-muted-foreground uppercase">{itemAtivo.rotulo}</p>
+    ) : null;
+  }
 
   return (
     <div className="flex flex-wrap gap-2 border-b border-border pb-4">

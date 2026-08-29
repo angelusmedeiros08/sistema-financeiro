@@ -6,6 +6,7 @@ import { buscarDREMatriz, buscarDREIndicadores } from "@/lib/relatorios/dre";
 import type { Regime } from "@/lib/relatorios/regime";
 import { RelatoriosSubNav } from "../sub-nav";
 import { DreControles } from "./dre-controles";
+import { emModoApresentacao } from "@/lib/apresentacao/sessao";
 import { WaterfallDre } from "@/components/relatorios/waterfall-dre";
 import { IndicadoresDreChart } from "@/components/relatorios/indicadores-dre-chart";
 import { DreMatrizTabela } from "@/components/relatorios/dre-matriz-tabela";
@@ -36,6 +37,7 @@ export default async function PaginaRelatoriosDre({
   const ano = Number(sp.ano) || Number(hojeIsoBrasil().slice(0, 4));
   const detalhado = sp.detalhe !== "0";
   const aba = ABAS.some((a) => a.valor === sp.aba) ? sp.aba! : "matriz";
+  const emApresentacao = emModoApresentacao(sp);
 
   const supabase = await createClient();
   const [linhas, indicadores] = await Promise.all([
@@ -54,9 +56,11 @@ export default async function PaginaRelatoriosDre({
     <div className="flex w-full flex-col gap-6">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h1 className="text-xl font-bold tracking-tight text-foreground">Relatórios</h1>
-        <Link href="/configuracoes/estrutura-dre" className="text-xs font-semibold text-primary hover:underline">
-          Configurar estrutura da DRE
-        </Link>
+        {!emApresentacao && (
+          <Link href="/configuracoes/estrutura-dre" className="text-xs font-semibold text-primary hover:underline">
+            Configurar estrutura da DRE
+          </Link>
+        )}
       </div>
 
       <RelatoriosSubNav />

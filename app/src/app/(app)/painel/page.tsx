@@ -19,15 +19,22 @@ import { cn } from "@/lib/utils";
 import { ROTULO_STATUS_PARCELA, COR_STATUS_PARCELA } from "@/lib/status-parcela";
 import { buscarIndicadoresRealizacao, buscarSerieIndicadoresRealizacao, mesAtual } from "@/lib/relatorios/indicadores-gauge";
 import { montarHrefLancamentosSemDimensao } from "@/lib/relatorios/drill-down";
+import { emModoApresentacao } from "@/lib/apresentacao/sessao";
 import { hojeIsoBrasil } from "@/lib/data-brasil";
 
 function tempoRelativo(dataIso: string): string {
   return formatDistanceToNowStrict(new Date(dataIso + "T00:00:00"), { addSuffix: true, locale: ptBR });
 }
 
-export default async function PaginaPainel() {
+export default async function PaginaPainel({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | undefined>>;
+}) {
   const contexto = await obterUsuarioETenantAtual();
   if ("erro" in contexto) redirect("/entrar");
+
+  const emApresentacao = emModoApresentacao(await searchParams);
 
   const supabase = await createClient();
   const { inicio: mesInicio, fim: mesFim } = mesAtual();
@@ -96,20 +103,22 @@ export default async function PaginaPainel() {
             <h1 className="font-heading text-2xl font-bold tracking-tight text-foreground">Painel financeiro</h1>
             <p className="text-sm capitalize text-muted-foreground">{hoje}</p>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Button asChild size="sm" className="rounded-full">
-              <Link href="/despesas">Nova despesa</Link>
-            </Button>
-            <Button asChild size="sm" variant="outline" className="rounded-full">
-              <Link href="/receitas">Nova receita</Link>
-            </Button>
-            <Button asChild size="sm" variant="outline" className="rounded-full">
-              <Link href="/clientes/novo">Novo cliente</Link>
-            </Button>
-            <Button asChild size="sm" variant="outline" className="rounded-full">
-              <Link href="/vendas/nova">Nova venda</Link>
-            </Button>
-          </div>
+          {!emApresentacao && (
+            <div className="flex flex-wrap gap-2">
+              <Button asChild size="sm" className="rounded-full">
+                <Link href="/despesas">Nova despesa</Link>
+              </Button>
+              <Button asChild size="sm" variant="outline" className="rounded-full">
+                <Link href="/receitas">Nova receita</Link>
+              </Button>
+              <Button asChild size="sm" variant="outline" className="rounded-full">
+                <Link href="/clientes/novo">Novo cliente</Link>
+              </Button>
+              <Button asChild size="sm" variant="outline" className="rounded-full">
+                <Link href="/vendas/nova">Nova venda</Link>
+              </Button>
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
@@ -217,9 +226,11 @@ export default async function PaginaPainel() {
         <div className="rounded-2xl bg-card p-5 shadow-card">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="font-heading text-sm font-bold text-foreground">Lançamentos recentes</h2>
-            <Button asChild variant="ghost" size="sm" className="h-7 text-xs">
-              <Link href="/despesas">Ver todas</Link>
-            </Button>
+            {!emApresentacao && (
+              <Button asChild variant="ghost" size="sm" className="h-7 text-xs">
+                <Link href="/despesas">Ver todas</Link>
+              </Button>
+            )}
           </div>
 
           {dados.eventosRecentes.length === 0 ? (
