@@ -2,9 +2,12 @@
 
 import { useState } from "react";
 import type { ResultadoParse } from "@/lib/importacao/parse";
-import type { ColunaChaveProduto } from "@/lib/importacao/produtos/tipos";
+import type { ColunaChaveProduto, LinhaBrutaProduto } from "@/lib/importacao/produtos/tipos";
+import type { ResolucaoEntidade } from "@/lib/importacao/tipos";
+import { montarLinhasBrutasProduto } from "@/lib/importacao/produtos/template";
 import { PassoUpload } from "./passo-upload";
 import { PassoMapeamento } from "./passo-mapeamento";
+import { PassoCadastros, type CategoriaReceita, type CategoriaNovaProduto } from "./passo-cadastros";
 
 type Etapa = "upload" | "mapeamento" | "cadastros" | "revisao" | "resultado";
 
@@ -22,12 +25,14 @@ const ESTADO_INICIAL = {
   parse: null as ResultadoParse | null,
   linhasTexto: [] as string[][],
   mapeamento: {} as Partial<Record<ColunaChaveProduto, number>>,
+  linhasBrutas: [] as LinhaBrutaProduto[],
+  resolucaoCategoria: null as Map<string, ResolucaoEntidade> | null,
 };
 
-// Fatia 3 do plano — só Upload e Mapeamento funcionam de verdade. Cadastros/
-// Revisão/Resultado chegam nas Fatias 4-5; até lá o botão "Continuar" do
-// Mapeamento cai num placeholder honesto em vez de fingir que a etapa existe.
-export function ImportarProdutosWizard() {
+// Fatias 1-4 do plano — Upload, Mapeamento e Cadastros funcionam de verdade.
+// Revisão/Resultado chegam na Fatia 5; até lá o botão "Continuar" de
+// Cadastros cai num placeholder honesto em vez de fingir que a etapa existe.
+export function ImportarProdutosWizard({ categoriasReceitaIniciais }: { categoriasReceitaIniciais: CategoriaReceita[] }) {
   const [estado, setEstado] = useState(ESTADO_INICIAL);
   const indiceAtual = ETAPAS.findIndex((e) => e.chave === estado.etapa);
 
@@ -61,13 +66,27 @@ export function ImportarProdutosWizard() {
           parseInicial={estado.parse}
           buffer={estado.buffer}
           onVoltar={() => setEstado({ ...ESTADO_INICIAL, etapa: "upload" })}
-          onAvancar={({ linhasTexto, mapeamento }) => setEstado((s) => ({ ...s, etapa: "cadastros", linhasTexto, mapeamento }))}
+          onAvancar={({ linhasTexto, mapeamento }) =>
+            setEstado((s) => ({ ...s, etapa: "cadastros", linhasTexto, mapeamento, linhasBrutas: montarLinhasBrutasProduto(linhasTexto, mapeamento) }))
+          }
         />
       )}
 
       {estado.etapa === "cadastros" && (
+        <PassoCadastros
+          linhasBrutas={estado.linhasBrutas}
+          categoriasExistentesIniciais={categoriasReceitaIniciais}
+          onVoltar={() => setEstado((s) => ({ ...s, etapa: "mapeamento" }))}
+          onAvancar={(resolucaoCategoria: Map<string, ResolucaoEntidade>, _categoriasNovas: CategoriaNovaProduto[]) =>
+            setEstado((s) => ({ ...s, etapa: "revisao", resolucaoCategoria }))
+          }
+        />
+      )}
+
+      {estado.etapa === "revisao" && (
         <div className="rounded-2xl bg-card shadow-card p-6 text-sm text-muted-foreground">
-          {estado.linhasTexto.length} linha(s) mapeada(s) — etapa Cadastros chega na próxima fatia do plano.
+          {estado.linhasBrutas.length} linha(s), categoria resolvida para {estado.resolucaoCategoria?.size ?? 0} valor(es) — etapa Revisão chega na
+          próxima fatia do plano.
         </div>
       )}
     </div>
