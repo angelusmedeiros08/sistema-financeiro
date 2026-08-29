@@ -4,6 +4,7 @@ import { acessoLiberado } from "@/lib/pagamentos/plano";
 import { createClient } from "@/utils/supabase/server";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
+import { BotaoVoltar } from "@/components/layout/botao-voltar";
 
 export default async function LayoutApp({ children }: { children: React.ReactNode }) {
   const contexto = await obterUsuarioETenantAtual();
@@ -49,7 +50,10 @@ export default async function LayoutApp({ children }: { children: React.ReactNod
           nome={usuario?.nome ?? contexto.user.email ?? ""}
           notificacoes={(alertas ?? []).map((a) => ({ id: a.id, tipo: a.tipo, enviadoEm: a.enviado_em }))}
         />
-        <main className="flex-1 px-4 py-8 lg:px-8">{children}</main>
+        <main className="flex-1 px-4 py-8 lg:px-8">
+          {children}
+          <BotaoVoltar />
+        </main>
       </div>
     </div>
   );

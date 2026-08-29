@@ -36,7 +36,7 @@ export function BotaoVoltar() {
 
 `src/components/layout/topbar.tsx`: `<BotaoVoltar />` como o primeiro elemento dentro do `<header>`, antes do `<Sheet>` (menu hambúrguer mobile). Sem `className` responsivo (`lg:hidden`/`hidden lg:inline` como os vizinhos) — fica visível em toda largura de tela, diferente do hambúrguer (só mobile) e do logo (só desktop).
 
-Nenhuma mudança em `(app)/layout.tsx` nem em `(portal)/layout.tsx`/`PortalTopbar` — escopo é só a Topbar principal (ver Seção 5, fora de escopo).
+Nenhuma mudança em `(portal)/layout.tsx`/`PortalTopbar` — escopo é só o app principal (ver Seção 7, fora de escopo). **Nota: esta seção descreve a posição original (Topbar); superada pela Seção 6.**
 
 ## 4. Casos de borda
 
@@ -46,10 +46,20 @@ Nenhuma mudança em `(app)/layout.tsx` nem em `(portal)/layout.tsx`/`PortalTopba
 
 ## 5. Só aparece em sub-página (revisão pós-teste ao vivo)
 
-**Correção em relação à versão original desta spec**: o texto abaixo dizia que o botão ficaria sempre visível, só desabilitado quando não houvesse histórico — testando ao vivo, mostrar o botão (habilitado, já que o usuário tinha navegado antes) em cima do Painel confundia mais do que ajudava: Painel é o nível principal do app, "voltar" ali não corresponde a nada na hierarquia. Achado do próprio usuário testando a versão publicada.
+**Correção em relação à versão original desta spec**: o texto original dizia que o botão ficaria sempre visível, só desabilitado quando não houvesse histórico — testando ao vivo, mostrar o botão (habilitado, já que o usuário tinha navegado antes) em cima do Painel confundia mais do que ajudava: Painel é o nível principal do app, "voltar" ali não corresponde a nada na hierarquia. Achado do próprio usuário testando a versão publicada.
 
 Regra adotada: o botão só renderiza (nasce `null` fora disso) quando o pathname atual tem 2+ segmentos. Uma rota de 1 segmento (`/painel`, `/despesas`, `/receitas`, `/vendas`, `/indicadores`...) é exatamente o conjunto de destinos que a própria Sidebar já lista como item de nível principal (`src/components/layout/sidebar.tsx`) — nenhum deles é "sub-página" de nada. Qualquer rota com 2+ segmentos (`/despesas/[id]`, `/relatorios/dre`, `/configuracoes/categorias`, `/vendas/nova`...) é sempre um drill-down de alguma seção, onde a volta rápida faz sentido.
 
-## 6. Fora de escopo
+## 6. Barra fixa embaixo, com texto (2ª revisão pós-teste ao vivo)
+
+**Correção em relação à versão anterior**: o usuário rejeitou o ícone de seta sozinho na Topbar depois de ver a versão publicada — pediu explicitamente barra na parte de baixo da tela, com o texto "Voltar" escrito, não só um ícone. Passou por `/frontend-design` de novo antes de reimplementar.
+
+- Componente renderiza como **último filho de `<main>`** (`(app)/layout.tsx`), não mais na Topbar — junto de um espaçador (`<div className="h-20" />`, normal-flow, sem `position:fixed`) que garante que o fim do conteúdo de qualquer página nunca fica escondido atrás da barra fixa, sem precisar de um `padding-bottom` condicional no layout do lado do servidor (que não sabe se a rota atual vai mostrar a barra ou não).
+- Barra em si: `position: fixed`, borda superior (espelha a borda inferior da Topbar), mesmo `bg-card`. `lg:left-[60px]` pra não ficar embaixo do rail da sidebar no desktop (60px, `sidebar.tsx:367`); full-width no mobile.
+- Conteúdo: `<Button variant="outline" size="lg">` com `ArrowLeft` + texto "Voltar" — `w-full` no mobile (alvo de toque generoso, largura confortável), `lg:w-auto` no desktop (não faz sentido esticar um botão de ação única na largura inteira de uma tela grande).
+- `pb-[env(safe-area-inset-bottom)]` — evita a barra ficar colada na área do indicador de home do iOS.
+- Regra de quando aparece (rota com 2+ segmentos, Seção 5) e o estado desabilitado sem histórico continuam exatamente iguais — só a posição/aparência mudou.
+
+## 7. Fora de escopo
 
 `(portal)/layout.tsx` (Topbar simplificada do portal do cliente) — o cliente do portal tem só 2 telas (`/portal`, `/portal/lancamentos`), a dor de "reabrir a sidebar" não se aplica do mesmo jeito; adicionar lá é um passo futuro simples de replicar, não incluído nesta leva a menos que o usuário peça. Lógica de rota-pai fixa por tela (a opção não escolhida — a regra de segmentos decide só *se* mostra o botão, nunca *pra onde* ele leva, que continua sendo sempre `router.back()`).
