@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { SidebarConteudo } from "./sidebar";
+import { BotaoVoltar } from "./botao-voltar";
 import { ThemeToggle } from "./theme-toggle";
 import { CommandPaletteBusca } from "./command-palette-busca";
 import { NovoRegistroMenu } from "./novo-registro-menu";
@@ -34,6 +35,8 @@ export function Topbar({
   const outrosTenants = tenantsDisponiveis.filter((t) => t.id !== tenantId);
   return (
     <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-border bg-card px-4 lg:px-8">
+      <BotaoVoltar />
+
       <Sheet>
         <SheetTrigger asChild>
           <Button variant="ghost" size="icon" className="lg:hidden">
