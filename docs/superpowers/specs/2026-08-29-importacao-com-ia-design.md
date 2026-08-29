@@ -45,7 +45,7 @@ export async function extrairLancamentosIA(
 ): Promise<{ linhas: LinhaBrutaIA[] } | { erro: string }>
 ```
 
-- Modelo: `claude-opus-5` (padrão da SDK, o mais capaz disponível — a diferença de custo pro Sonnet 5 fica registrada aqui, não decidida por mim: se o custo por extração pesar demais depois de medir uso real, trocar de modelo é uma linha de código, não um redesenho).
+- Modelo: `claude-sonnet-5` (escolha explícita do usuário — custo por extração ~2,5x menor que Opus 5, aceitável pra este caso de uso dado que toda saída passa por revisão humana antes de qualquer lançamento entrar no sistema; trocar de modelo depois é uma linha de código, não um redesenho).
 - Chamada via tool use com `strict: true` — o schema da ferramenta (`registrar_lancamentos_extraidos`) é um array de objetos com exatamente os campos de `LinhaBruta` (data de competência, valor, categoria, descrição, data de vencimento, data de pagamento, pessoa, documento da pessoa, centro de custo, forma de pagamento) mais `camposBaixaConfianca: string[]`. `strict: true` garante que a resposta valida contra o schema sem parsing frágil.
 - Texto de entrada vai direto no prompt; imagem vai como content block `image` (base64), no mesmo request — Claude lê os dois nativamente, sem OCR separado.
 - Prompt inclui a data de hoje (`hojeIsoBrasil()`) pra resolver referências relativas ("ontem", "dia 15") e instrução explícita: **nunca inventar um valor que não está no texto/imagem** — campo incerto fica vazio ou entra em `camposBaixaConfianca`, nunca um palpite apresentado como certeza.
