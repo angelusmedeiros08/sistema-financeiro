@@ -1,6 +1,7 @@
 import { TrilhoBarra } from "./trilho-barra";
 import { formatarMoeda, formatarIndice } from "@/lib/formatacao";
 import { cn } from "@/lib/utils";
+import { TermoComDica } from "@/components/formularios/termo-com-dica";
 import type { LiquidezAproximada } from "@/lib/relatorios/liquidez-aproximada";
 
 const COR_BARRA: Record<LiquidezAproximada["nivel"], string> = {
@@ -27,7 +28,9 @@ export function CardLiquidez({ indice, nivel, caixaAtual, aReceber30d, aPagar30d
 
   return (
     <div className="rounded-2xl bg-card shadow-card p-5">
-      <p className="mb-1 text-xs font-semibold text-muted-foreground">Liquidez aproximada</p>
+      <p className="mb-1 text-xs font-semibold text-muted-foreground">
+        <TermoComDica termo="liquidez_aproximada">Liquidez aproximada</TermoComDica>
+      </p>
       <p className={cn("text-2xl font-bold tabular-nums", COR_TEXTO[nivel])}>{indice === null ? "—" : formatarIndice(indice)}</p>
       <div className="my-3">
         <TrilhoBarra

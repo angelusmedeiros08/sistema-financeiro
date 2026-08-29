@@ -9,7 +9,7 @@ import { TrilhoBarra } from "./trilho-barra";
 // pra não confundir "quanto mais vencido" com a cor de ação do sistema.
 const CORES_SEVERIDADE = ["#C98A1F", "#CE7C33", "#D46E47", "#D0603B", "#C94A3D", "#B23A2E", "#8F2E24"];
 
-export function AgingBarras({ titulo, dados }: { titulo: string; dados: AgingResultado }) {
+export function AgingBarras({ titulo, dados }: { titulo: React.ReactNode; dados: AgingResultado }) {
   const faixas = dados.vencido.filter((f) => f.total > 0);
   const maior = Math.max(...faixas.map((f) => f.total), 1);
 

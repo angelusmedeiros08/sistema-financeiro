@@ -17,6 +17,7 @@ import { BadgeRupturaSaldo } from "@/components/relatorios/badge-ruptura-saldo";
 import { BadgeSaudeFinanceira } from "@/components/relatorios/badge-saude-financeira";
 import { CardLiquidez } from "@/components/relatorios/card-liquidez";
 import { CardCicloConversaoCaixa } from "@/components/relatorios/card-ciclo-conversao-caixa";
+import { TermoComDica } from "@/components/formularios/termo-com-dica";
 import { formatarMoeda, formatarPercentual } from "@/lib/formatacao";
 import { cn } from "@/lib/utils";
 import { hojeIsoBrasil } from "@/lib/data-brasil";
@@ -157,12 +158,20 @@ export default async function PaginaIndicadores() {
       <section className="rounded-2xl bg-card shadow-card p-6">
         <h2 className="mb-4 font-heading text-base font-bold text-foreground">Prazos médios e aging</h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <CardPrazoMedio titulo="Prazo médio de recebimento (PMR)" dias={pmr.dias} quantidadeBaixas={pmr.quantidadeBaixas} />
-          <CardPrazoMedio titulo="Prazo médio de pagamento (PMP)" dias={pmp.dias} quantidadeBaixas={pmp.quantidadeBaixas} />
+          <CardPrazoMedio
+            titulo={<TermoComDica termo="pmr">Prazo médio de recebimento (PMR)</TermoComDica>}
+            dias={pmr.dias}
+            quantidadeBaixas={pmr.quantidadeBaixas}
+          />
+          <CardPrazoMedio
+            titulo={<TermoComDica termo="pmp">Prazo médio de pagamento (PMP)</TermoComDica>}
+            dias={pmp.dias}
+            quantidadeBaixas={pmp.quantidadeBaixas}
+          />
         </div>
         <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <AgingBarras titulo="Aging — contas a receber" dados={agingReceber} />
-          <AgingBarras titulo="Aging — contas a pagar" dados={agingPagar} />
+          <AgingBarras titulo={<TermoComDica termo="aging">Aging — contas a receber</TermoComDica>} dados={agingReceber} />
+          <AgingBarras titulo={<TermoComDica termo="aging">Aging — contas a pagar</TermoComDica>} dados={agingPagar} />
         </div>
       </section>
 
@@ -247,7 +256,7 @@ function CardSaldoProjetado({ saldoAtual, projecoes, limiar, pontos }: SaldoProj
   );
 }
 
-function CardPrazoMedio({ titulo, dias, quantidadeBaixas }: { titulo: string; dias: number; quantidadeBaixas: number }) {
+function CardPrazoMedio({ titulo, dias, quantidadeBaixas }: { titulo: React.ReactNode; dias: number; quantidadeBaixas: number }) {
   return (
     <div className="rounded-2xl bg-card shadow-card p-5">
       <p className="mb-1 text-xs font-semibold text-muted-foreground">{titulo}</p>
