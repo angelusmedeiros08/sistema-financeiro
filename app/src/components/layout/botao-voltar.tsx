@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { ArrowLeft } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 
@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button";
 // das ~40 rotas do app).
 export function BotaoVoltar() {
   const router = useRouter();
+  const pathname = usePathname();
+
   // Nasce desabilitado (servidor não sabe o histórico do navegador) — só
   // habilita depois de montar no cliente, evita mismatch de hidratação.
   // window.history.length > 1 não é um sinal perfeito (conta qualquer
@@ -22,6 +24,16 @@ export function BotaoVoltar() {
   useEffect(() => {
     setTemHistorico(window.history.length > 1);
   }, []);
+
+  // Só aparece em sub-página — uma rota de 1 segmento (/painel, /despesas,
+  // /vendas...) é exatamente o que a sidebar já lista como destino direto;
+  // "voltar" ali não faz sentido, é o próprio nível principal. 2+ segmentos
+  // (/despesas/[id], /relatorios/dre, /configuracoes/categorias...) é
+  // sempre um drill-down de alguma seção — aí sim faz sentido oferecer
+  // volta rápida sem reabrir a sidebar (achado ao vivo: mostrar sempre,
+  // inclusive no Painel, confundia mais do que ajudava).
+  const segmentos = pathname.split("/").filter(Boolean);
+  if (segmentos.length <= 1) return null;
 
   return (
     <Button variant="ghost" size="icon" disabled={!temHistorico} onClick={() => router.back()} aria-label="Voltar">

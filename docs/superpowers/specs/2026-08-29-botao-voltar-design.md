@@ -44,6 +44,12 @@ Nenhuma mudança em `(app)/layout.tsx` nem em `(portal)/layout.tsx`/`PortalTopba
 - Clicar depois de enviar um formulário que redireciona (ex.: criar uma despesa): `router.back()` volta pra tela do formulário logo antes do redirect — mesmo comportamento do botão Voltar do navegador nessa situação, esperado pelo usuário porque é literalmente o mesmo mecanismo.
 - Middle-click / abrir uma URL direta numa aba nova: histórico da aba começa vazio, botão nasce desabilitado — correto, não há de fato pra onde voltar nessa aba.
 
-## 5. Fora de escopo
+## 5. Só aparece em sub-página (revisão pós-teste ao vivo)
 
-`(portal)/layout.tsx` (Topbar simplificada do portal do cliente) — o cliente do portal tem só 2 telas (`/portal`, `/portal/lancamentos`), a dor de "reabrir a sidebar" não se aplica do mesmo jeito; adicionar lá é um passo futuro simples de replicar, não incluído nesta leva a menos que o usuário peça. Lógica de rota-pai fixa por tela (a opção não escolhida). Esconder o botão em rotas específicas (ex.: `/painel`) — o estado desabilitado por falta de histórico já cobre o caso mais comum (login → primeira tela) sem precisar de uma lista de exceções por rota.
+**Correção em relação à versão original desta spec**: o texto abaixo dizia que o botão ficaria sempre visível, só desabilitado quando não houvesse histórico — testando ao vivo, mostrar o botão (habilitado, já que o usuário tinha navegado antes) em cima do Painel confundia mais do que ajudava: Painel é o nível principal do app, "voltar" ali não corresponde a nada na hierarquia. Achado do próprio usuário testando a versão publicada.
+
+Regra adotada: o botão só renderiza (nasce `null` fora disso) quando o pathname atual tem 2+ segmentos. Uma rota de 1 segmento (`/painel`, `/despesas`, `/receitas`, `/vendas`, `/indicadores`...) é exatamente o conjunto de destinos que a própria Sidebar já lista como item de nível principal (`src/components/layout/sidebar.tsx`) — nenhum deles é "sub-página" de nada. Qualquer rota com 2+ segmentos (`/despesas/[id]`, `/relatorios/dre`, `/configuracoes/categorias`, `/vendas/nova`...) é sempre um drill-down de alguma seção, onde a volta rápida faz sentido.
+
+## 6. Fora de escopo
+
+`(portal)/layout.tsx` (Topbar simplificada do portal do cliente) — o cliente do portal tem só 2 telas (`/portal`, `/portal/lancamentos`), a dor de "reabrir a sidebar" não se aplica do mesmo jeito; adicionar lá é um passo futuro simples de replicar, não incluído nesta leva a menos que o usuário peça. Lógica de rota-pai fixa por tela (a opção não escolhida — a regra de segmentos decide só *se* mostra o botão, nunca *pra onde* ele leva, que continua sendo sempre `router.back()`).
