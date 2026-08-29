@@ -48,7 +48,8 @@ export async function updateSession(request: NextRequest) {
     request.nextUrl.pathname.startsWith("/cadastro") ||
     request.nextUrl.pathname.startsWith("/assinar") ||
     request.nextUrl.pathname.startsWith("/auth") ||
-    request.nextUrl.pathname.startsWith("/convite/aceitar");
+    request.nextUrl.pathname.startsWith("/convite/aceitar") ||
+    request.nextUrl.pathname.startsWith("/esqueci-senha");
   const isPublicRoute =
     isAuthRoute ||
     request.nextUrl.pathname === "/" ||

@@ -159,3 +159,44 @@ export async function sair() {
   await supabase.auth.signOut();
   redirect("/entrar");
 }
+
+// Mensagem SEMPRE genérica, independente de o e-mail existir ou não — não
+// dá pra um formulário de "esqueci senha" confirmar/negar se um e-mail tem
+// conta (achado clássico de enumeração de usuário). resetPasswordForEmail
+// do Supabase já se comporta assim (não retorna erro pra e-mail
+// inexistente), então basta não diferenciar na nossa própria mensagem.
+export async function solicitarRecuperacaoSenha(formData: FormData): Promise<{ sucesso: true; mensagem: string }> {
+  const email = String(formData.get("email") ?? "").trim();
+  const mensagemGenerica = "Se esse e-mail tiver uma conta, enviamos um link pra redefinir a senha.";
+
+  if (!email) return { sucesso: true, mensagem: mensagemGenerica };
+
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  const supabase = await createClient();
+  await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${siteUrl}/auth/confirm?next=${encodeURIComponent("/redefinir-senha")}`,
+  });
+
+  return { sucesso: true, mensagem: mensagemGenerica };
+}
+
+export async function redefinirSenha(formData: FormData): Promise<ResultadoAcao | never> {
+  const senha = String(formData.get("senha") ?? "");
+  if (senha.length < 8) {
+    return { erro: "A senha precisa ter pelo menos 8 caracteres." };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { erro: "Link de recuperação expirado ou inválido: peça um novo." };
+  }
+
+  const { error } = await supabase.auth.updateUser({ password: senha });
+  if (error) return { erro: error.message };
+
+  redirect("/entrar");
+}

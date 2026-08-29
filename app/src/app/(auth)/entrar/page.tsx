@@ -52,7 +52,12 @@ export default function PaginaEntrar() {
           <Input id="email" name="email" type="email" required />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="senha">Senha</Label>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="senha">Senha</Label>
+            <Link href="/esqueci-senha" className="text-xs text-muted-foreground underline underline-offset-4">
+              Esqueci minha senha
+            </Link>
+          </div>
           <Input id="senha" name="senha" type="password" required />
         </div>
 
