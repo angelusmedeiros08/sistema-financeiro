@@ -157,12 +157,20 @@ export function StatCard({ label, valor, detalhe, variant, delta, serie, icon: I
     // o layout flex) — clique em qualquer área sem elemento interativo cai
     // no Link por baixo; só o `<button>` do TermoComDica reativa os
     // próprios eventos de ponteiro e intercepta o clique antes do Link.
+    //
+    // `-z-10` no Link é essencial, não cosmético: um elemento posicionado
+    // (`absolute`) sem z-index pinta ACIMA de conteúdo estático/normal por
+    // padrão nas regras de empilhamento do CSS, mesmo vindo antes no DOM —
+    // sem o z-index negativo, o Link ficava fisicamente por cima do botão
+    // do TermoComDica e capturava o clique de qualquer jeito, apesar do
+    // pointer-events-none/auto já estarem corretos (achado ao vivo: o
+    // ícone navegava pro relatório em vez de abrir o popover).
     return (
       <div className={cn(cartaoVariantes({ variant }), "relative transition-shadow hover:shadow-lg")}>
         <Link
           href={href}
           aria-label={ariaLabel ?? (typeof label === "string" ? `${label}: ${valor}` : valor)}
-          className="absolute inset-0"
+          className="absolute inset-0 -z-10"
         />
         <div className="pointer-events-none contents">{conteudo}</div>
       </div>
