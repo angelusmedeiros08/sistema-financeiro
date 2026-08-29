@@ -3,8 +3,10 @@ import type { FormatoNumerico } from "./locale-br";
 import { parseDataPlanilha, parseValorPlanilha } from "./locale-br";
 
 // FNV-1a 32-bit — hash não-criptográfico, só precisa ser estável (mesma
-// entrada sempre produz a mesma saída), não resistir a ataque.
-function hashEstavel(texto: string): string {
+// entrada sempre produz a mesma saída), não resistir a ataque. Exportado
+// porque extracao-ia.ts reaproveita pra gerar o importKey das linhas que a
+// IA devolve, mesmo padrão desta função (posição + hash do conteúdo).
+export function hashEstavel(texto: string): string {
   let hash = 0x811c9dc5;
   for (let i = 0; i < texto.length; i++) {
     hash ^= texto.charCodeAt(i);

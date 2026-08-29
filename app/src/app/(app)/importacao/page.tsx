@@ -15,7 +15,7 @@ const CARDS: CardImportacao[] = [
   { titulo: "Lançamentos financeiros", descricao: "Receitas e despesas via planilha.", icon: Coins, href: "/importacao/planilha" },
   { titulo: "Clientes/Fornecedores", descricao: "Cadastro de pessoas via planilha.", icon: Users, href: "/importacao/pessoas" },
   { titulo: "Produtos", descricao: "Em breve — o módulo de Produtos ainda não existe.", icon: Package },
-  { titulo: "Importar com IA", descricao: "Em breve — cole um texto ou envie um print e deixe a IA extrair os dados.", icon: Sparkle },
+  { titulo: "Importar com IA", descricao: "Cole um texto ou envie um print e deixe a IA extrair os lançamentos.", icon: Sparkle, href: "/importacao/ia" },
 ];
 
 export default async function PaginaImportacao() {

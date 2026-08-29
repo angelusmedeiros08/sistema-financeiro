@@ -31,6 +31,7 @@ export function PassoPreview({
   formatoNumerico,
   resolucoes,
   entidadesExistentes,
+  camposBaixaConfiancaPorLinha,
   onVoltar,
   onImportar,
 }: {
@@ -38,6 +39,11 @@ export function PassoPreview({
   formatoNumerico: FormatoNumerico;
   resolucoes: Record<TipoEntidadeImportacao, Map<string, ResolucaoEntidade>>;
   entidadesExistentes: EntidadesExistentes;
+  // Só a Importação com IA passa isso — ausente (undefined) pros fluxos de
+  // planilha/pessoas, que continuam pixel-idênticos a antes desta prop
+  // existir. Chave = importKey da linha, valor = quais campos a IA teve
+  // menos certeza ao extrair.
+  camposBaixaConfiancaPorLinha?: Map<string, Set<keyof LinhaBruta>>;
   onVoltar: () => void;
   onImportar: (linhas: LinhaPronta[]) => void;
 }) {
@@ -222,39 +228,70 @@ export function PassoPreview({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {linhas.map((l) => (
-              <TableRow key={l.importKey} className={cn(l.status === "erro" && "bg-destructive/5")}>
-                <TableCell>
-                  <Checkbox
-                    checked={incluidas.has(l.importKey)}
-                    disabled={l.status === "erro"}
-                    onCheckedChange={() => alternarInclusao(l.importKey)}
-                  />
-                </TableCell>
-                <TableCell className="text-xs text-muted-foreground">{l.linha}</TableCell>
-                <TableCell>
-                  <StatusIcone status={l.status} />
-                  {(l.erros.length > 0 || l.avisos.length > 0) && (
-                    <p className="mt-0.5 max-w-40 truncate text-xs text-muted-foreground" title={[...l.erros, ...l.avisos].join(" ")}>
-                      {[...l.erros, ...l.avisos].join(" ")}
-                    </p>
-                  )}
-                </TableCell>
-                <TableCell>
-                  <Input
-                    className="h-7 w-28 text-xs"
-                    value={l.dataCompetencia}
-                    onChange={(e) => editarCampo(l.importKey, "dataCompetencia", e.target.value)}
-                  />
-                </TableCell>
-                <TableCell>
-                  <Input className="h-7 w-24 text-xs" value={l.valor} onChange={(e) => editarCampo(l.importKey, "valor", e.target.value)} />
-                  {l.valorNumero !== null && <p className="mt-0.5 text-xs text-muted-foreground">{formatarMoeda(l.valorNumero)}</p>}
-                </TableCell>
-                <TableCell className="max-w-32 truncate text-sm">{l.categoria}</TableCell>
-                <TableCell className="max-w-48 truncate text-sm">{l.descricao}</TableCell>
-              </TableRow>
-            ))}
+            {linhas.map((l) => {
+              const baixaConfianca = camposBaixaConfiancaPorLinha?.get(l.importKey);
+              const camposVisiveis: (keyof LinhaBruta)[] = ["dataCompetencia", "valor", "categoria", "descricao"];
+              const outrosCamposIncertos = baixaConfianca ? [...baixaConfianca].filter((c) => !camposVisiveis.includes(c)) : [];
+              const marcado = (campo: keyof LinhaBruta) => baixaConfianca?.has(campo) ?? false;
+
+              return (
+                <TableRow key={l.importKey} className={cn(l.status === "erro" && "bg-destructive/5")}>
+                  <TableCell>
+                    <Checkbox
+                      checked={incluidas.has(l.importKey)}
+                      disabled={l.status === "erro"}
+                      onCheckedChange={() => alternarInclusao(l.importKey)}
+                    />
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground">{l.linha}</TableCell>
+                  <TableCell>
+                    <StatusIcone status={l.status} />
+                    {(l.erros.length > 0 || l.avisos.length > 0) && (
+                      <p className="mt-0.5 max-w-40 truncate text-xs text-muted-foreground" title={[...l.erros, ...l.avisos].join(" ")}>
+                        {[...l.erros, ...l.avisos].join(" ")}
+                      </p>
+                    )}
+                    {outrosCamposIncertos.length > 0 && (
+                      <p
+                        className="mt-0.5 max-w-40 truncate text-xs text-amber-700 dark:text-amber-400"
+                        title={`IA teve baixa confiança em: ${outrosCamposIncertos.join(", ")} (campo não mostrado nesta grade — edite a linha se necessário)`}
+                      >
+                        ⚠ outros campos incertos
+                      </p>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <Input
+                      className={cn("h-7 w-28 text-xs", marcado("dataCompetencia") && "border-amber-500 bg-amber-500/10")}
+                      value={l.dataCompetencia}
+                      onChange={(e) => editarCampo(l.importKey, "dataCompetencia", e.target.value)}
+                      title={marcado("dataCompetencia") ? "IA teve baixa confiança neste campo — confira o valor" : undefined}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Input
+                      className={cn("h-7 w-24 text-xs", marcado("valor") && "border-amber-500 bg-amber-500/10")}
+                      value={l.valor}
+                      onChange={(e) => editarCampo(l.importKey, "valor", e.target.value)}
+                      title={marcado("valor") ? "IA teve baixa confiança neste campo — confira o valor" : undefined}
+                    />
+                    {l.valorNumero !== null && <p className="mt-0.5 text-xs text-muted-foreground">{formatarMoeda(l.valorNumero)}</p>}
+                  </TableCell>
+                  <TableCell
+                    className={cn("max-w-32 truncate text-sm", marcado("categoria") && "rounded bg-amber-500/10 text-amber-800 dark:text-amber-300")}
+                    title={marcado("categoria") ? "IA teve baixa confiança neste campo — confira o valor" : undefined}
+                  >
+                    {l.categoria}
+                  </TableCell>
+                  <TableCell
+                    className={cn("max-w-48 truncate text-sm", marcado("descricao") && "rounded bg-amber-500/10 text-amber-800 dark:text-amber-300")}
+                    title={marcado("descricao") ? "IA teve baixa confiança neste campo — confira o valor" : undefined}
+                  >
+                    {l.descricao}
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </div>

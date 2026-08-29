@@ -30,6 +30,13 @@ export type LinhaBruta = {
   formaPagamento: string;
 };
 
+// Só a Importação com IA popula isso — planilha/pessoas continuam
+// produzindo LinhaBruta puro, sem essa informação (a ausência do campo é o
+// próprio sinal de "nenhum campo de baixa confiança", ver PassoPreview).
+export type LinhaBrutaIA = LinhaBruta & {
+  camposBaixaConfianca: (keyof LinhaBruta)[];
+};
+
 export type StatusLinha = "ok" | "aviso" | "erro";
 
 export type LinhaValidada = LinhaBruta & {
