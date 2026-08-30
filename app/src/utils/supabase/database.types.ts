@@ -1101,6 +1101,61 @@ export type Database = {
           },
         ]
       }
+      orcamento_comercial_itens: {
+        Row: {
+          descricao: string
+          id: string
+          orcamento_id: string
+          preco_unitario: number
+          produto_servico_id: string
+          quantidade: number
+          tenant_id: string
+          valor_total: number | null
+        }
+        Insert: {
+          descricao: string
+          id?: string
+          orcamento_id: string
+          preco_unitario: number
+          produto_servico_id: string
+          quantidade: number
+          tenant_id: string
+          valor_total?: number | null
+        }
+        Update: {
+          descricao?: string
+          id?: string
+          orcamento_id?: string
+          preco_unitario?: number
+          produto_servico_id?: string
+          quantidade?: number
+          tenant_id?: string
+          valor_total?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orcamento_comercial_itens_orcamento_id_fkey"
+            columns: ["orcamento_id"]
+            isOneToOne: false
+            referencedRelation: "orcamentos_comerciais"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orcamento_comercial_itens_produto_servico_id_fkey"
+            columns: ["produto_servico_id"]
+            isOneToOne: false
+            referencedRelation: "produtos_servicos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orcamento_comercial_itens_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       orcamentos: {
         Row: {
           categoria_id: string
@@ -1149,6 +1204,92 @@ export type Database = {
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orcamentos_comerciais: {
+        Row: {
+          criado_em: string
+          criado_por: string | null
+          data_emissao: string
+          forma_pagamento_id: string | null
+          id: string
+          motivo_recusa: string | null
+          numero: number
+          numero_parcelas: number
+          observacoes: string | null
+          pessoa_id: string
+          primeiro_vencimento: string | null
+          status: Database["public"]["Enums"]["status_orcamento_comercial"]
+          tenant_id: string
+          token_publico: string | null
+          validade: string | null
+          venda_gerada_id: string | null
+        }
+        Insert: {
+          criado_em?: string
+          criado_por?: string | null
+          data_emissao: string
+          forma_pagamento_id?: string | null
+          id?: string
+          motivo_recusa?: string | null
+          numero: number
+          numero_parcelas?: number
+          observacoes?: string | null
+          pessoa_id: string
+          primeiro_vencimento?: string | null
+          status?: Database["public"]["Enums"]["status_orcamento_comercial"]
+          tenant_id: string
+          token_publico?: string | null
+          validade?: string | null
+          venda_gerada_id?: string | null
+        }
+        Update: {
+          criado_em?: string
+          criado_por?: string | null
+          data_emissao?: string
+          forma_pagamento_id?: string | null
+          id?: string
+          motivo_recusa?: string | null
+          numero?: number
+          numero_parcelas?: number
+          observacoes?: string | null
+          pessoa_id?: string
+          primeiro_vencimento?: string | null
+          status?: Database["public"]["Enums"]["status_orcamento_comercial"]
+          tenant_id?: string
+          token_publico?: string | null
+          validade?: string | null
+          venda_gerada_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orcamentos_comerciais_forma_pagamento_id_fkey"
+            columns: ["forma_pagamento_id"]
+            isOneToOne: false
+            referencedRelation: "formas_pagamento"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orcamentos_comerciais_pessoa_id_fkey"
+            columns: ["pessoa_id"]
+            isOneToOne: false
+            referencedRelation: "pessoas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orcamentos_comerciais_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orcamentos_comerciais_venda_gerada_id_fkey"
+            columns: ["venda_gerada_id"]
+            isOneToOne: false
+            referencedRelation: "vendas"
             referencedColumns: ["id"]
           },
         ]
@@ -2059,7 +2200,6 @@ export type Database = {
           evento_financeiro_id: string | null
           forma_pagamento_id: string | null
           id: string
-          motivo_recusa: string | null
           numero: number
           numero_parcelas: number
           observacoes: string | null
@@ -2067,8 +2207,6 @@ export type Database = {
           primeiro_vencimento: string | null
           status: Database["public"]["Enums"]["status_venda"]
           tenant_id: string
-          token_publico: string | null
-          validade: string | null
         }
         Insert: {
           criado_em?: string
@@ -2077,7 +2215,6 @@ export type Database = {
           evento_financeiro_id?: string | null
           forma_pagamento_id?: string | null
           id?: string
-          motivo_recusa?: string | null
           numero?: number
           numero_parcelas?: number
           observacoes?: string | null
@@ -2085,8 +2222,6 @@ export type Database = {
           primeiro_vencimento?: string | null
           status?: Database["public"]["Enums"]["status_venda"]
           tenant_id: string
-          token_publico?: string | null
-          validade?: string | null
         }
         Update: {
           criado_em?: string
@@ -2095,7 +2230,6 @@ export type Database = {
           evento_financeiro_id?: string | null
           forma_pagamento_id?: string | null
           id?: string
-          motivo_recusa?: string | null
           numero?: number
           numero_parcelas?: number
           observacoes?: string | null
@@ -2103,8 +2237,6 @@ export type Database = {
           primeiro_vencimento?: string | null
           status?: Database["public"]["Enums"]["status_venda"]
           tenant_id?: string
-          token_publico?: string | null
-          validade?: string | null
         }
         Relationships: [
           {
@@ -2246,6 +2378,14 @@ export type Database = {
         }
         Returns: string
       }
+      gerar_venda_de_orcamento: {
+        Args: {
+          p_criado_por?: string
+          p_orcamento_id: string
+          p_tenant_id: string
+        }
+        Returns: string
+      }
       movimento_liquido_realizado: {
         Args: { p_data_fim: string; p_tenant_id: string }
         Returns: number
@@ -2355,6 +2495,12 @@ export type Database = {
       status_extrato_linha: "PENDENTE" | "CONCILIADA" | "IGNORADA"
       status_importacao: "em_andamento" | "concluida" | "cancelada"
       status_item_importacao: "sucesso" | "erro" | "pendente"
+      status_orcamento_comercial:
+        | "RASCUNHO"
+        | "ENVIADO"
+        | "APROVADO"
+        | "RECUSADO"
+        | "EXPIRADO"
       status_parcela:
         | "PENDENTE"
         | "QUITADO"
@@ -2363,12 +2509,7 @@ export type Database = {
         | "RECEBIDO_PARCIAL"
         | "ATRASADO"
         | "PERDIDO"
-      status_venda:
-        | "RASCUNHO"
-        | "ENVIADO"
-        | "APROVADO"
-        | "RECUSADO"
-        | "EXPIRADO"
+      status_venda: "RASCUNHO" | "APROVADO" | "RECUSADO"
       tipo_alerta: "resumo_equipe" | "vencimento_cliente"
       tipo_anexo:
         | "CONTRATO"
@@ -2564,6 +2705,13 @@ export const Constants = {
       status_extrato_linha: ["PENDENTE", "CONCILIADA", "IGNORADA"],
       status_importacao: ["em_andamento", "concluida", "cancelada"],
       status_item_importacao: ["sucesso", "erro", "pendente"],
+      status_orcamento_comercial: [
+        "RASCUNHO",
+        "ENVIADO",
+        "APROVADO",
+        "RECUSADO",
+        "EXPIRADO",
+      ],
       status_parcela: [
         "PENDENTE",
         "QUITADO",
@@ -2573,7 +2721,7 @@ export const Constants = {
         "ATRASADO",
         "PERDIDO",
       ],
-      status_venda: ["RASCUNHO", "ENVIADO", "APROVADO", "RECUSADO", "EXPIRADO"],
+      status_venda: ["RASCUNHO", "APROVADO", "RECUSADO"],
       tipo_alerta: ["resumo_equipe", "vencimento_cliente"],
       tipo_anexo: [
         "CONTRATO",

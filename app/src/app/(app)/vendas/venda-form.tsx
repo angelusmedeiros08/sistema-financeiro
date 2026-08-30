@@ -58,7 +58,6 @@ export function VendaForm({
   const [produtos, setProdutos] = useState<ProdutoOpcao[]>(produtosIniciais);
   const [itens, setItens] = useState<LinhaItem[]>(() => (vendaInicial?.itens.length ? vendaInicial.itens : [novaLinha()]));
   const dataEmissaoInicial = vendaInicial?.dataEmissao ?? new Date().toISOString().slice(0, 10);
-  const validadeSugerida = new Date(new Date().getTime() + 15 * 86_400_000).toISOString().slice(0, 10);
 
   const [estado, formAction, pendente] = useActionState(async (_: typeof estadoInicial, formData: FormData) => {
     formData.set("itens_json", JSON.stringify(itens.map((i) => ({ produtoServicoId: i.produtoServicoId, quantidade: i.quantidade, precoUnitario: i.precoUnitario }))));
@@ -151,13 +150,6 @@ export function VendaForm({
             <Label htmlFor="observacoes">Observações (opcional)</Label>
             <Textarea id="observacoes" name="observacoes" rows={1} defaultValue={vendaInicial?.observacoes ?? ""} />
           </div>
-          {modo === "criar" && (
-            <div className="space-y-1.5">
-              <Label htmlFor="validade">Validade do orçamento</Label>
-              <Input id="validade" name="validade" type="date" defaultValue={validadeSugerida} min={dataEmissaoInicial} />
-              <p className="text-[11px] text-muted-foreground">Só é usada se enviar como orçamento — ignorada em rascunho/venda direta.</p>
-            </div>
-          )}
         </div>
       </div>
 
@@ -214,9 +206,6 @@ export function VendaForm({
           <>
             <Button type="submit" name="acao" value="rascunho" variant="outline" disabled={pendente || !itensValidos}>
               Salvar rascunho
-            </Button>
-            <Button type="submit" name="acao" value="orcamento" variant="outline" disabled={pendente || !itensValidos}>
-              Enviar orçamento
             </Button>
             <Button type="submit" name="acao" value="direto" disabled={pendente || !itensValidos}>
               {pendente ? "Confirmando..." : "Confirmar venda"}

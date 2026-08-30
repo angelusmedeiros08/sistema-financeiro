@@ -11,28 +11,21 @@ export type FinalidadeTentativaAuth = "entrar" | "cadastro" | "recuperacao_senha
 
 const JANELA_MS = 15 * 60 * 1000;
 
+// Pra "orcamento_publico" o campo `email` carrega o token do orçamento, não
+// um e-mail de verdade — não há login nessa rota, o token é o único
+// identificador de quem está tentando decidir.
 const LIMITES: Record<FinalidadeTentativaAuth, { porEmail: number; porIp: number }> = {
   // Login errado de propósito (senha esquecida) é o caso comum mais
   // frequente entre os três — limite por e-mail mais folgado que os outros.
   entrar: { porEmail: 10, porIp: 30 },
   cadastro: { porEmail: 3, porIp: 10 },
   recuperacao_senha: { porEmail: 3, porIp: 10 },
-  // Aprovar/recusar orçamento público (token na URL, sem sessão) — mesmo
-  // limite pros dois botões, um só cobre o outro. Um cliente de verdade
-  // clica no máximo uma vez; qualquer coisa acima disso é tentativa de
-  // adivinhar/forçar token.
   orcamento_publico: { porEmail: 5, porIp: 20 },
 };
 
 // Registra a tentativa sempre, permitida ou não — senão dá pra "gastar" o
 // limite tentando e nunca deixar rastro de quem estourou (mesmo raciocínio
 // de registrarTentativaAssinatura).
-//
-// `email` é sempre o identificador do lado do usuário — pra `orcamento_publico`
-// não existe e-mail nenhum no fluxo (é token na URL, sem formulário), então
-// quem chama passa o próprio token nesse campo. Reaproveita a coluna
-// existente em vez de criar uma nova só pra isso; o nome do parâmetro ficou
-// genérico o bastante (é só "o identificador do lado de quem tenta").
 export async function registrarTentativaAuth(params: {
   finalidade: FinalidadeTentativaAuth;
   email: string;

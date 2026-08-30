@@ -14,10 +14,8 @@ type StatusVenda = Database["public"]["Enums"]["status_venda"];
 const FILTROS: { valor: string; rotulo: string; status?: StatusVenda }[] = [
   { valor: "todas", rotulo: "Todas" },
   { valor: "rascunho", rotulo: "Rascunho", status: "RASCUNHO" },
-  { valor: "enviado", rotulo: "Enviado", status: "ENVIADO" },
   { valor: "aprovada", rotulo: "Aprovada", status: "APROVADO" },
   { valor: "recusada", rotulo: "Recusada", status: "RECUSADO" },
-  { valor: "expirado", rotulo: "Expirado", status: "EXPIRADO" },
 ];
 
 const TAMANHO_PAGINA = 20;
