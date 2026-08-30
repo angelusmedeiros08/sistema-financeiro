@@ -54,6 +54,7 @@ export async function importarLinhaPessoaAction(
   const resultado = await commitarLinhaPessoa(supabase, { ...params, tenant_id: contexto.tenantId });
 
   await atualizarItemImportacao(supabase, {
+    tenant_id: contexto.tenantId,
     item_id: itemId,
     status: "erro" in resultado ? "erro" : "sucesso",
     pessoa_id: "erro" in resultado ? null : resultado.pessoa_id,

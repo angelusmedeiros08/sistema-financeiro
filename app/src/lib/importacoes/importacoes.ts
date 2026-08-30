@@ -119,12 +119,13 @@ export async function reivindicarProcessamento(
 
 export async function atualizarItemImportacao(
   supabase: Cliente,
-  params: { item_id: string; status: "sucesso" | "erro"; pessoa_id?: string | null; erro?: string | null },
+  params: { tenant_id: string; item_id: string; status: "sucesso" | "erro"; pessoa_id?: string | null; erro?: string | null },
 ): Promise<{ sucesso: true } | { erro: string }> {
   const { error } = await supabase
     .from("importacoes_itens")
     .update({ status: params.status, pessoa_id: params.pessoa_id ?? null, erro: params.erro ?? null })
-    .eq("id", params.item_id);
+    .eq("id", params.item_id)
+    .eq("tenant_id", params.tenant_id);
 
   if (error) return { erro: error.message };
   return { sucesso: true };

@@ -12,6 +12,12 @@ export async function createClient() {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      // secure explícito (achado em auditoria de segurança, 30/08/2026): o
+      // pacote não seta essa flag por padrão, só sameSite=lax. A Vercel já
+      // serve tudo em HTTPS/redireciona HTTP em produção, mas deixar
+      // explícito é defesa em profundidade sem custo — só não em dev local
+      // (http://localhost não teria o cookie enviado de volta se secure=true).
+      cookieOptions: { secure: process.env.NODE_ENV === "production" },
       cookies: {
         getAll() {
           return cookieStore.getAll();

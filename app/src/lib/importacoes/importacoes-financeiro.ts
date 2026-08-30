@@ -91,7 +91,13 @@ export async function registrarItensPendentesFinanceira(
 // nenhum sinal de que algo deu errado (achado em revisão de código).
 export async function atualizarItemImportacaoFinanceira(
   supabase: Cliente,
-  params: { item_id: string; status: "sucesso" | "erro"; evento_financeiro_id?: string | null; erro?: string | null },
+  params: {
+    tenant_id: string;
+    item_id: string;
+    status: "sucesso" | "erro";
+    evento_financeiro_id?: string | null;
+    erro?: string | null;
+  },
 ): Promise<{ sucesso: true } | { erro: string }> {
   const { error } = await supabase
     .from("importacoes_itens")
@@ -100,7 +106,8 @@ export async function atualizarItemImportacaoFinanceira(
       evento_financeiro_id: params.evento_financeiro_id ?? null,
       erro: params.erro ?? null,
     })
-    .eq("id", params.item_id);
+    .eq("id", params.item_id)
+    .eq("tenant_id", params.tenant_id);
 
   if (error) return { erro: error.message };
   return { sucesso: true };

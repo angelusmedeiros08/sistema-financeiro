@@ -127,6 +127,7 @@ async function processarLinhaFinanceira(
   });
 
   await atualizarItemImportacaoFinanceira(supabase, {
+    tenant_id: tenantId,
     item_id: itemId,
     status: "erro" in resultado ? "erro" : "sucesso",
     evento_financeiro_id: "erro" in resultado ? null : resultado.evento_id,

@@ -43,7 +43,8 @@ async function processarLinhaProduto(
   await supabase
     .from("importacoes_itens")
     .update({ status: "erro" in resultado ? "erro" : "sucesso", erro: "erro" in resultado ? resultado.erro : null })
-    .eq("id", itemId);
+    .eq("id", itemId)
+    .eq("tenant_id", tenantId);
 
   return resultado;
 }
