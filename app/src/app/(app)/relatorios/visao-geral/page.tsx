@@ -21,6 +21,7 @@ import { TopCategoriasDonut } from "@/components/relatorios/top-categorias-donut
 import { TermoComDica } from "@/components/formularios/termo-com-dica";
 import { BadgeRiscoConcentracao } from "@/components/relatorios/badge-risco-concentracao";
 import { BadgeRupturaSaldo } from "@/components/relatorios/badge-ruptura-saldo";
+import { emModoApresentacao } from "@/lib/apresentacao/sessao";
 import { formatarMoeda, formatarPercentual } from "@/lib/formatacao";
 
 export default async function PaginaRelatoriosVisaoGeral({
@@ -34,6 +35,8 @@ export default async function PaginaRelatoriosVisaoGeral({
 
   const spBrutos = await searchParams;
   const params = lerParametrosRelatorio(spBrutos);
+  const emApresentacao = emModoApresentacao(spBrutos);
+  const foco = spBrutos.foco;
   const supabase = await createClient();
 
   const { inicio: mesInicio, fim: mesFim } = mesAtual();
@@ -68,29 +71,19 @@ export default async function PaginaRelatoriosVisaoGeral({
   const resultado = dre.at(-1)?.valorAcumulado ?? 0;
   const fluxoParaGrafico = fluxo.map((p) => ({ mes: p.chave, receitas: p.entradas, despesas: p.saidas }));
 
-  return (
-    <div className="flex w-full flex-col gap-6">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h1 className="text-xl font-bold tracking-tight text-foreground">Relatórios</h1>
-      </div>
-
-      <RelatoriosSubNav />
-      <RelatoriosControles {...params} />
-
+  // Cada bloco vira um elemento nomeado — em apresentação com foco, só o
+  // escolhido renderiza (ampliado, sozinho); na navegação normal, os 6
+  // juntos formam a página como sempre foi (mesmo padrão de indicadores/page.tsx).
+  const secaoKpis = (
+    <>
       {(concentracao.nivelRisco !== "BAIXO" || projecaoD7?.ruptura) && (
         <div className="flex flex-wrap gap-2">
           {projecaoD7?.ruptura && <BadgeRupturaSaldo saldoD7={projecaoD7.saldo} />}
           {concentracao.nivelRisco !== "BAIXO" && <BadgeRiscoConcentracao nivelRisco={concentracao.nivelRisco} percentualTop3={concentracao.percentualTop3} />}
         </div>
       )}
-
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          variant="hero"
-          label="Resultado do período"
-          valor={formatarMoeda(resultado)}
-          href="/relatorios/dre"
-        />
+        <StatCard variant="hero" label="Resultado do período" valor={formatarMoeda(resultado)} href="/relatorios/dre" />
         <StatCard
           variant="coral"
           label="A receber vencido"
@@ -114,70 +107,110 @@ export default async function PaginaRelatoriosVisaoGeral({
           href="/relatorios/ponto-equilibrio"
         />
       </div>
+    </>
+  );
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <IndicadorGauge
-          rotulo="% Realizado de contas a receber"
-          valor={indicadoresCAR.percentualRealizado}
-          serie={serieCAR.map((p) => ({ mes: p.mes, valor: p.percentualRealizado }))}
-        />
-        <IndicadorGauge
-          rotulo="% Realizado de contas a pagar"
-          valor={indicadoresCAP.percentualRealizado}
-          serie={serieCAP.map((p) => ({ mes: p.mes, valor: p.percentualRealizado }))}
-        />
-        <IndicadorGauge
-          rotulo="% Pago em atraso (a receber)"
-          valor={indicadoresCAR.percentualPagoEmAtraso}
-          invertido
-          serie={serieCAR.map((p) => ({ mes: p.mes, valor: p.percentualPagoEmAtraso }))}
-        />
-        <IndicadorGauge
-          rotulo="% Pago em atraso (a pagar)"
-          valor={indicadoresCAP.percentualPagoEmAtraso}
-          invertido
-          serie={serieCAP.map((p) => ({ mes: p.mes, valor: p.percentualPagoEmAtraso }))}
-        />
+  const secaoIndicadoresRealizacao = (
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <IndicadorGauge
+        rotulo="% Realizado de contas a receber"
+        valor={indicadoresCAR.percentualRealizado}
+        serie={serieCAR.map((p) => ({ mes: p.mes, valor: p.percentualRealizado }))}
+      />
+      <IndicadorGauge
+        rotulo="% Realizado de contas a pagar"
+        valor={indicadoresCAP.percentualRealizado}
+        serie={serieCAP.map((p) => ({ mes: p.mes, valor: p.percentualRealizado }))}
+      />
+      <IndicadorGauge
+        rotulo="% Pago em atraso (a receber)"
+        valor={indicadoresCAR.percentualPagoEmAtraso}
+        invertido
+        serie={serieCAR.map((p) => ({ mes: p.mes, valor: p.percentualPagoEmAtraso }))}
+      />
+      <IndicadorGauge
+        rotulo="% Pago em atraso (a pagar)"
+        valor={indicadoresCAP.percentualPagoEmAtraso}
+        invertido
+        serie={serieCAP.map((p) => ({ mes: p.mes, valor: p.percentualPagoEmAtraso }))}
+      />
+    </div>
+  );
+
+  const secaoFluxoCaixa = (
+    <div className="rounded-2xl bg-card shadow-card p-5">
+      <h2 className="mb-4 font-heading text-sm font-bold text-foreground">Fluxo de caixa</h2>
+      <FluxoChart dados={fluxoParaGrafico} />
+    </div>
+  );
+
+  const secaoDreCascata = (
+    <div className="rounded-2xl bg-card shadow-card p-5">
+      <h2 className="mb-4 font-heading text-sm font-bold text-foreground">DRE em cascata</h2>
+      <WaterfallDre linhas={dre} altura={360} />
+    </div>
+  );
+
+  const secaoTopCategorias = (
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <TopCategoriasDonut
+        titulo="Top receitas"
+        linhas={topReceitas}
+        dimensao="categoria"
+        regime={params.regime}
+        periodoInicio={params.dataInicio}
+        periodoFim={params.dataFim}
+        origemHref={origemHref}
+      />
+      <TopCategoriasDonut
+        titulo="Top despesas"
+        linhas={topDespesas}
+        dimensao="categoria"
+        regime={params.regime}
+        periodoInicio={params.dataInicio}
+        periodoFim={params.dataFim}
+        origemHref={origemHref}
+      />
+    </div>
+  );
+
+  const secaoAging = (
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <AgingBarras titulo="Vencido: a receber" dados={agingReceita} />
+      <AgingBarras titulo="Vencido: a pagar" dados={agingDespesa} />
+    </div>
+  );
+
+  if (emApresentacao && foco) {
+    const secoesPorFoco: Record<string, React.ReactNode> = {
+      kpis: secaoKpis,
+      "indicadores-realizacao": secaoIndicadoresRealizacao,
+      "fluxo-caixa": secaoFluxoCaixa,
+      "dre-cascata": secaoDreCascata,
+      "top-categorias": secaoTopCategorias,
+      aging: secaoAging,
+    };
+    return <div className="mx-auto flex min-h-[70vh] w-full max-w-5xl items-center justify-center">{secoesPorFoco[foco] ?? null}</div>;
+  }
+
+  return (
+    <div className="flex w-full flex-col gap-6">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h1 className="text-xl font-bold tracking-tight text-foreground">Relatórios</h1>
       </div>
 
+      <RelatoriosSubNav />
+      <RelatoriosControles {...params} />
+
+      {secaoKpis}
+      {secaoIndicadoresRealizacao}
       {/* Cada gráfico na sua própria linha, largura cheia — dividir a tela
           em 2 colunas espremia a cascata (23 linhas reais) até virar
           ilegível, mesmo motivo já corrigido no DRE dedicado. */}
-      <div className="rounded-2xl bg-card shadow-card p-5">
-        <h2 className="mb-4 font-heading text-sm font-bold text-foreground">Fluxo de caixa</h2>
-        <FluxoChart dados={fluxoParaGrafico} />
-      </div>
-
-      <div className="rounded-2xl bg-card shadow-card p-5">
-        <h2 className="mb-4 font-heading text-sm font-bold text-foreground">DRE em cascata</h2>
-        <WaterfallDre linhas={dre} altura={360} />
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <TopCategoriasDonut
-          titulo="Top receitas"
-          linhas={topReceitas}
-          dimensao="categoria"
-          regime={params.regime}
-          periodoInicio={params.dataInicio}
-          periodoFim={params.dataFim}
-          origemHref={origemHref}
-        />
-        <TopCategoriasDonut
-          titulo="Top despesas"
-          linhas={topDespesas}
-          dimensao="categoria"
-          regime={params.regime}
-          periodoInicio={params.dataInicio}
-          periodoFim={params.dataFim}
-          origemHref={origemHref}
-        />
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <AgingBarras titulo="Vencido: a receber" dados={agingReceita} />
-        <AgingBarras titulo="Vencido: a pagar" dados={agingDespesa} />
-      </div>
+      {secaoFluxoCaixa}
+      {secaoDreCascata}
+      {secaoTopCategorias}
+      {secaoAging}
     </div>
   );
 }
