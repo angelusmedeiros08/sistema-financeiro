@@ -5,6 +5,7 @@ import { createClient } from "@/utils/supabase/server";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
 import { registrarBaixa, resolverFormaPagamentoIdSimples } from "./baixa";
 import { extrairAnexosDraftDoFormData, anexarDraftsAoDono } from "./anexos";
+import { hojeIsoBrasil } from "@/lib/data-brasil";
 
 type ResultadoAcao = { erro: string } | { sucesso: true };
 
@@ -22,6 +23,17 @@ export async function darBaixa(formData: FormData): Promise<ResultadoAcao> {
 
   if (!parcela_id || !conta_financeira_id || !data_pagamento || valor_pago <= 0) {
     return { erro: "Preencha conta, data e valor pago (maior que zero)." };
+  }
+  // Achado em investigação de divergência de saldo (30/08/2026): nada
+  // impedia registrar baixa com data no futuro — o link "Todo o histórico"
+  // filtra até hoje, então uma baixa "paga" numa data que ainda não chegou
+  // some dos relatórios de período mas continua contando no saldo do
+  // Painel (livro-razão sem filtro de data), gerando números divergentes
+  // entre as duas telas sem nenhum aviso. O <input max> no formulário já
+  // bloqueia no seletor nativo; esta é a guarda de verdade contra alguém
+  // burlando isso.
+  if (data_pagamento > hojeIsoBrasil()) {
+    return { erro: "Data de pagamento não pode ser no futuro." };
   }
 
   const contexto = await obterUsuarioETenantAtual();

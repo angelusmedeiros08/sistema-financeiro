@@ -97,6 +97,7 @@ export function FormularioBaixa({
               name="data_pagamento"
               type="date"
               required
+              max={new Date().toISOString().slice(0, 10)}
               defaultValue={new Date().toISOString().slice(0, 10)}
             />
           </div>
