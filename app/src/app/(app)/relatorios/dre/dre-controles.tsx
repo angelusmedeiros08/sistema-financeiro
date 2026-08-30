@@ -12,6 +12,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuChe
 import { GatilhoFiltro } from "@/components/relatorios/gatilho-filtro";
 import { AnoStepper } from "@/components/relatorios/ano-stepper";
 import { cn } from "@/lib/utils";
+import { PARAM_APRESENTACAO } from "@/lib/apresentacao/sessao";
 import type { Regime } from "@/lib/relatorios/regime";
 
 const REGIMES: { valor: Regime; rotulo: string }[] = [
@@ -38,6 +39,11 @@ export function DreControles({ regime, ano, aba }: { regime: Regime; ano: number
   }
 
   const rotuloRegime = REGIMES.find((r) => r.valor === regime)?.rotulo ?? regime;
+  // O seletor de aba fica redundante em apresentação — o catálogo já aponta
+  // pra uma visão específica (Matriz/Cascata/Indicadores), mostrar o trilho
+  // de novo só convida a clicar e sair do que foi preparado. Regime/Ano
+  // continuam (mudam o dado, não é navegação).
+  const emApresentacao = searchParams.get(PARAM_APRESENTACAO) !== null;
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-3">
@@ -58,21 +64,23 @@ export function DreControles({ regime, ano, aba }: { regime: Regime; ano: number
         <AnoStepper ano={ano} onMudar={(novoAno) => navegarCom("ano", String(novoAno))} />
       </div>
 
-      <div className="flex items-center gap-0.5 rounded-full bg-muted/60 p-1">
-        {ABAS.map((a) => (
-          <button
-            key={a.valor}
-            type="button"
-            onClick={() => navegarCom("aba", a.valor)}
-            className={cn(
-              "rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
-              aba === a.valor ? "bg-card text-foreground shadow-sm font-semibold" : "text-muted-foreground hover:text-foreground",
-            )}
-          >
-            {a.rotulo}
-          </button>
-        ))}
-      </div>
+      {!emApresentacao && (
+        <div className="flex items-center gap-0.5 rounded-full bg-muted/60 p-1">
+          {ABAS.map((a) => (
+            <button
+              key={a.valor}
+              type="button"
+              onClick={() => navegarCom("aba", a.valor)}
+              className={cn(
+                "rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
+                aba === a.valor ? "bg-card text-foreground shadow-sm font-semibold" : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {a.rotulo}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

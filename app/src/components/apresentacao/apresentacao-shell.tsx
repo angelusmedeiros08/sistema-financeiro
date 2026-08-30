@@ -131,7 +131,8 @@ export function ApresentacaoShell({ apresentacaoId, children }: { apresentacaoId
   // WCAG 2.2.2: conteúdo que avança sozinho por mais de 5s precisa de
   // pausar/parar. `prefers-reduced-motion` desarma o timer por completo (não
   // só oferece pausa) — cai pro comportamento manual, com aviso.
-  const avancoAutomaticoAtivo = modo === "tv" && !pausado && !reducedMotion && total > 1;
+  const avancoAutomaticoAtivo =
+    modo === "tv" && !pausado && !reducedMotion && total > 1 && (apresentacao?.permiteModoTv ?? true);
   const intervaloMs = (apresentacao?.intervaloSegundos ?? 20) * 1000;
 
   useEffect(() => {
@@ -169,7 +170,7 @@ export function ApresentacaoShell({ apresentacaoId, children }: { apresentacaoId
 
         {total > 0 && (
           <div className="flex items-center gap-3">
-            {modo === "tv" && !reducedMotion && (
+            {modo === "tv" && !reducedMotion && (apresentacao?.permiteModoTv ?? true) && (
               <button
                 onClick={() => irPara(indiceAtual, { pausado: !pausado })}
                 aria-label={pausado ? "Retomar avanço automático" : "Pausar avanço automático"}

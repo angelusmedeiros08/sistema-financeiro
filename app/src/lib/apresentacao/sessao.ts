@@ -14,13 +14,18 @@ export function montarUrlSlide(
   rota: string,
   { apresentacaoId, indice, modo, pausado }: { apresentacaoId: string; indice: number; modo: ModoApresentacao; pausado?: boolean },
 ): string {
-  const params = new URLSearchParams({
-    [PARAM_APRESENTACAO]: apresentacaoId,
-    [PARAM_SLIDE]: String(indice),
-    [PARAM_MODO]: modo,
-  });
+  // `rota` pode já trazer sua própria querystring (ex.: /relatorios/dre?aba=
+  // cascata, pra apontar direto pra uma visão específica de uma tela) — sem
+  // separar caminho e query aqui, um segundo "?" na URL final faria o
+  // navegador tratar tudo depois do primeiro "?" como um valor só, quebrando
+  // os dois conjuntos de parâmetro.
+  const [caminho, queryDaRota] = rota.split("?");
+  const params = new URLSearchParams(queryDaRota);
+  params.set(PARAM_APRESENTACAO, apresentacaoId);
+  params.set(PARAM_SLIDE, String(indice));
+  params.set(PARAM_MODO, modo);
   if (pausado) params.set(PARAM_PAUSADO, "1");
-  return `${rota}?${params.toString()}`;
+  return `${caminho}?${params.toString()}`;
 }
 
 // Usado pelas próprias páginas de relatório/painel (Server Components, já

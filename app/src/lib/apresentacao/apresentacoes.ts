@@ -8,6 +8,7 @@ export type ApresentacaoResumo = {
   id: string;
   nome: string;
   intervaloSegundos: number;
+  permiteModoTv: boolean;
   totalSlides: number;
   primeiraRota: string | null;
 };
@@ -23,6 +24,7 @@ export type ApresentacaoComSlides = {
   id: string;
   nome: string;
   intervaloSegundos: number;
+  permiteModoTv: boolean;
   slides: SlideApresentacao[];
 };
 
@@ -31,7 +33,7 @@ export type ApresentacaoComSlides = {
 export async function listarApresentacoes(supabase: Cliente, tenantId: string): Promise<ApresentacaoResumo[]> {
   const { data, error } = await supabase
     .from("apresentacoes")
-    .select("id, nome, intervalo_segundos, apresentacao_slides(rota, ordem)")
+    .select("id, nome, intervalo_segundos, permite_modo_tv, apresentacao_slides(rota, ordem)")
     .eq("tenant_id", tenantId)
     .order("nome");
 
@@ -48,6 +50,7 @@ export async function listarApresentacoes(supabase: Cliente, tenantId: string): 
       id: a.id,
       nome: a.nome,
       intervaloSegundos: a.intervalo_segundos,
+      permiteModoTv: a.permite_modo_tv,
       totalSlides: slidesOrdenados.length,
       primeiraRota: slidesOrdenados[0]?.rota ?? null,
     };
@@ -69,7 +72,12 @@ export async function obterApresentacaoComSlides(
   // de código: rodar em série custava uma volta de rede inteira a mais no
   // caminho mais usado da feature — carregar o editor ou iniciar uma sessão).
   const [{ data: apresentacao, error: erroApresentacao }, { data: slides, error: erroSlides }] = await Promise.all([
-    supabase.from("apresentacoes").select("id, nome, intervalo_segundos").eq("tenant_id", tenantId).eq("id", apresentacaoId).maybeSingle(),
+    supabase
+      .from("apresentacoes")
+      .select("id, nome, intervalo_segundos, permite_modo_tv")
+      .eq("tenant_id", tenantId)
+      .eq("id", apresentacaoId)
+      .maybeSingle(),
     supabase.from("apresentacao_slides").select("id, ordem, rota, rotulo").eq("apresentacao_id", apresentacaoId).order("ordem"),
   ]);
 
@@ -84,6 +92,7 @@ export async function obterApresentacaoComSlides(
     id: apresentacao.id,
     nome: apresentacao.nome,
     intervaloSegundos: apresentacao.intervalo_segundos,
+    permiteModoTv: apresentacao.permite_modo_tv,
     slides: (slides ?? []).filter((s) => itemCatalogoDaRota(s.rota) !== undefined),
   };
 }

@@ -21,6 +21,7 @@ export default async function PaginaEditarApresentacao({ params }: { params: Pro
           id: apresentacao.id,
           nome: apresentacao.nome,
           intervaloSegundos: apresentacao.intervaloSegundos,
+          permiteModoTv: apresentacao.permiteModoTv,
           rotas: apresentacao.slides.map((s) => s.rota),
         }}
       />

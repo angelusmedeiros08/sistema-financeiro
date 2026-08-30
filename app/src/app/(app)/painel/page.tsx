@@ -34,7 +34,9 @@ export default async function PaginaPainel({
   const contexto = await obterUsuarioETenantAtual();
   if ("erro" in contexto) redirect("/entrar");
 
-  const emApresentacao = emModoApresentacao(await searchParams);
+  const sp = await searchParams;
+  const emApresentacao = emModoApresentacao(sp);
+  const foco = sp.foco;
 
   const supabase = await createClient();
   const { inicio: mesInicio, fim: mesFim } = mesAtual();
@@ -94,6 +96,71 @@ export default async function PaginaPainel({
     rotulo: `Despesas de ${nomeMes}`,
     origemHref,
   });
+
+  // "Foco" — uma apresentação pode apontar pro Painel inteiro OU pra um
+  // único cartão/gráfico dele, ampliado, sem o resto do dashboard em volta
+  // (feedback do usuário: quer o gráfico em si, não a tela toda). Reusa
+  // exatamente o mesmo dado já buscado acima — só muda o que é renderizado.
+  if (emApresentacao && foco) {
+    return (
+      <div className="mx-auto flex min-h-[70vh] w-full max-w-3xl items-center justify-center">
+        {foco === "saldo-caixa" && (
+          <div className="w-full">
+            <StatCard variant="hero" label="Saldo em caixa" valor={formatarMoeda(dados.saldoEmCaixa)} serie={dados.saldoSerieSeisMeses} />
+          </div>
+        )}
+        {foco === "resultado-mes" && (
+          <div className="w-full">
+            <StatCard
+              variant={dados.resultadoDoMes.liquido >= 0 ? "teal" : "coral"}
+              label="Resultado do mês"
+              valor={formatarMoeda(dados.resultadoDoMes.liquido)}
+              detalhe="Receitas menos despesas no mês corrente, por competência"
+              delta={dados.resultadoDeltaPercentual}
+              serie={dados.fluxo.map((f) => f.receitas - f.despesas)}
+            >
+              <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs font-semibold">
+                <span className="text-positivo">Receitas: {formatarMoeda(dados.resultadoDoMes.receitas)}</span>
+                <span className="text-destructive">Despesas: {formatarMoeda(dados.resultadoDoMes.despesas)}</span>
+              </div>
+            </StatCard>
+          </div>
+        )}
+        {foco === "fluxo-caixa" && (
+          <div className="w-full rounded-2xl bg-card p-8 shadow-card">
+            <h2 className="mb-6 font-heading text-lg font-bold text-foreground">Fluxo de caixa (últimos 6 meses)</h2>
+            <FluxoChart dados={dados.fluxo} />
+          </div>
+        )}
+        {foco === "indicadores-realizacao" && (
+          <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2">
+            <IndicadorGauge
+              rotulo="% Realizado de contas a receber"
+              valor={indicadoresCAR.percentualRealizado}
+              serie={serieCAR.map((p) => ({ mes: p.mes, valor: p.percentualRealizado }))}
+            />
+            <IndicadorGauge
+              rotulo="% Realizado de contas a pagar"
+              valor={indicadoresCAP.percentualRealizado}
+              serie={serieCAP.map((p) => ({ mes: p.mes, valor: p.percentualRealizado }))}
+            />
+            <IndicadorGauge
+              rotulo="% Pago em atraso (a receber)"
+              valor={indicadoresCAR.percentualPagoEmAtraso}
+              invertido
+              serie={serieCAR.map((p) => ({ mes: p.mes, valor: p.percentualPagoEmAtraso }))}
+            />
+            <IndicadorGauge
+              rotulo="% Pago em atraso (a pagar)"
+              valor={indicadoresCAP.percentualPagoEmAtraso}
+              invertido
+              serie={serieCAP.map((p) => ({ mes: p.mes, valor: p.percentualPagoEmAtraso }))}
+            />
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto grid max-w-[1400px] grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">

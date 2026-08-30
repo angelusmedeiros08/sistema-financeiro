@@ -44,7 +44,8 @@ export default async function PaginaApresentacoes() {
                 <div className="min-w-0">
                   <p className="truncate font-medium text-foreground">{a.nome}</p>
                   <p className="text-xs text-muted-foreground">
-                    {a.totalSlides} {a.totalSlides === 1 ? "slide" : "slides"} · Modo TV a cada {a.intervaloSegundos}s
+                    {a.totalSlides} {a.totalSlides === 1 ? "slide" : "slides"} ·{" "}
+                    {a.permiteModoTv ? `Modo TV a cada ${a.intervaloSegundos}s` : "Só avanço manual"}
                   </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-1">
@@ -66,19 +67,20 @@ export default async function PaginaApresentacoes() {
                       </Link>
                     </Button>
                   )}
-                  {semSlides ? (
-                    <Button variant="outline" size="sm" disabled title="Adicione ao menos um slide">
-                      <MonitorPlay size={14} />
-                      Modo TV
-                    </Button>
-                  ) : (
-                    <Button variant="outline" size="sm" asChild>
-                      <Link href={montarUrlSlide(a.primeiraRota!, { apresentacaoId: a.id, indice: 0, modo: "tv" })}>
+                  {a.permiteModoTv &&
+                    (semSlides ? (
+                      <Button variant="outline" size="sm" disabled title="Adicione ao menos um slide">
                         <MonitorPlay size={14} />
                         Modo TV
-                      </Link>
-                    </Button>
-                  )}
+                      </Button>
+                    ) : (
+                      <Button variant="outline" size="sm" asChild>
+                        <Link href={montarUrlSlide(a.primeiraRota!, { apresentacaoId: a.id, indice: 0, modo: "tv" })}>
+                          <MonitorPlay size={14} />
+                          Modo TV
+                        </Link>
+                      </Button>
+                    ))}
                   <ExcluirApresentacaoButton apresentacaoId={a.id} nome={a.nome} />
                 </div>
               </div>

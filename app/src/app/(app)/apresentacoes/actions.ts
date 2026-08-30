@@ -7,11 +7,11 @@ import { rotaValida, itemCatalogoDaRota } from "@/lib/apresentacao/catalogo";
 
 type ResultadoAcao = { erro: string } | { sucesso: true; id: string };
 
-type DadosApresentacao = { nome: string; intervaloSegundos: number; rotas: string[] };
+type DadosApresentacao = { nome: string; intervaloSegundos: number; permiteModoTv: boolean; rotas: string[] };
 
-function validarDados({ nome, intervaloSegundos, rotas }: DadosApresentacao): { erro: string } | { ok: true } {
+function validarDados({ nome, intervaloSegundos, permiteModoTv, rotas }: DadosApresentacao): { erro: string } | { ok: true } {
   if (!nome.trim()) return { erro: "Informe o nome da apresentação." };
-  if (intervaloSegundos < 5 || intervaloSegundos > 300) {
+  if (permiteModoTv && (intervaloSegundos < 5 || intervaloSegundos > 300)) {
     return { erro: "O intervalo do Modo TV deve estar entre 5 e 300 segundos." };
   }
   if (rotas.some((rota) => !rotaValida(rota))) {
@@ -47,6 +47,7 @@ async function salvar(
     p_intervalo_segundos: dados.intervaloSegundos,
     p_criado_por: criadoPor,
     p_slides: slides,
+    p_permite_modo_tv: dados.permiteModoTv,
   });
 
   if (error || !data) return { erro: error?.message ?? "Não foi possível salvar a apresentação." };

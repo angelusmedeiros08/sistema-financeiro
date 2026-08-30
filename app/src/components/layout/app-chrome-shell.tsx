@@ -3,7 +3,7 @@
 import { Suspense } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { PARAM_APRESENTACAO } from "@/lib/apresentacao/sessao";
-import { rotaValida } from "@/lib/apresentacao/catalogo";
+import { caminhoElegivel } from "@/lib/apresentacao/catalogo";
 import { ApresentacaoShell } from "@/components/apresentacao/apresentacao-shell";
 import { BotaoVoltar } from "@/components/layout/botao-voltar";
 
@@ -42,7 +42,7 @@ function ChromeInterno(props: PropsChrome) {
   // apresentação não existe" do ApresentacaoShell, já que ele só renderiza
   // {children} quando a apresentação carrega com sucesso (achado em revisão
   // de código).
-  if (apresentacaoId && rotaValida(pathname)) {
+  if (apresentacaoId && caminhoElegivel(pathname)) {
     return <ApresentacaoShell apresentacaoId={apresentacaoId}>{props.children}</ApresentacaoShell>;
   }
 

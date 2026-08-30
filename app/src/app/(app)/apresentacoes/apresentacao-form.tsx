@@ -8,16 +8,23 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { CATALOGO_SLIDES, type CategoriaSlide, itemCatalogoDaRota } from "@/lib/apresentacao/catalogo";
-import { moverItem } from "@/lib/utils";
+import { cn, moverItem } from "@/lib/utils";
 import { criarApresentacao, atualizarApresentacao } from "./actions";
 
 const CATEGORIAS: CategoriaSlide[] = ["Painel", "Indicadores", "Relatórios"];
 
-type ApresentacaoExistente = { id: string; nome: string; intervaloSegundos: number; rotas: string[] };
+type ApresentacaoExistente = {
+  id: string;
+  nome: string;
+  intervaloSegundos: number;
+  permiteModoTv: boolean;
+  rotas: string[];
+};
 
 export function ApresentacaoForm({ existente }: { existente?: ApresentacaoExistente }) {
   const router = useRouter();
   const [nome, setNome] = useState(existente?.nome ?? "");
+  const [permiteModoTv, setPermiteModoTv] = useState(existente?.permiteModoTv ?? true);
   const [intervaloSegundos, setIntervaloSegundos] = useState(existente?.intervaloSegundos ?? 20);
   const [selecionadas, setSelecionadas] = useState<string[]>(existente?.rotas ?? []);
   const [erro, setErro] = useState("");
@@ -34,7 +41,7 @@ export function ApresentacaoForm({ existente }: { existente?: ApresentacaoExiste
   function salvar() {
     setErro("");
     iniciarTransicao(async () => {
-      const dados = { nome, intervaloSegundos, rotas: selecionadas };
+      const dados = { nome, intervaloSegundos, permiteModoTv, rotas: selecionadas };
       const resultado = existente ? await atualizarApresentacao(existente.id, dados) : await criarApresentacao(dados);
       if ("erro" in resultado) {
         setErro(resultado.erro);
@@ -46,13 +53,45 @@ export function ApresentacaoForm({ existente }: { existente?: ApresentacaoExiste
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="rounded-2xl bg-card p-5 shadow-card">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_180px]">
-          <div className="space-y-1.5">
-            <Label htmlFor="nome">Nome</Label>
-            <Input id="nome" value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Ex.: Reunião mensal Cliente X" />
+      <div className="flex flex-col gap-4 rounded-2xl bg-card p-5 shadow-card">
+        <div className="space-y-1.5">
+          <Label htmlFor="nome">Nome</Label>
+          <Input id="nome" value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Ex.: Reunião mensal Cliente X" />
+        </div>
+
+        <div className="space-y-1.5">
+          <Label>Avanço entre slides</Label>
+          <div className="flex items-center gap-0.5 rounded-full bg-muted/60 p-1 sm:w-fit">
+            <button
+              type="button"
+              onClick={() => setPermiteModoTv(false)}
+              className={cn(
+                "flex-1 rounded-full px-4 py-1.5 text-xs font-medium transition-colors sm:flex-none",
+                !permiteModoTv ? "bg-card font-semibold text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              Manual — você controla
+            </button>
+            <button
+              type="button"
+              onClick={() => setPermiteModoTv(true)}
+              className={cn(
+                "flex-1 rounded-full px-4 py-1.5 text-xs font-medium transition-colors sm:flex-none",
+                permiteModoTv ? "bg-card font-semibold text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              Automático — Modo TV
+            </button>
           </div>
-          <div className="space-y-1.5">
+          <p className="text-xs text-muted-foreground">
+            {permiteModoTv
+              ? "Além do Modo TV, você sempre pode navegar manualmente durante a apresentação."
+              : "Sem cronômetro — os slides só trocam quando você clicar ou usar as setas."}
+          </p>
+        </div>
+
+        {permiteModoTv && (
+          <div className="space-y-1.5 sm:w-[180px]">
             <Label htmlFor="intervalo">Intervalo do Modo TV (segundos)</Label>
             <Input
               id="intervalo"
@@ -63,7 +102,7 @@ export function ApresentacaoForm({ existente }: { existente?: ApresentacaoExiste
               onChange={(e) => setIntervaloSegundos(Number(e.target.value))}
             />
           </div>
-        </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
