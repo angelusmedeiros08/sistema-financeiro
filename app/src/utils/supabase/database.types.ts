@@ -2304,6 +2304,14 @@ export type Database = {
         Args: { p_criado_por?: string; p_tenant_id: string; p_venda_id: string }
         Returns: string
       }
+      contar_itens_importacao: {
+        Args: { p_tenant_id: string }
+        Returns: {
+          importacao_id: string
+          quantidade: number
+          status: Database["public"]["Enums"]["status_item_importacao"]
+        }[]
+      }
       criar_evento_financeiro: {
         Args: {
           p_categorias: Json

@@ -143,15 +143,31 @@ export async function finalizarImportacao(
   return { sucesso: true };
 }
 
+// Contagem por status agregada no Postgres (RPC contar_itens_importacao),
+// em vez de buscar toda linha de importacoes_itens pro Node só pra contar —
+// achado em auditoria de escalabilidade (30/08/2026): uma única importação
+// de planilha histórica pode ter milhares de linhas, e antes desta troca
+// TODAS voltavam a cada abertura da tela de histórico, só pra exibir 3
+// números por importação.
 export async function listarImportacoes(supabase: Cliente, tenant_id: string): Promise<ResumoImportacao[]> {
-  const { data } = await supabase
-    .from("importacoes")
-    .select("id, tipo, nome_arquivo, status, total_linhas, criado_em, usuarios(nome), importacoes_itens(status)")
-    .eq("tenant_id", tenant_id)
-    .order("criado_em", { ascending: false });
+  const [{ data }, { data: contagens }] = await Promise.all([
+    supabase
+      .from("importacoes")
+      .select("id, tipo, nome_arquivo, status, total_linhas, criado_em, usuarios(nome)")
+      .eq("tenant_id", tenant_id)
+      .order("criado_em", { ascending: false }),
+    supabase.rpc("contar_itens_importacao", { p_tenant_id: tenant_id }),
+  ]);
+
+  const porImportacao = new Map<string, Record<StatusItemImportacao, number>>();
+  for (const c of contagens ?? []) {
+    const atual = porImportacao.get(c.importacao_id) ?? { pendente: 0, sucesso: 0, erro: 0 };
+    atual[c.status as StatusItemImportacao] = Number(c.quantidade);
+    porImportacao.set(c.importacao_id, atual);
+  }
 
   return (data ?? []).map((i) => {
-    const itens = i.importacoes_itens as { status: StatusItemImportacao }[];
+    const contagem = porImportacao.get(i.id) ?? { pendente: 0, sucesso: 0, erro: 0 };
     return {
       id: i.id,
       tipo: i.tipo,
@@ -160,9 +176,9 @@ export async function listarImportacoes(supabase: Cliente, tenant_id: string): P
       totalLinhas: i.total_linhas,
       criadoPorNome: i.usuarios?.nome ?? null,
       criadoEm: i.criado_em,
-      sucessos: itens.filter((it) => it.status === "sucesso").length,
-      erros: itens.filter((it) => it.status === "erro").length,
-      pendentes: itens.filter((it) => it.status === "pendente").length,
+      sucessos: contagem.sucesso,
+      erros: contagem.erro,
+      pendentes: contagem.pendente,
     };
   });
 }
