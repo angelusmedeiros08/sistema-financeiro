@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { CaretLeft, CaretRight, X, Play, Pause } from "@phosphor-icons/react";
+import { CaretLeft, CaretRight, X, Play, Pause, ArrowsOut, ArrowsIn } from "@phosphor-icons/react";
 import { obterApresentacaoParaSessao } from "@/lib/apresentacao/sessao-actions";
 import { montarUrlSlide, PARAM_SLIDE, PARAM_MODO, PARAM_PAUSADO, type ModoApresentacao } from "@/lib/apresentacao/sessao";
 import type { ApresentacaoComSlides } from "@/lib/apresentacao/apresentacoes";
@@ -72,7 +72,37 @@ export function ApresentacaoShell({ apresentacaoId, children }: { apresentacaoId
     [router, slides, total, apresentacaoId, modo, pausado],
   );
 
-  const sair = useCallback(() => router.push("/apresentacoes"), [router]);
+  const emTelaCheia = useSyncExternalStore(
+    (aoMudar) => {
+      document.addEventListener("fullscreenchange", aoMudar);
+      return () => document.removeEventListener("fullscreenchange", aoMudar);
+    },
+    () => document.fullscreenElement !== null,
+    () => false,
+  );
+
+  function alternarTelaCheia() {
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+    } else {
+      document.documentElement.requestFullscreen().catch(() => {});
+    }
+  }
+
+  // Tenta entrar em tela cheia de verdade assim que a sessão monta — o
+  // usuário pediu que o foco fosse o gráfico/relatório em tela cheia, não só
+  // sem Sidebar/Topbar. Só funciona se o navegador ainda considerar o clique
+  // em "Apresentar"/"Modo TV" (que trouxe até aqui) um gesto do usuário
+  // recente — silenciosamente não faz nada se não for o caso; por isso o
+  // botão manual (alternarTelaCheia) sempre fica disponível como garantia.
+  useEffect(() => {
+    document.documentElement.requestFullscreen?.().catch(() => {});
+  }, []);
+
+  const sair = useCallback(() => {
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    router.push("/apresentacoes");
+  }, [router]);
 
   useEffect(() => {
     function aoTeclar(e: KeyboardEvent) {
@@ -156,6 +186,13 @@ export function ApresentacaoShell({ apresentacaoId, children }: { apresentacaoId
             </span>
             <button onClick={() => irPara(indiceAtual + 1)} aria-label="Próximo slide" className="hover:opacity-80">
               <CaretRight size={16} />
+            </button>
+            <button
+              onClick={alternarTelaCheia}
+              aria-label={emTelaCheia ? "Sair da tela cheia" : "Entrar em tela cheia"}
+              className="hover:opacity-80"
+            >
+              {emTelaCheia ? <ArrowsIn size={16} /> : <ArrowsOut size={16} />}
             </button>
           </div>
         )}
