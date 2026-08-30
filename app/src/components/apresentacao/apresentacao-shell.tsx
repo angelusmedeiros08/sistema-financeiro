@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CaretLeft, CaretRight, X, Play, Pause, ArrowsOut, ArrowsIn } from "@phosphor-icons/react";
+import { cn } from "@/lib/utils";
 import { obterApresentacaoParaSessao } from "@/lib/apresentacao/sessao-actions";
 import { montarUrlSlide, PARAM_SLIDE, PARAM_MODO, PARAM_PAUSADO, type ModoApresentacao } from "@/lib/apresentacao/sessao";
 import type { ApresentacaoComSlides } from "@/lib/apresentacao/apresentacoes";
@@ -61,16 +62,41 @@ export function ApresentacaoShell({ apresentacaoId, children }: { apresentacaoId
   const total = slides.length;
   const indiceAtual = total > 0 ? Math.min(Math.max(indiceBruto, 0), total - 1) : 0;
 
+  // useTransition em volta do router.push — sem isso, um clique em
+  // "Próximo" ficava sem nenhum feedback visual até a página nova terminar
+  // de carregar no servidor (a rota do slide seguinte nunca tinha sido
+  // visitada antes, então não tem nada em cache local), o que parecia
+  // travado/lento (achado direto do usuário). `navegando` liga a barra de
+  // progresso abaixo assim que o clique acontece, não só quando o Modo TV
+  // troca sozinho.
+  const [navegando, iniciarNavegacao] = useTransition();
+
   const irPara = useCallback(
     (indice: number, opts?: { pausado?: boolean }) => {
       if (total === 0) return;
       const alvo = ((indice % total) + total) % total;
-      router.push(
-        montarUrlSlide(slides[alvo].rota, { apresentacaoId, indice: alvo, modo, pausado: opts?.pausado ?? pausado }),
-      );
+      const url = montarUrlSlide(slides[alvo].rota, { apresentacaoId, indice: alvo, modo, pausado: opts?.pausado ?? pausado });
+      iniciarNavegacao(() => {
+        router.push(url);
+      });
     },
     [router, slides, total, apresentacaoId, modo, pausado],
   );
+
+  // Pré-busca os vizinhos (anterior/próximo) assim que o slide atual monta —
+  // pelo menos o bundle JS da rota já fica pronto antes do clique, cortando
+  // parte da espera mesmo em rotas totalmente dinâmicas (sem cache de dado,
+  // que Next.js não faz pra rota sem loading.js). No Modo TV isso roda com
+  // até `intervaloMs` de folga antes do próximo avanço automático.
+  useEffect(() => {
+    if (total < 2) return;
+    const proximo = (indiceAtual + 1) % total;
+    router.prefetch(montarUrlSlide(slides[proximo].rota, { apresentacaoId, indice: proximo, modo, pausado }));
+    if (total > 2) {
+      const anterior = (indiceAtual - 1 + total) % total;
+      router.prefetch(montarUrlSlide(slides[anterior].rota, { apresentacaoId, indice: anterior, modo, pausado }));
+    }
+  }, [indiceAtual, slides, total, apresentacaoId, modo, pausado, router]);
 
   const emTelaCheia = useSyncExternalStore(
     (aoMudar) => {
@@ -154,13 +180,19 @@ export function ApresentacaoShell({ apresentacaoId, children }: { apresentacaoId
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
+      {navegando && (
+        <div className="fixed inset-x-0 top-0 z-[60] h-0.5 overflow-hidden bg-primary/20">
+          <div className="h-full w-1/3 animate-[apresentacao-carregando_0.8s_ease-in-out_infinite] bg-primary" />
+        </div>
+      )}
+
       {modo === "tv" && reducedMotion && (
         <div className="bg-amber-500/90 px-4 py-2 text-center text-xs text-black">
           Avanço automático desativado nas suas preferências de sistema — use as setas ou o botão Retomar.
         </div>
       )}
 
-      <div className="flex-1 overflow-auto p-4 pb-16 lg:p-8 lg:pb-16">{children}</div>
+      <div className={cn("flex-1 overflow-auto p-4 pb-16 lg:p-8 lg:pb-16", navegando && "opacity-60 transition-opacity")}>{children}</div>
 
       <div className="fixed inset-x-0 bottom-0 z-50 flex items-center justify-between gap-3 bg-black/80 px-4 py-2.5 text-white backdrop-blur">
         <button onClick={sair} aria-label="Sair da apresentação" className="flex items-center gap-1.5 text-sm hover:opacity-80">
@@ -209,6 +241,10 @@ export function ApresentacaoShell({ apresentacaoId, children }: { apresentacaoId
         @keyframes apresentacao-progresso {
           from { width: 0% }
           to { width: 100% }
+        }
+        @keyframes apresentacao-carregando {
+          from { transform: translateX(-100%) }
+          to { transform: translateX(300%) }
         }
       `}</style>
     </div>

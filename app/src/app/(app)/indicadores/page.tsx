@@ -20,12 +20,21 @@ import { CardCicloConversaoCaixa } from "@/components/relatorios/card-ciclo-conv
 import { TermoComDica } from "@/components/formularios/termo-com-dica";
 import { formatarMoeda, formatarPercentual } from "@/lib/formatacao";
 import { cn } from "@/lib/utils";
+import { emModoApresentacao } from "@/lib/apresentacao/sessao";
 import { hojeIsoBrasil } from "@/lib/data-brasil";
 
-export default async function PaginaIndicadores() {
+export default async function PaginaIndicadores({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | undefined>>;
+}) {
   const contexto = await obterUsuarioETenantAtual();
   if ("erro" in contexto) redirect("/entrar");
   const { tenantId } = contexto;
+
+  const sp = await searchParams;
+  const emApresentacao = emModoApresentacao(sp);
+  const foco = sp.foco;
 
   const supabase = await createClient();
 
@@ -92,133 +101,166 @@ export default async function PaginaIndicadores() {
     href: f.href,
   }));
 
-  return (
-    <div className="flex w-full flex-col gap-6">
-      <h1 className="text-xl font-bold tracking-tight text-foreground">Indicadores</h1>
+  // Cada seção vira um elemento nomeado — em apresentação com foco, só o
+  // escolhido renderiza (ampliado, sozinho); na navegação normal, os 6 juntos
+  // formam a página como sempre foi. Monta uma vez só, sem duplicar JSX.
+  const secaoSaldoProjetado = (
+    <section className="rounded-2xl bg-card shadow-card p-6">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <h2 className="font-heading text-base font-bold text-foreground">Saldo projetado</h2>
+        {projecaoD7?.ruptura && <BadgeRupturaSaldo saldoD7={projecaoD7.saldo} />}
+      </div>
+      <CardSaldoProjetado {...saldoProjetado} pontos={serieSaldo.pontos} />
+    </section>
+  );
 
-      <section className="rounded-2xl bg-card shadow-card p-6">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <h2 className="font-heading text-base font-bold text-foreground">Saldo projetado</h2>
-          {projecaoD7?.ruptura && <BadgeRupturaSaldo saldoD7={projecaoD7.saldo} />}
-        </div>
-        <CardSaldoProjetado {...saldoProjetado} pontos={serieSaldo.pontos} />
-      </section>
-
-      <section className="rounded-2xl bg-card shadow-card p-6">
-        <h2 className="mb-4 font-heading text-base font-bold text-foreground">Concentração de receita e despesa</h2>
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          <div>
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-              <h3 className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Receita</h3>
-              <BadgeRiscoConcentracao nivelRisco={concentracaoReceita.nivelRisco} percentualTop3={concentracaoReceita.percentualTop3} />
-            </div>
-            <TopCategoriasDonut
-              titulo="Top clientes por receita (últimos 12 meses)"
-              linhas={donutClientes}
-              dimensao="pessoa"
-              regime="competencia"
-              tipo="RECEITA"
-              periodoInicio={isoMenosMeses(12)}
-              periodoFim={hoje}
-              origemHref={origemHref}
-            />
+  const secaoConcentracao = (
+    <section className="rounded-2xl bg-card shadow-card p-6">
+      <h2 className="mb-4 font-heading text-base font-bold text-foreground">Concentração de receita e despesa</h2>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div>
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <h3 className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Receita</h3>
+            <BadgeRiscoConcentracao nivelRisco={concentracaoReceita.nivelRisco} percentualTop3={concentracaoReceita.percentualTop3} />
           </div>
-          <div>
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-              <h3 className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Despesa</h3>
-              <BadgeRiscoConcentracao
-                nivelRisco={concentracaoDespesa.nivelRisco}
-                percentualTop3={concentracaoDespesa.percentualTop3}
-                entidadeLabel="fornecedores"
-                totalLabel="despesa"
-              />
-            </div>
-            <TopCategoriasDonut
-              titulo="Top fornecedores por despesa (últimos 12 meses)"
-              linhas={donutFornecedores}
-              dimensao="pessoa"
-              regime="competencia"
-              tipo="DESPESA"
-              periodoInicio={isoMenosMeses(12)}
-              periodoFim={hoje}
-              origemHref={origemHref}
-            />
-          </div>
-        </div>
-      </section>
-
-      <section className="rounded-2xl bg-card shadow-card p-6">
-        <h2 className="mb-4 font-heading text-base font-bold text-foreground">Variação de categorias</h2>
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <ListaVariacaoCategorias titulo="Receitas — maior variação vs. mês anterior" linhas={variacaoReceitas} />
-          <ListaVariacaoCategorias titulo="Despesas — maior variação vs. mês anterior" linhas={variacaoDespesas} />
-        </div>
-      </section>
-
-      <section className="rounded-2xl bg-card shadow-card p-6">
-        <h2 className="mb-4 font-heading text-base font-bold text-foreground">Prazos médios e aging</h2>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <CardPrazoMedio
-            titulo={<TermoComDica termo="pmr">Prazo médio de recebimento (PMR)</TermoComDica>}
-            dias={pmr.dias}
-            quantidadeBaixas={pmr.quantidadeBaixas}
-          />
-          <CardPrazoMedio
-            titulo={<TermoComDica termo="pmp">Prazo médio de pagamento (PMP)</TermoComDica>}
-            dias={pmp.dias}
-            quantidadeBaixas={pmp.quantidadeBaixas}
-          />
-        </div>
-        <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <AgingBarras titulo={<TermoComDica termo="aging">Aging — contas a receber</TermoComDica>} dados={agingReceber} />
-          <AgingBarras titulo={<TermoComDica termo="aging">Aging — contas a pagar</TermoComDica>} dados={agingPagar} />
-        </div>
-      </section>
-
-      <section className="rounded-2xl bg-card shadow-card p-6">
-        <h2 className="mb-4 font-heading text-base font-bold text-foreground">Distribuição por forma de pagamento</h2>
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <TopCategoriasDonut
-            titulo="Distribuição por forma de pagamento (últimos 6 meses)"
-            linhas={donutFormaPagamento}
-            dimensao="forma_pagamento"
-            regime="realizado"
-            periodoInicio={isoMenosMeses(6)}
+            titulo="Top clientes por receita (últimos 12 meses)"
+            linhas={donutClientes}
+            dimensao="pessoa"
+            regime="competencia"
+            tipo="RECEITA"
+            periodoInicio={isoMenosMeses(12)}
             periodoFim={hoje}
             origemHref={origemHref}
           />
-          <div className="rounded-2xl bg-card shadow-card p-5">
-            <h3 className="mb-4 font-heading text-sm font-bold text-foreground">Atraso médio por forma</h3>
-            {distribuicaoFormaPagamento.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Nenhuma baixa no período.</p>
-            ) : (
-              <ul className="flex flex-col gap-2.5">
-                {distribuicaoFormaPagamento.map((f) => (
-                  <li key={f.formaPagamentoId ?? "nao-informado"} className="flex items-center justify-between gap-3 text-sm">
-                    <span className="flex-1 truncate text-foreground">{f.nome}</span>
-                    <span className="shrink-0 tabular-nums text-muted-foreground">{formatarMoeda(f.valorTotal)}</span>
-                    <span className={cn("min-w-20 shrink-0 text-right text-xs font-semibold tabular-nums", f.atrasoMedioDias > 0 ? "text-destructive" : "text-positivo")}>
-                      {f.atrasoMedioDias >= 0 ? "+" : ""}
-                      {f.atrasoMedioDias.toFixed(1)}d
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
+        </div>
+        <div>
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <h3 className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Despesa</h3>
+            <BadgeRiscoConcentracao
+              nivelRisco={concentracaoDespesa.nivelRisco}
+              percentualTop3={concentracaoDespesa.percentualTop3}
+              entidadeLabel="fornecedores"
+              totalLabel="despesa"
+            />
           </div>
+          <TopCategoriasDonut
+            titulo="Top fornecedores por despesa (últimos 12 meses)"
+            linhas={donutFornecedores}
+            dimensao="pessoa"
+            regime="competencia"
+            tipo="DESPESA"
+            periodoInicio={isoMenosMeses(12)}
+            periodoFim={hoje}
+            origemHref={origemHref}
+          />
         </div>
-      </section>
+      </div>
+    </section>
+  );
 
-      <section className="rounded-2xl bg-card shadow-card p-6">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <h2 className="font-heading text-base font-bold text-foreground">Liquidez e ciclo de caixa</h2>
-          <BadgeSaudeFinanceira nivel={liquidez.nivel} indice={liquidez.indice} />
+  const secaoVariacaoCategorias = (
+    <section className="rounded-2xl bg-card shadow-card p-6">
+      <h2 className="mb-4 font-heading text-base font-bold text-foreground">Variação de categorias</h2>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <ListaVariacaoCategorias titulo="Receitas — maior variação vs. mês anterior" linhas={variacaoReceitas} />
+        <ListaVariacaoCategorias titulo="Despesas — maior variação vs. mês anterior" linhas={variacaoDespesas} />
+      </div>
+    </section>
+  );
+
+  const secaoPrazosAging = (
+    <section className="rounded-2xl bg-card shadow-card p-6">
+      <h2 className="mb-4 font-heading text-base font-bold text-foreground">Prazos médios e aging</h2>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <CardPrazoMedio
+          titulo={<TermoComDica termo="pmr">Prazo médio de recebimento (PMR)</TermoComDica>}
+          dias={pmr.dias}
+          quantidadeBaixas={pmr.quantidadeBaixas}
+        />
+        <CardPrazoMedio
+          titulo={<TermoComDica termo="pmp">Prazo médio de pagamento (PMP)</TermoComDica>}
+          dias={pmp.dias}
+          quantidadeBaixas={pmp.quantidadeBaixas}
+        />
+      </div>
+      <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <AgingBarras titulo={<TermoComDica termo="aging">Aging — contas a receber</TermoComDica>} dados={agingReceber} />
+        <AgingBarras titulo={<TermoComDica termo="aging">Aging — contas a pagar</TermoComDica>} dados={agingPagar} />
+      </div>
+    </section>
+  );
+
+  const secaoFormaPagamento = (
+    <section className="rounded-2xl bg-card shadow-card p-6">
+      <h2 className="mb-4 font-heading text-base font-bold text-foreground">Distribuição por forma de pagamento</h2>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <TopCategoriasDonut
+          titulo="Distribuição por forma de pagamento (últimos 6 meses)"
+          linhas={donutFormaPagamento}
+          dimensao="forma_pagamento"
+          regime="realizado"
+          periodoInicio={isoMenosMeses(6)}
+          periodoFim={hoje}
+          origemHref={origemHref}
+        />
+        <div className="rounded-2xl bg-card shadow-card p-5">
+          <h3 className="mb-4 font-heading text-sm font-bold text-foreground">Atraso médio por forma</h3>
+          {distribuicaoFormaPagamento.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Nenhuma baixa no período.</p>
+          ) : (
+            <ul className="flex flex-col gap-2.5">
+              {distribuicaoFormaPagamento.map((f) => (
+                <li key={f.formaPagamentoId ?? "nao-informado"} className="flex items-center justify-between gap-3 text-sm">
+                  <span className="flex-1 truncate text-foreground">{f.nome}</span>
+                  <span className="shrink-0 tabular-nums text-muted-foreground">{formatarMoeda(f.valorTotal)}</span>
+                  <span className={cn("min-w-20 shrink-0 text-right text-xs font-semibold tabular-nums", f.atrasoMedioDias > 0 ? "text-destructive" : "text-positivo")}>
+                    {f.atrasoMedioDias >= 0 ? "+" : ""}
+                    {f.atrasoMedioDias.toFixed(1)}d
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <CardLiquidez {...liquidez} />
-          <CardCicloConversaoCaixa dias={cicloConversaoCaixa} pmrDias={pmr.dias} pmpDias={pmp.dias} />
-        </div>
-      </section>
+      </div>
+    </section>
+  );
+
+  const secaoLiquidez = (
+    <section className="rounded-2xl bg-card shadow-card p-6">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <h2 className="font-heading text-base font-bold text-foreground">Liquidez e ciclo de caixa</h2>
+        <BadgeSaudeFinanceira nivel={liquidez.nivel} indice={liquidez.indice} />
+      </div>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <CardLiquidez {...liquidez} />
+        <CardCicloConversaoCaixa dias={cicloConversaoCaixa} pmrDias={pmr.dias} pmpDias={pmp.dias} />
+      </div>
+    </section>
+  );
+
+  if (emApresentacao && foco) {
+    const secoesPorFoco: Record<string, React.ReactNode> = {
+      "saldo-projetado": secaoSaldoProjetado,
+      concentracao: secaoConcentracao,
+      "variacao-categorias": secaoVariacaoCategorias,
+      "prazos-aging": secaoPrazosAging,
+      "forma-pagamento": secaoFormaPagamento,
+      liquidez: secaoLiquidez,
+    };
+    return <div className="mx-auto flex min-h-[70vh] w-full max-w-4xl items-center justify-center">{secoesPorFoco[foco] ?? null}</div>;
+  }
+
+  return (
+    <div className="flex w-full flex-col gap-6">
+      <h1 className="text-xl font-bold tracking-tight text-foreground">Indicadores</h1>
+      {secaoSaldoProjetado}
+      {secaoConcentracao}
+      {secaoVariacaoCategorias}
+      {secaoPrazosAging}
+      {secaoFormaPagamento}
+      {secaoLiquidez}
     </div>
   );
 }
