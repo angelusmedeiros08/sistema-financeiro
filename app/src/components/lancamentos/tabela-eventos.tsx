@@ -96,8 +96,14 @@ export function TabelaEventos({
   // string, não função — funções não atravessam a fronteira Server/Client
   // Component (esta tabela é "use client", as páginas que a chamam não são).
   caminhoBase?: "receitas" | "despesas";
-  /** Paginação real no servidor — `eventos` já é só a página atual. Ver `paginacaoServidor` em TabelaLista. */
-  paginacao?: { pagina: number; totalPaginas: number; totalRegistros: number; tamanhoPagina: number };
+  /**
+   * Paginação real no servidor — `eventos` já é só a página atual. `hrefBase`
+   * é o caminho completo da tela (com outros filtros já aplicados, ex.
+   * "/lancamentos?periodo_inicio=..."), não é derivado de `caminhoBase`
+   * porque /lancamentos mistura receita/despesa e não tem um `caminhoBase`
+   * único. Ver `paginacaoServidor` em TabelaLista.
+   */
+  paginacao?: { pagina: number; totalPaginas: number; totalRegistros: number; tamanhoPagina: number; hrefBase: string };
 }) {
   if (eventos.length === 0 && !paginacao) {
     return <EstadoVazio texto={textoVazio} />;
@@ -117,7 +123,7 @@ export function TabelaEventos({
       busca={false}
       textoVazio={textoVazio}
       linkPara={linkPara}
-      paginacaoServidor={paginacao && caminhoBase ? { ...paginacao, hrefBase: `/${caminhoBase}` } : undefined}
+      paginacaoServidor={paginacao}
     />
   );
 }

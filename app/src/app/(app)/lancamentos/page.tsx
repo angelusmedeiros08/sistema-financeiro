@@ -21,6 +21,20 @@ const DIMENSOES = [
 ];
 
 const REGIMES: Regime[] = ["competencia", "previsto", "realizado"];
+const TAMANHO_PAGINA = 20;
+
+// Preserva todo filtro já aplicado na URL (período, regime, tipo, dimensão,
+// rótulo, voltar) ao trocar de página — o pager de TabelaLista só acrescenta
+// `?pagina=N`/`&pagina=N` por cima disso.
+function hrefBaseComFiltros(sp: Record<string, string | undefined>): string {
+  const params = new URLSearchParams();
+  for (const [chave, valor] of Object.entries(sp)) {
+    if (chave === "pagina" || valor === undefined) continue;
+    params.set(chave, valor);
+  }
+  const qs = params.toString();
+  return qs ? `/lancamentos?${qs}` : "/lancamentos";
+}
 
 function parseValor(bruto: string | undefined): string[] | "nenhuma" | null {
   if (!bruto) return null;
@@ -59,6 +73,7 @@ export default async function PaginaLancamentos({
   const voltar = caminhoInternoSeguro(sp.voltar);
   const regime: Regime = REGIMES.includes(sp.regime as Regime) ? (sp.regime as Regime) : "competencia";
   const apenasTipo = sp.tipo === "RECEITA" || sp.tipo === "DESPESA" ? sp.tipo : undefined;
+  const pagina = Math.max(1, Number(sp.pagina) || 1);
 
   if (!periodoInicio || !periodoFim) notFound();
 
@@ -79,7 +94,14 @@ export default async function PaginaLancamentos({
   }
 
   const supabase = await createClient();
-  const resultado = await buscarLancamentosFiltrados(supabase, { tenantId: contexto.tenantId, filtro, periodoInicio, periodoFim });
+  const resultado = await buscarLancamentosFiltrados(supabase, {
+    tenantId: contexto.tenantId,
+    filtro,
+    periodoInicio,
+    periodoFim,
+    pagina,
+    tamanhoPagina: TAMANHO_PAGINA,
+  });
 
   const rotuloQuantidade =
     dimensaoAtiva?.dimensao === "forma_pagamento"
@@ -112,7 +134,17 @@ export default async function PaginaLancamentos({
         )}
       </div>
 
-      <TabelaEventos eventos={resultado.linhas} textoVazio="Nenhum lançamento encontrado nesse filtro." />
+      <TabelaEventos
+        eventos={resultado.linhas}
+        textoVazio="Nenhum lançamento encontrado nesse filtro."
+        paginacao={{
+          pagina,
+          totalPaginas: resultado.totalPaginas,
+          totalRegistros: resultado.totalEventos,
+          tamanhoPagina: TAMANHO_PAGINA,
+          hrefBase: hrefBaseComFiltros(sp),
+        }}
+      />
     </div>
   );
 }

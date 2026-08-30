@@ -53,27 +53,40 @@ export type FiltroLancamentos =
     };
 
 export type ResultadoLancamentosFiltrados = {
+  // Só a página atual — paginação real no servidor (achado em auditoria de
+  // escalabilidade, 30/08/2026): esta tela buscava o período inteiro sem
+  // teto (era o próprio link "Todo o histórico" do Saldo em caixa), e
+  // `buscarEventosPorId` fazia uma SEGUNDA busca completa por cima. `total`
+  // e `quantidade` continuam agregando o PERÍODO INTEIRO (não só a página)
+  // — são o saldo/contagem exibidos no topo da tela, precisam ficar certos
+  // independente de quantas páginas existirem.
   linhas: LinhaLancamentoFiltrado[];
   total: number;
   quantidade: number;
+  // Quantidade de EVENTOS distintos no período inteiro — é o que
+  // `totalPaginas` pagina, não necessariamente igual a `quantidade` (que em
+  // forma de pagamento conta baixas, podendo ter mais de uma por evento).
+  // Usado pelo pager, não pelo chip "N lançamentos/pagamentos" da tela.
+  totalEventos: number;
+  totalPaginas: number;
   rotulo: string;
 };
 
 const SELECT_EVENTO = "id, descricao, valor_total, tipo, parcelas(status, data_vencimento), rateio_categoria(categorias_financeiras(nome))";
-const VAZIO = (rotulo: string): ResultadoLancamentosFiltrados => ({ linhas: [], total: 0, quantidade: 0, rotulo });
+const VAZIO = (rotulo: string): ResultadoLancamentosFiltrados => ({ linhas: [], total: 0, quantidade: 0, totalEventos: 0, totalPaginas: 1, rotulo });
 
 export async function buscarLancamentosFiltrados(
   supabase: Cliente,
-  params: { tenantId: string; filtro: FiltroLancamentos; periodoInicio: string; periodoFim: string },
+  params: { tenantId: string; filtro: FiltroLancamentos; periodoInicio: string; periodoFim: string; pagina: number; tamanhoPagina: number },
 ): Promise<ResultadoLancamentosFiltrados> {
-  const { tenantId, filtro, periodoInicio, periodoFim } = params;
+  const { tenantId, filtro, periodoInicio, periodoFim, pagina, tamanhoPagina } = params;
   switch (filtro.dimensao) {
     case undefined:
-      return buscarTodoMovimento(supabase, tenantId, filtro.regime, periodoInicio, periodoFim, filtro.apenasTipo, filtro.rotulo);
+      return buscarTodoMovimento(supabase, tenantId, filtro.regime, periodoInicio, periodoFim, filtro.apenasTipo, filtro.rotulo, pagina, tamanhoPagina);
     case "forma_pagamento":
-      return buscarPorFormaPagamento(supabase, tenantId, filtro.valor, periodoInicio, periodoFim);
+      return buscarPorFormaPagamento(supabase, tenantId, filtro.valor, periodoInicio, periodoFim, pagina, tamanhoPagina);
     case "categoria":
-      return buscarPorMovimento(supabase, tenantId, filtro.valor, filtro.regime, periodoInicio, periodoFim, {
+      return buscarPorMovimento(supabase, tenantId, filtro.valor, filtro.regime, periodoInicio, periodoFim, pagina, tamanhoPagina, {
         campo: "categoriaId",
         buscarRotulo: (id) => buscarNome(supabase, "categorias_financeiras", tenantId, id),
         rotuloNenhuma: "Sem categoria",
@@ -81,7 +94,7 @@ export async function buscarLancamentosFiltrados(
         apenasTipo: filtro.apenasTipo,
       });
     case "centro_custo":
-      return buscarPorMovimento(supabase, tenantId, filtro.valor, filtro.regime, periodoInicio, periodoFim, {
+      return buscarPorMovimento(supabase, tenantId, filtro.valor, filtro.regime, periodoInicio, periodoFim, pagina, tamanhoPagina, {
         campo: "centroCustoId",
         buscarRotulo: (id) => buscarNome(supabase, "centros_custo", tenantId, id),
         rotuloNenhuma: "Sem centro de custo",
@@ -89,7 +102,7 @@ export async function buscarLancamentosFiltrados(
         apenasTipo: filtro.apenasTipo,
       });
     case "pessoa":
-      return buscarPorMovimento(supabase, tenantId, filtro.valor, filtro.regime, periodoInicio, periodoFim, {
+      return buscarPorMovimento(supabase, tenantId, filtro.valor, filtro.regime, periodoInicio, periodoFim, pagina, tamanhoPagina, {
         campo: "pessoaId",
         buscarRotulo: (id) => buscarNome(supabase, "pessoas", tenantId, id),
         rotuloNenhuma: "Sem pessoa vinculada",
@@ -97,6 +110,22 @@ export async function buscarLancamentosFiltrados(
         apenasTipo: filtro.apenasTipo,
       });
   }
+}
+
+// Ordena os eventos agregados pela data mais recente de movimento e recorta
+// só os ids da página pedida — o total/quantidade já foram calculados sobre
+// TODO o período antes disso (agregarMovimento), então recortar aqui não
+// afeta esses dois números, só quantos eventos são hidratados/exibidos.
+function paginarEventos(
+  valorPorEvento: Map<string, number>,
+  dataPorEvento: Map<string, string>,
+  pagina: number,
+  tamanhoPagina: number,
+): { idsPagina: string[]; totalPaginas: number } {
+  const idsOrdenados = [...valorPorEvento.keys()].sort((a, b) => (dataPorEvento.get(b) ?? "").localeCompare(dataPorEvento.get(a) ?? ""));
+  const totalPaginas = Math.max(1, Math.ceil(idsOrdenados.length / tamanhoPagina));
+  const inicio = (Math.max(1, pagina) - 1) * tamanhoPagina;
+  return { idsPagina: idsOrdenados.slice(inicio, inicio + tamanhoPagina), totalPaginas };
 }
 
 async function buscarNome(
@@ -109,11 +138,23 @@ async function buscarNome(
   return data?.nome ?? "-";
 }
 
-async function buscarEventosPorId(supabase: Cliente, tenantId: string, valorFiltradoPorEvento: Map<string, number>): Promise<LinhaLancamentoFiltrado[]> {
-  const eventoIds = [...valorFiltradoPorEvento.keys()];
+// `eventoIds` já vem só com os ids da página (recortados por
+// `paginarEventos`) — o `.in()` do PostgREST não garante devolver na mesma
+// ordem da lista, por isso reordena pelo id depois de buscar, em vez de
+// confiar na ordem da resposta.
+async function buscarEventosPorId(
+  supabase: Cliente,
+  tenantId: string,
+  eventoIds: string[],
+  valorFiltradoPorEvento: Map<string, number>,
+): Promise<LinhaLancamentoFiltrado[]> {
   if (eventoIds.length === 0) return [];
   const { data } = await supabase.from("eventos_financeiros").select(SELECT_EVENTO).eq("tenant_id", tenantId).in("id", eventoIds);
-  return (data ?? []).map((e) => ({ ...e, valorFiltrado: valorFiltradoPorEvento.get(e.id) ?? e.valor_total }));
+  const porId = new Map((data ?? []).map((e) => [e.id, e]));
+  return eventoIds
+    .map((id) => porId.get(id))
+    .filter((e): e is NonNullable<typeof e> => e != null)
+    .map((e) => ({ ...e, valorFiltrado: valorFiltradoPorEvento.get(e.id) ?? e.valor_total }));
 }
 
 // Compartilhado entre `buscarTodoMovimento` (sem dimensão) e
@@ -128,11 +169,22 @@ async function buscarEventosPorId(supabase: Cliente, tenantId: string, valorFilt
 // Com `apenasTipo`, todas as linhas já são do mesmo tipo — soma sem sinal,
 // mesmo padrão que todo o resto do drill-down já usa (total sempre
 // positivo, o chip "Só entradas"/"Só saídas" já comunica a direção).
-function agregarMovimento(linhas: MovimentoLinha[], apenasTipo: "RECEITA" | "DESPESA" | undefined): { total: number; valorPorEvento: Map<string, number> } {
+function agregarMovimento(
+  linhas: MovimentoLinha[],
+  apenasTipo: "RECEITA" | "DESPESA" | undefined,
+): { total: number; valorPorEvento: Map<string, number>; dataPorEvento: Map<string, string> } {
   const total = linhas.reduce((soma, l) => soma + (apenasTipo ? l.valor : valorComSinal(l)), 0);
   const valorPorEvento = new Map<string, number>();
-  for (const l of linhas) valorPorEvento.set(l.eventoFinanceiroId, (valorPorEvento.get(l.eventoFinanceiroId) ?? 0) + l.valor);
-  return { total, valorPorEvento };
+  const dataPorEvento = new Map<string, string>();
+  for (const l of linhas) {
+    valorPorEvento.set(l.eventoFinanceiroId, (valorPorEvento.get(l.eventoFinanceiroId) ?? 0) + l.valor);
+    // Data mais recente entre as linhas do mesmo evento (parcelado, ou
+    // dividido entre categorias/centros) — mesmo critério de "mais recente
+    // primeiro" que Despesas/Receitas já usam pra ordenar a lista.
+    const atual = dataPorEvento.get(l.eventoFinanceiroId);
+    if (!atual || l.data > atual) dataPorEvento.set(l.eventoFinanceiroId, l.data);
+  }
+  return { total, valorPorEvento, dataPorEvento };
 }
 
 // Sem dimensão nenhuma — todo o movimento de um regime/tipo/período, sem
@@ -147,14 +199,24 @@ async function buscarTodoMovimento(
   periodoFim: string,
   apenasTipo: "RECEITA" | "DESPESA" | undefined,
   rotulo: string,
+  pagina: number,
+  tamanhoPagina: number,
 ): Promise<ResultadoLancamentosFiltrados> {
   const movimento = await buscarMovimento(supabase, { tenantId, regime, dataInicio: periodoInicio, dataFim: periodoFim });
   const linhas = movimento.filter((l) => !apenasTipo || l.tipo === apenasTipo);
 
   if (linhas.length === 0) return VAZIO(rotulo);
 
-  const { total, valorPorEvento } = agregarMovimento(linhas, apenasTipo);
-  return { linhas: await buscarEventosPorId(supabase, tenantId, valorPorEvento), total, quantidade: valorPorEvento.size, rotulo };
+  const { total, valorPorEvento, dataPorEvento } = agregarMovimento(linhas, apenasTipo);
+  const { idsPagina, totalPaginas } = paginarEventos(valorPorEvento, dataPorEvento, pagina, tamanhoPagina);
+  return {
+    linhas: await buscarEventosPorId(supabase, tenantId, idsPagina, valorPorEvento),
+    total,
+    quantidade: valorPorEvento.size,
+    totalEventos: valorPorEvento.size,
+    totalPaginas,
+    rotulo,
+  };
 }
 
 // categoria/centro de custo/pessoa: mesma forma de filtrar+somar, só muda
@@ -166,6 +228,8 @@ async function buscarPorMovimento(
   regime: Regime,
   periodoInicio: string,
   periodoFim: string,
+  pagina: number,
+  tamanhoPagina: number,
   opcoes: {
     campo: "categoriaId" | "centroCustoId" | "pessoaId";
     buscarRotulo: (id: string) => Promise<string>;
@@ -188,9 +252,17 @@ async function buscarPorMovimento(
 
   if (linhas.length === 0) return VAZIO(rotulo);
 
-  const { total, valorPorEvento } = agregarMovimento(linhas, opcoes.apenasTipo);
+  const { total, valorPorEvento, dataPorEvento } = agregarMovimento(linhas, opcoes.apenasTipo);
+  const { idsPagina, totalPaginas } = paginarEventos(valorPorEvento, dataPorEvento, pagina, tamanhoPagina);
 
-  return { linhas: await buscarEventosPorId(supabase, tenantId, valorPorEvento), total, quantidade: valorPorEvento.size, rotulo };
+  return {
+    linhas: await buscarEventosPorId(supabase, tenantId, idsPagina, valorPorEvento),
+    total,
+    quantidade: valorPorEvento.size,
+    totalEventos: valorPorEvento.size,
+    totalPaginas,
+    rotulo,
+  };
 }
 
 async function buscarPorFormaPagamento(
@@ -199,10 +271,12 @@ async function buscarPorFormaPagamento(
   valor: ValorFiltro,
   periodoInicio: string,
   periodoFim: string,
+  pagina: number,
+  tamanhoPagina: number,
 ): Promise<ResultadoLancamentosFiltrados> {
   let query = supabase
     .from("baixas")
-    .select("valor_pago, forma_pagamento_id, formas_pagamento(nome), parcelas!inner(evento_financeiro_id)")
+    .select("valor_pago, forma_pagamento_id, data_pagamento, formas_pagamento(nome), parcelas!inner(evento_financeiro_id)")
     .eq("tenant_id", tenantId)
     .is("estornado_em", null)
     .gte("data_pagamento", periodoInicio)
@@ -230,10 +304,22 @@ async function buscarPorFormaPagamento(
 
   const total = baixas.reduce((soma, b) => soma + Number(b.valor_pago), 0);
   const valorPorEvento = new Map<string, number>();
+  const dataPorEvento = new Map<string, string>();
   for (const b of baixas) {
     const eventoId = b.parcelas!.evento_financeiro_id;
     valorPorEvento.set(eventoId, (valorPorEvento.get(eventoId) ?? 0) + Number(b.valor_pago));
+    const atual = dataPorEvento.get(eventoId);
+    if (!atual || b.data_pagamento > atual) dataPorEvento.set(eventoId, b.data_pagamento);
   }
 
-  return { linhas: await buscarEventosPorId(supabase, tenantId, valorPorEvento), total, quantidade: baixas.length, rotulo };
+  const { idsPagina, totalPaginas } = paginarEventos(valorPorEvento, dataPorEvento, pagina, tamanhoPagina);
+
+  return {
+    linhas: await buscarEventosPorId(supabase, tenantId, idsPagina, valorPorEvento),
+    total,
+    quantidade: baixas.length,
+    totalEventos: valorPorEvento.size,
+    totalPaginas,
+    rotulo,
+  };
 }

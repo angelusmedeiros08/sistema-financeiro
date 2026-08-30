@@ -75,7 +75,7 @@ export default async function PaginaDespesas({ searchParams }: { searchParams: P
             textoVazio="Nenhuma despesa registrada ainda."
             titulo="Lançadas"
             caminhoBase="despesas"
-            paginacao={{ pagina, totalPaginas, totalRegistros: totalDespesas ?? 0, tamanhoPagina: TAMANHO_PAGINA }}
+            paginacao={{ pagina, totalPaginas, totalRegistros: totalDespesas ?? 0, tamanhoPagina: TAMANHO_PAGINA, hrefBase: "/despesas" }}
           />
         )}
       </section>

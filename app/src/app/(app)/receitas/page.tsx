@@ -75,7 +75,7 @@ export default async function PaginaReceitas({ searchParams }: { searchParams: P
             textoVazio="Nenhuma receita registrada ainda."
             titulo="Lançadas"
             caminhoBase="receitas"
-            paginacao={{ pagina, totalPaginas, totalRegistros: totalReceitas ?? 0, tamanhoPagina: TAMANHO_PAGINA }}
+            paginacao={{ pagina, totalPaginas, totalRegistros: totalReceitas ?? 0, tamanhoPagina: TAMANHO_PAGINA, hrefBase: "/receitas" }}
           />
         )}
       </section>
