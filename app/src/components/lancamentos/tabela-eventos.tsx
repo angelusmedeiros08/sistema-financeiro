@@ -88,6 +88,7 @@ export function TabelaEventos({
   textoVazio,
   titulo = "Lançamentos",
   caminhoBase,
+  paginacao,
 }: {
   eventos: EventoLinha[];
   textoVazio: string;
@@ -95,16 +96,28 @@ export function TabelaEventos({
   // string, não função — funções não atravessam a fronteira Server/Client
   // Component (esta tabela é "use client", as páginas que a chamam não são).
   caminhoBase?: "receitas" | "despesas";
+  /** Paginação real no servidor — `eventos` já é só a página atual. Ver `paginacaoServidor` em TabelaLista. */
+  paginacao?: { pagina: number; totalPaginas: number; totalRegistros: number; tamanhoPagina: number };
 }) {
-  if (eventos.length === 0) {
+  if (eventos.length === 0 && !paginacao) {
     return <EstadoVazio texto={textoVazio} />;
   }
 
   const linkPara = caminhoBase
     ? (e: EventoLinha) => `/${caminhoBase}/${e.id}`
-    : eventos[0].tipo
+    : eventos[0]?.tipo
       ? (e: EventoLinha) => `/${e.tipo === "RECEITA" ? "receitas" : "despesas"}/${e.id}`
       : undefined;
 
-  return <TabelaLista titulo={titulo} data={eventos} columns={colunas} busca={false} textoVazio={textoVazio} linkPara={linkPara} />;
+  return (
+    <TabelaLista
+      titulo={titulo}
+      data={eventos}
+      columns={colunas}
+      busca={false}
+      textoVazio={textoVazio}
+      linkPara={linkPara}
+      paginacaoServidor={paginacao && caminhoBase ? { ...paginacao, hrefBase: `/${caminhoBase}` } : undefined}
+    />
+  );
 }

@@ -36,18 +36,31 @@ export type VendaDetalhe = VendaResumo & {
   itens: ItemVenda[];
 };
 
-export async function listarVendas(supabase: Cliente, tenantId: string, params?: { status?: StatusVenda }): Promise<VendaResumo[]> {
+// Paginação real no servidor (achado em auditoria de escalabilidade,
+// 30/08/2026) — antes buscava todo o histórico de vendas do tenant sem
+// `.range()` nem teto de período, mesma classe de exposição já corrigida em
+// Despesas/Receitas e na Central de Importações.
+export async function listarVendas(
+  supabase: Cliente,
+  tenantId: string,
+  params?: { status?: StatusVenda; pagina?: number; tamanhoPagina?: number },
+): Promise<{ vendas: VendaResumo[]; total: number }> {
+  const tamanhoPagina = params?.tamanhoPagina ?? 20;
+  const pagina = Math.max(1, params?.pagina ?? 1);
+  const inicio = (pagina - 1) * tamanhoPagina;
+
   let query = supabase
     .from("vendas")
-    .select("id, numero, pessoa_id, status, data_emissao, criado_em, pessoas(nome), venda_itens(valor_total)")
+    .select("id, numero, pessoa_id, status, data_emissao, criado_em, pessoas(nome), venda_itens(valor_total)", { count: "exact" })
     .eq("tenant_id", tenantId)
-    .order("numero", { ascending: false });
+    .order("numero", { ascending: false })
+    .range(inicio, inicio + tamanhoPagina - 1);
 
   if (params?.status) query = query.eq("status", params.status);
 
-  const { data } = await query;
+  const { data, count } = await query;
 
-  return (data ?? []).map((v) => ({
+  const vendas = (data ?? []).map((v) => ({
     id: v.id,
     numero: v.numero,
     pessoaId: v.pessoa_id,
@@ -57,6 +70,8 @@ export async function listarVendas(supabase: Cliente, tenantId: string, params?:
     valorTotal: (v.venda_itens ?? []).reduce((acc, i) => acc + Number(i.valor_total), 0),
     criadoEm: v.criado_em,
   }));
+
+  return { vendas, total: count ?? 0 };
 }
 
 export async function buscarVenda(supabase: Cliente, tenantId: string, vendaId: string): Promise<VendaDetalhe | null> {

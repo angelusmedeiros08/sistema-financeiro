@@ -19,15 +19,23 @@ const FILTROS: { valor: string; rotulo: string; status?: StatusVenda }[] = [
   { valor: "recusada", rotulo: "Recusada", status: "RECUSADO" },
 ];
 
-export default async function PaginaVendas({ searchParams }: { searchParams: Promise<{ situacao?: string }> }) {
+const TAMANHO_PAGINA = 20;
+
+export default async function PaginaVendas({ searchParams }: { searchParams: Promise<{ situacao?: string; pagina?: string }> }) {
   const contexto = await obterUsuarioETenantAtual();
   if ("erro" in contexto) redirect("/entrar");
 
-  const { situacao = "todas" } = await searchParams;
+  const { situacao = "todas", pagina: paginaBruta } = await searchParams;
   const filtro = FILTROS.find((f) => f.valor === situacao) ?? FILTROS[0];
+  const pagina = Math.max(1, Number(paginaBruta) || 1);
 
   const supabase = await createClient();
-  const vendas = await listarVendas(supabase, contexto.tenantId, { status: filtro.status });
+  const { vendas, total } = await listarVendas(supabase, contexto.tenantId, {
+    status: filtro.status,
+    pagina,
+    tamanhoPagina: TAMANHO_PAGINA,
+  });
+  const totalPaginas = Math.max(1, Math.ceil(total / TAMANHO_PAGINA));
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-6">
@@ -56,7 +64,10 @@ export default async function PaginaVendas({ searchParams }: { searchParams: Pro
         ))}
       </div>
 
-      <TabelaVendas vendas={vendas} />
+      <TabelaVendas
+        vendas={vendas}
+        paginacao={{ pagina, totalPaginas, totalRegistros: total, tamanhoPagina: TAMANHO_PAGINA, hrefBase: `/vendas?situacao=${filtro.valor}` }}
+      />
     </div>
   );
 }

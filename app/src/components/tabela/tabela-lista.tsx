@@ -21,6 +21,7 @@ import {
 } from "@tanstack/react-table";
 import { CaretLeft, CaretRight, DotsThree, MagnifyingGlass } from "@phosphor-icons/react/dist/ssr";
 import Link from "next/link";
+import { hrefComPagina } from "./href-pagina";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -124,6 +125,71 @@ function paginasVisiveis(atual: number, total: number, maximo = 5): number[] {
   return Array.from({ length: fim - inicio }, (_, i) => inicio + i);
 }
 
+/** Pager do modo servidor de TabelaLista — navegação real via `<Link>`, `pagina` é 1-indexado (mesma convenção da URL). */
+function PagerServidor({
+  pagina,
+  totalPaginas,
+  totalRegistros,
+  tamanhoPagina,
+  hrefBase,
+}: {
+  pagina: number;
+  totalPaginas: number;
+  totalRegistros: number;
+  tamanhoPagina: number;
+  hrefBase: string;
+}) {
+  const indiceAtual0 = pagina - 1;
+  const inicio = indiceAtual0 * tamanhoPagina + 1;
+  const fim = Math.min(pagina * tamanhoPagina, totalRegistros);
+
+  return (
+    <div className="flex items-center justify-between border-t border-border px-4.5 py-3 text-xs text-muted-foreground">
+      <span>
+        Mostrando {inicio}–{fim} de {totalRegistros}
+      </span>
+      <div className="flex items-center gap-1.5">
+        {pagina > 1 ? (
+          <Link
+            href={hrefComPagina(hrefBase, pagina - 1)}
+            className="flex size-6.5 items-center justify-center rounded-[7px] bg-muted text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <CaretLeft size={12} weight="bold" />
+          </Link>
+        ) : (
+          <span className="flex size-6.5 items-center justify-center rounded-[7px] bg-muted text-muted-foreground opacity-40">
+            <CaretLeft size={12} weight="bold" />
+          </span>
+        )}
+        {paginasVisiveis(indiceAtual0, totalPaginas).map((i) => (
+          <Link
+            key={i}
+            href={hrefComPagina(hrefBase, i + 1)}
+            className={cn(
+              "flex size-6.5 items-center justify-center rounded-[7px] text-[11px] font-semibold transition-colors",
+              i === indiceAtual0 ? "bg-foreground text-white" : "bg-muted text-muted-foreground hover:text-foreground",
+            )}
+          >
+            {i + 1}
+          </Link>
+        ))}
+        {pagina < totalPaginas ? (
+          <Link
+            href={hrefComPagina(hrefBase, pagina + 1)}
+            className="flex size-6.5 items-center justify-center rounded-[7px] bg-muted text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <CaretRight size={12} weight="bold" />
+          </Link>
+        ) : (
+          <span className="flex size-6.5 items-center justify-center rounded-[7px] bg-muted text-muted-foreground opacity-40">
+            <CaretRight size={12} weight="bold" />
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
 interface TabelaListaProps<TData extends Record<string, any>> {
   titulo: string;
   data: TData[];
@@ -140,6 +206,20 @@ interface TabelaListaProps<TData extends Record<string, any>> {
   linkPara?: (linha: TData) => string;
   /** Desliga o realce de fundo ao passar o mouse na linha inteira — pra tabelas onde só ALGUMAS células são clicáveis (não `linkPara`, links próprios dentro de células específicas), pra não sugerir que a linha inteira navega quando não navega (achado em revisão de código: centro-custo-tabela.tsx). Sem efeito se `linkPara` estiver presente. */
   hoverLinha?: boolean;
+  /**
+   * Modo servidor: `data` já chega sendo só a página atual (a query fez
+   * `.range()`), não a lista inteira do tenant — achado em auditoria de
+   * escalabilidade (30/08/2026), telas de uso diário buscavam todo o
+   * histórico pra paginar só no navegador. Quando presente, o pager usa
+   * `<Link>` de navegação real (troca `?pagina=`) em vez do estado interno
+   * do TanStack Table, a contagem do cabeçalho usa `totalRegistros` (não
+   * o tamanho de `data`), e a ordenação por coluna some — só a página
+   * atual está em memória, ordenar clicando na coluna reordenaria apenas
+   * essas linhas, resultado enganoso. Busca (`busca`) é ignorada nesse
+   * modo pelo mesmo motivo. `hrefBase` é o caminho da própria tela, com
+   * qualquer outro filtro já aplicado (ex. "/vendas?situacao=aprovada").
+   */
+  paginacaoServidor?: { pagina: number; totalPaginas: number; totalRegistros: number; tamanhoPagina: number; hrefBase: string };
 }
 
 export function TabelaLista<TData extends Record<string, any>>({
@@ -153,10 +233,18 @@ export function TabelaLista<TData extends Record<string, any>>({
   acoes,
   linkPara,
   hoverLinha = true,
+  paginacaoServidor,
 }: TabelaListaProps<TData>) {
+  const buscaHabilitada = busca && !paginacaoServidor;
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
-  const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: tamanhoPagina });
+  // Em modo servidor `data` já é só a página atual — pageSize gigante torna
+  // a paginação interna do TanStack um no-op, pra não repaginar em cima da
+  // página que o servidor já recortou.
+  const [pagination, setPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: paginacaoServidor ? Number.MAX_SAFE_INTEGER : tamanhoPagina,
+  });
 
   const colunasFinais: ColunaLista<TData>[] = acoes && !linkPara
     ? [
@@ -193,8 +281,8 @@ export function TabelaLista<TData extends Record<string, any>>({
   });
 
   const linhas = table.getRowModel().rows;
-  const totalFiltrado = table.getFilteredRowModel().rows.length;
-  const totalPaginas = table.getPageCount();
+  const totalFiltrado = paginacaoServidor ? paginacaoServidor.totalRegistros : table.getFilteredRowModel().rows.length;
+  const totalPaginas = paginacaoServidor ? paginacaoServidor.totalPaginas : table.getPageCount();
 
   return (
     <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-card">
@@ -205,7 +293,7 @@ export function TabelaLista<TData extends Record<string, any>>({
             {totalFiltrado} {totalFiltrado === 1 ? "registro" : "registros"}
           </span>
         </div>
-        {busca && (
+        {buscaHabilitada && (
           <div className="relative w-[180px]">
             <MagnifyingGlass size={14} className="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -224,13 +312,13 @@ export function TabelaLista<TData extends Record<string, any>>({
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {
-                  const podeOrdenar = header.column.getCanSort();
+                  const podeOrdenar = !paginacaoServidor && header.column.getCanSort();
                   const ordenacao = header.column.getIsSorted();
                   const numerica = header.column.columnDef.meta?.numerica;
                   return (
                     <th
                       key={header.id}
-                      onClick={header.column.getToggleSortingHandler()}
+                      onClick={podeOrdenar ? header.column.getToggleSortingHandler() : undefined}
                       className={cn(
                         "border-b border-border px-4.5 py-3 text-left text-[10.5px] font-bold tracking-wide text-muted-foreground uppercase",
                         numerica && "text-right",
@@ -289,7 +377,16 @@ export function TabelaLista<TData extends Record<string, any>>({
         </table>
       </div>
 
-      {totalPaginas > 1 && (
+      {totalPaginas > 1 && paginacaoServidor && (
+        <PagerServidor
+          pagina={paginacaoServidor.pagina}
+          totalPaginas={totalPaginas}
+          totalRegistros={totalFiltrado}
+          tamanhoPagina={paginacaoServidor.tamanhoPagina}
+          hrefBase={paginacaoServidor.hrefBase}
+        />
+      )}
+      {totalPaginas > 1 && !paginacaoServidor && (
         <div className="flex items-center justify-between border-t border-border px-4.5 py-3 text-xs text-muted-foreground">
           <span>
             Mostrando {pagination.pageIndex * tamanhoPagina + 1}–{Math.min((pagination.pageIndex + 1) * tamanhoPagina, totalFiltrado)} de {totalFiltrado}

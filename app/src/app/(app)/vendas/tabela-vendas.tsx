@@ -64,12 +64,27 @@ const colunas = helper.columns([
   }),
 ]);
 
-export function TabelaVendas({ vendas }: { vendas: LinhaVenda[] }) {
-  if (vendas.length === 0) {
+export function TabelaVendas({
+  vendas,
+  paginacao,
+}: {
+  vendas: LinhaVenda[];
+  /** Paginação real no servidor — `vendas` já é só a página atual. Ver `paginacaoServidor` em TabelaLista. */
+  paginacao?: { pagina: number; totalPaginas: number; totalRegistros: number; tamanhoPagina: number; hrefBase: string };
+}) {
+  if (vendas.length === 0 && !paginacao) {
     return <EstadoVazio texto="Nenhuma venda nessa situação." />;
   }
 
   return (
-    <TabelaLista titulo="Vendas" data={vendas} columns={colunas} busca={false} textoVazio="Nenhuma venda nessa situação." linkPara={(v) => `/vendas/${v.id}`} />
+    <TabelaLista
+      titulo="Vendas"
+      data={vendas}
+      columns={colunas}
+      busca={false}
+      textoVazio="Nenhuma venda nessa situação."
+      linkPara={(v) => `/vendas/${v.id}`}
+      paginacaoServidor={paginacao}
+    />
   );
 }
