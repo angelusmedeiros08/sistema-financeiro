@@ -332,6 +332,13 @@ export async function estornarEventoFinanceiro(
   // policy de UPDATE em eventos_financeiros bloqueava o passo final em
   // silêncio), uma nova chamada não pode criar um SEGUNDO lançamento de
   // estorno — só completa o que faltou.
+  //
+  // Essa checagem e o INSERT não são atômicos entre si — duas requisições
+  // quase simultâneas podiam criar 2 lançamentos de estorno pro mesmo
+  // original (mesma classe de achado de estornarBaixa, ciclo-vida-
+  // parcela.ts). O índice único `lancamentos_estornado_de_id_unico` é a
+  // trava de verdade; a corrida perdedora bate em `23505`
+  // (unique_violation), tratado aqui como "outra requisição já criou".
   const { data: estornoJaExiste } = await supabase.from("lancamentos").select("id").eq("estornado_de_id", lancamentoOriginal.id).maybeSingle();
 
   if (!estornoJaExiste) {
@@ -351,7 +358,9 @@ export async function estornarEventoFinanceiro(
       partidas: partidasInvertidas,
     });
 
-    if ("erro" in resultadoLancamento) return { erro: resultadoLancamento.erro };
+    if ("erro" in resultadoLancamento && resultadoLancamento.codigoPostgres !== "23505") {
+      return { erro: resultadoLancamento.erro };
+    }
   }
 
   // Recarrega o status das parcelas em vez de reusar o array do topo da

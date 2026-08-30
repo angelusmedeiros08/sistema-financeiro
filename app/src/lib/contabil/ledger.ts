@@ -37,7 +37,14 @@ export async function registrarLancamento(
     estornado_de_id?: string;
     partidas: PartidaEntrada[];
   },
-): Promise<{ lancamento_id: string } | { erro: string }> {
+  // `codigoPostgres` é o SQLSTATE do erro (ex. "23505" = unique_violation) —
+  // exposto pra quem chama distinguir uma corrida esperada (ex.: dois
+  // cliques em "Estornar" quase simultâneos, ambos batendo no índice único
+  // de `estornado_de_id`) de uma falha real. Achado em auditoria de
+  // integridade financeira (30/08/2026): sem isso, `estornarBaixa` só via
+  // uma mensagem de texto genérica e não tinha como recuperar do jeito
+  // certo (que é: reconhecer que outra requisição já fez o estorno).
+): Promise<{ lancamento_id: string } | { erro: string; codigoPostgres?: string }> {
   const somaDebito = params.partidas
     .filter((p) => p.tipo === "DEBITO")
     .reduce((acc, p) => acc + p.valor, 0);
@@ -63,7 +70,7 @@ export async function registrarLancamento(
   });
 
   if (error || !lancamentoId) {
-    return { erro: error?.message ?? "Falha ao registrar lançamento." };
+    return { erro: error?.message ?? "Falha ao registrar lançamento.", codigoPostgres: error?.code };
   }
 
   return { lancamento_id: lancamentoId };

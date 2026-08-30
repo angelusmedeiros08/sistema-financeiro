@@ -55,6 +55,17 @@ export async function estornarBaixa(
   // UPDATE bloqueado em silêncio pelo RLS —, já corrigido na policy, mas
   // qualquer outra causa de falha no passo final teria o mesmo efeito), uma
   // nova chamada não pode criar um SEGUNDO lançamento de estorno.
+  //
+  // Essa checagem (SELECT) e o INSERT abaixo não são atômicos entre si —
+  // duas requisições quase simultâneas (duplo clique em "Estornar", ou duas
+  // abas) podiam ambas ler "não existe" antes de qualquer uma commitar,
+  // criando 2 lançamentos de estorno pro mesmo original (achado em
+  // auditoria de integridade financeira, 30/08/2026, testando ao vivo com
+  // um tenant real: 3 estornos criados em segundos um do outro). O índice
+  // único `lancamentos_estornado_de_id_unico` (migration correspondente)
+  // é a trava de verdade — a corrida perdedora bate no índice e recebe
+  // `23505` (unique_violation) aqui, tratado como "outra requisição já
+  // criou", não como falha.
   const { data: estornoJaExiste } = await supabase.from("lancamentos").select("id").eq("estornado_de_id", lancamentoOriginal.id).maybeSingle();
 
   if (!estornoJaExiste) {
@@ -74,7 +85,7 @@ export async function estornarBaixa(
       partidas: partidasInvertidas,
     });
 
-    if ("erro" in resultadoLancamento) {
+    if ("erro" in resultadoLancamento && resultadoLancamento.codigoPostgres !== "23505") {
       return { erro: resultadoLancamento.erro };
     }
   }
