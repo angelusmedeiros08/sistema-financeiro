@@ -2,16 +2,16 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
-import { buscarGradeOrcamento, buscarOrcadoRealizado } from "@/lib/orcamento/orcamento";
+import { buscarGradePrevisionamento, buscarPrevistoRealizado } from "@/lib/previsionamento/previsionamento";
 import type { Regime } from "@/lib/relatorios/regime";
-import { GradeOrcamento } from "./grade-orcamento";
-import { OrcadoRealizadoBarras } from "@/components/relatorios/orcado-realizado-barras";
+import { GradePrevisionamento } from "./grade-previsionamento";
+import { PrevistoRealizadoBarras } from "@/components/relatorios/previsto-realizado-barras";
 import { cn } from "@/lib/utils";
 import { hojeIsoBrasil } from "@/lib/data-brasil";
 
 const ABAS = [
   { valor: "cadastro", rotulo: "Cadastro de meta" },
-  { valor: "comparativo", rotulo: "Orçado × Realizado" },
+  { valor: "comparativo", rotulo: "Previsto × Realizado" },
 ] as const;
 
 const REGIMES: { valor: Regime; rotulo: string }[] = [
@@ -20,7 +20,7 @@ const REGIMES: { valor: Regime; rotulo: string }[] = [
   { valor: "realizado", rotulo: "Pagamento realizado" },
 ];
 
-export default async function PaginaOrcamento({
+export default async function PaginaPrevisionamento({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | undefined>>;
@@ -38,12 +38,12 @@ export default async function PaginaOrcamento({
   function href(overrides: Record<string, string>) {
     const p = new URLSearchParams(Object.entries(sp).filter(([, v]) => v !== undefined) as [string, string][]);
     for (const [chave, valor] of Object.entries(overrides)) p.set(chave, valor);
-    return `/orcamento?${p.toString()}`;
+    return `/previsionamento?${p.toString()}`;
   }
 
   return (
     <div className="flex w-full flex-col gap-6">
-      <h1 className="text-xl font-bold tracking-tight text-foreground">Orçamento</h1>
+      <h1 className="text-xl font-bold tracking-tight text-foreground">Previsionamento</h1>
 
       <div className="flex gap-1">
         {ABAS.map((a) => (
@@ -80,7 +80,7 @@ async function AbaCadastro({
   href: (overrides: Record<string, string>) => string;
   supabase: Awaited<ReturnType<typeof createClient>>;
 }) {
-  const linhas = await buscarGradeOrcamento(supabase, { tenantId, ano });
+  const linhas = await buscarGradePrevisionamento(supabase, { tenantId, ano });
 
   return (
     <>
@@ -103,7 +103,7 @@ async function AbaCadastro({
         {linhas.length === 0 ? (
           <p className="text-sm text-muted-foreground">Nenhuma categoria cadastrada ainda.</p>
         ) : (
-          <GradeOrcamento ano={ano} linhas={linhas} />
+          <GradePrevisionamento ano={ano} linhas={linhas} />
         )}
       </div>
     </>
@@ -123,7 +123,7 @@ async function AbaComparativo({
   href: (overrides: Record<string, string>) => string;
   supabase: Awaited<ReturnType<typeof createClient>>;
 }) {
-  const linhas = await buscarOrcadoRealizado(supabase, { tenantId, ano, regime, origemHref: href({}) });
+  const linhas = await buscarPrevistoRealizado(supabase, { tenantId, ano, regime, origemHref: href({}) });
   const receitas = linhas.filter((l) => l.tipo === "RECEITA");
   const despesas = linhas.filter((l) => l.tipo === "DESPESA");
 
@@ -162,12 +162,12 @@ async function AbaComparativo({
 
       <div className="rounded-2xl bg-card shadow-card p-6">
         <h2 className="mb-4 font-heading text-base font-bold text-foreground">Receitas</h2>
-        <OrcadoRealizadoBarras linhas={receitas} />
+        <PrevistoRealizadoBarras linhas={receitas} />
       </div>
 
       <div className="rounded-2xl bg-card shadow-card p-6">
         <h2 className="mb-4 font-heading text-base font-bold text-foreground">Despesas</h2>
-        <OrcadoRealizadoBarras linhas={despesas} />
+        <PrevistoRealizadoBarras linhas={despesas} />
       </div>
     </>
   );

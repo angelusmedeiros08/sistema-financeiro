@@ -17,7 +17,7 @@ import {
 } from "@tanstack/react-table";
 import { cn } from "@/lib/utils";
 
-// Arquétipo 1 (matriz densa) — pra DRE/DFC/Orçamento, tabelas de até ~38
+// Arquétipo 1 (matriz densa) — pra DRE/DFC/Previsionamento, tabelas de até ~38
 // colunas mensais + linha configurável por tenant. Motor TanStack Table v9
 // (API de registro explícito de feature — ver
 // node_modules/@tanstack/react-table/skills/), coluna pinada de verdade
@@ -165,7 +165,7 @@ export function TabelaMatriz<TData extends Record<string, any>>({
                   const numerica = header.column.columnDef.meta?.numerica;
                   const podeOrdenar = header.column.getCanSort();
                   const ordenacao = header.column.getIsSorted();
-                  // Nem toda matriz agrupa coluna (Orçamento é totalmente
+                  // Nem toda matriz agrupa coluna (Previsionamento é totalmente
                   // "chata", sem super-header) — checar se ESTE header tem
                   // filho de verdade, não a profundidade da linha, senão
                   // uma tabela sem grupo nenhum trata sua única linha de

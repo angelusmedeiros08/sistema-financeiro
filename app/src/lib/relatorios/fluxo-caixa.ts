@@ -57,7 +57,7 @@ export type PontoPrevistoRealizado = {
 
 // Previsto (vencimento) x Realizado (pagamento) lado a lado por mês —
 // pedido explícito do usuário e do sócio dele, independente do módulo de
-// Orçamento. Não quebra por atividade de DFC (Operacional/Investimento/
+// Previsionamento. Não quebra por atividade de DFC (Operacional/Investimento/
 // Financiamento) como a planilha faz — isso exigiria classificar cada
 // categoria numa atividade de DFC, um conceito novo que não foi pedido
 // nesta fase; a comparação aqui é no total, mês a mês.

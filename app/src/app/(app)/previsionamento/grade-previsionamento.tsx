@@ -2,8 +2,8 @@
 
 import { useState, useTransition } from "react";
 import { CaretDown } from "@phosphor-icons/react";
-import type { LinhaGradeOrcamento } from "@/lib/orcamento/orcamento";
-import { definirValorOrcamentoAction, copiarValorParaRestoDoAnoAction } from "@/lib/orcamento/orcamento-actions";
+import type { LinhaGradePrevisionamento } from "@/lib/previsionamento/previsionamento";
+import { definirValorPrevisionamentoAction, copiarValorParaRestoDoAnoAction } from "@/lib/previsionamento/previsionamento-actions";
 import { cn } from "@/lib/utils";
 import { TabelaMatriz, criarColunaMatriz } from "@/components/tabela/tabela-matriz";
 
@@ -19,7 +19,7 @@ function parseValor(texto: string): number {
   return Number.isFinite(numero) && numero >= 0 ? numero : 0;
 }
 
-const helper = criarColunaMatriz<LinhaGradeOrcamento>();
+const helper = criarColunaMatriz<LinhaGradePrevisionamento>();
 
 // Grade categoria × 12 meses com autosave por célula (onBlur) — mesmo
 // padrão de coluna fixa/tabela compacta da Matriz do DRE/DFC (TabelaMatriz,
@@ -31,7 +31,7 @@ const helper = criarColunaMatriz<LinhaGradeOrcamento>();
 // sempre, só herdando o resto do arquétipo (coluna fixa, mês atual, Total).
 // "Copiar Jan pro resto do ano" pede confirmação só quando algum mês de
 // destino já tem valor diferente de zero (evita sobrescrever sem querer).
-export function GradeOrcamento({ ano, linhas }: { ano: number; linhas: LinhaGradeOrcamento[] }) {
+export function GradePrevisionamento({ ano, linhas }: { ano: number; linhas: LinhaGradePrevisionamento[] }) {
   const [valores, setValores] = useState<Map<string, number>>(
     () => new Map(linhas.flatMap((l) => l.celulas.map((c) => [`${l.categoriaId}:${c.mes}`, c.valorPrevisto] as const))),
   );
@@ -60,7 +60,7 @@ export function GradeOrcamento({ ano, linhas }: { ano: number; linhas: LinhaGrad
     setValores((atual) => new Map(atual).set(chave(categoriaId, mes), valor));
     marcarStatus(categoriaId, "salvando");
     iniciarTransicao(async () => {
-      const resultado = await definirValorOrcamentoAction({ categoriaId, ano, mes, valorPrevisto: valor });
+      const resultado = await definirValorPrevisionamentoAction({ categoriaId, ano, mes, valorPrevisto: valor });
       marcarStatus(categoriaId, "erro" in resultado ? "erro" : "salvo");
     });
   }

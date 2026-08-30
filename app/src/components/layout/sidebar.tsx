@@ -70,7 +70,7 @@ const SUB_ITENS_COMERCIAL: SubItemNav[] = [
 ];
 
 const SUB_ITENS_ANALISE: SubItemNav[] = [
-  { href: "/orcamento", label: "Orçamento" },
+  { href: "/previsionamento", label: "Previsionamento" },
   { href: "/indicadores", label: "Indicadores" },
 ];
 

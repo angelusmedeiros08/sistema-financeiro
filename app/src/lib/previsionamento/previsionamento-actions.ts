@@ -3,11 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/utils/supabase/server";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
-import { definirValorOrcamento, copiarValorParaRestoDoAno } from "./orcamento";
+import { definirValorPrevisionamento, copiarValorParaRestoDoAno } from "./previsionamento";
 
 type ResultadoAcao = { erro: string } | { sucesso: true };
 
-export async function definirValorOrcamentoAction(params: {
+export async function definirValorPrevisionamentoAction(params: {
   categoriaId: string;
   ano: number;
   mes: number;
@@ -17,7 +17,7 @@ export async function definirValorOrcamentoAction(params: {
   if ("erro" in contexto) return { erro: contexto.erro };
 
   const supabase = await createClient();
-  const resultado = await definirValorOrcamento(supabase, {
+  const resultado = await definirValorPrevisionamento(supabase, {
     tenantId: contexto.tenantId,
     categoriaId: params.categoriaId,
     ano: params.ano,
@@ -27,7 +27,7 @@ export async function definirValorOrcamentoAction(params: {
   });
 
   if ("erro" in resultado) return resultado;
-  revalidatePath("/orcamento");
+  revalidatePath("/previsionamento");
   return { sucesso: true };
 }
 
@@ -51,6 +51,6 @@ export async function copiarValorParaRestoDoAnoAction(params: {
   });
 
   if ("erro" in resultado) return resultado;
-  revalidatePath("/orcamento");
+  revalidatePath("/previsionamento");
   return { sucesso: true };
 }

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { LinhaOrcadoRealizado } from "@/lib/orcamento/orcamento";
+import type { LinhaPrevistoRealizado } from "@/lib/previsionamento/previsionamento";
 import { formatarMoeda, formatarNumeroCompacto, formatarPercentual } from "@/lib/formatacao";
 import { cn } from "@/lib/utils";
 import { TrilhoBarra } from "./trilho-barra";
@@ -8,9 +8,9 @@ import { TrilhoBarra } from "./trilho-barra";
 // escala — desvio positivo é ruim pra despesa (gastou mais que o
 // planejado) e bom pra receita (recebeu mais), a cor do badge inverte
 // conforme o tipo.
-export function OrcadoRealizadoBarras({ linhas }: { linhas: LinhaOrcadoRealizado[] }) {
+export function PrevistoRealizadoBarras({ linhas }: { linhas: LinhaPrevistoRealizado[] }) {
   if (linhas.length === 0) {
-    return <p className="text-sm text-muted-foreground">Nenhuma categoria com orçamento ou movimento no ano selecionado.</p>;
+    return <p className="text-sm text-muted-foreground">Nenhuma categoria com previsão ou movimento no ano selecionado.</p>;
   }
 
   const maior = Math.max(...linhas.map((l) => Math.max(l.totalPrevisto, l.totalRealizado)), 1);

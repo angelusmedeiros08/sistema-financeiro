@@ -6,12 +6,12 @@ import type { Database } from "@/utils/supabase/database.types";
 type TipoCategoria = Database["public"]["Enums"]["tipo_categoria"];
 type Resultado = { erro: string } | { sucesso: true };
 
-export type CelulaOrcamento = { mes: number; valorPrevisto: number };
-export type LinhaGradeOrcamento = {
+export type CelulaPrevisionamento = { mes: number; valorPrevisto: number };
+export type LinhaGradePrevisionamento = {
   categoriaId: string;
   categoriaNome: string;
   tipo: TipoCategoria;
-  celulas: CelulaOrcamento[];
+  celulas: CelulaPrevisionamento[];
 };
 
 function competenciaDoMes(ano: number, mes: number): string {
@@ -21,10 +21,15 @@ function competenciaDoMes(ano: number, mes: number): string {
 // Grade categoria × 12 meses do ano — toda categoria do tenant aparece,
 // mesmo sem meta cadastrada ainda (célula fica 0), pra grade de cadastro
 // nunca esconder onde falta preencher.
-export async function buscarGradeOrcamento(
+//
+// Tabela do banco continua se chamando `orcamentos` — renomear a tabela em
+// si (com FKs, policies de RLS referenciando o nome) é uma mudança de
+// schema maior, sem benefício visível pra quem usa o sistema; só a camada
+// de aplicação (rotas, rótulos, nomes de função/tipo) virou "Previsionamento".
+export async function buscarGradePrevisionamento(
   supabase: Cliente,
   params: { tenantId: string; ano: number },
-): Promise<LinhaGradeOrcamento[]> {
+): Promise<LinhaGradePrevisionamento[]> {
   const [{ data: categorias }, { data: metas }] = await Promise.all([
     supabase.from("categorias_financeiras").select("id, nome, tipo").eq("tenant_id", params.tenantId).order("nome"),
     supabase
@@ -52,12 +57,12 @@ export async function buscarGradeOrcamento(
   }));
 }
 
-export async function definirValorOrcamento(
+export async function definirValorPrevisionamento(
   supabase: Cliente,
   params: { tenantId: string; categoriaId: string; ano: number; mes: number; valorPrevisto: number; criadoPor: string },
 ): Promise<Resultado> {
   if (!Number.isFinite(params.valorPrevisto) || params.valorPrevisto < 0) {
-    return { erro: "Valor de orçamento inválido." };
+    return { erro: "Valor previsto inválido." };
   }
 
   const { error } = await supabase.from("orcamentos").upsert(
@@ -85,7 +90,7 @@ export async function copiarValorParaRestoDoAno(
   params: { tenantId: string; categoriaId: string; ano: number; mesOrigem: number; valorPrevisto: number; criadoPor: string },
 ): Promise<Resultado> {
   if (!Number.isFinite(params.valorPrevisto) || params.valorPrevisto < 0) {
-    return { erro: "Valor de orçamento inválido." };
+    return { erro: "Valor previsto inválido." };
   }
   if (params.mesOrigem >= 12) return { sucesso: true };
 
@@ -102,7 +107,7 @@ export async function copiarValorParaRestoDoAno(
   return { sucesso: true };
 }
 
-export type LinhaOrcadoRealizado = {
+export type LinhaPrevistoRealizado = {
   categoriaId: string;
   categoriaNome: string;
   tipo: TipoCategoria;
@@ -120,15 +125,15 @@ export type LinhaOrcadoRealizado = {
 // mesmo dataset de todo relatório (Seção 6.1 do mapeamento). Desvio
 // positivo é sempre "gastou/recebeu mais do que devia" na direção ruim
 // pra despesa e boa pra receita — a UI decide a cor conforme o tipo.
-export async function buscarOrcadoRealizado(
+export async function buscarPrevistoRealizado(
   supabase: Cliente,
   params: { tenantId: string; ano: number; regime: Regime; origemHref: string },
-): Promise<LinhaOrcadoRealizado[]> {
+): Promise<LinhaPrevistoRealizado[]> {
   const dataInicio = competenciaDoMes(params.ano, 1);
   const dataFim = `${params.ano}-12-31`;
 
   const [grade, movimento] = await Promise.all([
-    buscarGradeOrcamento(supabase, { tenantId: params.tenantId, ano: params.ano }),
+    buscarGradePrevisionamento(supabase, { tenantId: params.tenantId, ano: params.ano }),
     buscarMovimento(supabase, { tenantId: params.tenantId, regime: params.regime, dataInicio, dataFim }),
   ]);
 

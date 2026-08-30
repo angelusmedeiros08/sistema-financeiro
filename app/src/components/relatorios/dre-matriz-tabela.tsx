@@ -60,7 +60,7 @@ export function DreMatrizTabela({ linhas, ano }: { linhas: LinhaDreMatriz[]; ano
         // DRE (receita → custos → subtotal → EBITDA → resultado final).
         // Ordenar por "Linha" (alfabético) ou por um mês quebra a leitura
         // do demonstrativo — achado real do usuário vendo o sistema, não é
-        // regressão do arquétipo em si (a matriz de Orçamento já tinha essa
+        // regressão do arquétipo em si (a matriz de Previsionamento já tinha essa
         // mesma decisão, mas por outro motivo).
         helper.accessor("rotulo", { id: "linha", header: "Linha", size: 190, enableSorting: false }),
         ...colunasMensais,
