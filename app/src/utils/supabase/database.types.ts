@@ -110,13 +110,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "anexos_baixa_id_fkey"
-            columns: ["baixa_id"]
-            isOneToOne: false
-            referencedRelation: "vw_movimento_realizado"
-            referencedColumns: ["baixa_id"]
-          },
-          {
             foreignKeyName: "anexos_criado_por_fkey"
             columns: ["criado_por"]
             isOneToOne: false
@@ -135,13 +128,6 @@ export type Database = {
             columns: ["evento_financeiro_id"]
             isOneToOne: false
             referencedRelation: "vw_movimento_competencia_previsto"
-            referencedColumns: ["evento_financeiro_id"]
-          },
-          {
-            foreignKeyName: "anexos_evento_financeiro_id_fkey"
-            columns: ["evento_financeiro_id"]
-            isOneToOne: false
-            referencedRelation: "vw_movimento_realizado"
             referencedColumns: ["evento_financeiro_id"]
           },
           {
@@ -326,13 +312,6 @@ export type Database = {
             columns: ["parcela_id"]
             isOneToOne: false
             referencedRelation: "vw_movimento_competencia_previsto"
-            referencedColumns: ["parcela_id"]
-          },
-          {
-            foreignKeyName: "baixas_parcela_id_fkey"
-            columns: ["parcela_id"]
-            isOneToOne: false
-            referencedRelation: "vw_movimento_realizado"
             referencedColumns: ["parcela_id"]
           },
           {
@@ -706,13 +685,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "extrato_linha_baixas_baixa_id_fkey"
-            columns: ["baixa_id"]
-            isOneToOne: false
-            referencedRelation: "vw_movimento_realizado"
-            referencedColumns: ["baixa_id"]
-          },
-          {
             foreignKeyName: "extrato_linha_baixas_extrato_linha_id_fkey"
             columns: ["extrato_linha_id"]
             isOneToOne: false
@@ -966,13 +938,6 @@ export type Database = {
             columns: ["evento_financeiro_id"]
             isOneToOne: false
             referencedRelation: "vw_movimento_competencia_previsto"
-            referencedColumns: ["evento_financeiro_id"]
-          },
-          {
-            foreignKeyName: "importacoes_itens_evento_financeiro_id_fkey"
-            columns: ["evento_financeiro_id"]
-            isOneToOne: false
-            referencedRelation: "vw_movimento_realizado"
             referencedColumns: ["evento_financeiro_id"]
           },
           {
@@ -1251,13 +1216,6 @@ export type Database = {
             columns: ["evento_financeiro_id"]
             isOneToOne: false
             referencedRelation: "vw_movimento_competencia_previsto"
-            referencedColumns: ["evento_financeiro_id"]
-          },
-          {
-            foreignKeyName: "parcelas_evento_financeiro_id_fkey"
-            columns: ["evento_financeiro_id"]
-            isOneToOne: false
-            referencedRelation: "vw_movimento_realizado"
             referencedColumns: ["evento_financeiro_id"]
           },
           {
@@ -1593,13 +1551,6 @@ export type Database = {
             referencedColumns: ["evento_financeiro_id"]
           },
           {
-            foreignKeyName: "rateio_categoria_evento_financeiro_id_fkey"
-            columns: ["evento_financeiro_id"]
-            isOneToOne: false
-            referencedRelation: "vw_movimento_realizado"
-            referencedColumns: ["evento_financeiro_id"]
-          },
-          {
             foreignKeyName: "rateio_categoria_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
@@ -1877,13 +1828,6 @@ export type Database = {
             columns: ["parcela_id"]
             isOneToOne: false
             referencedRelation: "vw_movimento_competencia_previsto"
-            referencedColumns: ["parcela_id"]
-          },
-          {
-            foreignKeyName: "renegociacoes_parcela_id_fkey"
-            columns: ["parcela_id"]
-            isOneToOne: false
-            referencedRelation: "vw_movimento_realizado"
             referencedColumns: ["parcela_id"]
           },
           {
@@ -2169,13 +2113,6 @@ export type Database = {
             referencedColumns: ["evento_financeiro_id"]
           },
           {
-            foreignKeyName: "vendas_evento_financeiro_id_fkey"
-            columns: ["evento_financeiro_id"]
-            isOneToOne: false
-            referencedRelation: "vw_movimento_realizado"
-            referencedColumns: ["evento_financeiro_id"]
-          },
-          {
             foreignKeyName: "vendas_forma_pagamento_id_fkey"
             columns: ["forma_pagamento_id"]
             isOneToOne: false
@@ -2267,36 +2204,7 @@ export type Database = {
           tipo: Database["public"]["Enums"]["tipo_categoria"] | null
           valor: number | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "eventos_financeiros_pessoa_id_fkey"
-            columns: ["pessoa_id"]
-            isOneToOne: false
-            referencedRelation: "pessoas"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "rateio_categoria_categoria_id_fkey"
-            columns: ["categoria_id"]
-            isOneToOne: false
-            referencedRelation: "categorias_financeiras"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "rateio_categoria_tenant_id_fkey"
-            columns: ["tenant_id"]
-            isOneToOne: false
-            referencedRelation: "tenants"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "rateio_centro_custo_centro_custo_id_fkey"
-            columns: ["centro_custo_id"]
-            isOneToOne: false
-            referencedRelation: "centros_custo"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
     }
     Functions: {
