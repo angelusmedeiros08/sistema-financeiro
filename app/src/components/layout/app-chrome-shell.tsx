@@ -50,12 +50,19 @@ function ChromeInterno(props: PropsChrome) {
 }
 
 export function AppChromeShell(props: PropsChrome) {
-  // Fallback = chrome normal, não vazio: no caso raríssimo do Suspense
-  // precisar de um instante antes do useSearchParams resolver, é muito mais
-  // seguro mostrar a UI de sempre (o caso comum, sem apresentação) do que
-  // uma tela em branco.
+  // Fallback null, não uma cópia de ChromeNormal — achado ao vivo (não em
+  // review): usar o mesmo formato como fallback e como conteúdo resolvido
+  // deixava as duas árvores montadas ao mesmo tempo (uma visível, uma
+  // "fantasma" com layout zerado) em toda página do app — Sidebar/Topbar e
+  // qualquer Client Component da página (ex. formulário de apresentação)
+  // rodavam em dobro, e ferramentas de automação por vezes interagiam com a
+  // cópia errada. A rota é sempre dinâmica (cookies/DB na auth), então por
+  // documentação do Next.js `useSearchParams` resolve no primeiro render do
+  // servidor sem suspender de verdade — o fallback não deveria aparecer na
+  // prática; `null` é o valor seguro pro caso raro em que aparecer mesmo
+  // assim, em vez de duplicar a árvore inteira.
   return (
-    <Suspense fallback={<ChromeNormal {...props} />}>
+    <Suspense fallback={null}>
       <ChromeInterno {...props} />
     </Suspense>
   );
