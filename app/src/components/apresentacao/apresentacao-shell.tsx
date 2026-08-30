@@ -194,36 +194,40 @@ export function ApresentacaoShell({ apresentacaoId, children }: { apresentacaoId
 
       <div className={cn("flex-1 overflow-auto p-4 pb-16 lg:p-8 lg:pb-16", navegando && "opacity-60 transition-opacity")}>{children}</div>
 
-      <div className="fixed inset-x-0 bottom-0 z-50 flex items-center justify-between gap-3 bg-black/80 px-4 py-2.5 text-white backdrop-blur">
-        <button onClick={sair} aria-label="Sair da apresentação" className="flex items-center gap-1.5 text-sm hover:opacity-80">
+      {/* Botões com p-3.5 (14px) em volta de ícones de 16px = 44px de área
+          de toque — antes eram só os 16px do ícone, achado testando em
+          mobile (a barra inteira cabia sem problema, mas os alvos de toque
+          eram pequenos demais pra WCAG/mobile-first). */}
+      <div className="fixed inset-x-0 bottom-0 z-50 flex items-center justify-between bg-black/80 pl-1.5 text-white backdrop-blur">
+        <button onClick={sair} aria-label="Sair da apresentação" className="flex items-center gap-1.5 p-3.5 text-sm hover:opacity-80">
           <X size={16} />
           Sair
         </button>
 
         {total > 0 && (
-          <div className="flex items-center gap-3">
+          <div className="flex items-center">
             {modo === "tv" && !reducedMotion && (apresentacao?.permiteModoTv ?? true) && (
               <button
                 onClick={() => irPara(indiceAtual, { pausado: !pausado })}
                 aria-label={pausado ? "Retomar avanço automático" : "Pausar avanço automático"}
-                className="hover:opacity-80"
+                className="p-3.5 hover:opacity-80"
               >
                 {pausado ? <Play size={16} /> : <Pause size={16} />}
               </button>
             )}
-            <button onClick={() => irPara(indiceAtual - 1)} aria-label="Slide anterior" className="hover:opacity-80">
+            <button onClick={() => irPara(indiceAtual - 1)} aria-label="Slide anterior" className="p-3.5 hover:opacity-80">
               <CaretLeft size={16} />
             </button>
-            <span className="text-xs tabular-nums text-white/80">
+            <span className="px-1 text-xs tabular-nums text-white/80">
               {indiceAtual + 1} de {total}
             </span>
-            <button onClick={() => irPara(indiceAtual + 1)} aria-label="Próximo slide" className="hover:opacity-80">
+            <button onClick={() => irPara(indiceAtual + 1)} aria-label="Próximo slide" className="p-3.5 hover:opacity-80">
               <CaretRight size={16} />
             </button>
             <button
               onClick={alternarTelaCheia}
               aria-label={emTelaCheia ? "Sair da tela cheia" : "Entrar em tela cheia"}
-              className="hover:opacity-80"
+              className="p-3.5 hover:opacity-80"
             >
               {emTelaCheia ? <ArrowsIn size={16} /> : <ArrowsOut size={16} />}
             </button>
@@ -232,7 +236,7 @@ export function ApresentacaoShell({ apresentacaoId, children }: { apresentacaoId
       </div>
 
       {avancoAutomaticoAtivo && (
-        <div key={indiceAtual} className="fixed inset-x-0 bottom-[42px] z-50 h-0.5 bg-white/20">
+        <div key={indiceAtual} className="fixed inset-x-0 bottom-11 z-50 h-0.5 bg-white/20">
           <div className="h-full bg-primary" style={{ animation: `apresentacao-progresso ${intervaloMs}ms linear forwards` }} />
         </div>
       )}
