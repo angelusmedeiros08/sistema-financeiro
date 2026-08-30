@@ -111,6 +111,7 @@ export default async function PaginaOrcamento({ params }: { params: Promise<{ id
             </Badge>
           </div>
         </div>
+        <OrcamentoAcoes orcamentoId={orcamento.id} status={orcamento.status} />
       </div>
 
       <div className="rounded-2xl bg-card shadow-card p-5">
