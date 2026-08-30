@@ -1955,6 +1955,30 @@ export type Database = {
         }
         Relationships: []
       }
+      tentativas_auth: {
+        Row: {
+          criado_em: string
+          email: string
+          finalidade: string
+          id: number
+          ip: string
+        }
+        Insert: {
+          criado_em?: string
+          email: string
+          finalidade: string
+          id?: never
+          ip: string
+        }
+        Update: {
+          criado_em?: string
+          email?: string
+          finalidade?: string
+          id?: never
+          ip?: string
+        }
+        Relationships: []
+      }
       usuario_tenant: {
         Row: {
           ativo: boolean

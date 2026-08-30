@@ -1,11 +1,15 @@
 "use server";
 
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { provisionarTenantNovo } from "@/lib/tenant/provisionar";
 import { caminhoInternoSeguro } from "@/lib/caminho-seguro";
+import { registrarTentativaAuth, obterIpDaRequisicao } from "@/lib/seguranca/rate-limit-auth";
 import { CADASTRO_PUBLICO_ATIVO } from "./config";
+
+const MENSAGEM_MUITAS_TENTATIVAS = "Muitas tentativas em pouco tempo. Aguarde alguns minutos e tente de novo.";
 
 type ResultadoAcao = { erro: string } | { sucesso: true; mensagem: string };
 
@@ -22,6 +26,10 @@ export async function cadastrar(formData: FormData): Promise<ResultadoAcao> {
   if (!nomeEmpresa || !nomeUsuario || !email || senha.length < 8) {
     return { erro: "Preencha todos os campos: a senha precisa de pelo menos 8 caracteres." };
   }
+
+  const ip = obterIpDaRequisicao(await headers());
+  const { permitido } = await registrarTentativaAuth({ finalidade: "cadastro", email, ip });
+  if (!permitido) return { erro: MENSAGEM_MUITAS_TENTATIVAS };
 
   // 1) cria o usuário no Supabase Auth (endpoint público, sem privilégio elevado)
   const supabase = await createClient();
@@ -57,6 +65,10 @@ export async function cadastrar(formData: FormData): Promise<ResultadoAcao> {
 export async function entrar(formData: FormData): Promise<ResultadoAcao | never> {
   const email = String(formData.get("email") ?? "").trim();
   const senha = String(formData.get("senha") ?? "");
+
+  const ip = obterIpDaRequisicao(await headers());
+  const { permitido } = await registrarTentativaAuth({ finalidade: "entrar", email, ip });
+  if (!permitido) return { erro: MENSAGEM_MUITAS_TENTATIVAS };
 
   const supabase = await createClient();
   const { error, data } = await supabase.auth.signInWithPassword({ email, password: senha });
@@ -165,11 +177,20 @@ export async function sair() {
 // conta (achado clássico de enumeração de usuário). resetPasswordForEmail
 // do Supabase já se comporta assim (não retorna erro pra e-mail
 // inexistente), então basta não diferenciar na nossa própria mensagem.
-export async function solicitarRecuperacaoSenha(formData: FormData): Promise<{ sucesso: true; mensagem: string }> {
+export async function solicitarRecuperacaoSenha(
+  formData: FormData,
+): Promise<{ sucesso: true; mensagem: string } | { erro: string }> {
   const email = String(formData.get("email") ?? "").trim();
   const mensagemGenerica = "Se esse e-mail tiver uma conta, enviamos um link pra redefinir a senha.";
 
   if (!email) return { sucesso: true, mensagem: mensagemGenerica };
+
+  // O contador conta tentativas registradas, não contas existentes — negar
+  // aqui não revela se o e-mail tem conta ou não, mesma garantia de
+  // mensagemGenerica abaixo.
+  const ip = obterIpDaRequisicao(await headers());
+  const { permitido } = await registrarTentativaAuth({ finalidade: "recuperacao_senha", email, ip });
+  if (!permitido) return { erro: MENSAGEM_MUITAS_TENTATIVAS };
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
   const supabase = await createClient();

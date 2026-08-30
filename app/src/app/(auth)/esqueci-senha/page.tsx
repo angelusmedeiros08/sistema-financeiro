@@ -12,8 +12,14 @@ const estadoInicial = { enviado: false };
 
 export default function PaginaEsqueciSenha() {
   const [mensagem, setMensagem] = useState("");
+  const [erro, setErro] = useState("");
   const [estado, formAction, pendente] = useActionState(async (_: typeof estadoInicial, formData: FormData) => {
     const resultado = await solicitarRecuperacaoSenha(formData);
+    if ("erro" in resultado) {
+      setErro(resultado.erro);
+      return { enviado: false };
+    }
+    setErro("");
     setMensagem(resultado.mensagem);
     return { enviado: true };
   }, estadoInicial);
@@ -36,6 +42,8 @@ export default function PaginaEsqueciSenha() {
           <Label htmlFor="email">E-mail</Label>
           <Input id="email" name="email" type="email" required />
         </div>
+
+        {erro && <p className="text-sm text-destructive">{erro}</p>}
 
         <Button type="submit" disabled={pendente} className="w-full">
           {pendente ? "Enviando..." : "Enviar link de recuperação"}
