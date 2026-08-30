@@ -67,13 +67,16 @@ export function TabelaParcelasAbertas({
   textoVazio,
   caminhoBase,
   titulo = "Parcelas",
+  paginacao,
 }: {
   parcelas: ParcelaAberta[];
   textoVazio: string;
   caminhoBase: "contas-a-pagar" | "contas-a-receber";
   titulo?: string;
+  /** Paginação real no servidor — `parcelas` já é só a página atual. Ver `paginacaoServidor` em TabelaLista. */
+  paginacao?: { pagina: number; totalPaginas: number; totalRegistros: number; tamanhoPagina: number; hrefBase: string };
 }) {
-  if (parcelas.length === 0) {
+  if (parcelas.length === 0 && !paginacao) {
     return <EstadoVazio texto={textoVazio} />;
   }
 
@@ -97,6 +100,7 @@ export function TabelaParcelasAbertas({
       busca={false}
       textoVazio={textoVazio}
       linkPara={(p) => `/${caminhoBase}/${p.id}`}
+      paginacaoServidor={paginacao}
     />
   );
 }

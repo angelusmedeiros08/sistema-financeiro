@@ -22,10 +22,12 @@ const FILTROS: { valor: string; rotulo: string; status: StatusParcela[] | null; 
   { valor: "todos", rotulo: "Todos", status: null, janela: null },
 ];
 
+const TAMANHO_PAGINA = 20;
+
 export default async function PaginaContasAReceber({
   searchParams,
 }: {
-  searchParams: Promise<{ situacao?: string }>;
+  searchParams: Promise<{ situacao?: string; pagina?: string }>;
 }) {
   const contexto = await obterUsuarioETenantAtual();
   if ("erro" in contexto) {
@@ -33,8 +35,10 @@ export default async function PaginaContasAReceber({
   }
   const { tenantId } = contexto;
 
-  const { situacao = "aberto" } = await searchParams;
+  const { situacao = "aberto", pagina: paginaBruta } = await searchParams;
   const filtro = FILTROS.find((f) => f.valor === situacao) ?? FILTROS[0];
+  const pagina = Math.max(1, Number(paginaBruta) || 1);
+  const inicio = (pagina - 1) * TAMANHO_PAGINA;
 
   const supabase = await createClient();
 
@@ -42,10 +46,12 @@ export default async function PaginaContasAReceber({
     .from("parcelas")
     .select(
       "id, valor, data_vencimento, status, baixas(id, data_pagamento, valor_pago, valor_juros, valor_multa, valor_desconto, valor_taxa, estornado_em), eventos_financeiros!inner(descricao, tipo, pessoas(nome))",
+      { count: "exact" },
     )
     .eq("tenant_id", tenantId)
     .eq("eventos_financeiros.tipo", "RECEITA")
-    .order("data_vencimento", { ascending: true });
+    .order("data_vencimento", { ascending: true })
+    .range(inicio, inicio + TAMANHO_PAGINA - 1);
 
   if (filtro.status) query = query.in("status", filtro.status);
   if (filtro.janela === "vencido") {
@@ -55,7 +61,8 @@ export default async function PaginaContasAReceber({
     query = query.gte("data_vencimento", hojeIso).lte("data_vencimento", limiteIso);
   }
 
-  const { data: parcelas } = await query;
+  const { data: parcelas, count: totalParcelas } = await query;
+  const totalPaginas = Math.max(1, Math.ceil((totalParcelas ?? 0) / TAMANHO_PAGINA));
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-6">
@@ -81,6 +88,13 @@ export default async function PaginaContasAReceber({
         parcelas={parcelas ?? []}
         textoVazio="Nenhuma conta a receber nessa situação."
         caminhoBase="contas-a-receber"
+        paginacao={{
+          pagina,
+          totalPaginas,
+          totalRegistros: totalParcelas ?? 0,
+          tamanhoPagina: TAMANHO_PAGINA,
+          hrefBase: `/contas-a-receber?situacao=${filtro.valor}`,
+        }}
       />
     </div>
   );
