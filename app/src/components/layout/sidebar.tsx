@@ -66,8 +66,13 @@ const SUB_ITENS_PESSOAS: SubItemNav[] = [
 
 const SUB_ITENS_COMERCIAL: SubItemNav[] = [
   { href: "/vendas", label: "Vendas" },
+  { href: "/orcamentos", label: "Orçamentos" },
   { href: "/produtos-servicos", label: "Produtos e serviços" },
+];
+
+const SUB_ITENS_ANALISE: SubItemNav[] = [
   { href: "/previsionamento", label: "Previsionamento" },
+  { href: "/indicadores", label: "Indicadores" },
 ];
 
 const ITENS_NAV: ItemNav[] = [
@@ -79,7 +84,7 @@ const ITENS_NAV: ItemNav[] = [
   { href: "/fluxo-caixa", label: "Fluxo de caixa", icon: ChartLine, disponivel: true },
   { href: "/pessoas", label: "Pessoas", icon: Users, disponivel: true, secao: "Gestão", subItens: SUB_ITENS_PESSOAS },
   { href: "/comercial", label: "Comercial", icon: ShoppingCart, disponivel: true, secao: "Gestão", subItens: SUB_ITENS_COMERCIAL },
-  { href: "/indicadores", label: "Indicadores", icon: ChartBar, disponivel: true, secao: "Gestão" },
+  { href: "/analise", label: "Análise", icon: ChartBar, disponivel: true, secao: "Gestão", subItens: SUB_ITENS_ANALISE },
   { href: "/relatorios", label: "Relatórios", icon: ChartLineUp, disponivel: true, secao: "Sistema", subItens: SUB_ITENS_RELATORIOS },
   { href: "/apresentacoes", label: "Apresentação", icon: Presentation, disponivel: true, secao: "Sistema" },
   { href: "/importacao", label: "Importação", icon: UploadSimple, disponivel: true, secao: "Sistema" },

@@ -1234,7 +1234,7 @@ export type Database = {
           forma_pagamento_id?: string | null
           id?: string
           motivo_recusa?: string | null
-          numero: number
+          numero?: number
           numero_parcelas?: number
           observacoes?: string | null
           pessoa_id: string
@@ -2450,6 +2450,10 @@ export type Database = {
             }
             Returns: string
           }
+      substituir_itens_orcamento_comercial: {
+        Args: { p_itens: Json; p_orcamento_id: string; p_tenant_id: string }
+        Returns: undefined
+      }
       substituir_itens_venda: {
         Args: { p_itens: Json; p_tenant_id: string; p_venda_id: string }
         Returns: undefined

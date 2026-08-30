@@ -113,6 +113,8 @@ Registro do que foi efetivamente implementado no banco (região São Paulo, `sa-
 
 74. `expirar_orcamentos_comerciais_cron` (30/08/2026) — mesmo padrão SQL puro já usado (e revertido) pra vendas: `orcamentos_comerciais` não tem `FORCE ROW LEVEL SECURITY`, o cron roda como `postgres` e já ignora RLS sem precisar de `SECURITY DEFINER`.
 
+75. `orcamento_comercial_itens_rpc_e_trava` (30/08/2026) — `substituir_itens_orcamento_comercial` (delete+insert atômico, mesmo padrão de `substituir_itens_venda`) e o trigger `travar_itens_orcamento_comercial_terminal` (bloqueia alterar itens de um orçamento já `APROVADO`/`RECUSADO`/`EXPIRADO` — `ENVIADO` continua editável de propósito, é o que dispara reset de validade + reenvio). `054_orcamentos_comerciais_numero_default` — `numero` ganhou `DEFAULT 0` (mesmo valor que `vendas.numero` já tinha desde `vendas_numero_default`): sem isso o tipo gerado marca a coluna como obrigatória no INSERT, mesmo o trigger de numeração por tenant preenchendo de verdade antes do NOT NULL ser checado.
+
 ## Verificação final
 
 - `get_advisors` (segurança): **0 alertas** (só o warning pré-existente e não relacionado `auth_leaked_password_protection`).
