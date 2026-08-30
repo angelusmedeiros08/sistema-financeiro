@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/utils/supabase/database.types";
+import { hojeIsoBrasil } from "@/lib/data-brasil";
 
 type Cliente = SupabaseClient<Database>;
 type StatusVenda = Database["public"]["Enums"]["status_venda"];
@@ -34,6 +35,12 @@ export type VendaDetalhe = VendaResumo & {
   observacoes: string | null;
   eventoFinanceiroId: string | null;
   itens: ItemVenda[];
+  pessoaEmail: string | null;
+  // Só fazem sentido depois de ENVIADO — nulos em RASCUNHO e em vendas
+  // criadas antes desta feature existir.
+  validade: string | null;
+  tokenPublico: string | null;
+  motivoRecusa: string | null;
 };
 
 // Paginação real no servidor (achado em auditoria de escalabilidade,
@@ -78,7 +85,7 @@ export async function buscarVenda(supabase: Cliente, tenantId: string, vendaId: 
   const { data } = await supabase
     .from("vendas")
     .select(
-      "id, numero, pessoa_id, status, data_emissao, forma_pagamento_id, numero_parcelas, primeiro_vencimento, observacoes, evento_financeiro_id, criado_em, pessoas(nome), venda_itens(id, produto_servico_id, descricao, quantidade, preco_unitario, valor_total)",
+      "id, numero, pessoa_id, status, data_emissao, forma_pagamento_id, numero_parcelas, primeiro_vencimento, observacoes, evento_financeiro_id, criado_em, validade, token_publico, motivo_recusa, pessoas(nome, email), venda_itens(id, produto_servico_id, descricao, quantidade, preco_unitario, valor_total)",
     )
     .eq("id", vendaId)
     .eq("tenant_id", tenantId)
@@ -110,6 +117,10 @@ export async function buscarVenda(supabase: Cliente, tenantId: string, vendaId: 
     observacoes: data.observacoes,
     eventoFinanceiroId: data.evento_financeiro_id,
     itens,
+    pessoaEmail: data.pessoas?.email ?? null,
+    validade: data.validade,
+    tokenPublico: data.token_publico,
+    motivoRecusa: data.motivo_recusa,
   };
 }
 
@@ -203,6 +214,15 @@ export async function substituirItensVenda(
   return error?.message ?? null;
 }
 
+// Validade padrão sugerida ao enviar (ou reenviar) um orçamento — 15 dias
+// corridos a partir de hoje. O staff pode escolher outra data no formulário;
+// isso só é o valor inicial e o que a edição pós-envio usa pra "resetar".
+export function validadeSugerida(): string {
+  const data = new Date(hojeIsoBrasil() + "T00:00:00Z");
+  data.setUTCDate(data.getUTCDate() + 15);
+  return data.toISOString().slice(0, 10);
+}
+
 export async function editarCabecalhoVenda(
   supabase: Cliente,
   params: {
@@ -216,10 +236,17 @@ export async function editarCabecalhoVenda(
     observacoes?: string | null;
     itens: ItemVendaEntrada[];
   },
-): Promise<Resultado> {
+): Promise<Resultado & { validadeResetada?: string }> {
   if (!params.pessoaId) return { erro: "Selecione o cliente." };
   const erroItens = validarItens(params.itens);
   if (erroItens) return { erro: erroItens };
+
+  // Editar um orçamento já ENVIADO reseta a validade pro padrão (proposta
+  // mudou, o prazo pra decidir volta a valer inteiro) — só nesse caso; editar
+  // um RASCUNHO (nunca foi enviado, sem validade) não mexe em nada disso.
+  const { data: vendaAtual } = await supabase.from("vendas").select("status").eq("id", params.vendaId).eq("tenant_id", params.tenantId).maybeSingle();
+  const eraEnviado = vendaAtual?.status === "ENVIADO";
+  const novaValidade = eraEnviado ? validadeSugerida() : undefined;
 
   const { error } = await supabase
     .from("vendas")
@@ -230,6 +257,7 @@ export async function editarCabecalhoVenda(
       numero_parcelas: params.numeroParcelas,
       primeiro_vencimento: params.primeiroVencimento || null,
       observacoes: params.observacoes?.trim() || null,
+      ...(novaValidade ? { validade: novaValidade } : {}),
     })
     .eq("id", params.vendaId)
     .eq("tenant_id", params.tenantId);
@@ -239,13 +267,28 @@ export async function editarCabecalhoVenda(
   const erroItensSalvos = await substituirItensVenda(supabase, { tenantId: params.tenantId, vendaId: params.vendaId, itens: params.itens });
   if (erroItensSalvos) return { erro: erroItensSalvos };
 
-  return { sucesso: true };
+  return { sucesso: true, validadeResetada: novaValidade };
 }
 
-export async function enviarOrcamento(supabase: Cliente, params: { tenantId: string; vendaId: string }): Promise<Resultado> {
+export async function enviarOrcamento(
+  supabase: Cliente,
+  params: { tenantId: string; vendaId: string; validade: string },
+): Promise<Resultado> {
+  const { data: venda } = await supabase
+    .from("vendas")
+    .select("pessoas(email)")
+    .eq("id", params.vendaId)
+    .eq("tenant_id", params.tenantId)
+    .maybeSingle();
+
+  if (!venda) return { erro: "Venda não encontrada." };
+  if (!venda.pessoas?.email) {
+    return { erro: "Esse cliente não tem e-mail cadastrado — cadastre um antes de enviar o orçamento." };
+  }
+
   const { data, error } = await supabase
     .from("vendas")
-    .update({ status: "ENVIADO" })
+    .update({ status: "ENVIADO", validade: params.validade, token_publico: crypto.randomUUID() })
     .eq("id", params.vendaId)
     .eq("tenant_id", params.tenantId)
     .eq("status", "RASCUNHO")
@@ -260,10 +303,34 @@ export async function enviarOrcamento(supabase: Cliente, params: { tenantId: str
   return { sucesso: true };
 }
 
-export async function recusarVenda(supabase: Cliente, params: { tenantId: string; vendaId: string }): Promise<Resultado> {
+// Reativa um orçamento EXPIRADO — mesmo token de antes (o link que o cliente
+// já tinha continua funcionando, só a validade some do jeito de estar
+// vencida), nova validade. Diferente de enviarOrcamento (RASCUNHO → ENVIADO,
+// token novo, primeira vez) por isso ter uma guarda de status diferente.
+export async function reenviarOrcamento(
+  supabase: Cliente,
+  params: { tenantId: string; vendaId: string; validade: string },
+): Promise<Resultado> {
   const { data, error } = await supabase
     .from("vendas")
-    .update({ status: "RECUSADO" })
+    .update({ status: "ENVIADO", validade: params.validade })
+    .eq("id", params.vendaId)
+    .eq("tenant_id", params.tenantId)
+    .eq("status", "EXPIRADO")
+    .select("id");
+
+  if (error) return { erro: error.message };
+  if (!data || data.length === 0) return { erro: "Só é possível reenviar um orçamento expirado." };
+  return { sucesso: true };
+}
+
+export async function recusarVenda(
+  supabase: Cliente,
+  params: { tenantId: string; vendaId: string; motivoRecusa?: string },
+): Promise<Resultado> {
+  const { data, error } = await supabase
+    .from("vendas")
+    .update({ status: "RECUSADO", motivo_recusa: params.motivoRecusa?.trim() || null })
     .eq("id", params.vendaId)
     .eq("tenant_id", params.tenantId)
     .in("status", ["RASCUNHO", "ENVIADO"])

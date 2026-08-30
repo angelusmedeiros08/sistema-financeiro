@@ -20,6 +20,7 @@ function badgeStatus(status: StatusVenda) {
     ENVIADO: { rotulo: "Enviado", className: "bg-amber-500/12 text-amber-700 dark:text-amber-400" },
     APROVADO: { rotulo: "Aprovada", className: "bg-positivo/12 text-positivo-foreground" },
     RECUSADO: { rotulo: "Recusada", className: "bg-destructive/12 text-destructive-foreground" },
+    EXPIRADO: { rotulo: "Expirado", className: "bg-muted text-muted-foreground" },
   };
   const { rotulo, className } = mapa[status];
   return <Badge variant="outline" className={cn("border-none text-[11px] font-semibold", className)}>{rotulo}</Badge>;
@@ -60,6 +61,9 @@ export default async function PaginaVenda({ params }: { params: Promise<{ id: st
             <div className="mt-1 flex items-center gap-2">
               <h1 className="text-xl font-bold tracking-tight text-foreground">Venda #{venda.numero}</h1>
               {badgeStatus(venda.status)}
+              {venda.status === "ENVIADO" && venda.validade && (
+                <span className="text-xs text-muted-foreground">válido até {formatarDataIsoParaBR(venda.validade)}</span>
+              )}
             </div>
           </div>
           <VendaAcoes vendaId={venda.id} status={venda.status} />
@@ -98,6 +102,7 @@ export default async function PaginaVenda({ params }: { params: Promise<{ id: st
             {badgeStatus(venda.status)}
           </div>
         </div>
+        <VendaAcoes vendaId={venda.id} status={venda.status} />
       </div>
 
       <div className="rounded-2xl bg-card shadow-card p-5">
@@ -110,6 +115,18 @@ export default async function PaginaVenda({ params }: { params: Promise<{ id: st
             <dt className="text-xs text-muted-foreground">Data</dt>
             <dd className="text-sm font-medium text-foreground">{formatarDataIsoParaBR(venda.dataEmissao)}</dd>
           </div>
+          {venda.validade && (
+            <div>
+              <dt className="text-xs text-muted-foreground">Validade do orçamento</dt>
+              <dd className="text-sm font-medium text-foreground">{formatarDataIsoParaBR(venda.validade)}</dd>
+            </div>
+          )}
+          {venda.status === "RECUSADO" && venda.motivoRecusa && (
+            <div className="sm:col-span-2">
+              <dt className="text-xs text-muted-foreground">Motivo da recusa</dt>
+              <dd className="text-sm text-foreground italic">&quot;{venda.motivoRecusa}&quot;</dd>
+            </div>
+          )}
           {venda.observacoes && (
             <div className="sm:col-span-2">
               <dt className="text-xs text-muted-foreground">Observações</dt>

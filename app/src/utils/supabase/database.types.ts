@@ -2059,6 +2059,7 @@ export type Database = {
           evento_financeiro_id: string | null
           forma_pagamento_id: string | null
           id: string
+          motivo_recusa: string | null
           numero: number
           numero_parcelas: number
           observacoes: string | null
@@ -2066,6 +2067,8 @@ export type Database = {
           primeiro_vencimento: string | null
           status: Database["public"]["Enums"]["status_venda"]
           tenant_id: string
+          token_publico: string | null
+          validade: string | null
         }
         Insert: {
           criado_em?: string
@@ -2074,6 +2077,7 @@ export type Database = {
           evento_financeiro_id?: string | null
           forma_pagamento_id?: string | null
           id?: string
+          motivo_recusa?: string | null
           numero?: number
           numero_parcelas?: number
           observacoes?: string | null
@@ -2081,6 +2085,8 @@ export type Database = {
           primeiro_vencimento?: string | null
           status?: Database["public"]["Enums"]["status_venda"]
           tenant_id: string
+          token_publico?: string | null
+          validade?: string | null
         }
         Update: {
           criado_em?: string
@@ -2089,6 +2095,7 @@ export type Database = {
           evento_financeiro_id?: string | null
           forma_pagamento_id?: string | null
           id?: string
+          motivo_recusa?: string | null
           numero?: number
           numero_parcelas?: number
           observacoes?: string | null
@@ -2096,6 +2103,8 @@ export type Database = {
           primeiro_vencimento?: string | null
           status?: Database["public"]["Enums"]["status_venda"]
           tenant_id?: string
+          token_publico?: string | null
+          validade?: string | null
         }
         Relationships: [
           {
@@ -2354,7 +2363,12 @@ export type Database = {
         | "RECEBIDO_PARCIAL"
         | "ATRASADO"
         | "PERDIDO"
-      status_venda: "RASCUNHO" | "ENVIADO" | "APROVADO" | "RECUSADO"
+      status_venda:
+        | "RASCUNHO"
+        | "ENVIADO"
+        | "APROVADO"
+        | "RECUSADO"
+        | "EXPIRADO"
       tipo_alerta: "resumo_equipe" | "vencimento_cliente"
       tipo_anexo:
         | "CONTRATO"
@@ -2559,7 +2573,7 @@ export const Constants = {
         "ATRASADO",
         "PERDIDO",
       ],
-      status_venda: ["RASCUNHO", "ENVIADO", "APROVADO", "RECUSADO"],
+      status_venda: ["RASCUNHO", "ENVIADO", "APROVADO", "RECUSADO", "EXPIRADO"],
       tipo_alerta: ["resumo_equipe", "vencimento_cliente"],
       tipo_anexo: [
         "CONTRATO",

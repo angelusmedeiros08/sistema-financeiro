@@ -56,7 +56,12 @@ export async function updateSession(request: NextRequest) {
     isAuthRoute ||
     request.nextUrl.pathname === "/" ||
     request.nextUrl.pathname.startsWith("/api/cron") ||
-    request.nextUrl.pathname.startsWith("/api/webhooks");
+    request.nextUrl.pathname.startsWith("/api/webhooks") ||
+    // Orçamento comercial pra cliente (link com token, sem login — ver
+    // docs/superpowers/specs/2026-08-30-previsionamento-orcamento-comercial-design.md).
+    // A autorização é o token na URL, verificado dentro da própria página,
+    // não uma sessão — nunca confundir com /previsionamento (autenticado).
+    request.nextUrl.pathname.startsWith("/orcamento/");
 
   if (!user && !isPublicRoute) {
     const url = request.nextUrl.clone();
