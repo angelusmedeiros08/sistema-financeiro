@@ -115,6 +115,8 @@ Registro do que foi efetivamente implementado no banco (região São Paulo, `sa-
 
 75. `orcamento_comercial_itens_rpc_e_trava` (30/08/2026) — `substituir_itens_orcamento_comercial` (delete+insert atômico, mesmo padrão de `substituir_itens_venda`) e o trigger `travar_itens_orcamento_comercial_terminal` (bloqueia alterar itens de um orçamento já `APROVADO`/`RECUSADO`/`EXPIRADO` — `ENVIADO` continua editável de propósito, é o que dispara reset de validade + reenvio). `054_orcamentos_comerciais_numero_default` — `numero` ganhou `DEFAULT 0` (mesmo valor que `vendas.numero` já tinha desde `vendas_numero_default`): sem isso o tipo gerado marca a coluna como obrigatória no INSERT, mesmo o trigger de numeração por tenant preenchendo de verdade antes do NOT NULL ser checado.
 
+`055_corrige_trigger_numero_orcamento` (30/08/2026) — achado testando ao vivo: o gatilho de numeração tinha `WHEN (new.numero is null)`, condição que nunca disparava (o `DEFAULT 0` da entrada acima preenche `0`, não `NULL`, antes do gatilho rodar) — todo orçamento novo nascia com `numero = 0`. `trg_definir_numero_venda` (vendas) não tem esse `WHEN`, roda incondicional em todo INSERT — corrigido pra seguir o mesmo padrão. Um orçamento de teste (#0, "Cliente Alfa Ltda") ficou com o número errado, sem consequência real (dado de teste, tenant de dev).
+
 ## Verificação final
 
 - `get_advisors` (segurança): **0 alertas** (só o warning pré-existente e não relacionado `auth_leaked_password_protection`).

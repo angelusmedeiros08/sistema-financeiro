@@ -8,9 +8,24 @@ import { Badge } from "@/components/ui/badge";
 import { formatarMoeda } from "@/lib/formatacao";
 import { formatarDataIsoParaBR } from "@/lib/importacao/locale-br";
 import { cn } from "@/lib/utils";
+import type { Database } from "@/utils/supabase/database.types";
 import { OrcamentoForm } from "../orcamento-form";
 import { OrcamentoAcoes } from "../orcamento-acoes";
-import { MAPA_STATUS_ORCAMENTO } from "../tabela-orcamentos";
+
+type StatusOrcamentoComercial = Database["public"]["Enums"]["status_orcamento_comercial"];
+
+// Duplicado do mapa em tabela-orcamentos.tsx de propósito — aquele arquivo é
+// "use client", e importar um valor não-componente dele pra um Server
+// Component quebra em runtime (o import vira uma referência de cliente, não
+// o objeto de verdade). Mesmo padrão isolado que vendas/[id]/page.tsx já
+// usava antes desta feature (badgeStatus definido localmente ali também).
+const MAPA_STATUS_ORCAMENTO: Record<StatusOrcamentoComercial, { rotulo: string; className: string }> = {
+  RASCUNHO: { rotulo: "Rascunho", className: "bg-muted text-muted-foreground" },
+  ENVIADO: { rotulo: "Enviado", className: "bg-amber-500/12 text-amber-700 dark:text-amber-400" },
+  APROVADO: { rotulo: "Aprovado", className: "bg-positivo/12 text-positivo-foreground" },
+  RECUSADO: { rotulo: "Recusado", className: "bg-destructive/12 text-destructive-foreground" },
+  EXPIRADO: { rotulo: "Expirado", className: "bg-muted text-muted-foreground" },
+};
 
 export default async function PaginaOrcamento({ params }: { params: Promise<{ id: string }> }) {
   const contexto = await obterUsuarioETenantAtual();
