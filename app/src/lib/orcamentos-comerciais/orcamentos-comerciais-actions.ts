@@ -91,7 +91,12 @@ export async function criarOrcamentoAction(formData: FormData): Promise<Resultad
   if ("erro" in resultado) return resultado;
 
   if (acao === "enviar") {
-    const validade = String(formData.get("validade") ?? "") || validadeSugerida();
+    // OrcamentoForm não tem campo de validade (diferente do form antigo de
+    // Vendas que este módulo substituiu) — a validade é sempre sugerida
+    // automaticamente, sem escolha manual no "Salvar e enviar" (achado em
+    // auditoria: `formData.get("validade")` era código morto, nunca havia
+    // um input com esse name).
+    const validade = validadeSugerida();
     const resultadoEnvio = await enviarOrcamento(supabase, { tenantId: contexto.tenantId, orcamentoId: resultado.id, validade });
     if ("erro" in resultadoEnvio) return resultadoEnvio;
     await enviarEmailDeOrcamento(supabase, { tenantId: contexto.tenantId, tenantNome: contexto.tenantNome, orcamentoId: resultado.id, atualizado: false });
