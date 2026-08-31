@@ -299,16 +299,19 @@ function GraficoInterno({ barras, largura, altura }: { barras: BarraWaterfall[];
 const LARGURA_MIN_POR_BARRA = 80;
 
 // `apresentacao`: em vez do `altura` fixo (pensado pro card no meio do
-// dashboard normal), a altura vira `h-full` (o slide inteiro, via
-// FocoApresentacao) e o ParentSize mede a altura real do container — mesmo
-// motivo/padrão do FluxoChart. `altura` continua valendo como piso enquanto
-// a medição real ainda não chegou (primeiro paint), pra não piscar vazio.
+// dashboard normal), a altura vira `flex-1` (cresce até o espaço que sobrar
+// no slide, via FocoApresentacao) e o ParentSize mede a altura real do
+// container — mesmo motivo/padrão do FluxoChart (height:100% não resolve de
+// forma confiável através do container flex-1/overflow-auto do
+// ApresentacaoShell, achado testando ao vivo — só flex-1 nativo funciona).
+// `altura` continua valendo como piso enquanto a medição real ainda não
+// chegou (primeiro paint), pra não piscar vazio.
 export function WaterfallDre({ linhas, altura = 420, apresentacao = false }: { linhas: LinhaWaterfall[]; altura?: number; apresentacao?: boolean }) {
   const barras = montarBarras(linhas);
   const semDado = linhas.length === 0 || linhas.every((l) => l.valorDireto === 0);
 
   return (
-    <div className={cn("relative", apresentacao ? "h-full" : undefined)} style={apresentacao ? undefined : { height: altura }}>
+    <div className={cn("relative", apresentacao ? "min-h-0 flex-1" : undefined)} style={apresentacao ? undefined : { height: altura }}>
       {semDado ? (
         <p className="flex h-full items-center justify-center text-sm text-muted-foreground">
           Sem movimentação no período selecionado.

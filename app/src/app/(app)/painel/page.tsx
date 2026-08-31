@@ -128,7 +128,7 @@ export default async function PaginaPainel({
           </div>
         )}
         {foco === "fluxo-caixa" && (
-          <div className="flex h-full w-full flex-col rounded-2xl bg-card p-8 shadow-card">
+          <div className="flex min-h-0 w-full flex-1 flex-col rounded-2xl bg-card p-8 shadow-card">
             <h2 className="mb-6 font-heading text-lg font-bold text-foreground">Fluxo de caixa (últimos 6 meses)</h2>
             <FluxoChart dados={dados.fluxo} apresentacao />
           </div>

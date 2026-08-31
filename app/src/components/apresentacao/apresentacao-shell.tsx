@@ -189,7 +189,7 @@ export function ApresentacaoShell({ apresentacaoId, children }: { apresentacaoId
         </div>
       )}
 
-      <div className={cn("flex-1 overflow-auto p-4 pb-16 lg:p-8 lg:pb-16", navegando && "opacity-60 transition-opacity")}>{children}</div>
+      <div className={cn("flex flex-1 flex-col overflow-auto p-4 pb-16 lg:p-8 lg:pb-16", navegando && "opacity-60 transition-opacity")}>{children}</div>
 
       {/* Botões com p-3.5 (14px) em volta de ícones de 16px = 44px de área
           de toque — antes eram só os 16px do ícone, achado testando em

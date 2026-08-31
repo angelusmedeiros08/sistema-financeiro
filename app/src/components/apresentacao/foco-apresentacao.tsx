@@ -23,7 +23,13 @@ export function FocoApresentacao({
   className?: string;
 }) {
   if (estica) {
-    return <div className={cn("h-full min-h-[70vh] w-full", className)}>{children}</div>;
+    // flex-1 (não h-full) de propósito: height:100% não resolve de forma
+    // confiável através do container flex-1/overflow-auto do
+    // ApresentacaoShell (achado testando ao vivo — ficava só com o piso de
+    // min-h-[70vh], nunca esticava pro resto da tela real). flex-1 é o jeito
+    // robusto de "cresce até o espaço que sobrar" dentro de um pai flex-col
+    // — precisa de min-h-0 pra não ficar preso ao tamanho do conteúdo.
+    return <div className={cn("flex min-h-0 w-full flex-1 flex-col", className)}>{children}</div>;
   }
   return <div className={cn("mx-auto flex min-h-[70vh] w-full items-center justify-center", className)}>{children}</div>;
 }

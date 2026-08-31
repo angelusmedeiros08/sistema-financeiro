@@ -147,14 +147,14 @@ export default async function PaginaRelatoriosVisaoGeral({
   const emFocoDreCascata = emApresentacao && foco === "dre-cascata";
 
   const secaoFluxoCaixa = (
-    <div className={cn("rounded-2xl bg-card shadow-card p-5", emFocoFluxoCaixa && "flex h-full flex-col")}>
+    <div className={cn("rounded-2xl bg-card shadow-card p-5", emFocoFluxoCaixa && "flex min-h-0 flex-1 flex-col")}>
       <h2 className="mb-4 font-heading text-sm font-bold text-foreground">Fluxo de caixa</h2>
       <FluxoChart dados={fluxoParaGrafico} apresentacao={emFocoFluxoCaixa} />
     </div>
   );
 
   const secaoDreCascata = (
-    <div className={cn("rounded-2xl bg-card shadow-card p-5", emFocoDreCascata && "flex h-full flex-col")}>
+    <div className={cn("rounded-2xl bg-card shadow-card p-5", emFocoDreCascata && "flex min-h-0 flex-1 flex-col")}>
       <h2 className="mb-4 font-heading text-sm font-bold text-foreground">DRE em cascata</h2>
       <WaterfallDre linhas={dre} altura={360} apresentacao={emFocoDreCascata} />
     </div>

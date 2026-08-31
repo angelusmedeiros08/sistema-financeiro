@@ -142,7 +142,7 @@ export function FluxoChart({ dados, apresentacao = false }: { dados: PontoFluxo[
   const semMovimento = dados.every((d) => d.receitas === 0 && d.despesas === 0);
 
   return (
-    <div className={cn(apresentacao && "flex h-full flex-col")}>
+    <div className={cn(apresentacao && "flex min-h-0 flex-1 flex-col")}>
       {/* Legenda fica FORA do ParentSize de propósito: o wrapper interno
           dele é position:absolute + overflow:hidden do tamanho exato do
           container, então qualquer coisa renderizada depois do <svg> ali
