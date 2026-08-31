@@ -9,6 +9,7 @@ import { useTooltip, useTooltipInPortal, defaultStyles } from "@visx/tooltip";
 import { localPoint } from "@visx/event";
 import type { Database } from "@/utils/supabase/database.types";
 import { formatarMoeda, formatarNumeroAbreviado } from "@/lib/formatacao";
+import { cn } from "@/lib/utils";
 
 type LinhaWaterfall = { rotulo: string; tipoCalc: Database["public"]["Enums"]["tipo_linha_dre"]; valorDireto: number };
 
@@ -297,24 +298,31 @@ function GraficoInterno({ barras, largura, altura }: { barras: BarraWaterfall[];
 // horizontalmente em vez de comprimir.
 const LARGURA_MIN_POR_BARRA = 80;
 
-export function WaterfallDre({ linhas, altura = 420 }: { linhas: LinhaWaterfall[]; altura?: number }) {
+// `apresentacao`: em vez do `altura` fixo (pensado pro card no meio do
+// dashboard normal), a altura vira `h-full` (o slide inteiro, via
+// FocoApresentacao) e o ParentSize mede a altura real do container — mesmo
+// motivo/padrão do FluxoChart. `altura` continua valendo como piso enquanto
+// a medição real ainda não chegou (primeiro paint), pra não piscar vazio.
+export function WaterfallDre({ linhas, altura = 420, apresentacao = false }: { linhas: LinhaWaterfall[]; altura?: number; apresentacao?: boolean }) {
   const barras = montarBarras(linhas);
   const semDado = linhas.length === 0 || linhas.every((l) => l.valorDireto === 0);
 
   return (
-    <div className="relative" style={{ height: altura }}>
+    <div className={cn("relative", apresentacao ? "h-full" : undefined)} style={apresentacao ? undefined : { height: altura }}>
       {semDado ? (
         <p className="flex h-full items-center justify-center text-sm text-muted-foreground">
           Sem movimentação no período selecionado.
         </p>
       ) : (
         <ParentSize>
-          {({ width }) => {
+          {({ width, height }) => {
             if (width <= 0) return null;
+            const alturaUsavel = apresentacao ? height || altura : altura;
+            if (alturaUsavel <= 0) return null;
             const larguraNecessaria = Math.max(width, barras.length * LARGURA_MIN_POR_BARRA + MARGEM.left + MARGEM.right);
             return (
               <div className="h-full overflow-x-auto">
-                <GraficoInterno barras={barras} largura={larguraNecessaria} altura={altura} />
+                <GraficoInterno barras={barras} largura={larguraNecessaria} altura={alturaUsavel} />
               </div>
             );
           }}

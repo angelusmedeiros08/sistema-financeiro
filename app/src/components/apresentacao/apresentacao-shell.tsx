@@ -83,20 +83,17 @@ export function ApresentacaoShell({ apresentacaoId, children }: { apresentacaoId
     [router, slides, total, apresentacaoId, modo, pausado],
   );
 
-  // Pré-busca os vizinhos (anterior/próximo) assim que o slide atual monta —
-  // pelo menos o bundle JS da rota já fica pronto antes do clique, cortando
-  // parte da espera mesmo em rotas totalmente dinâmicas (sem cache de dado,
-  // que Next.js não faz pra rota sem loading.js). No Modo TV isso roda com
-  // até `intervaloMs` de folga antes do próximo avanço automático.
+  // Pré-busca o baralho inteiro assim que os slides são conhecidos — só o
+  // vizinho imediato (achado do usuário: troca lenta, "devia ser instantâneo
+  // que nem no Canva") deixava qualquer avanço além dele batendo numa rota
+  // nunca visitada, round-trip de RSC completo. Roda uma vez por sessão (a
+  // troca de slide em si não entra nas dependências), não fica refazendo a
+  // cada navegação.
   useEffect(() => {
-    if (total < 2) return;
-    const proximo = (indiceAtual + 1) % total;
-    router.prefetch(montarUrlSlide(slides[proximo].rota, { apresentacaoId, indice: proximo, modo, pausado }));
-    if (total > 2) {
-      const anterior = (indiceAtual - 1 + total) % total;
-      router.prefetch(montarUrlSlide(slides[anterior].rota, { apresentacaoId, indice: anterior, modo, pausado }));
-    }
-  }, [indiceAtual, slides, total, apresentacaoId, modo, pausado, router]);
+    slides.forEach((slide, indice) => {
+      router.prefetch(montarUrlSlide(slide.rota, { apresentacaoId, indice, modo, pausado }));
+    });
+  }, [slides, apresentacaoId, modo, pausado, router]);
 
   const emTelaCheia = useSyncExternalStore(
     (aoMudar) => {
