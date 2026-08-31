@@ -59,6 +59,26 @@ export async function listarPessoas(
   return { pessoas, total: count ?? 0 };
 }
 
+// Lista compacta (id + nome, sem paginação) pra popular um combobox de
+// seleção — Vendas e Orçamentos comercial repetiam essa mesma consulta
+// crua em 4 páginas (nova/[id] × 2 domínios) pra montar o combobox de
+// Cliente. Extraído em revisão de código. Deliberadamente diferente de
+// `listarPessoas` (que agora pagina e traz mais colunas pra tela de
+// listagem) — um combobox precisa do catálogo inteiro pra buscar por
+// nome, paginar aqui quebraria a busca a partir do 21º cliente.
+export async function listarPessoasParaCombobox(
+  supabase: Cliente,
+  params: { tenant_id: string; perfil: PerfilPessoa },
+): Promise<{ id: string; nome: string }[]> {
+  const { data } = await supabase
+    .from("pessoas")
+    .select("id, nome")
+    .eq("tenant_id", params.tenant_id)
+    .contains("perfis", [params.perfil])
+    .order("nome");
+  return data ?? [];
+}
+
 export type DadosPessoa = {
   id: string;
   nome: string;

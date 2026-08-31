@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
 import { listarProdutosServicos } from "@/lib/produtos-servicos/produtos-servicos";
+import { listarPessoasParaCombobox } from "@/lib/pessoas/buscar-pessoa";
 import { VendaForm } from "../venda-form";
 
 export default async function PaginaNovaVenda() {
@@ -10,8 +11,8 @@ export default async function PaginaNovaVenda() {
   if ("erro" in contexto) redirect("/entrar");
 
   const supabase = await createClient();
-  const [pessoasResultado, produtos, formasPagamentoResultado] = await Promise.all([
-    supabase.from("pessoas").select("id, nome").eq("tenant_id", contexto.tenantId).contains("perfis", ["CLIENTE"]).order("nome"),
+  const [pessoas, produtos, formasPagamentoResultado] = await Promise.all([
+    listarPessoasParaCombobox(supabase, { tenant_id: contexto.tenantId, perfil: "CLIENTE" }),
     listarProdutosServicos(supabase, contexto.tenantId, { apenasAtivos: true }),
     supabase.from("formas_pagamento").select("id, nome").eq("tenant_id", contexto.tenantId).order("nome"),
   ]);
@@ -27,7 +28,7 @@ export default async function PaginaNovaVenda() {
 
       <VendaForm
         modo="criar"
-        pessoas={pessoasResultado.data ?? []}
+        pessoas={pessoas}
         produtosIniciais={produtos.map((p) => ({ id: p.id, nome: p.nome, precoVenda: p.precoVenda }))}
         formasPagamento={formasPagamentoResultado.data ?? []}
       />

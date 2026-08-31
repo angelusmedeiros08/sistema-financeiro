@@ -1,12 +1,13 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/utils/supabase/database.types";
 import { hojeIsoBrasil } from "@/lib/data-brasil";
+import { validarItensComerciais, type ItemComercialEntrada } from "@/lib/comercial/itens";
 
 type Cliente = SupabaseClient<Database>;
 type StatusOrcamentoComercial = Database["public"]["Enums"]["status_orcamento_comercial"];
 type Resultado = { erro: string } | { sucesso: true };
 
-export type ItemOrcamentoEntrada = { produtoServicoId: string; quantidade: number; precoUnitario: number };
+export type ItemOrcamentoEntrada = ItemComercialEntrada;
 
 export type ItemOrcamento = {
   id: string;
@@ -128,21 +129,11 @@ export async function buscarOrcamento(supabase: Cliente, tenantId: string, orcam
   };
 }
 
-function validarItens(itens: ItemOrcamentoEntrada[]): string | null {
-  if (itens.length === 0) return "Adicione ao menos um item.";
-  for (const item of itens) {
-    if (!item.produtoServicoId) return "Escolha o produto ou serviço de cada item.";
-    if (!Number.isFinite(item.quantidade) || item.quantidade <= 0) return "Quantidade inválida em algum item.";
-    if (!Number.isFinite(item.precoUnitario) || item.precoUnitario < 0) return "Preço inválido em algum item.";
-  }
-  return null;
-}
-
 export async function substituirItensOrcamento(
   supabase: Cliente,
   params: { tenantId: string; orcamentoId: string; itens: ItemOrcamentoEntrada[] },
 ): Promise<string | null> {
-  const erroItens = validarItens(params.itens);
+  const erroItens = validarItensComerciais(params.itens);
   if (erroItens) return erroItens;
 
   const { error } = await supabase.rpc("substituir_itens_orcamento_comercial", {
@@ -174,7 +165,7 @@ export async function criarOrcamento(
 ): Promise<{ id: string } | { erro: string }> {
   if (!params.pessoaId) return { erro: "Selecione o cliente." };
   if (!Number.isFinite(params.numeroParcelas) || params.numeroParcelas < 1) return { erro: "Número de parcelas precisa ser pelo menos 1." };
-  const erroItens = validarItens(params.itens);
+  const erroItens = validarItensComerciais(params.itens);
   if (erroItens) return { erro: erroItens };
 
   const { data: orcamento, error } = await supabase
@@ -219,7 +210,7 @@ export async function editarCabecalhoOrcamento(
 ): Promise<Resultado & { validadeResetada?: string }> {
   if (!params.pessoaId) return { erro: "Selecione o cliente." };
   if (!Number.isFinite(params.numeroParcelas) || params.numeroParcelas < 1) return { erro: "Número de parcelas precisa ser pelo menos 1." };
-  const erroItens = validarItens(params.itens);
+  const erroItens = validarItensComerciais(params.itens);
   if (erroItens) return { erro: erroItens };
 
   const { data: atual } = await supabase

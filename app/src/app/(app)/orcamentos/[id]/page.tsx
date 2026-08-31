@@ -4,6 +4,7 @@ import { createClient } from "@/utils/supabase/server";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
 import { buscarOrcamento } from "@/lib/orcamentos-comerciais/orcamentos-comerciais";
 import { listarProdutosServicos } from "@/lib/produtos-servicos/produtos-servicos";
+import { listarPessoasParaCombobox } from "@/lib/pessoas/buscar-pessoa";
 import { Badge } from "@/components/ui/badge";
 import { formatarMoeda } from "@/lib/formatacao";
 import { formatarDataIsoParaBR } from "@/lib/importacao/locale-br";
@@ -46,8 +47,8 @@ export default async function PaginaOrcamento({
   const editavel = orcamento.status === "RASCUNHO" || orcamento.status === "ENVIADO";
 
   if (editavel) {
-    const [pessoasResultado, produtos, formasPagamentoResultado] = await Promise.all([
-      supabase.from("pessoas").select("id, nome").eq("tenant_id", contexto.tenantId).contains("perfis", ["CLIENTE"]).order("nome"),
+    const [pessoas, produtos, formasPagamentoResultado] = await Promise.all([
+      listarPessoasParaCombobox(supabase, { tenant_id: contexto.tenantId, perfil: "CLIENTE" }),
       listarProdutosServicos(supabase, contexto.tenantId, { apenasAtivos: true }),
       supabase.from("formas_pagamento").select("id, nome").eq("tenant_id", contexto.tenantId).order("nome"),
     ]);
@@ -90,7 +91,7 @@ export default async function PaginaOrcamento({
         <OrcamentoForm
           modo="editar"
           orcamentoId={orcamento.id}
-          pessoas={pessoasResultado.data ?? []}
+          pessoas={pessoas}
           produtosIniciais={[...produtosDisponiveis.values()]}
           formasPagamento={formasPagamentoResultado.data ?? []}
           orcamentoInicial={{

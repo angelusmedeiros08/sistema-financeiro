@@ -4,39 +4,13 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
-import { criarVenda, editarCabecalhoVenda, recusarVenda, aprovarVenda, type ItemVendaEntrada } from "./vendas";
+import { criarVenda, editarCabecalhoVenda, recusarVenda, aprovarVenda } from "./vendas";
+import { lerItensComerciaisJson, lerCabecalhoComercial, revalidarDocumentoComercial } from "@/lib/comercial/formulario-actions";
 
 type ResultadoAcao = { erro: string } | { sucesso: true };
 
-function lerItensJson(formData: FormData): ItemVendaEntrada[] {
-  const bruto = String(formData.get("itens_json") ?? "[]");
-  try {
-    const lista = JSON.parse(bruto);
-    if (!Array.isArray(lista)) return [];
-    return lista.map((item) => ({
-      produtoServicoId: String(item.produtoServicoId ?? ""),
-      quantidade: Number(item.quantidade),
-      precoUnitario: Number(item.precoUnitario),
-    }));
-  } catch {
-    return [];
-  }
-}
-
-function lerDadosCabecalho(formData: FormData) {
-  return {
-    pessoaId: String(formData.get("pessoa_id") ?? ""),
-    dataEmissao: String(formData.get("data_emissao") ?? ""),
-    formaPagamentoId: String(formData.get("forma_pagamento_id") ?? ""),
-    numeroParcelas: Number(formData.get("numero_parcelas") ?? 1),
-    primeiroVencimento: String(formData.get("primeiro_vencimento") ?? ""),
-    observacoes: String(formData.get("observacoes") ?? ""),
-  };
-}
-
 function revalidarVenda(vendaId?: string) {
-  revalidatePath("/vendas");
-  if (vendaId) revalidatePath(`/vendas/${vendaId}`);
+  revalidarDocumentoComercial("/vendas", vendaId);
 }
 
 // `acao`: "rascunho" salva e fica em RASCUNHO; "direto" salva e aprova na
@@ -48,13 +22,13 @@ export async function criarVendaAction(formData: FormData): Promise<ResultadoAca
   if ("erro" in contexto) return { erro: contexto.erro };
 
   const supabase = await createClient();
-  const dados = lerDadosCabecalho(formData);
+  const dados = lerCabecalhoComercial(formData);
   const acao = String(formData.get("acao") ?? "rascunho");
 
   const resultado = await criarVenda(supabase, {
     tenantId: contexto.tenantId,
     ...dados,
-    itens: lerItensJson(formData),
+    itens: lerItensComerciaisJson(formData),
     criadoPor: contexto.user.id,
     direto: acao === "direto",
   });
@@ -73,8 +47,8 @@ export async function editarVendaAction(vendaId: string, formData: FormData): Pr
   const resultado = await editarCabecalhoVenda(supabase, {
     tenantId: contexto.tenantId,
     vendaId,
-    ...lerDadosCabecalho(formData),
-    itens: lerItensJson(formData),
+    ...lerCabecalhoComercial(formData),
+    itens: lerItensComerciaisJson(formData),
   });
 
   if ("erro" in resultado) return resultado;
