@@ -95,6 +95,29 @@ export async function atualizarApresentacao(apresentacaoId: string, dados: Dados
   return resultado;
 }
 
+// Disparado pelo ícone de transmitir do Topbar — cria e já devolve o id de
+// uma apresentação de 1 slide só, marcada `avulsa`. Não passa pelo mesmo
+// `salvar` acima (que resolve create/update com N slides reordenáveis) —
+// aqui é sempre 1 insert atômico, via RPC dedicada.
+export async function criarApresentacaoAvulsa(rota: string): Promise<ResultadoAcao> {
+  const item = itemCatalogoDaRota(rota);
+  if (!item) return { erro: "Essa tela não pode ser apresentada." };
+
+  const contexto = await obterUsuarioETenantAtual();
+  if ("erro" in contexto) return { erro: contexto.erro };
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("criar_apresentacao_avulsa", {
+    p_tenant_id: contexto.tenantId,
+    p_criado_por: contexto.user.id,
+    p_rota: rota,
+    p_rotulo: item.rotulo,
+  });
+
+  if (error || !data) return { erro: error?.message ?? "Não foi possível iniciar a apresentação." };
+  return { sucesso: true, id: data };
+}
+
 export async function excluirApresentacao(apresentacaoId: string): Promise<ResultadoAcao> {
   const contexto = await obterUsuarioETenantAtual();
   if ("erro" in contexto) return { erro: contexto.erro };

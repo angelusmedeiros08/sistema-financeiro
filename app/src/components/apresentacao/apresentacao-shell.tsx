@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { obterApresentacaoParaSessao } from "@/lib/apresentacao/sessao-actions";
 import { montarUrlSlide, PARAM_SLIDE, PARAM_MODO, PARAM_PAUSADO, type ModoApresentacao } from "@/lib/apresentacao/sessao";
 import type { ApresentacaoComSlides } from "@/lib/apresentacao/apresentacoes";
+import { excluirApresentacao } from "@/app/(app)/apresentacoes/actions";
 
 // Renderiza a sessão de apresentação em andamento — spec Seção 6/7. `children`
 // é a página real do slide atual (Painel, Indicadores, um Relatório), a
@@ -134,8 +135,13 @@ export function ApresentacaoShell({ apresentacaoId, children }: { apresentacaoId
 
   const sair = useCallback(() => {
     if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    if (apresentacao?.avulsa) {
+      excluirApresentacao(apresentacaoId).catch(() => {});
+      router.push(slides[0]?.rota ?? "/painel");
+      return;
+    }
     router.push("/apresentacoes");
-  }, [router]);
+  }, [router, apresentacao, apresentacaoId, slides]);
 
   useEffect(() => {
     function aoTeclar(e: KeyboardEvent) {

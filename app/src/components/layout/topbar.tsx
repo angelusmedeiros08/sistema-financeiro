@@ -14,6 +14,7 @@ import { SidebarConteudo } from "./sidebar";
 import { ThemeToggle } from "./theme-toggle";
 import { CommandPaletteBusca } from "./command-palette-busca";
 import { NovoRegistroMenu } from "./novo-registro-menu";
+import { IconeTransmitir } from "./icone-transmitir";
 import { NotificacoesMenu, type NotificacaoAlerta } from "./notificacoes-menu";
 import { sair } from "@/app/(auth)/actions";
 import { trocarTenantAtivo } from "@/lib/tenant/trocar-tenant-actions";
@@ -60,6 +61,7 @@ export function Topbar({
       </div>
 
       <div className="flex items-center gap-1.5">
+        <IconeTransmitir />
         <NovoRegistroMenu />
         <NotificacoesMenu notificacoes={notificacoes} />
         <ThemeToggle />

@@ -181,6 +181,7 @@ export type Database = {
       apresentacoes: {
         Row: {
           atualizado_em: string
+          avulsa: boolean
           criado_em: string
           criado_por: string | null
           id: string
@@ -191,6 +192,7 @@ export type Database = {
         }
         Insert: {
           atualizado_em?: string
+          avulsa?: boolean
           criado_em?: string
           criado_por?: string | null
           id?: string
@@ -201,6 +203,7 @@ export type Database = {
         }
         Update: {
           atualizado_em?: string
+          avulsa?: boolean
           criado_em?: string
           criado_por?: string | null
           id?: string
@@ -2360,6 +2363,15 @@ export type Database = {
           quantidade: number
           status: Database["public"]["Enums"]["status_item_importacao"]
         }[]
+      }
+      criar_apresentacao_avulsa: {
+        Args: {
+          p_criado_por: string
+          p_rota: string
+          p_rotulo: string
+          p_tenant_id: string
+        }
+        Returns: string
       }
       criar_evento_financeiro: {
         Args: {

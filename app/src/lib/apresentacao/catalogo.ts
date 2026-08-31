@@ -66,3 +66,25 @@ export function rotaValida(rota: string): boolean {
 export function caminhoElegivel(pathname: string): boolean {
   return CATALOGO_SLIDES.some((item) => caminhoDe(item.rota) === pathname);
 }
+
+// Usado pelo ícone de transmitir do Topbar — acha a entrada do catálogo que
+// melhor representa o que a pessoa está vendo agora. Só olha pra `foco`/`aba`
+// (os únicos dois parâmetros que o catálogo usa pra distinguir uma visão
+// específica) — outros parâmetros de filtro que a tela normal já tenha na
+// URL (regime, período, etc.) nunca aparecem no catálogo, então são
+// ignorados de propósito, não tratados como "não bateu". Cai pro caminho
+// puro se existir uma entrada assim (ex.: /painel), senão pra primeira
+// entrada daquele caminho no catálogo (ex.: DRE, que só tem variantes com
+// ?aba=, nunca uma entrada "tela inteira").
+export function rotaAtualParaApresentar(pathname: string, searchParams: URLSearchParams): string | undefined {
+  const foco = searchParams.get("foco");
+  const aba = searchParams.get("aba");
+  const candidatos = [foco ? `${pathname}?foco=${foco}` : null, aba ? `${pathname}?aba=${aba}` : null, pathname].filter(
+    (r): r is string => r !== null,
+  );
+
+  for (const candidato of candidatos) {
+    if (rotaValida(candidato)) return candidato;
+  }
+  return CATALOGO_SLIDES.find((item) => caminhoDe(item.rota) === pathname)?.rota;
+}

@@ -25,16 +25,21 @@ export type ApresentacaoComSlides = {
   nome: string;
   intervaloSegundos: number;
   permiteModoTv: boolean;
+  avulsa: boolean;
   slides: SlideApresentacao[];
 };
 
 // Usado pela listagem de gestão (`/apresentacoes`) — só o necessário pra
 // mostrar a linha e decidir se "Apresentar"/"Modo TV" ficam habilitados.
+// `avulsa=false` de propósito — as apresentações de 1 slide criadas pelo
+// ícone de transmitir do Topbar (lib/apresentacao/apresentacoes-actions.ts)
+// não são roteiros que a pessoa monta/gerencia, não fazem sentido aqui.
 export async function listarApresentacoes(supabase: Cliente, tenantId: string): Promise<ApresentacaoResumo[]> {
   const { data, error } = await supabase
     .from("apresentacoes")
     .select("id, nome, intervalo_segundos, permite_modo_tv, apresentacao_slides(rota, ordem)")
     .eq("tenant_id", tenantId)
+    .eq("avulsa", false)
     .order("nome");
 
   if (error || !data) return [];
@@ -74,7 +79,7 @@ export async function obterApresentacaoComSlides(
   const [{ data: apresentacao, error: erroApresentacao }, { data: slides, error: erroSlides }] = await Promise.all([
     supabase
       .from("apresentacoes")
-      .select("id, nome, intervalo_segundos, permite_modo_tv")
+      .select("id, nome, intervalo_segundos, permite_modo_tv, avulsa")
       .eq("tenant_id", tenantId)
       .eq("id", apresentacaoId)
       .maybeSingle(),
@@ -93,6 +98,7 @@ export async function obterApresentacaoComSlides(
     nome: apresentacao.nome,
     intervaloSegundos: apresentacao.intervalo_segundos,
     permiteModoTv: apresentacao.permite_modo_tv,
+    avulsa: apresentacao.avulsa,
     slides: (slides ?? []).filter((s) => itemCatalogoDaRota(s.rota) !== undefined),
   };
 }
