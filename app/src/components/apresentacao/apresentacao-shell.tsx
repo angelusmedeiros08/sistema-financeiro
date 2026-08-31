@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, useSyncExternalStore, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CaretLeft, CaretRight, X, Play, Pause, ArrowsOut, ArrowsIn } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
@@ -86,14 +86,24 @@ export function ApresentacaoShell({ apresentacaoId, children }: { apresentacaoId
   // Pré-busca o baralho inteiro assim que os slides são conhecidos — só o
   // vizinho imediato (achado do usuário: troca lenta, "devia ser instantâneo
   // que nem no Canva") deixava qualquer avanço além dele batendo numa rota
-  // nunca visitada, round-trip de RSC completo. Roda uma vez por sessão (a
-  // troca de slide em si não entra nas dependências), não fica refazendo a
-  // cada navegação.
+  // nunca visitada, round-trip de RSC completo.
+  //
+  // `slides` é recalculado (referência nova) a cada troca de slide, porque
+  // `apresentacao` é rebuscado do zero a cada navegação (ver efeito acima —
+  // de propósito, spec Seção 8). Sem a trava por assinatura de conteúdo
+  // abaixo, esse efeito reexecutava e reemitia as 21 chamadas de prefetch em
+  // TODA navegação, não só uma vez — achado ao vivo, os requests de rede
+  // duplicados deixavam a troca de slide mais lenta, não mais rápida (o
+  // oposto do que essa correção deveria fazer).
+  const assinaturaSlides = slides.map((s) => s.rota).join("|");
+  const ultimaAssinaturaPreCarregada = useRef<string | null>(null);
   useEffect(() => {
+    if (assinaturaSlides === "" || assinaturaSlides === ultimaAssinaturaPreCarregada.current) return;
+    ultimaAssinaturaPreCarregada.current = assinaturaSlides;
     slides.forEach((slide, indice) => {
       router.prefetch(montarUrlSlide(slide.rota, { apresentacaoId, indice, modo, pausado }));
     });
-  }, [slides, apresentacaoId, modo, pausado, router]);
+  }, [assinaturaSlides, slides, apresentacaoId, modo, pausado, router]);
 
   const emTelaCheia = useSyncExternalStore(
     (aoMudar) => {
