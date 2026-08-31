@@ -7,14 +7,16 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BancoCombobox } from "@/components/formularios/banco-combobox";
 import { criarContaFinanceira } from "./actions";
+import { notificarResultado } from "@/lib/feedback/notificar-resultado";
 
 const estadoInicial = { erro: "" };
 
 export function NovaContaFinanceiraForm() {
   const formRef = useRef<HTMLFormElement>(null);
 
-  const [estado, formAction, pendente] = useActionState(async (_: typeof estadoInicial, formData: FormData) => {
+  const [, formAction, pendente] = useActionState(async (_: typeof estadoInicial, formData: FormData) => {
     const resultado = await criarContaFinanceira(formData);
+    notificarResultado(resultado, "Conta financeira criada.");
     if ("erro" in resultado) return { erro: resultado.erro };
     formRef.current?.reset();
     return { erro: "" };
@@ -52,7 +54,6 @@ export function NovaContaFinanceiraForm() {
           {pendente ? "Salvando..." : "Adicionar"}
         </Button>
       </div>
-      {estado.erro && <p className="mt-2 text-sm text-destructive">{estado.erro}</p>}
     </form>
   );
 }

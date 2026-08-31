@@ -8,6 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { criarCategoriaAction } from "@/lib/contabil/categorias-actions";
 import type { Categoria } from "@/lib/contabil/categorias";
+import { notificarResultado } from "@/lib/feedback/notificar-resultado";
 
 const estadoInicial = { erro: "" };
 
@@ -23,9 +24,10 @@ export function NovaCategoriaForm({
   const formRef = useRef<HTMLFormElement>(null);
   const raizes = categorias.filter((c) => !c.categoriaPaiId);
 
-  const [estado, formAction, pendente] = useActionState(async (_: typeof estadoInicial, formData: FormData) => {
+  const [, formAction, pendente] = useActionState(async (_: typeof estadoInicial, formData: FormData) => {
     formData.set("tipo", tipo);
     const resultado = await criarCategoriaAction(formData);
+    notificarResultado(resultado, "Categoria criada.");
     if ("erro" in resultado) return { erro: resultado.erro };
     formRef.current?.reset();
     return { erro: "" };
@@ -80,7 +82,6 @@ export function NovaCategoriaForm({
         </Button>
       </div>
 
-      {estado.erro && <p className="mt-2 text-sm text-destructive">{estado.erro}</p>}
     </form>
   );
 }

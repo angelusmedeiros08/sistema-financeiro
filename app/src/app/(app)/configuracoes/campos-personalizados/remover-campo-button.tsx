@@ -3,6 +3,7 @@
 import { useTransition } from "react";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { removerCampoPersonalizadoAction } from "@/lib/pessoas/pessoas-actions";
+import { notificarResultado } from "@/lib/feedback/notificar-resultado";
 
 export function RemoverCampoButton({ campoId }: { campoId: string }) {
   const [pendente, iniciarTransicao] = useTransition();
@@ -15,7 +16,8 @@ export function RemoverCampoButton({ campoId }: { campoId: string }) {
         iniciarTransicao(async () => {
           const formData = new FormData();
           formData.set("campo_id", campoId);
-          await removerCampoPersonalizadoAction(formData);
+          const resultado = await removerCampoPersonalizadoAction(formData);
+          notificarResultado(resultado, "Campo removido.");
         })
       }
     >

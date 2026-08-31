@@ -12,6 +12,7 @@ import { DotsThree } from "@phosphor-icons/react/dist/ssr";
 import type { RegraCategorizacao } from "@/lib/conciliacao/regras";
 import { editarRegraAction, apagarRegraAction } from "./actions";
 import { cn } from "@/lib/utils";
+import { notificarResultado } from "@/lib/feedback/notificar-resultado";
 
 const SEM_PESSOA = "__sem_pessoa__";
 
@@ -35,22 +36,19 @@ export function TabelaRegras({
   const [categoriaEdicao, setCategoriaEdicao] = useState("");
   const [pessoaEdicao, setPessoaEdicao] = useState(SEM_PESSOA);
   const [enviando, setEnviando] = useState(false);
-  const [erro, setErro] = useState("");
 
   function iniciarEdicao(regra: RegraCategorizacao) {
     setEditandoId(regra.id);
     setCategoriaEdicao(regra.categoriaId);
     setPessoaEdicao(regra.pessoaId ?? SEM_PESSOA);
-    setErro("");
   }
 
   async function salvarEdicao(regraId: string) {
     setEnviando(true);
-    setErro("");
     const resultado = await editarRegraAction(regraId, { categoriaId: categoriaEdicao, pessoaId: pessoaEdicao === SEM_PESSOA ? null : pessoaEdicao });
     setEnviando(false);
+    notificarResultado(resultado.erro ? { erro: resultado.erro } : { sucesso: true }, "Regra salva.");
     if (resultado.erro) {
-      setErro(resultado.erro);
       return;
     }
     const categoria = categorias.find((c) => c.id === categoriaEdicao);
@@ -63,11 +61,10 @@ export function TabelaRegras({
 
   async function apagar(regraId: string) {
     setEnviando(true);
-    setErro("");
     const resultado = await apagarRegraAction(regraId);
     setEnviando(false);
+    notificarResultado(resultado.erro ? { erro: resultado.erro } : { sucesso: true }, "Regra removida.");
     if (resultado.erro) {
-      setErro(resultado.erro);
       return;
     }
     setRegras((atual) => atual.filter((r) => r.id !== regraId));
@@ -185,7 +182,6 @@ export function TabelaRegras({
 
   return (
     <div className="flex flex-col gap-2">
-      {erro && <p className="text-sm text-destructive">{erro}</p>}
       <TabelaLista titulo="Regras de categorização" data={regras} columns={colunas} busca={false} textoVazio="Nenhuma regra ainda." />
     </div>
   );

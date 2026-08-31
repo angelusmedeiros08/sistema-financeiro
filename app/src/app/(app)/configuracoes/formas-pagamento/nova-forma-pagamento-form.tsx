@@ -5,14 +5,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { criarFormaPagamento } from "./actions";
+import { notificarResultado } from "@/lib/feedback/notificar-resultado";
 
 const estadoInicial = { erro: "" };
 
 export function NovaFormaPagamentoForm() {
   const formRef = useRef<HTMLFormElement>(null);
 
-  const [estado, formAction, pendente] = useActionState(async (_: typeof estadoInicial, formData: FormData) => {
+  const [, formAction, pendente] = useActionState(async (_: typeof estadoInicial, formData: FormData) => {
     const resultado = await criarFormaPagamento(formData);
+    notificarResultado(resultado, "Forma de pagamento criada.");
     if ("erro" in resultado) return { erro: resultado.erro };
     formRef.current?.reset();
     return { erro: "" };
@@ -29,7 +31,6 @@ export function NovaFormaPagamentoForm() {
           {pendente ? "Salvando..." : "Adicionar"}
         </Button>
       </div>
-      {estado.erro && <p className="mt-2 text-sm text-destructive">{estado.erro}</p>}
     </form>
   );
 }

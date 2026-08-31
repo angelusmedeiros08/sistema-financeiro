@@ -6,14 +6,16 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { criarCampoPersonalizadoAction } from "@/lib/pessoas/pessoas-actions";
+import { notificarResultado } from "@/lib/feedback/notificar-resultado";
 
 const estadoInicial = { erro: "" };
 
 export function NovoCampoForm() {
   const formRef = useRef<HTMLFormElement>(null);
 
-  const [estado, formAction, pendente] = useActionState(async (_: typeof estadoInicial, formData: FormData) => {
+  const [, formAction, pendente] = useActionState(async (_: typeof estadoInicial, formData: FormData) => {
     const resultado = await criarCampoPersonalizadoAction(formData);
+    notificarResultado(resultado, "Campo criado.");
     if ("erro" in resultado) return { erro: resultado.erro };
     formRef.current?.reset();
     return { erro: "" };
@@ -60,7 +62,6 @@ export function NovoCampoForm() {
           {pendente ? "Salvando..." : "Adicionar"}
         </Button>
       </div>
-      {estado.erro && <p className="mt-2 text-sm text-destructive">{estado.erro}</p>}
     </form>
   );
 }

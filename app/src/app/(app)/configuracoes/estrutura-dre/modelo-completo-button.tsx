@@ -3,6 +3,7 @@
 import { useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { aplicarModeloCompletoDreAction } from "@/lib/relatorios/dre-actions";
+import { notificarResultado } from "@/lib/feedback/notificar-resultado";
 
 export function ModeloCompletoButton() {
   const [pendente, iniciarTransicao] = useTransition();
@@ -19,7 +20,8 @@ export function ModeloCompletoButton() {
         );
         if (!confirmado) return;
         iniciarTransicao(async () => {
-          await aplicarModeloCompletoDreAction();
+          const resultado = await aplicarModeloCompletoDreAction();
+          notificarResultado(resultado, "Modelo aplicado.");
         });
       }}
     >

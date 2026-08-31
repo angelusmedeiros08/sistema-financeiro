@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PessoaCombobox } from "@/components/formularios/pessoa-combobox";
 import { convidarUsuarioAction } from "@/lib/tenant/equipe-actions";
+import { notificarResultado } from "@/lib/feedback/notificar-resultado";
 
 const PAPEIS = [
   { valor: "admin", rotulo: "Admin" },
@@ -22,8 +23,9 @@ export function ConvidarForm({ clientes }: { clientes: { id: string; nome: strin
   const [chaveFormulario, setChaveFormulario] = useState(0);
   const [papel, setPapel] = useState<(typeof PAPEIS)[number]["valor"]>("financeiro_junior");
 
-  const [estado, formAction, pendente] = useActionState(async (_: typeof estadoInicial, formData: FormData) => {
+  const [, formAction, pendente] = useActionState(async (_: typeof estadoInicial, formData: FormData) => {
     const resultado = await convidarUsuarioAction(formData);
+    notificarResultado(resultado, "Convite enviado.");
     if ("erro" in resultado) return { erro: resultado.erro };
     setChaveFormulario((k) => k + 1);
     return { erro: "" };
@@ -68,8 +70,6 @@ export function ConvidarForm({ clientes }: { clientes: { id: string; nome: strin
           <PessoaCombobox pessoas={clientes} perfil="CLIENTE" label="Selecione ou crie o cliente" />
         </div>
       )}
-
-      {estado.erro && <p className="text-sm text-destructive sm:col-span-3">{estado.erro}</p>}
     </form>
   );
 }

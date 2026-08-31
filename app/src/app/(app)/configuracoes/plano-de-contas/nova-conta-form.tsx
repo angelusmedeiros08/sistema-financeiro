@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { criarContaContabilAction } from "@/lib/contabil/plano-contas-actions";
 import type { ContaContabilComNivel } from "@/lib/contabil/plano-contas";
+import { notificarResultado } from "@/lib/feedback/notificar-resultado";
 
 const estadoInicial = { erro: "" };
 
@@ -26,8 +27,9 @@ const OPCOES_NATUREZA = [
 export function NovaContaForm({ contas }: { contas: ContaContabilComNivel[] }) {
   const formRef = useRef<HTMLFormElement>(null);
 
-  const [estado, formAction, pendente] = useActionState(async (_: typeof estadoInicial, formData: FormData) => {
+  const [, formAction, pendente] = useActionState(async (_: typeof estadoInicial, formData: FormData) => {
     const resultado = await criarContaContabilAction(formData);
+    notificarResultado(resultado, "Conta contábil criada.");
     if ("erro" in resultado) return { erro: resultado.erro };
     formRef.current?.reset();
     return { erro: "" };
@@ -101,7 +103,6 @@ export function NovaContaForm({ contas }: { contas: ContaContabilComNivel[] }) {
         </Button>
       </div>
 
-      {estado.erro && <p className="mt-2 text-sm text-destructive">{estado.erro}</p>}
     </form>
   );
 }

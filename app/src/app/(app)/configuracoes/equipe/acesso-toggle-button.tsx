@@ -3,6 +3,7 @@
 import { useTransition } from "react";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { definirAcessoUsuarioAction } from "@/lib/tenant/equipe-actions";
+import { notificarResultado } from "@/lib/feedback/notificar-resultado";
 
 export function AcessoToggleButton({ usuarioId, ativo }: { usuarioId: string; ativo: boolean }) {
   const [pendente, iniciarTransicao] = useTransition();
@@ -11,7 +12,8 @@ export function AcessoToggleButton({ usuarioId, ativo }: { usuarioId: string; at
     const formData = new FormData();
     formData.set("usuario_id", usuarioId);
     formData.set("ativo", String(!ativo));
-    await definirAcessoUsuarioAction(formData);
+    const resultado = await definirAcessoUsuarioAction(formData);
+    notificarResultado(resultado, ativo ? "Acesso revogado." : "Acesso reativado.");
   }
 
   return (

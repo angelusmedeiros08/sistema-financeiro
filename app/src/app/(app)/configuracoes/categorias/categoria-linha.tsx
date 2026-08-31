@@ -12,6 +12,7 @@ import { TagCategoria } from "@/components/ui/tag-categoria";
 import { cn } from "@/lib/utils";
 import { editarCategoriaAction } from "@/lib/contabil/categorias-actions";
 import type { Categoria } from "@/lib/contabil/categorias";
+import { notificarResultado } from "@/lib/feedback/notificar-resultado";
 
 const estadoInicial = { erro: "" };
 
@@ -30,9 +31,10 @@ export function CategoriaLinha({
   const opcoesPai = raizes.filter((c) => c.id !== categoria.id);
   const ehGrupo = temFilhos && !categoria.categoriaPaiId;
 
-  const [estado, formAction, pendente] = useActionState(async (_: typeof estadoInicial, formData: FormData) => {
+  const [, formAction, pendente] = useActionState(async (_: typeof estadoInicial, formData: FormData) => {
     formData.set("categoria_id", categoria.id);
     const resultado = await editarCategoriaAction(formData);
+    notificarResultado(resultado, "Categoria salva.");
     if ("erro" in resultado) return { erro: resultado.erro };
     setEditando(false);
     return { erro: "" };
@@ -113,7 +115,6 @@ export function CategoriaLinha({
             <Button type="button" variant="ghost" size="sm" onClick={() => setEditando(false)} disabled={pendente}>
               Cancelar
             </Button>
-            {estado.erro && <p className="text-sm text-destructive">{estado.erro}</p>}
           </div>
         </form>
       </TableCell>

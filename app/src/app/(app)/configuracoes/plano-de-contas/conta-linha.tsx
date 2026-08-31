@@ -10,6 +10,7 @@ import { TableCell, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { editarContaContabilAction } from "@/lib/contabil/plano-contas-actions";
 import type { ContaContabilComNivel } from "@/lib/contabil/plano-contas";
+import { notificarResultado } from "@/lib/feedback/notificar-resultado";
 
 const estadoInicial = { erro: "" };
 
@@ -44,9 +45,10 @@ export function ContaLinha({ conta, todasContas }: { conta: ContaContabilComNive
   const opcoesConteudoPai = todasContas.filter((c) => c.id !== conta.id);
   const ehGrupo = conta.nivel === 0;
 
-  const [estado, formAction, pendente] = useActionState(async (_: typeof estadoInicial, formData: FormData) => {
+  const [, formAction, pendente] = useActionState(async (_: typeof estadoInicial, formData: FormData) => {
     formData.set("conta_id", conta.id);
     const resultado = await editarContaContabilAction(formData);
+    notificarResultado(resultado, "Conta contábil salva.");
     if ("erro" in resultado) return { erro: resultado.erro };
     setEditando(false);
     return { erro: "" };
@@ -169,7 +171,6 @@ export function ContaLinha({ conta, todasContas }: { conta: ContaContabilComNive
             <Button type="button" variant="ghost" size="sm" onClick={() => setEditando(false)} disabled={pendente}>
               Cancelar
             </Button>
-            {estado.erro && <p className="text-sm text-destructive">{estado.erro}</p>}
           </div>
         </form>
       </TableCell>

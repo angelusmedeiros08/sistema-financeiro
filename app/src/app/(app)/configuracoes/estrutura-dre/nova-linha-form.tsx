@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { criarLinhaDreAction } from "@/lib/relatorios/dre-actions";
+import { notificarResultado } from "@/lib/feedback/notificar-resultado";
 
 const estadoInicial = { erro: "" };
 
@@ -21,8 +22,9 @@ export const OPCOES_ID_DFC = [
 export function NovaLinhaDreForm() {
   const formRef = useRef<HTMLFormElement>(null);
 
-  const [estado, formAction, pendente] = useActionState(async (_: typeof estadoInicial, formData: FormData) => {
+  const [, formAction, pendente] = useActionState(async (_: typeof estadoInicial, formData: FormData) => {
     const resultado = await criarLinhaDreAction(formData);
+    notificarResultado(resultado, "Linha do DRE criada.");
     if ("erro" in resultado) return { erro: resultado.erro };
     formRef.current?.reset();
     return { erro: "" };
@@ -68,7 +70,6 @@ export function NovaLinhaDreForm() {
           {pendente ? "Salvando..." : "Adicionar linha"}
         </Button>
       </div>
-      {estado.erro && <p className="mt-2 text-sm text-destructive">{estado.erro}</p>}
     </form>
   );
 }

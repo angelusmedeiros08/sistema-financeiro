@@ -15,6 +15,7 @@ import {
   editarIdDfcLinhaDreAction,
 } from "@/lib/relatorios/dre-actions";
 import { OPCOES_ID_DFC } from "./nova-linha-form";
+import { notificarResultado } from "@/lib/feedback/notificar-resultado";
 
 type Categoria = { id: string; nome: string; tipo: "RECEITA" | "DESPESA" };
 
@@ -94,7 +95,8 @@ export function LinhaDreItem({
           onClick={() => iniciarTransicao(async () => {
             const formData = new FormData();
             formData.set("linha_id", linha.id);
-            await removerLinhaDreAction(formData);
+            const resultado = await removerLinhaDreAction(formData);
+            notificarResultado(resultado, "Linha removida.");
           })}
         >
           Remover
@@ -112,7 +114,8 @@ export function LinhaDreItem({
                 const formData = new FormData();
                 formData.set("linha_id", linha.id);
                 if (valor !== SEM_ATIVIDADE) formData.set("id_dfc", valor);
-                await editarIdDfcLinhaDreAction(formData);
+                const resultado = await editarIdDfcLinhaDreAction(formData);
+                notificarResultado(resultado, "Atividade de DFC atualizada.");
               })
             }
           >
@@ -140,7 +143,8 @@ export function LinhaDreItem({
                   const formData = new FormData();
                   formData.set("linha_id", linha.id);
                   formData.set("categoria_id", categoria.id);
-                  await desvincularCategoriaDreAction(formData);
+                  const resultado = await desvincularCategoriaDreAction(formData);
+                  notificarResultado(resultado, "Categoria desvinculada.");
                 })}
               >
                 <X size={11} />
@@ -155,7 +159,8 @@ export function LinhaDreItem({
                 const formData = new FormData();
                 formData.set("linha_id", linha.id);
                 formData.set("categoria_id", categoriaId);
-                await vincularCategoriaDreAction(formData);
+                const resultado = await vincularCategoriaDreAction(formData);
+                notificarResultado(resultado, "Categoria vinculada.");
               })}
             >
               <SelectTrigger size="sm" className="h-6 text-xs">

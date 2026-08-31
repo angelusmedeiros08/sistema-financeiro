@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 import { Check, Sparkle, Spinner, X } from "@phosphor-icons/react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,6 +12,7 @@ import { formatarMoeda } from "@/lib/formatacao";
 import { formatarDataIsoParaBR } from "@/lib/importacao/locale-br";
 import { confirmarMatchAction, criarLancamentoSimplificadoAction, ignorarLinhaExtratoAction, revalidarPosConciliacaoAction, type LinhaConciliacao } from "./actions";
 import { cn } from "@/lib/utils";
+import { notificarResultado } from "@/lib/feedback/notificar-resultado";
 
 function badgeCorrespondencia(correspondencia: LinhaConciliacao["correspondencia"]) {
   if (correspondencia === "exata") {
@@ -69,7 +71,6 @@ export function LinhaConciliacaoCard({
   const [pessoaId, setPessoaId] = useState(linha.regraSugerida?.pessoaId ?? "");
   const [descricaoNovo, setDescricaoNovo] = useState(linha.descricao);
   const [enviando, setEnviando] = useState(false);
-  const [erro, setErro] = useState("");
 
   const somaSelecionada = linha.candidatos.filter((c) => selecionados.has(c.chave)).reduce((soma, c) => soma + c.valor, 0);
   const somaBate = Math.abs(somaSelecionada - linha.valor) < 0.005;
@@ -85,25 +86,23 @@ export function LinhaConciliacaoCard({
 
   async function confirmar() {
     setEnviando(true);
-    setErro("");
     const candidatosSelecionados = linha.candidatos.filter((c) => selecionados.has(c.chave)).map((c) => ({ chave: c.chave, origem: c.origem, id: c.id, valor: c.valor }));
     const resultado = await confirmarMatchAction({ extratoLinhaId: linha.id, contaFinanceiraId, candidatos: candidatosSelecionados });
     setEnviando(false);
-    if ("erro" in resultado) {
-      setErro(resultado.erro);
-      return;
-    }
+    // As actions deste arquivo usam { ok: true } em vez de { sucesso: true }
+    // (convenção só delas) — traduzido aqui pro shared helper aceitar.
+    notificarResultado("erro" in resultado ? resultado : { sucesso: true }, "Lançamento conciliado.");
+    if ("erro" in resultado) return;
     await revalidarPosConciliacaoAction();
     onResolvida();
   }
 
   async function confirmarCriacao() {
     if (!categoriaId) {
-      setErro("Escolha uma categoria.");
+      toast.error("Escolha uma categoria.");
       return;
     }
     setEnviando(true);
-    setErro("");
     const resultado = await criarLancamentoSimplificadoAction({
       extratoLinhaId: linha.id,
       contaFinanceiraId,
@@ -112,23 +111,18 @@ export function LinhaConciliacaoCard({
       descricao: descricaoNovo,
     });
     setEnviando(false);
-    if ("erro" in resultado) {
-      setErro(resultado.erro);
-      return;
-    }
+    notificarResultado("erro" in resultado ? resultado : { sucesso: true }, "Lançamento criado.");
+    if ("erro" in resultado) return;
     await revalidarPosConciliacaoAction();
     onResolvida();
   }
 
   async function ignorar() {
     setEnviando(true);
-    setErro("");
     const resultado = await ignorarLinhaExtratoAction(linha.id);
     setEnviando(false);
-    if ("erro" in resultado) {
-      setErro(resultado.erro);
-      return;
-    }
+    notificarResultado("erro" in resultado ? resultado : { sucesso: true }, "Linha ignorada.");
+    if ("erro" in resultado) return;
     onResolvida();
   }
 
@@ -226,8 +220,6 @@ export function LinhaConciliacaoCard({
           </Button>
         </div>
       )}
-
-      {erro && <p className="text-xs text-destructive">{erro}</p>}
     </div>
   );
 }
