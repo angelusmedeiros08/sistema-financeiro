@@ -152,8 +152,17 @@ export function FluxoChart({ dados, apresentacao = false }: { dados: PontoFluxo[
           Em apresentação, a altura vem de `h-full` (o slide inteiro, via
           FocoApresentacao) em vez do 220px fixo do card normal — ParentSize
           já mede largura E altura reais do container, só não usávamos a
-          altura antes porque o card sempre tinha um valor fixo mesmo. */}
-      <div className={cn("relative", apresentacao ? "min-h-0 flex-1" : "h-[220px]")}>
+          altura antes porque o card sempre tinha um valor fixo mesmo.
+
+          O `flex` aqui (além do `flex-1`) não é decoração: `flex-1` dá
+          altura real a ESTA div (ela cresce dentro do FluxoChart), mas isso
+          sozinho não faz `height:100%` funcionar nos FILHOS dela — só um
+          elemento `display:flex` estica os filhos via `align-items:stretch`
+          (o padrão). É exatamente onde o ParentSize usa `height:100%`
+          internamente pra medir — sem isso ele sempre lia 0 (achado
+          inspecionando o DOM ao vivo, o número não aparecia em lugar
+          nenhum). */}
+      <div className={cn("relative", apresentacao ? "flex min-h-0 flex-1" : "h-[220px]")}>
         <ParentSize>
           {({ width, height }) => {
             const alturaUsavel = apresentacao ? height : 220;
