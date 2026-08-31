@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import type { Database } from "@/utils/supabase/database.types";
 import { salvarContatoAction } from "@/lib/pessoas/pessoas-actions";
+import { notificarResultado } from "@/lib/feedback/notificar-resultado";
 
 type Contato = Database["public"]["Tables"]["pessoa_contatos"]["Row"];
 
@@ -30,8 +31,9 @@ function ContatoForm({
   const router = useRouter();
   const [principal, setPrincipal] = useState(contatoBase?.principal ?? false);
 
-  const [estado, formAction, pendente] = useActionState(async (_: typeof estadoInicial, formData: FormData) => {
+  const [, formAction, pendente] = useActionState(async (_: typeof estadoInicial, formData: FormData) => {
     const resultado = await salvarContatoAction(formData);
+    notificarResultado(resultado, "Contato salvo.");
     if ("erro" in resultado) return { erro: resultado.erro };
     router.refresh();
     aoConcluir();
@@ -68,8 +70,6 @@ function ContatoForm({
         <Checkbox checked={principal} onCheckedChange={(v) => setPrincipal(v === true)} />
         Definir como contato principal
       </label>
-
-      {estado.erro && <p className="text-sm text-destructive sm:col-span-2">{estado.erro}</p>}
 
       <div className="flex gap-2 sm:col-span-2">
         <Button type="submit" size="sm" disabled={pendente}>

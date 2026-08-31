@@ -9,6 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { CamposEndereco, ENDERECO_VAZIO, ROTULO_TIPO_ENDERECO, type ValoresEndereco } from "@/components/formularios/campos-endereco";
 import type { Database } from "@/utils/supabase/database.types";
 import { salvarEnderecoAction } from "@/lib/pessoas/pessoas-actions";
+import { notificarResultado } from "@/lib/feedback/notificar-resultado";
 
 type Endereco = Database["public"]["Tables"]["pessoa_enderecos"]["Row"];
 
@@ -54,8 +55,9 @@ function EnderecoForm({
       : ENDERECO_VAZIO,
   );
 
-  const [estado, formAction, pendente] = useActionState(async (_: typeof estadoInicial, formData: FormData) => {
+  const [, formAction, pendente] = useActionState(async (_: typeof estadoInicial, formData: FormData) => {
     const resultado = await salvarEnderecoAction(formData);
+    notificarResultado(resultado, "Endereço salvo.");
     if ("erro" in resultado) return { erro: resultado.erro };
     router.refresh();
     aoConcluir();
@@ -74,8 +76,6 @@ function EnderecoForm({
         <Checkbox checked={principal} onCheckedChange={(v) => setPrincipal(v === true)} />
         Definir como endereço principal
       </label>
-
-      {estado.erro && <p className="text-sm text-destructive sm:col-span-2">{estado.erro}</p>}
 
       <div className="flex gap-2 sm:col-span-2">
         <Button type="submit" size="sm" disabled={pendente}>

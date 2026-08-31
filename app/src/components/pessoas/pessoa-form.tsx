@@ -11,6 +11,7 @@ import { CamposEndereco, ENDERECO_VAZIO, ROTULO_TIPO_ENDERECO, type ValoresEnder
 import { buscarEmpresaPorCnpj } from "@/lib/cnpj";
 import type { Database } from "@/utils/supabase/database.types";
 import type { DadosPessoa, CampoPersonalizadoDefinicao } from "@/lib/pessoas/buscar-pessoa";
+import { notificarResultado } from "@/lib/feedback/notificar-resultado";
 
 type PerfilPessoa = Database["public"]["Enums"]["perfil_pessoa"];
 type NaturezaPessoa = Database["public"]["Enums"]["natureza_pessoa"];
@@ -253,8 +254,14 @@ export function PessoaForm({
   const [buscandoCnpj, setBuscandoCnpj] = useState(false);
   const [avisoCnpj, setAvisoCnpj] = useState("");
 
-  const [estado, formAction, pendente] = useActionState(async (_: typeof estadoInicial, formData: FormData) => {
+  const [, formAction, pendente] = useActionState(async (_: typeof estadoInicial, formData: FormData) => {
     const resultado = await acao(formData);
+    // Mensagem genérica ("Cadastro", não "Cliente"/"Fornecedor") porque uma
+    // pessoa pode ter múltiplos perfis ao mesmo tempo (checkbox, não
+    // exclusivo) — nomear um só seria impreciso quando há mais de um
+    // marcado, e a concordância de gênero varia entre os três rótulos
+    // (Cliente/Fornecedor masc., Transportadora fem.).
+    notificarResultado(resultado, modo === "criar" ? "Cadastro criado." : "Cadastro salvo.");
     if ("erro" in resultado) return { erro: resultado.erro };
     return { erro: "" };
   }, estadoInicial);
@@ -449,7 +456,6 @@ export function PessoaForm({
         <Button type="submit" disabled={pendente}>
           {pendente ? "Salvando..." : modo === "criar" ? "Criar cadastro" : "Salvar alterações"}
         </Button>
-        {estado.erro && <p className="text-sm text-destructive">{estado.erro}</p>}
       </div>
     </form>
   );
