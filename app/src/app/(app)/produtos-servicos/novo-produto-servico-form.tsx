@@ -6,14 +6,16 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { criarProdutoServicoAction } from "@/lib/produtos-servicos/produtos-servicos-actions";
+import { notificarResultado } from "@/lib/feedback/notificar-resultado";
 
 const estadoInicial = { erro: "" };
 
 export function NovoProdutoServicoForm({ categoriasReceita }: { categoriasReceita: { id: string; nome: string }[] }) {
   const formRef = useRef<HTMLFormElement>(null);
 
-  const [estado, formAction, pendente] = useActionState(async (_: typeof estadoInicial, formData: FormData) => {
+  const [, formAction, pendente] = useActionState(async (_: typeof estadoInicial, formData: FormData) => {
     const resultado = await criarProdutoServicoAction(formData);
+    notificarResultado(resultado, "Item criado.");
     if ("erro" in resultado) return { erro: resultado.erro };
     formRef.current?.reset();
     return { erro: "" };
@@ -69,8 +71,6 @@ export function NovoProdutoServicoForm({ categoriasReceita }: { categoriasReceit
           {pendente ? "Salvando..." : "Adicionar item"}
         </Button>
       </div>
-
-      {estado.erro && <p className="mt-2 text-sm text-destructive">{estado.erro}</p>}
     </form>
   );
 }

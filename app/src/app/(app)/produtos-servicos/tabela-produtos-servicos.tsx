@@ -13,6 +13,7 @@ import { formatarMoeda } from "@/lib/formatacao";
 import type { ProdutoServico } from "@/lib/produtos-servicos/produtos-servicos";
 import { editarProdutoServicoAction } from "@/lib/produtos-servicos/produtos-servicos-actions";
 import { cn } from "@/lib/utils";
+import { notificarResultado } from "@/lib/feedback/notificar-resultado";
 
 const helper = criarColunaLista<ProdutoServico>();
 
@@ -25,7 +26,6 @@ export function TabelaProdutosServicos({
 }) {
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
-  const [erro, setErro] = useState("");
   const [nome, setNome] = useState("");
   const [tipo, setTipo] = useState<ProdutoServico["tipo"]>("SERVICO");
   const [preco, setPreco] = useState("");
@@ -39,12 +39,10 @@ export function TabelaProdutosServicos({
     setPreco(String(p.precoVenda).replace(".", ","));
     setCategoriaId(p.categoriaFinanceiraId);
     setAtivo(p.ativo);
-    setErro("");
   }
 
   async function salvar(produtoServico: ProdutoServico) {
     setEnviando(true);
-    setErro("");
     const formData = new FormData();
     formData.set("nome", nome);
     formData.set("tipo", tipo);
@@ -56,8 +54,8 @@ export function TabelaProdutosServicos({
 
     const resultado = await editarProdutoServicoAction(produtoServico.id, formData);
     setEnviando(false);
+    notificarResultado(resultado, "Item salvo.");
     if ("erro" in resultado) {
-      setErro(resultado.erro);
       return;
     }
     setEditandoId(null);
@@ -159,13 +157,12 @@ export function TabelaProdutosServicos({
                     {enviando ? <Spinner size={13} className="animate-spin" /> : <Check size={14} />}
                   </Button>
                 </div>
-                {erro && <p className="text-right text-xs text-destructive">{erro}</p>}
               </div>
             );
           },
         }),
       ]),
-    [editandoId, nome, tipo, preco, categoriaId, ativo, enviando, erro, categoriasReceita],
+    [editandoId, nome, tipo, preco, categoriaId, ativo, enviando, categoriasReceita],
   );
 
   if (produtosServicos.length === 0) {
