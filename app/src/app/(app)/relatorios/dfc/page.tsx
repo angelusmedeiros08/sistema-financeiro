@@ -6,7 +6,6 @@ import { buscarDFCMatriz, buscarComposicaoFluxoCaixa } from "@/lib/relatorios/df
 import { RelatoriosSubNav } from "../sub-nav";
 import { DfcControles } from "./dfc-controles";
 import { emModoApresentacao } from "@/lib/apresentacao/sessao";
-import { FocoApresentacao } from "@/components/apresentacao/foco-apresentacao";
 import { ComposicaoFluxoCaixa } from "@/components/relatorios/composicao-fluxo-caixa";
 import { DfcMatrizTabela } from "@/components/relatorios/dfc-matriz-tabela";
 import { hojeIsoBrasil } from "@/lib/data-brasil";
@@ -52,7 +51,7 @@ export default async function PaginaRelatoriosDfc({
 
   if (emApresentacao && foco) {
     const secoesPorFoco: Record<string, React.ReactNode> = { composicao: secaoComposicao, matriz: secaoMatriz };
-    return <FocoApresentacao>{secoesPorFoco[foco] ?? null}</FocoApresentacao>;
+    return <div className="mx-auto flex min-h-[70vh] w-full max-w-4xl items-center justify-center">{secoesPorFoco[foco] ?? null}</div>;
   }
 
   return (

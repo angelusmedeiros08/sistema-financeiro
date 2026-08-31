@@ -9,7 +9,6 @@ import { EvolucaoPontoEquilibrioChart } from "@/components/relatorios/evolucao-p
 import { formatarMoeda, formatarPercentual } from "@/lib/formatacao";
 import { cn } from "@/lib/utils";
 import { emModoApresentacao } from "@/lib/apresentacao/sessao";
-import { FocoApresentacao } from "@/components/apresentacao/foco-apresentacao";
 import { hojeIsoBrasil } from "@/lib/data-brasil";
 import { TermoComDica } from "@/components/formularios/termo-com-dica";
 
@@ -151,10 +150,10 @@ export default async function PaginaRelatoriosPontoEquilibrio({
   if (emApresentacao && foco) {
     const secoesPorFoco: Record<string, React.ReactNode> = { atual: secaoAtual, evolucao: secaoEvolucao };
     return (
-      <FocoApresentacao className="flex-col gap-4">
+      <div className="mx-auto flex min-h-[70vh] w-full max-w-4xl flex-col items-center justify-center gap-4">
         {secaoControles}
         {secoesPorFoco[foco] ?? null}
-      </FocoApresentacao>
+      </div>
     );
   }
 

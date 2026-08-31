@@ -9,7 +9,6 @@ import { useTooltip, useTooltipInPortal, defaultStyles } from "@visx/tooltip";
 import { localPoint } from "@visx/event";
 import type { Database } from "@/utils/supabase/database.types";
 import { formatarMoeda, formatarNumeroAbreviado } from "@/lib/formatacao";
-import { cn } from "@/lib/utils";
 
 type LinhaWaterfall = { rotulo: string; tipoCalc: Database["public"]["Enums"]["tipo_linha_dre"]; valorDireto: number };
 
@@ -298,36 +297,24 @@ function GraficoInterno({ barras, largura, altura }: { barras: BarraWaterfall[];
 // horizontalmente em vez de comprimir.
 const LARGURA_MIN_POR_BARRA = 80;
 
-// `apresentacao`: em vez do `altura` fixo (pensado pro card no meio do
-// dashboard normal), a altura vira `flex-1` (cresce até o espaço que sobrar
-// no slide, via FocoApresentacao) e o ParentSize mede a altura real do
-// container — mesmo motivo/padrão do FluxoChart. `flex-1` sozinho dá altura
-// real A ESTA div, mas não faz `height:100%` funcionar nos FILHOS dela (o
-// que o ParentSize usa por dentro pra medir) — só um `display:flex` estica
-// os filhos via `align-items:stretch` (achado inspecionando o DOM ao vivo:
-// a altura media 0 mesmo com o container correto). `altura` continua
-// valendo como piso enquanto a medição real ainda não chegou, pra não
-// piscar vazio.
-export function WaterfallDre({ linhas, altura = 420, apresentacao = false }: { linhas: LinhaWaterfall[]; altura?: number; apresentacao?: boolean }) {
+export function WaterfallDre({ linhas, altura = 420 }: { linhas: LinhaWaterfall[]; altura?: number }) {
   const barras = montarBarras(linhas);
   const semDado = linhas.length === 0 || linhas.every((l) => l.valorDireto === 0);
 
   return (
-    <div className={cn("relative", apresentacao ? "flex min-h-0 flex-1" : undefined)} style={apresentacao ? undefined : { height: altura }}>
+    <div className="relative" style={{ height: altura }}>
       {semDado ? (
         <p className="flex h-full items-center justify-center text-sm text-muted-foreground">
           Sem movimentação no período selecionado.
         </p>
       ) : (
         <ParentSize>
-          {({ width, height }) => {
+          {({ width }) => {
             if (width <= 0) return null;
-            const alturaUsavel = apresentacao ? height || altura : altura;
-            if (alturaUsavel <= 0) return null;
             const larguraNecessaria = Math.max(width, barras.length * LARGURA_MIN_POR_BARRA + MARGEM.left + MARGEM.right);
             return (
               <div className="h-full overflow-x-auto">
-                <GraficoInterno barras={barras} largura={larguraNecessaria} altura={alturaUsavel} />
+                <GraficoInterno barras={barras} largura={larguraNecessaria} altura={altura} />
               </div>
             );
           }}
