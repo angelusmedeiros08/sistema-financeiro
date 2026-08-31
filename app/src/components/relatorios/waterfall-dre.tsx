@@ -301,19 +301,22 @@ const LARGURA_MIN_POR_BARRA = 80;
 // `apresentacao`: em vez do `altura` fixo (pensado pro card no meio do
 // dashboard normal), a altura vira `flex-1` (cresce até o espaço que sobrar
 // no slide, via FocoApresentacao) e o ParentSize mede a altura real do
-// container — mesmo motivo/padrão do FluxoChart. `flex-1` sozinho dá altura
-// real A ESTA div, mas não faz `height:100%` funcionar nos FILHOS dela (o
-// que o ParentSize usa por dentro pra medir) — só um `display:flex` estica
-// os filhos via `align-items:stretch` (achado inspecionando o DOM ao vivo:
-// a altura media 0 mesmo com o container correto). `altura` continua
-// valendo como piso enquanto a medição real ainda não chegou, pra não
-// piscar vazio.
+// container — mesmo motivo/padrão do FluxoChart. `align-items:stretch` (o
+// padrão de um `display:flex`) só estica um filho cuja altura é `auto` — o
+// ParentSize (@visx/responsive) põe `height:100%` inline no filho dele, um
+// valor EXPLÍCITO, que por definição desliga o stretch. `[&>div]:h-auto!`
+// força esse filho de volta pra `auto` (só alcança o filho direto do
+// ParentSize, não entra nos elementos do próprio WaterfallDre) — sem isso o
+// `height:100%` dele nunca resolvia (achado inspecionando o DOM ao vivo: a
+// altura media 0 mesmo com o container pai medindo certo). `altura`
+// continua valendo como piso enquanto a medição real ainda não chegou, pra
+// não piscar vazio.
 export function WaterfallDre({ linhas, altura = 420, apresentacao = false }: { linhas: LinhaWaterfall[]; altura?: number; apresentacao?: boolean }) {
   const barras = montarBarras(linhas);
   const semDado = linhas.length === 0 || linhas.every((l) => l.valorDireto === 0);
 
   return (
-    <div className={cn("relative", apresentacao ? "flex min-h-0 flex-1" : undefined)} style={apresentacao ? undefined : { height: altura }}>
+    <div className={cn("relative", apresentacao ? "flex min-h-0 flex-1 [&>div]:h-auto!" : undefined)} style={apresentacao ? undefined : { height: altura }}>
       {semDado ? (
         <p className="flex h-full items-center justify-center text-sm text-muted-foreground">
           Sem movimentação no período selecionado.

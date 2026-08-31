@@ -155,14 +155,16 @@ export function FluxoChart({ dados, apresentacao = false }: { dados: PontoFluxo[
           altura antes porque o card sempre tinha um valor fixo mesmo.
 
           O `flex` aqui (além do `flex-1`) não é decoração: `flex-1` dá
-          altura real a ESTA div (ela cresce dentro do FluxoChart), mas isso
-          sozinho não faz `height:100%` funcionar nos FILHOS dela — só um
-          elemento `display:flex` estica os filhos via `align-items:stretch`
-          (o padrão). É exatamente onde o ParentSize usa `height:100%`
-          internamente pra medir — sem isso ele sempre lia 0 (achado
-          inspecionando o DOM ao vivo, o número não aparecia em lugar
-          nenhum). */}
-      <div className={cn("relative", apresentacao ? "flex min-h-0 flex-1" : "h-[220px]")}>
+          altura real a ESTA div, mas `align-items:stretch` (o padrão de um
+          `display:flex`) só estica um filho cuja altura já é `auto` — o
+          próprio ParentSize (@visx/responsive) põe `height:100%` inline no
+          filho dele, um valor EXPLÍCITO, que por definição desliga o
+          stretch. Sem forçar esse filho de volta pra `auto` (`[&>div]:h-auto!`
+          — só alcança o filho direto, não entra nos elementos do próprio
+          FluxoChart), o `height:100%` dele nunca resolvia (achado inspecionando
+          o DOM ao vivo: media 0 mesmo com todo o resto da cadeia medindo
+          certo). */}
+      <div className={cn("relative", apresentacao ? "flex min-h-0 flex-1 [&>div]:h-auto!" : "h-[220px]")}>
         <ParentSize>
           {({ width, height }) => {
             const alturaUsavel = apresentacao ? height : 220;
