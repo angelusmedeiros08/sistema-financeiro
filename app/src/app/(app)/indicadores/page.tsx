@@ -21,6 +21,7 @@ import { TermoComDica } from "@/components/formularios/termo-com-dica";
 import { formatarMoeda, formatarPercentual } from "@/lib/formatacao";
 import { cn } from "@/lib/utils";
 import { emModoApresentacao } from "@/lib/apresentacao/sessao";
+import { FocoApresentacao } from "@/components/apresentacao/foco-apresentacao";
 import { hojeIsoBrasil } from "@/lib/data-brasil";
 
 export default async function PaginaIndicadores({
@@ -249,7 +250,7 @@ export default async function PaginaIndicadores({
       "forma-pagamento": secaoFormaPagamento,
       liquidez: secaoLiquidez,
     };
-    return <div className="mx-auto flex min-h-[70vh] w-full max-w-4xl items-center justify-center">{secoesPorFoco[foco] ?? null}</div>;
+    return <FocoApresentacao>{secoesPorFoco[foco] ?? null}</FocoApresentacao>;
   }
 
   return (

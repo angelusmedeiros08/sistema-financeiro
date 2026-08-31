@@ -20,6 +20,7 @@ import { ROTULO_STATUS_PARCELA, COR_STATUS_PARCELA } from "@/lib/status-parcela"
 import { buscarIndicadoresRealizacao, buscarSerieIndicadoresRealizacao, mesAtual } from "@/lib/relatorios/indicadores-gauge";
 import { montarHrefLancamentosSemDimensao } from "@/lib/relatorios/drill-down";
 import { emModoApresentacao } from "@/lib/apresentacao/sessao";
+import { FocoApresentacao } from "@/components/apresentacao/foco-apresentacao";
 import { hojeIsoBrasil } from "@/lib/data-brasil";
 
 function tempoRelativo(dataIso: string): string {
@@ -103,7 +104,7 @@ export default async function PaginaPainel({
   // exatamente o mesmo dado já buscado acima — só muda o que é renderizado.
   if (emApresentacao && foco) {
     return (
-      <div className="mx-auto flex min-h-[70vh] w-full max-w-3xl items-center justify-center">
+      <FocoApresentacao estica={foco === "fluxo-caixa"}>
         {foco === "saldo-caixa" && (
           <div className="w-full">
             <StatCard variant="hero" label="Saldo em caixa" valor={formatarMoeda(dados.saldoEmCaixa)} serie={dados.saldoSerieSeisMeses} />
@@ -127,9 +128,9 @@ export default async function PaginaPainel({
           </div>
         )}
         {foco === "fluxo-caixa" && (
-          <div className="w-full rounded-2xl bg-card p-8 shadow-card">
+          <div className="flex min-h-0 w-full flex-1 flex-col rounded-2xl bg-card p-8 shadow-card">
             <h2 className="mb-6 font-heading text-lg font-bold text-foreground">Fluxo de caixa (últimos 6 meses)</h2>
-            <FluxoChart dados={dados.fluxo} />
+            <FluxoChart dados={dados.fluxo} apresentacao />
           </div>
         )}
         {foco === "indicadores-realizacao" && (
@@ -158,7 +159,7 @@ export default async function PaginaPainel({
             />
           </div>
         )}
-      </div>
+      </FocoApresentacao>
     );
   }
 

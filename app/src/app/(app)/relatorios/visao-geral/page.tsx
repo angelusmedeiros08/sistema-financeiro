@@ -22,7 +22,9 @@ import { TermoComDica } from "@/components/formularios/termo-com-dica";
 import { BadgeRiscoConcentracao } from "@/components/relatorios/badge-risco-concentracao";
 import { BadgeRupturaSaldo } from "@/components/relatorios/badge-ruptura-saldo";
 import { emModoApresentacao } from "@/lib/apresentacao/sessao";
+import { FocoApresentacao } from "@/components/apresentacao/foco-apresentacao";
 import { formatarMoeda, formatarPercentual } from "@/lib/formatacao";
+import { cn } from "@/lib/utils";
 
 export default async function PaginaRelatoriosVisaoGeral({
   searchParams,
@@ -137,17 +139,24 @@ export default async function PaginaRelatoriosVisaoGeral({
     </div>
   );
 
+  // Só o card do foco em questão ganha altura cheia — os mesmos elementos
+  // continuam servindo a grade normal (fora de apresentação) sem mudar nada
+  // ali; `emApresentacao && foco === ...` só é true dentro do próprio ramo
+  // de foco, nunca na renderização normal da página.
+  const emFocoFluxoCaixa = emApresentacao && foco === "fluxo-caixa";
+  const emFocoDreCascata = emApresentacao && foco === "dre-cascata";
+
   const secaoFluxoCaixa = (
-    <div className="rounded-2xl bg-card shadow-card p-5">
+    <div className={cn("rounded-2xl bg-card shadow-card p-5", emFocoFluxoCaixa && "flex min-h-0 flex-1 flex-col")}>
       <h2 className="mb-4 font-heading text-sm font-bold text-foreground">Fluxo de caixa</h2>
-      <FluxoChart dados={fluxoParaGrafico} />
+      <FluxoChart dados={fluxoParaGrafico} apresentacao={emFocoFluxoCaixa} />
     </div>
   );
 
   const secaoDreCascata = (
-    <div className="rounded-2xl bg-card shadow-card p-5">
+    <div className={cn("rounded-2xl bg-card shadow-card p-5", emFocoDreCascata && "flex min-h-0 flex-1 flex-col")}>
       <h2 className="mb-4 font-heading text-sm font-bold text-foreground">DRE em cascata</h2>
-      <WaterfallDre linhas={dre} altura={360} />
+      <WaterfallDre linhas={dre} altura={360} apresentacao={emFocoDreCascata} />
     </div>
   );
 
@@ -190,7 +199,7 @@ export default async function PaginaRelatoriosVisaoGeral({
       "top-categorias": secaoTopCategorias,
       aging: secaoAging,
     };
-    return <div className="mx-auto flex min-h-[70vh] w-full max-w-5xl items-center justify-center">{secoesPorFoco[foco] ?? null}</div>;
+    return <FocoApresentacao estica={foco === "fluxo-caixa" || foco === "dre-cascata"}>{secoesPorFoco[foco] ?? null}</FocoApresentacao>;
   }
 
   return (

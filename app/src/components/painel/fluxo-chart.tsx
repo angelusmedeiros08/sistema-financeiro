@@ -12,6 +12,7 @@ import { useTooltip, useTooltipInPortal, defaultStyles } from "@visx/tooltip";
 import { localPoint } from "@visx/event";
 import type { PontoFluxo } from "@/app/(app)/painel/dados";
 import { formatarMoeda } from "@/lib/formatacao";
+import { cn } from "@/lib/utils";
 
 const MARGEM = { top: 12, right: 8, bottom: 24, left: 8 };
 
@@ -137,18 +138,37 @@ function GraficoInterno({ dados, largura, altura }: { dados: PontoFluxo[]; largu
   );
 }
 
-export function FluxoChart({ dados }: { dados: PontoFluxo[] }) {
+export function FluxoChart({ dados, apresentacao = false }: { dados: PontoFluxo[]; apresentacao?: boolean }) {
   const semMovimento = dados.every((d) => d.receitas === 0 && d.despesas === 0);
 
   return (
-    <div>
+    <div className={cn(apresentacao && "flex min-h-0 flex-1 flex-col")}>
       {/* Legenda fica FORA do ParentSize de propósito: o wrapper interno
           dele é position:absolute + overflow:hidden do tamanho exato do
           container, então qualquer coisa renderizada depois do <svg> ali
           dentro (a legenda, no caso) fica cortada em silêncio — sem erro,
-          sem warning, só some. */}
-      <div className="relative" style={{ height: 220 }}>
-        <ParentSize>{({ width }) => (width > 0 ? <GraficoInterno dados={dados} largura={width} altura={220} /> : null)}</ParentSize>
+          sem warning, só some.
+
+          Em apresentação, a altura vem de `h-full` (o slide inteiro, via
+          FocoApresentacao) em vez do 220px fixo do card normal — ParentSize
+          já mede largura E altura reais do container, só não usávamos a
+          altura antes porque o card sempre tinha um valor fixo mesmo.
+
+          O `flex` aqui (além do `flex-1`) não é decoração: `flex-1` dá
+          altura real a ESTA div (ela cresce dentro do FluxoChart), mas isso
+          sozinho não faz `height:100%` funcionar nos FILHOS dela — só um
+          elemento `display:flex` estica os filhos via `align-items:stretch`
+          (o padrão). É exatamente onde o ParentSize usa `height:100%`
+          internamente pra medir — sem isso ele sempre lia 0 (achado
+          inspecionando o DOM ao vivo, o número não aparecia em lugar
+          nenhum). */}
+      <div className={cn("relative", apresentacao ? "flex min-h-0 flex-1" : "h-[220px]")}>
+        <ParentSize>
+          {({ width, height }) => {
+            const alturaUsavel = apresentacao ? height : 220;
+            return width > 0 && alturaUsavel > 0 ? <GraficoInterno dados={dados} largura={width} altura={alturaUsavel} /> : null;
+          }}
+        </ParentSize>
         {semMovimento && (
           <p className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">
             Ainda sem movimentação suficiente para o gráfico.
