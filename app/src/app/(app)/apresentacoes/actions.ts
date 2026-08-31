@@ -108,7 +108,7 @@ export async function excluirApresentacao(apresentacaoId: string): Promise<Resul
 
   if (error) return { erro: error.message };
   if (!data || data.length === 0) {
-    return { erro: `Nada foi apagado (0 linhas). tenantId=${contexto.tenantId} apresentacaoId=${apresentacaoId}` };
+    return { erro: "Não foi possível excluir essa apresentação — ela pode já ter sido removida." };
   }
 
   revalidatePath("/apresentacoes");
