@@ -18,6 +18,7 @@ import { formatarMoeda } from "@/lib/formatacao";
 import { ROTULO_STATUS_PARCELA, COR_STATUS_PARCELA } from "@/lib/status-parcela";
 import { cn } from "@/lib/utils";
 import { estornarBaixaAction } from "@/lib/contabil/ciclo-vida-parcela-actions";
+import { notificarResultado } from "@/lib/feedback/notificar-resultado";
 import { AnexosLista, type Anexo } from "./anexos-lista";
 import { AnexoForm } from "./anexo-form";
 import { CancelarDialog } from "./cancelar-dialog";
@@ -80,7 +81,9 @@ function LinhaBaixa({ baixa, caminhoPagina }: { baixa: Baixa; caminhoPagina: str
   async function acionarEstorno() {
     const formData = new FormData();
     formData.set("baixa_id", baixa.id);
-    await estornarBaixaAction(formData);
+    const resultado = await estornarBaixaAction(formData);
+    notificarResultado(resultado, "Baixa estornada.");
+    if ("erro" in resultado) return;
     router.refresh();
   }
 

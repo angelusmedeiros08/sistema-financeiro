@@ -1,6 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
+import { toast } from "sonner";
 import { FilePdf, Image as ImageIcon, LinkSimple, File as FileIcon } from "@phosphor-icons/react";
 import { obterUrlAnexoAction } from "@/lib/contabil/anexos-actions";
 
@@ -40,7 +41,12 @@ export function AnexosLista({ anexos }: { anexos: Anexo[] }) {
       const resultado = await obterUrlAnexoAction(anexoId);
       if ("url" in resultado) {
         window.open(resultado.url, "_blank", "noopener,noreferrer");
+        return;
       }
+      // Abrir o anexo numa aba nova já é a confirmação de sucesso (Seção 4
+      // da spec de feedback) — só falta cobrir o caminho de erro, hoje
+      // silencioso (botão só volta a ficar habilitado, sem explicação).
+      toast.error(resultado.erro);
     });
   }
 

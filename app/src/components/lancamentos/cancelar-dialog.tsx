@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { cancelarParcelaAction } from "@/lib/contabil/ciclo-vida-parcela-actions";
+import { notificarResultado } from "@/lib/feedback/notificar-resultado";
 
 const estadoInicial = { erro: "" };
 
@@ -24,8 +25,9 @@ export function CancelarDialog({
   const [chaveFormulario, setChaveFormulario] = useState(0);
   const router = useRouter();
 
-  const [estado, formAction, pendente] = useActionState(async (_: typeof estadoInicial, formData: FormData) => {
+  const [, formAction, pendente] = useActionState(async (_: typeof estadoInicial, formData: FormData) => {
     const resultado = await cancelarParcelaAction(formData);
+    notificarResultado(resultado, "Parcela cancelada.");
     if ("erro" in resultado) return { erro: resultado.erro };
     setChaveFormulario((k) => k + 1);
     onAbertoChange(false);
@@ -51,8 +53,6 @@ export function CancelarDialog({
             <Label htmlFor="motivo">Motivo</Label>
             <Textarea id="motivo" name="motivo" required placeholder="Ex.: lançamento duplicado por engano" />
           </div>
-
-          {estado.erro && <p className="text-sm text-destructive">{estado.erro}</p>}
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onAbertoChange(false)}>

@@ -13,6 +13,7 @@ import { RateioCategorias } from "./rateio-categorias";
 import { RecorrenciaCampos } from "./recorrencia-campos";
 import { AnexoCampos } from "./anexo-campos";
 import { parseNumeroBR } from "@/lib/formatacao";
+import { notificarResultado } from "@/lib/feedback/notificar-resultado";
 
 type Categoria = { id: string; nome: string };
 type Pessoa = { id: string; nome: string };
@@ -55,8 +56,9 @@ export function EventoFinanceiroForm({
 
   const valorNumerico = parseNumeroBR(valorTexto);
 
-  const [estado, formAction, pendente] = useActionState(async (_: typeof estadoInicial, formData: FormData) => {
+  const [, formAction, pendente] = useActionState(async (_: typeof estadoInicial, formData: FormData) => {
     const resultado = await acao(formData);
+    notificarResultado(resultado, ehReceita ? "Receita salva." : "Despesa salva.");
     if ("erro" in resultado) return { erro: resultado.erro };
     setChaveFormulario((k) => k + 1);
     setValorTexto("");
@@ -157,8 +159,6 @@ export function EventoFinanceiroForm({
         <Label>Anexo (opcional)</Label>
         <AnexoCampos />
       </div>
-
-      {estado.erro && <p className="text-sm text-destructive sm:col-span-2">{estado.erro}</p>}
 
       <div className="sm:col-span-2">
         <Button type="submit" disabled={pendente || (rateioAtivo && !rateioValido)}>

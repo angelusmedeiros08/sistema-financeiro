@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { formatarMoeda } from "@/lib/formatacao";
 import { renegociarParcelaAction } from "@/lib/contabil/ciclo-vida-parcela-actions";
+import { notificarResultado } from "@/lib/feedback/notificar-resultado";
 
 const estadoInicial = { erro: "" };
 
@@ -28,8 +29,9 @@ export function FormularioRenegociar({
 }) {
   const router = useRouter();
 
-  const [estado, formAction, pendente] = useActionState(async (_: typeof estadoInicial, formData: FormData) => {
+  const [, formAction, pendente] = useActionState(async (_: typeof estadoInicial, formData: FormData) => {
     const resultado = await renegociarParcelaAction(formData);
+    notificarResultado(resultado, "Parcela renegociada.");
     if ("erro" in resultado) return { erro: resultado.erro };
     router.push(caminhoVoltar);
     router.refresh();
@@ -66,8 +68,6 @@ export function FormularioRenegociar({
           <Label htmlFor="motivo">Motivo</Label>
           <Textarea id="motivo" name="motivo" required placeholder="Ex.: cliente pediu mais prazo" />
         </div>
-
-        {estado.erro && <p className="text-sm text-destructive">{estado.erro}</p>}
 
         <Button type="submit" disabled={pendente}>
           {pendente ? "Salvando..." : "Confirmar renegociação"}

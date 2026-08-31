@@ -12,6 +12,7 @@ import { CentroCustoCombobox } from "@/components/formularios/centro-custo-combo
 import { CategoriaCombobox } from "@/components/formularios/categoria-combobox";
 import { RateioCategorias } from "@/components/formularios/rateio-categorias";
 import { parseNumeroBR } from "@/lib/formatacao";
+import { notificarResultado } from "@/lib/feedback/notificar-resultado";
 
 type Categoria = { id: string; nome: string };
 type Pessoa = { id: string; nome: string };
@@ -62,8 +63,9 @@ export function EditarEventoFinanceiro({
   const [valorTexto, setValorTexto] = useState(evento.valorTotal.toFixed(2).replace(".", ","));
   const valorNumerico = parseNumeroBR(valorTexto);
 
-  const [estado, formAction, pendente] = useActionState(async (_: typeof estadoInicial, formData: FormData) => {
+  const [, formAction, pendente] = useActionState(async (_: typeof estadoInicial, formData: FormData) => {
     const resultado = await acao(formData);
+    notificarResultado(resultado, ehReceita ? "Receita atualizada." : "Despesa atualizada.");
     if ("erro" in resultado) return { erro: resultado.erro };
     if (resultado.recriado) {
       router.push(`/${caminhoBase}/${resultado.evento_id}`);
@@ -175,12 +177,6 @@ export function EditarEventoFinanceiro({
             )}
           </div>
         </div>
-
-        {estado.erro && (
-          <p role="alert" className="text-sm text-destructive sm:col-span-2">
-            {estado.erro}
-          </p>
-        )}
 
         <div className="flex gap-2 sm:col-span-2">
           <Button type="submit" disabled={pendente || (rateioAtivo && !rateioValido)}>

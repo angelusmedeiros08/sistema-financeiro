@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { anexarDocumentoAction } from "@/lib/contabil/anexos-actions";
+import { notificarResultado } from "@/lib/feedback/notificar-resultado";
 
 const ROTULO_TIPO_ANEXO: Record<string, string> = {
   CONTRATO: "Contrato",
@@ -35,8 +36,9 @@ export function AnexoForm({
   const [chaveFormulario, setChaveFormulario] = useState(0);
   const router = useRouter();
 
-  const [estado, formAction, pendente] = useActionState(async (_: typeof estadoInicial, formData: FormData) => {
+  const [, formAction, pendente] = useActionState(async (_: typeof estadoInicial, formData: FormData) => {
     const resultado = await anexarDocumentoAction(formData);
+    notificarResultado(resultado, "Anexo adicionado.");
     if ("erro" in resultado) return { erro: resultado.erro };
     setChaveFormulario((k) => k + 1);
     setForma("ARQUIVO");
@@ -92,8 +94,6 @@ export function AnexoForm({
         <Label>Descrição (opcional)</Label>
         <Input name="descricao" type="text" placeholder="Ex.: comprovante PIX" />
       </div>
-
-      {estado.erro && <p className="text-sm text-destructive sm:col-span-2">{estado.erro}</p>}
 
       <div className="sm:col-span-2">
         <Button type="submit" disabled={pendente} size="sm">

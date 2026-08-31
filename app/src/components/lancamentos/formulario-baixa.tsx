@@ -12,6 +12,7 @@ import { formatarMoeda } from "@/lib/formatacao";
 import { darBaixa } from "@/lib/contabil/baixa-actions";
 import { AnexoCampos } from "@/components/formularios/anexo-campos";
 import { FormaPagamentoCombobox } from "@/components/formularios/forma-pagamento-combobox";
+import { notificarResultado } from "@/lib/feedback/notificar-resultado";
 
 type ContaFinanceira = { id: string; nome: string };
 type FormaPagamento = { id: string; nome: string };
@@ -46,8 +47,9 @@ export function FormularioBaixa({
   // proteção contra isso, diferente de baixa integral/estorno/venda).
   const [chaveIdempotencia] = useState(() => crypto.randomUUID());
 
-  const [estado, formAction, pendente] = useActionState(async (_: typeof estadoInicial, formData: FormData) => {
+  const [, formAction, pendente] = useActionState(async (_: typeof estadoInicial, formData: FormData) => {
     const resultado = await darBaixa(formData);
+    notificarResultado(resultado, "Baixa registrada.");
     if ("erro" in resultado) return { erro: resultado.erro };
     router.push(caminhoVoltar);
     router.refresh();
@@ -154,8 +156,6 @@ export function FormularioBaixa({
           <p className="text-xs text-muted-foreground">Comprovante de pagamento: PIX, recibo, etc.</p>
           <AnexoCampos />
         </div>
-
-        {estado.erro && <p className="text-sm text-destructive">{estado.erro}</p>}
 
         <Button type="submit" disabled={pendente}>
           {pendente ? "Registrando..." : "Confirmar baixa"}
