@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { Spinner, Trash, Warning } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -19,7 +20,6 @@ export function DesfazerPainelFinanceiro({ importacaoId }: { importacaoId: strin
   const [carregandoPrevia, setCarregandoPrevia] = useState(false);
   const [rodando, setRodando] = useState(false);
   const [resultado, setResultado] = useState<ResultadoDesfazerFinanceira | null>(null);
-  const [erro, setErro] = useState("");
   // O botão que abre a prévia (e depois "Confirmar reversão") some do DOM
   // assim que o painel seguinte aparece — sem isso, o foco cai pro
   // <body> sem aviso nenhum, achado na auditoria de acessibilidade.
@@ -30,12 +30,11 @@ export function DesfazerPainelFinanceiro({ importacaoId }: { importacaoId: strin
   }, [previa]);
 
   async function abrirPrevia() {
-    setErro("");
     setCarregandoPrevia(true);
     const resposta = await preverDesfazerImportacaoFinanceiraAction(importacaoId);
     setCarregandoPrevia(false);
     if ("erro" in resposta) {
-      setErro(resposta.erro);
+      toast.error(resposta.erro);
       return;
     }
     setPrevia(resposta);
@@ -43,7 +42,6 @@ export function DesfazerPainelFinanceiro({ importacaoId }: { importacaoId: strin
 
   async function confirmar() {
     if (!previa) return;
-    setErro("");
     setRodando(true);
     let resposta: ResultadoDesfazerFinanceira | { erro: string };
     try {
@@ -55,7 +53,7 @@ export function DesfazerPainelFinanceiro({ importacaoId }: { importacaoId: strin
     setPrevia(null);
 
     if ("erro" in resposta) {
-      setErro(resposta.erro);
+      toast.error(resposta.erro);
       return;
     }
     setResultado(resposta);
@@ -117,11 +115,6 @@ export function DesfazerPainelFinanceiro({ importacaoId }: { importacaoId: strin
         <Trash size={14} />
         {carregandoPrevia ? "Avaliando..." : "Desfazer importação"}
       </Button>
-      {erro && (
-        <p role="alert" className="text-xs text-destructive">
-          {erro}
-        </p>
-      )}
       {resultado && (
         <div role="status" className="rounded-xl bg-muted/40 p-3 text-xs text-muted-foreground">
           <p className="font-medium text-foreground">

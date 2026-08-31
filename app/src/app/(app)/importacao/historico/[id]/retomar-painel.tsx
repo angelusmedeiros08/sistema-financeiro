@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { ArrowClockwise, Spinner } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { retomarImportacaoAction } from "../actions";
@@ -14,20 +15,19 @@ import { retomarImportacaoAction } from "../actions";
 export function RetomarPainel({ importacaoId, contagemPendente }: { importacaoId: string; contagemPendente: number }) {
   const router = useRouter();
   const [rodando, setRodando] = useState(false);
-  const [erro, setErro] = useState("");
 
   async function retomar() {
-    setErro("");
     setRodando(true);
     try {
       const resposta = await retomarImportacaoAction(importacaoId);
       if ("erro" in resposta) {
-        setErro(resposta.erro);
+        toast.error(resposta.erro);
         return;
       }
+      toast.success(`${resposta.processados} linha${resposta.processados !== 1 ? "s" : ""} retomada${resposta.processados !== 1 ? "s" : ""}.`);
       router.refresh();
     } catch {
-      setErro("Falha inesperada ao retomar a importação. Tente de novo.");
+      toast.error("Falha inesperada ao retomar a importação. Tente de novo.");
     } finally {
       setRodando(false);
     }
@@ -48,11 +48,6 @@ export function RetomarPainel({ importacaoId, contagemPendente }: { importacaoId
         <ArrowClockwise size={14} />
         Retomar {contagemPendente} linha{contagemPendente > 1 ? "s" : ""}
       </Button>
-      {erro && (
-        <p role="alert" className="text-xs text-destructive">
-          {erro}
-        </p>
-      )}
     </div>
   );
 }
