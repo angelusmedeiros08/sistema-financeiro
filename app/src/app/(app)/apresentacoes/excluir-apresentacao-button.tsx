@@ -15,12 +15,20 @@ export function ExcluirApresentacaoButton({ apresentacaoId, nome }: { apresentac
     if (!confirm(`Excluir a apresentação "${nome}"? Essa ação não pode ser desfeita.`)) return;
     setErro("");
     iniciarTransicao(async () => {
-      const resultado = await excluirApresentacao(apresentacaoId);
-      if ("erro" in resultado) {
-        setErro(resultado.erro);
-        return;
+      // Sem o try/catch, uma falha na própria chamada (ex.: requisição
+      // abortada pelo navegador) ficava sem nenhum retorno visível — o
+      // botão voltava a ficar clicável, sem erro, parecendo que nada tinha
+      // acontecido (achado reportado pelo usuário: "não está excluindo").
+      try {
+        const resultado = await excluirApresentacao(apresentacaoId);
+        if ("erro" in resultado) {
+          setErro(resultado.erro);
+          return;
+        }
+        router.refresh();
+      } catch (e) {
+        setErro(e instanceof Error ? `Falha ao excluir: ${e.message}` : "Falha ao excluir — tente de novo.");
       }
-      router.refresh();
     });
   }
 
