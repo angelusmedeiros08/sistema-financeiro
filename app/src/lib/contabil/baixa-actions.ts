@@ -6,6 +6,7 @@ import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
 import { registrarBaixa, resolverFormaPagamentoIdSimples } from "./baixa";
 import { extrairAnexosDraftDoFormData, anexarDraftsAoDono } from "./anexos";
 import { hojeIsoBrasil } from "@/lib/data-brasil";
+import { parseNumeroBR } from "@/lib/formatacao";
 
 type ResultadoAcao = { erro: string } | { sucesso: true };
 
@@ -14,11 +15,7 @@ export async function darBaixa(formData: FormData): Promise<ResultadoAcao> {
   const conta_financeira_id = String(formData.get("conta_financeira_id") ?? "");
   const data_pagamento = String(formData.get("data_pagamento") ?? "");
 
-  const parseValor = (nome: string) => {
-    const texto = String(formData.get(nome) ?? "").replace(",", ".");
-    const numero = Number(texto);
-    return Number.isFinite(numero) ? numero : 0;
-  };
+  const parseValor = (nome: string) => parseNumeroBR(String(formData.get(nome) ?? ""));
   const valor_pago = parseValor("valor_pago");
 
   if (!parcela_id || !conta_financeira_id || !data_pagamento || valor_pago <= 0) {

@@ -5,12 +5,13 @@ import { createClient } from "@/utils/supabase/server";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
 import type { Database } from "@/utils/supabase/database.types";
 import { criarProdutoServico, editarProdutoServico, criarProdutoServicoRapido } from "./produtos-servicos";
+import { parseNumeroBR } from "@/lib/formatacao";
 
 type TipoProdutoServico = Database["public"]["Enums"]["tipo_produto_servico"];
 type ResultadoAcao = { erro: string } | { sucesso: true };
 
 function lerNumero(formData: FormData, campo: string): number {
-  return Number(String(formData.get(campo) ?? "0").replace(",", "."));
+  return parseNumeroBR(String(formData.get(campo) ?? "0"));
 }
 
 export async function criarProdutoServicoAction(formData: FormData): Promise<ResultadoAcao> {

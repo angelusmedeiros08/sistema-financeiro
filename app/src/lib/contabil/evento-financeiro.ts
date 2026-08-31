@@ -451,8 +451,17 @@ async function aplicarCentroCustoSimples(
   if (!rateios || rateios.length !== 1) return {};
 
   const [rateio] = rateios;
-  const { error: erroDelete } = await supabase.from("rateio_centro_custo").delete().eq("rateio_categoria_id", rateio.id);
+  // `.select("id")` de propósito — sem isso não dá pra saber se o DELETE
+  // realmente afetou alguma linha (RLS bloqueava em silêncio antes da
+  // policy de DELETE existir, achado em auditoria: linha antiga nunca
+  // saía, o INSERT seguinte duplicava o rateio por centro de custo).
+  const { data: apagados, error: erroDelete } = await supabase
+    .from("rateio_centro_custo")
+    .delete()
+    .eq("rateio_categoria_id", rateio.id)
+    .select("id");
   if (erroDelete) return { erro: erroDelete.message };
+  if (!apagados) return { erro: "Não foi possível atualizar o rateio de centro de custo — tente novamente." };
 
   if (centroCustoId) {
     const { error: erroInsert } = await supabase

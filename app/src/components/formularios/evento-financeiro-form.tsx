@@ -12,6 +12,7 @@ import { CategoriaCombobox } from "./categoria-combobox";
 import { RateioCategorias } from "./rateio-categorias";
 import { RecorrenciaCampos } from "./recorrencia-campos";
 import { AnexoCampos } from "./anexo-campos";
+import { parseNumeroBR } from "@/lib/formatacao";
 
 type Categoria = { id: string; nome: string };
 type Pessoa = { id: string; nome: string };
@@ -52,7 +53,7 @@ export function EventoFinanceiroForm({
   // manual não tinha nenhuma).
   const chaveIdempotencia = useMemo(() => crypto.randomUUID(), [chaveFormulario]);
 
-  const valorNumerico = Number(valorTexto.replace(",", ".")) || 0;
+  const valorNumerico = parseNumeroBR(valorTexto);
 
   const [estado, formAction, pendente] = useActionState(async (_: typeof estadoInicial, formData: FormData) => {
     const resultado = await acao(formData);

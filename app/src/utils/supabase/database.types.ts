@@ -2398,6 +2398,14 @@ export type Database = {
         }
         Returns: string
       }
+      movimento_liquido_por_conta: {
+        Args: { p_data_fim: string; p_regime: string; p_tenant_id: string }
+        Returns: {
+          conta_financeira_id: string
+          credito: number
+          debito: number
+        }[]
+      }
       movimento_liquido_realizado: {
         Args: { p_data_fim: string; p_tenant_id: string }
         Returns: number

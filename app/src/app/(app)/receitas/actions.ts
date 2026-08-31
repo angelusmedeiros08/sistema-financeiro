@@ -13,6 +13,7 @@ import {
 } from "@/lib/contabil/evento-financeiro";
 import { extrairAnexosDraftDoFormData, anexarDraftsAoDono } from "@/lib/contabil/anexos";
 import { criarRegraRecorrenciaAction } from "@/lib/contabil/recorrencia-actions";
+import { parseNumeroBR } from "@/lib/formatacao";
 
 type ResultadoAcao = { erro: string } | { sucesso: true };
 
@@ -22,15 +23,14 @@ export async function criarReceita(formData: FormData): Promise<ResultadoAcao> {
   }
 
   const descricao = String(formData.get("descricao") ?? "").trim();
-  const valorTexto = String(formData.get("valor") ?? "").replace(",", ".");
+  const valor = parseNumeroBR(String(formData.get("valor") ?? ""));
   const dataVencimento = String(formData.get("data_vencimento") ?? "");
   const numeroParcelas = Number(formData.get("numero_parcelas") ?? "1") || 1;
   const pessoaId = String(formData.get("pessoa_id") ?? "") || undefined;
   const pessoaNomeNovo = String(formData.get("pessoa_nome_novo") ?? "") || undefined;
   const idempotencyKey = String(formData.get("idempotency_key") ?? "") || undefined;
 
-  const valor = Number(valorTexto);
-  if (!descricao || !dataVencimento || !Number.isFinite(valor) || valor <= 0) {
+  if (!descricao || !dataVencimento || valor <= 0) {
     return { erro: "Preencha descrição, valor (maior que zero) e vencimento." };
   }
   if (numeroParcelas < 1 || numeroParcelas > 360) {
@@ -97,12 +97,11 @@ type ResultadoEdicao = { erro: string } | { sucesso: true; evento_id: string; re
 
 export async function editarReceita(eventoId: string, formData: FormData): Promise<ResultadoEdicao> {
   const descricao = String(formData.get("descricao") ?? "").trim();
-  const valorTexto = String(formData.get("valor") ?? "").replace(",", ".");
+  const valor = parseNumeroBR(String(formData.get("valor") ?? ""));
   const pessoaId = String(formData.get("pessoa_id") ?? "") || undefined;
   const pessoaNomeNovo = String(formData.get("pessoa_nome_novo") ?? "") || undefined;
 
-  const valor = Number(valorTexto);
-  if (!descricao || !Number.isFinite(valor) || valor <= 0) {
+  if (!descricao || valor <= 0) {
     return { erro: "Preencha descrição e valor (maior que zero)." };
   }
 

@@ -1,4 +1,4 @@
-import { normalizarTexto, parseDataPlanilha } from "@/lib/importacao/locale-br";
+import { normalizarTexto, parseDataPlanilha, parseValorPlanilha } from "@/lib/importacao/locale-br";
 import type { Database } from "@/utils/supabase/database.types";
 import type { CampoPersonalizadoDefinicao } from "@/lib/pessoas/buscar-pessoa";
 import { resolverCorrespondenciaPessoa, type PessoaExistente } from "./correspondencia";
@@ -90,7 +90,7 @@ function validarCampoPersonalizado(valor: string, tipo: CampoPersonalizadoDefini
     case "TEXTO":
       return true;
     case "NUMERO":
-      return Number.isFinite(Number(valor.replace(",", ".")));
+      return parseValorPlanilha(valor, "BR") !== null;
     case "DATA":
       return parseDataPlanilha(valor, "BR") !== null;
     case "BOOLEANO": {

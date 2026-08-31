@@ -11,6 +11,7 @@ import { PessoaCombobox } from "@/components/formularios/pessoa-combobox";
 import { CentroCustoCombobox } from "@/components/formularios/centro-custo-combobox";
 import { CategoriaCombobox } from "@/components/formularios/categoria-combobox";
 import { RateioCategorias } from "@/components/formularios/rateio-categorias";
+import { parseNumeroBR } from "@/lib/formatacao";
 
 type Categoria = { id: string; nome: string };
 type Pessoa = { id: string; nome: string };
@@ -59,7 +60,7 @@ export function EditarEventoFinanceiro({
   const [rateioAtivo, setRateioAtivo] = useState(false);
   const [rateioValido, setRateioValido] = useState(false);
   const [valorTexto, setValorTexto] = useState(evento.valorTotal.toFixed(2).replace(".", ","));
-  const valorNumerico = Number(valorTexto.replace(",", ".")) || 0;
+  const valorNumerico = parseNumeroBR(valorTexto);
 
   const [estado, formAction, pendente] = useActionState(async (_: typeof estadoInicial, formData: FormData) => {
     const resultado = await acao(formData);

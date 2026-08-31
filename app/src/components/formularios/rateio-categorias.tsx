@@ -5,7 +5,7 @@ import { CaretDown, Plus, X } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { formatarMoeda } from "@/lib/formatacao";
+import { formatarMoeda, parseNumeroBR } from "@/lib/formatacao";
 import { cn } from "@/lib/utils";
 
 type Categoria = { id: string; nome: string };
@@ -39,11 +39,6 @@ function arredondarCentavos(valor: number): number {
 
 function formatarNumero(valor: number): string {
   return valor.toFixed(2).replace(".", ",");
-}
-
-function parseNumeroDigitado(texto: string): number {
-  const numero = Number(texto.replace(",", "."));
-  return Number.isFinite(numero) ? numero : 0;
 }
 
 function linhaCentroCustoValida(linha: Linha): boolean {
@@ -95,13 +90,13 @@ export function RateioCategorias({
   }
 
   function mudarValor(indice: number, texto: string) {
-    const valor = arredondarCentavos(parseNumeroDigitado(texto));
+    const valor = arredondarCentavos(parseNumeroBR(texto));
     const percentual = valorTotal > 0 ? arredondarCentavos((valor / valorTotal) * 100) : 0;
     atualizarLinha(indice, { valor, percentual });
   }
 
   function mudarPercentual(indice: number, texto: string) {
-    const percentual = parseNumeroDigitado(texto);
+    const percentual = parseNumeroBR(texto);
     const valor = arredondarCentavos((percentual / 100) * valorTotal);
     atualizarLinha(indice, { valor, percentual });
   }
@@ -147,13 +142,13 @@ export function RateioCategorias({
   }
 
   function mudarSubValor(indiceLinha: number, indiceSub: number, texto: string, valorLinha: number) {
-    const valor = arredondarCentavos(parseNumeroDigitado(texto));
+    const valor = arredondarCentavos(parseNumeroBR(texto));
     const percentual = valorLinha > 0 ? arredondarCentavos((valor / valorLinha) * 100) : 0;
     atualizarSubLinha(indiceLinha, indiceSub, { valor, percentual });
   }
 
   function mudarSubPercentual(indiceLinha: number, indiceSub: number, texto: string, valorLinha: number) {
-    const percentual = parseNumeroDigitado(texto);
+    const percentual = parseNumeroBR(texto);
     const valor = arredondarCentavos((percentual / 100) * valorLinha);
     atualizarSubLinha(indiceLinha, indiceSub, { valor, percentual });
   }

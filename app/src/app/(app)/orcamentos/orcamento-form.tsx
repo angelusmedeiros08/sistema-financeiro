@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PessoaCombobox } from "@/components/formularios/pessoa-combobox";
 import { ProdutoServicoCombobox } from "@/components/formularios/produto-servico-combobox";
-import { formatarMoeda } from "@/lib/formatacao";
+import { formatarMoeda, parseNumeroBR } from "@/lib/formatacao";
 import { criarOrcamentoAction, editarOrcamentoAction } from "@/lib/orcamentos-comerciais/orcamentos-comerciais-actions";
 
 type ProdutoOpcao = { id: string; nome: string; precoVenda: number };
@@ -24,11 +24,6 @@ function novaLinha(): LinhaItem {
 
 function formatarNumero(valor: number): string {
   return valor.toFixed(2).replace(".", ",");
-}
-
-function parseNumeroDigitado(texto: string): number {
-  const numero = Number(texto.replace(",", "."));
-  return Number.isFinite(numero) ? numero : 0;
 }
 
 export function OrcamentoForm({
@@ -168,14 +163,14 @@ export function OrcamentoForm({
                 type="text"
                 inputMode="decimal"
                 value={formatarNumero(item.quantidade)}
-                onChange={(e) => atualizarLinha(indice, { quantidade: parseNumeroDigitado(e.target.value) })}
+                onChange={(e) => atualizarLinha(indice, { quantidade: parseNumeroBR(e.target.value) })}
                 aria-label="Quantidade"
               />
               <Input
                 type="text"
                 inputMode="decimal"
                 value={formatarNumero(item.precoUnitario)}
-                onChange={(e) => atualizarLinha(indice, { precoUnitario: parseNumeroDigitado(e.target.value) })}
+                onChange={(e) => atualizarLinha(indice, { precoUnitario: parseNumeroBR(e.target.value) })}
                 aria-label="Preço unitário"
               />
               <span className="text-right text-sm tabular-nums text-foreground">{formatarMoeda(item.quantidade * item.precoUnitario)}</span>

@@ -6,6 +6,7 @@ import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
 import { extrairLinhasCategoria, resolverPessoaId, resolverCentroCustoIdSimples, resolverCategoriaIdSimples } from "./evento-financeiro";
 import { criarRegraRecorrencia, editarRegraRecorrencia, cancelarRegraRecorrencia } from "./recorrencia";
 import { extrairAnexosDraftDoFormData, anexarDraftsAoDono } from "./anexos";
+import { parseNumeroBR } from "@/lib/formatacao";
 import type { Database } from "@/utils/supabase/database.types";
 
 type ResultadoAcao = { erro: string } | { sucesso: true };
@@ -37,7 +38,7 @@ function extrairTermino(formData: FormData): { numero_ocorrencias: number | null
 
 export async function criarRegraRecorrenciaAction(tipo: TipoCategoria, formData: FormData): Promise<ResultadoAcao> {
   const descricao = String(formData.get("descricao") ?? "").trim();
-  const valorTexto = String(formData.get("valor") ?? "").replace(",", ".");
+  const valor = parseNumeroBR(String(formData.get("valor") ?? ""));
   // mesmo campo de data do formulário simples (EventoFinanceiroForm) — a
   // série reusa o formulário inteiro, só troca o que a data significa
   // ("1º vencimento" vira "data de início da série").
@@ -48,8 +49,7 @@ export async function criarRegraRecorrenciaAction(tipo: TipoCategoria, formData:
   const pessoaId = String(formData.get("pessoa_id") ?? "") || undefined;
   const pessoaNomeNovo = String(formData.get("pessoa_nome_novo") ?? "") || undefined;
 
-  const valor = Number(valorTexto);
-  if (!descricao || !dataInicio || !Number.isFinite(valor) || valor <= 0) {
+  if (!descricao || !dataInicio || valor <= 0) {
     return { erro: "Preencha descrição, valor (maior que zero) e data de início." };
   }
   if (numeroParcelas < 1 || numeroParcelas > 360) {
@@ -137,8 +137,7 @@ export async function editarRegraRecorrenciaAction(formData: FormData): Promise<
   if (!regraId) return { erro: "Série inválida." };
 
   const descricao = String(formData.get("descricao") ?? "").trim();
-  const valorTexto = String(formData.get("valor") ?? "").replace(",", ".");
-  const valor = Number(valorTexto);
+  const valor = parseNumeroBR(String(formData.get("valor") ?? ""));
   const unidadeIntervalo = String(formData.get("unidade_intervalo") ?? "") as UnidadeIntervalo | "";
   const intervalo = Number(formData.get("intervalo") ?? "0");
   const numeroParcelas = Number(formData.get("numero_parcelas") ?? "0");

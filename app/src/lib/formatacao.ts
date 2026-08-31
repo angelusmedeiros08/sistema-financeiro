@@ -59,6 +59,18 @@ export function formatarIndice(valor: number): string {
   return formatadorIndice.format(valor);
 }
 
+// Contraparte de parse pro formato pt-BR (vírgula decimal, ponto de milhar)
+// — usada por todo input de valor em texto livre, cliente e servidor.
+// Remove o separador de milhar ANTES de trocar a vírgula por ponto: sem
+// essa ordem, "1.500,00" (jeito natural de digitar um valor de 4+ dígitos)
+// vira Number("1.500.00") = NaN (achado em auditoria — vários inputs de
+// valor faziam só texto.replace(",", "."), zerando o valor em silêncio
+// sempre que alguém digitava o separador de milhar).
+export function parseNumeroBR(texto: string): number {
+  const numero = Number(texto.replace(/\./g, "").replace(",", "."));
+  return Number.isFinite(numero) ? numero : 0;
+}
+
 const NOMES_MES_ABREVIADO = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
 
 // Recebe uma chave "AAAA-MM" (o que as buscas de série mensal já devolvem)

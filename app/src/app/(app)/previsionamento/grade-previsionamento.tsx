@@ -6,6 +6,7 @@ import type { LinhaGradePrevisionamento } from "@/lib/previsionamento/previsiona
 import { definirValorPrevisionamentoAction, copiarValorParaRestoDoAnoAction } from "@/lib/previsionamento/previsionamento-actions";
 import { cn } from "@/lib/utils";
 import { TabelaMatriz, criarColunaMatriz } from "@/components/tabela/tabela-matriz";
+import { parseNumeroBR } from "@/lib/formatacao";
 
 const NOMES_MES = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 const IDS_MES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
@@ -15,8 +16,8 @@ function formatarEdicao(valor: number): string {
 }
 
 function parseValor(texto: string): number {
-  const numero = Number(texto.replace(",", "."));
-  return Number.isFinite(numero) && numero >= 0 ? numero : 0;
+  const numero = parseNumeroBR(texto);
+  return numero >= 0 ? numero : 0;
 }
 
 const helper = criarColunaMatriz<LinhaGradePrevisionamento>();
