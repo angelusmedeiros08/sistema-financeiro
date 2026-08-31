@@ -1,19 +1,19 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { TrashSimple } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { excluirApresentacao } from "./actions";
+import { notificarResultado } from "@/lib/feedback/notificar-resultado";
 
 export function ExcluirApresentacaoButton({ apresentacaoId, nome }: { apresentacaoId: string; nome: string }) {
   const [pendente, iniciarTransicao] = useTransition();
-  const [erro, setErro] = useState("");
   const router = useRouter();
 
   function acionar() {
     if (!confirm(`Excluir a apresentação "${nome}"? Essa ação não pode ser desfeita.`)) return;
-    setErro("");
     iniciarTransicao(async () => {
       // Sem o try/catch, uma falha na própria chamada (ex.: requisição
       // abortada pelo navegador) ficava sem nenhum retorno visível — o
@@ -21,23 +21,18 @@ export function ExcluirApresentacaoButton({ apresentacaoId, nome }: { apresentac
       // acontecido (achado reportado pelo usuário: "não está excluindo").
       try {
         const resultado = await excluirApresentacao(apresentacaoId);
-        if ("erro" in resultado) {
-          setErro(resultado.erro);
-          return;
-        }
+        notificarResultado(resultado, "Apresentação excluída.");
+        if ("erro" in resultado) return;
         router.refresh();
       } catch (e) {
-        setErro(e instanceof Error ? `Falha ao excluir: ${e.message}` : "Falha ao excluir — tente de novo.");
+        toast.error(e instanceof Error ? `Falha ao excluir: ${e.message}` : "Falha ao excluir — tente de novo.");
       }
     });
   }
 
   return (
-    <div className="relative">
-      <Button variant="ghost" size="icon-sm" disabled={pendente} onClick={acionar} aria-label={`Excluir ${nome}`}>
-        <TrashSimple size={15} />
-      </Button>
-      {erro && <p className="absolute top-full right-0 z-10 mt-1 w-48 text-right text-xs text-destructive">{erro}</p>}
-    </div>
+    <Button variant="ghost" size="icon-sm" disabled={pendente} onClick={acionar} aria-label={`Excluir ${nome}`}>
+      <TrashSimple size={15} />
+    </Button>
   );
 }

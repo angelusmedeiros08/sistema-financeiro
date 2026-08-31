@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { CATALOGO_SLIDES, type CategoriaSlide, itemCatalogoDaRota } from "@/lib/apresentacao/catalogo";
 import { cn, moverItem } from "@/lib/utils";
 import { criarApresentacao, atualizarApresentacao } from "./actions";
+import { notificarResultado } from "@/lib/feedback/notificar-resultado";
 
 const CATEGORIAS: CategoriaSlide[] = ["Painel", "Indicadores", "Relatórios"];
 
@@ -27,7 +28,6 @@ export function ApresentacaoForm({ existente }: { existente?: ApresentacaoExiste
   const [permiteModoTv, setPermiteModoTv] = useState(existente?.permiteModoTv ?? true);
   const [intervaloSegundos, setIntervaloSegundos] = useState(existente?.intervaloSegundos ?? 20);
   const [selecionadas, setSelecionadas] = useState<string[]>(existente?.rotas ?? []);
-  const [erro, setErro] = useState("");
   const [pendente, iniciarTransicao] = useTransition();
 
   function alternar(rota: string, incluir: boolean) {
@@ -39,14 +39,11 @@ export function ApresentacaoForm({ existente }: { existente?: ApresentacaoExiste
   }
 
   function salvar() {
-    setErro("");
     iniciarTransicao(async () => {
       const dados = { nome, intervaloSegundos, permiteModoTv, rotas: selecionadas };
       const resultado = existente ? await atualizarApresentacao(existente.id, dados) : await criarApresentacao(dados);
-      if ("erro" in resultado) {
-        setErro(resultado.erro);
-        return;
-      }
+      notificarResultado(resultado, "Apresentação salva.");
+      if ("erro" in resultado) return;
       router.push("/apresentacoes");
     });
   }
@@ -159,8 +156,6 @@ export function ApresentacaoForm({ existente }: { existente?: ApresentacaoExiste
           )}
         </section>
       </div>
-
-      {erro && <p className="text-sm text-destructive">{erro}</p>}
 
       <div className="flex justify-end gap-2">
         <Button variant="outline" size="sm" onClick={() => router.push("/apresentacoes")}>
