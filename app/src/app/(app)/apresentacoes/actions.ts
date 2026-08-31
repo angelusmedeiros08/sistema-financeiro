@@ -100,9 +100,16 @@ export async function excluirApresentacao(apresentacaoId: string): Promise<Resul
   if ("erro" in contexto) return { erro: contexto.erro };
 
   const supabase = await createClient();
-  const { error } = await supabase.from("apresentacoes").delete().eq("id", apresentacaoId).eq("tenant_id", contexto.tenantId);
+  // `.select("id")` de propósito — sem isso, o Supabase não devolve quantas
+  // linhas o DELETE realmente afetou (RLS bloqueia em silêncio, 0 linhas,
+  // sem erro — mesmo padrão já documentado pra UPDATE). Achado ao vivo: o
+  // botão "reportava" sucesso mesmo sem apagar nada.
+  const { data, error } = await supabase.from("apresentacoes").delete().eq("id", apresentacaoId).eq("tenant_id", contexto.tenantId).select("id");
 
   if (error) return { erro: error.message };
+  if (!data || data.length === 0) {
+    return { erro: `Nada foi apagado (0 linhas). tenantId=${contexto.tenantId} apresentacaoId=${apresentacaoId}` };
+  }
 
   revalidatePath("/apresentacoes");
   return { sucesso: true, id: apresentacaoId };
