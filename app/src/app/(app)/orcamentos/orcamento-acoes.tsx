@@ -13,6 +13,7 @@ import {
   aprovarOrcamentoManualAction,
   recusarOrcamentoManualAction,
 } from "@/lib/orcamentos-comerciais/orcamentos-comerciais-actions";
+import { notificarResultado } from "@/lib/feedback/notificar-resultado";
 import type { Database } from "@/utils/supabase/database.types";
 
 type StatusOrcamentoComercial = Database["public"]["Enums"]["status_orcamento_comercial"];
@@ -28,88 +29,85 @@ export function OrcamentoAcoes({ orcamentoId, status }: { orcamentoId: string; s
   const [validade, setValidade] = useState(validadeSugerida);
   const [motivo, setMotivo] = useState("");
   const [enviando, setEnviando] = useState<"enviar" | "reenviar" | "aprovar" | "recusar" | null>(null);
-  const [erro, setErro] = useState("");
+
+  const MENSAGEM_SUCESSO = {
+    enviar: "Orçamento enviado.",
+    reenviar: "Orçamento reenviado.",
+    aprovar: "Orçamento aprovado.",
+    recusar: "Orçamento recusado.",
+  } as const;
 
   async function executar(acao: "enviar" | "reenviar" | "aprovar" | "recusar") {
     setEnviando(acao);
-    setErro("");
     const resultado =
       acao === "enviar" ? await enviarOrcamentoAction(orcamentoId, validade)
       : acao === "reenviar" ? await reenviarOrcamentoAction(orcamentoId, validade)
       : acao === "aprovar" ? await aprovarOrcamentoManualAction(orcamentoId)
       : await recusarOrcamentoManualAction(orcamentoId, motivo);
     setEnviando(null);
-    if ("erro" in resultado) {
-      setErro(resultado.erro);
-      return;
-    }
+    notificarResultado(resultado, MENSAGEM_SUCESSO[acao]);
+    if ("erro" in resultado) return;
     router.refresh();
   }
 
   if (status === "RASCUNHO") {
     return (
-      <div className="flex flex-col items-end gap-1.5">
-        <div className="flex items-end gap-2">
-          {mostrarEnvio && (
-            <div className="space-y-1">
-              <Label htmlFor="validade_envio" className="text-[11px]">
-                Validade
-              </Label>
-              <Input
-                id="validade_envio"
-                type="date"
-                value={validade}
-                min={new Date().toISOString().slice(0, 10)}
-                onChange={(e) => setValidade(e.target.value)}
-                className="h-8 w-36 text-xs"
-              />
-            </div>
-          )}
-          {!mostrarEnvio ? (
-            <Button type="button" size="sm" disabled={enviando !== null} onClick={() => setMostrarEnvio(true)}>
-              Enviar orçamento
-            </Button>
-          ) : (
-            <Button type="button" size="sm" disabled={enviando !== null} onClick={() => executar("enviar")}>
-              {enviando === "enviar" ? <Spinner size={14} className="animate-spin" /> : "Confirmar envio"}
-            </Button>
-          )}
-        </div>
-        {erro && <p className="text-xs text-destructive">{erro}</p>}
+      <div className="flex items-end gap-2">
+        {mostrarEnvio && (
+          <div className="space-y-1">
+            <Label htmlFor="validade_envio" className="text-[11px]">
+              Validade
+            </Label>
+            <Input
+              id="validade_envio"
+              type="date"
+              value={validade}
+              min={new Date().toISOString().slice(0, 10)}
+              onChange={(e) => setValidade(e.target.value)}
+              className="h-8 w-36 text-xs"
+            />
+          </div>
+        )}
+        {!mostrarEnvio ? (
+          <Button type="button" size="sm" disabled={enviando !== null} onClick={() => setMostrarEnvio(true)}>
+            Enviar orçamento
+          </Button>
+        ) : (
+          <Button type="button" size="sm" disabled={enviando !== null} onClick={() => executar("enviar")}>
+            {enviando === "enviar" ? <Spinner size={14} className="animate-spin" /> : "Confirmar envio"}
+          </Button>
+        )}
       </div>
     );
   }
 
   if (status === "EXPIRADO") {
     return (
-      <div className="flex flex-col items-end gap-1.5">
-        <div className="flex items-end gap-2">
-          {mostrarEnvio && (
-            <div className="space-y-1">
-              <Label htmlFor="validade_reenvio" className="text-[11px]">
-                Nova validade
-              </Label>
-              <Input
-                id="validade_reenvio"
-                type="date"
-                value={validade}
-                min={new Date().toISOString().slice(0, 10)}
-                onChange={(e) => setValidade(e.target.value)}
-                className="h-8 w-36 text-xs"
-              />
-            </div>
-          )}
-          {!mostrarEnvio ? (
-            <Button type="button" variant="outline" size="sm" disabled={enviando !== null} onClick={() => setMostrarEnvio(true)}>
-              Reenviar orçamento
-            </Button>
-          ) : (
-            <Button type="button" size="sm" disabled={enviando !== null} onClick={() => executar("reenviar")}>
-              {enviando === "reenviar" ? <Spinner size={14} className="animate-spin" /> : "Confirmar reenvio"}
-            </Button>
-          )}
-        </div>
-        {erro && <p className="text-xs text-destructive">{erro}</p>}
+      <div className="flex items-end gap-2">
+        {mostrarEnvio && (
+          <div className="space-y-1">
+            <Label htmlFor="validade_reenvio" className="text-[11px]">
+              Nova validade
+            </Label>
+            <Input
+              id="validade_reenvio"
+              type="date"
+              value={validade}
+              min={new Date().toISOString().slice(0, 10)}
+              onChange={(e) => setValidade(e.target.value)}
+              className="h-8 w-36 text-xs"
+            />
+          </div>
+        )}
+        {!mostrarEnvio ? (
+          <Button type="button" variant="outline" size="sm" disabled={enviando !== null} onClick={() => setMostrarEnvio(true)}>
+            Reenviar orçamento
+          </Button>
+        ) : (
+          <Button type="button" size="sm" disabled={enviando !== null} onClick={() => executar("reenviar")}>
+            {enviando === "reenviar" ? <Spinner size={14} className="animate-spin" /> : "Confirmar reenvio"}
+          </Button>
+        )}
       </div>
     );
   }
@@ -142,7 +140,6 @@ export function OrcamentoAcoes({ orcamentoId, status }: { orcamentoId: string; s
         </Button>
       </div>
       <p className="text-[11px] text-muted-foreground">Só use se o cliente respondeu por outro canal — o link público continua valendo.</p>
-      {erro && <p className="text-xs text-destructive">{erro}</p>}
     </div>
   );
 }

@@ -34,6 +34,7 @@ export function VendaForm({
       acaoCriar={criarVendaAction}
       acaoEditar={editarVendaAction}
       botaoCriarSecundario={{ valorAcao: "direto", rotulo: "Confirmar venda", rotuloPendente: "Confirmando..." }}
+      mensagemSucesso="Venda salva."
     />
   );
 }

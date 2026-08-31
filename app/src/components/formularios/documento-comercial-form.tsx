@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { PessoaCombobox } from "./pessoa-combobox";
 import { ProdutoServicoCombobox } from "./produto-servico-combobox";
 import { formatarMoeda, parseNumeroBR } from "@/lib/formatacao";
+import { notificarResultado } from "@/lib/feedback/notificar-resultado";
 
 export type ProdutoOpcaoComercial = { id: string; nome: string; precoVenda: number };
 
@@ -57,6 +58,7 @@ export function DocumentoComercialForm({
   acaoCriar,
   acaoEditar,
   botaoCriarSecundario,
+  mensagemSucesso,
 }: {
   tituloSecaoDados: string;
   modo: "criar" | "editar";
@@ -69,18 +71,21 @@ export function DocumentoComercialForm({
   acaoEditar: (id: string, formData: FormData) => Promise<ResultadoAcaoComercial>;
   /** Botão do modo "criar" além de "Salvar rascunho" (idêntico nos dois domínios) — cada chamador define o que a criação direta significa. */
   botaoCriarSecundario: { valorAcao: string; rotulo: string; rotuloPendente: string };
+  /** Toast de sucesso — quando `acaoCriar` redireciona (venda direta, orçamento enviado), esse código nunca roda: a Promise não resolve pro cliente, a navegação já é a confirmação (spec de feedback, Seção 4). */
+  mensagemSucesso: string;
 }) {
   const [produtos, setProdutos] = useState<ProdutoOpcaoComercial[]>(produtosIniciais);
   const [itens, setItens] = useState<LinhaItemComercial[]>(() => (dadosIniciais?.itens.length ? dadosIniciais.itens : [novaLinha()]));
   const dataEmissaoInicial = dadosIniciais?.dataEmissao ?? new Date().toISOString().slice(0, 10);
 
-  const [estado, formAction, pendente] = useActionState(async (_: typeof estadoInicial, formData: FormData) => {
+  const [, formAction, pendente] = useActionState(async (_: typeof estadoInicial, formData: FormData) => {
     formData.set(
       "itens_json",
       JSON.stringify(itens.map((i) => ({ produtoServicoId: i.produtoServicoId, quantidade: i.quantidade, precoUnitario: i.precoUnitario }))),
     );
 
     const resultado = modo === "criar" ? await acaoCriar(formData) : await acaoEditar(idDocumento!, formData);
+    notificarResultado(resultado, mensagemSucesso);
 
     if (resultado && "erro" in resultado) return { erro: resultado.erro };
     return { erro: "" };
@@ -211,8 +216,6 @@ export function DocumentoComercialForm({
           <p className="text-sm font-semibold text-foreground">Total: {formatarMoeda(total)}</p>
         </div>
       </div>
-
-      {estado.erro && <p className="text-sm text-destructive">{estado.erro}</p>}
 
       <div className="flex items-center justify-end gap-2">
         {modo === "editar" ? (

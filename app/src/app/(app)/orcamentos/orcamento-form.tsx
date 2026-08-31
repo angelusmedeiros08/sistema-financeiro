@@ -34,6 +34,7 @@ export function OrcamentoForm({
       acaoCriar={criarOrcamentoAction}
       acaoEditar={editarOrcamentoAction}
       botaoCriarSecundario={{ valorAcao: "enviar", rotulo: "Salvar e enviar", rotuloPendente: "Enviando..." }}
+      mensagemSucesso="Orçamento salvo."
     />
   );
 }

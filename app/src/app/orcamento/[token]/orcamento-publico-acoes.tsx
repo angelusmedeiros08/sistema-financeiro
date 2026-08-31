@@ -6,35 +6,29 @@ import { Spinner } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { aprovarOrcamentoPublicoAction, recusarOrcamentoPublicoAction } from "./actions";
+import { notificarResultado } from "@/lib/feedback/notificar-resultado";
 
 export function OrcamentoPublicoAcoes({ token }: { token: string }) {
   const router = useRouter();
   const [mostrarRecusa, setMostrarRecusa] = useState(false);
   const [motivo, setMotivo] = useState("");
   const [enviando, setEnviando] = useState<"aprovar" | "recusar" | null>(null);
-  const [erro, setErro] = useState("");
 
   async function aprovar() {
     setEnviando("aprovar");
-    setErro("");
     const resultado = await aprovarOrcamentoPublicoAction(token);
     setEnviando(null);
-    if ("erro" in resultado) {
-      setErro(resultado.erro);
-      return;
-    }
+    notificarResultado(resultado, "Orçamento aprovado. Obrigado!");
+    if ("erro" in resultado) return;
     router.refresh();
   }
 
   async function recusar() {
     setEnviando("recusar");
-    setErro("");
     const resultado = await recusarOrcamentoPublicoAction(token, motivo);
     setEnviando(null);
-    if ("erro" in resultado) {
-      setErro(resultado.erro);
-      return;
-    }
+    notificarResultado(resultado, "Recusa registrada. Obrigado por avisar.");
+    if ("erro" in resultado) return;
     router.refresh();
   }
 
@@ -64,8 +58,6 @@ export function OrcamentoPublicoAcoes({ token }: { token: string }) {
           {enviando === "aprovar" ? <Spinner size={14} className="animate-spin" /> : "Aprovar orçamento"}
         </Button>
       </div>
-
-      {erro && <p className="text-sm text-destructive">{erro}</p>}
     </div>
   );
 }
