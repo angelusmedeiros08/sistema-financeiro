@@ -125,6 +125,8 @@ Registro do que foi efetivamente implementado no banco (região São Paulo, `sa-
 
 79. `movimento_liquido_por_conta_rpc` (31/08/2026) — achado da auditoria: `buscarContasBancarias` (relatório Contas Bancárias) somava o saldo acumulado ("desde 1900-01-01 até o fim do período") em JS a partir de `buscarMovimento`, que não pagina — mesma classe do bug P0 já corrigido em `saldo-projetado.ts` (commit `5a3a947`, RPC `movimento_liquido_realizado`), mas esta função específica ficou de fora apesar de já citada como relatório de risco na auditoria de escalabilidade de 30/08. Nova RPC `movimento_liquido_por_conta(p_tenant_id, p_regime, p_data_fim)` agrega crédito/débito por `conta_financeira_id` direto no Postgres, nos 3 regimes (dois braços num `UNION ALL`, mutuamente exclusivos via `p_regime` no `WHERE` — dispensa PL/pgSQL com IF). Elimina o risco de truncamento silencioso pelo limite padrão de linhas do PostgREST em tenants com muito histórico, sem precisar truncar a janela (o saldo acumulado é "desde o início da conta" por definição, um clamp de período quebraria a semântica).
 
+80. `tentativas_auth_convite_aceitar` (31/08/2026) — achado da auditoria: `aceitarConvite` era o único dos 4 fluxos de auth sem sessão que não registrava tentativa em `tentativas_auth` (os outros 3 ganharam isso na auditoria de segurança de 30/08). Risco baixo (o token é um `token_hash` de alta entropia do Supabase Auth, não um código curto brute-forçável), mas fecha a inconsistência e adiciona rastro de auditoria. `tentativas_auth_finalidade_check` recriado com `'convite_aceitar'` a mais no `ARRAY`.
+
 ## Verificação final
 
 - `get_advisors` (segurança): **0 alertas** (só o warning pré-existente e não relacionado `auth_leaked_password_protection`).

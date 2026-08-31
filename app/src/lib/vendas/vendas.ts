@@ -143,6 +143,7 @@ export async function criarVenda(
   },
 ): Promise<{ id: string } | { erro: string }> {
   if (!params.pessoaId) return { erro: "Selecione o cliente." };
+  if (!Number.isFinite(params.numeroParcelas) || params.numeroParcelas < 1) return { erro: "Número de parcelas precisa ser pelo menos 1." };
   const erroItens = validarItens(params.itens);
   if (erroItens) return { erro: erroItens };
 
@@ -218,6 +219,7 @@ export async function editarCabecalhoVenda(
   },
 ): Promise<Resultado> {
   if (!params.pessoaId) return { erro: "Selecione o cliente." };
+  if (!Number.isFinite(params.numeroParcelas) || params.numeroParcelas < 1) return { erro: "Número de parcelas precisa ser pelo menos 1." };
   const erroItens = validarItens(params.itens);
   if (erroItens) return { erro: erroItens };
 

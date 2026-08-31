@@ -18,6 +18,7 @@ const estadoInicial = { erro: "" };
 // por que o link não funcionou.
 const MENSAGENS_ERRO_LINK: Record<string, string> = {
   link_invalido: "Esse link expirou ou já foi usado — peça um novo convite a quem te convidou.",
+  muitas_tentativas: "Muitas tentativas em pouco tempo. Aguarde alguns minutos e tente de novo.",
 };
 
 function ErroDoLink() {

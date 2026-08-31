@@ -7,7 +7,7 @@ import { createAdminClient } from "@/utils/supabase/admin";
 // tenant novo) e recuperação de senha (spam de e-mail). Achado em auditoria
 // de segurança (30/08/2026): nenhuma das três tinha limite algum além do
 // que o próprio Supabase Auth aplica por padrão.
-export type FinalidadeTentativaAuth = "entrar" | "cadastro" | "recuperacao_senha" | "orcamento_publico";
+export type FinalidadeTentativaAuth = "entrar" | "cadastro" | "recuperacao_senha" | "orcamento_publico" | "convite_aceitar";
 
 const JANELA_MS = 15 * 60 * 1000;
 
@@ -21,6 +21,10 @@ const LIMITES: Record<FinalidadeTentativaAuth, { porEmail: number; porIp: number
   cadastro: { porEmail: 3, porIp: 10 },
   recuperacao_senha: { porEmail: 3, porIp: 10 },
   orcamento_publico: { porEmail: 5, porIp: 20 },
+  // token_hash de alta entropia (não é código curto) — limite mais folgado
+  // que cadastro/recuperação, é defesa em profundidade + rastro de
+  // auditoria, não a proteção principal contra esse fluxo.
+  convite_aceitar: { porEmail: 10, porIp: 30 },
 };
 
 // Registra a tentativa sempre, permitida ou não — senão dá pra "gastar" o

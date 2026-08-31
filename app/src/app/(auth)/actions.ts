@@ -103,6 +103,15 @@ export async function aceitarConvite(formData: FormData): Promise<never> {
     redirect("/entrar?erro=link_invalido");
   }
 
+  // Achado em auditoria (31/08/2026): único dos 4 fluxos de auth sem
+  // sessão que não registrava tentativa em tentativas_auth — os outros 3
+  // já ganharam isso na auditoria de segurança de 30/08. Risco baixo (o
+  // token é um token_hash de alta entropia, não um código curto), mas
+  // fecha a inconsistência e deixa rastro de auditoria.
+  const ip = obterIpDaRequisicao(await headers());
+  const { permitido } = await registrarTentativaAuth({ finalidade: "convite_aceitar", email, ip });
+  if (!permitido) redirect("/entrar?erro=muitas_tentativas");
+
   const supabase = await createClient();
   // token_hash (não "token" com email) — a variante {email, token} espera um
   // código de 6 dígitos, não o hash que geramos em generateLink(). Usar o

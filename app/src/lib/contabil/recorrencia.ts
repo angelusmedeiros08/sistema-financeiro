@@ -279,14 +279,23 @@ export async function gerarOcorrenciasPendentes(
     return { ocorrencias_geradas: 0, erros: [error?.message ?? "Falha ao carregar regras de recorrência ativas."] };
   }
 
+  // Todas as regras em paralelo (Promise.all) — achado em auditoria
+  // (31/08/2026): mesma classe de bug P0 já corrigida no cron de alertas
+  // (commit 5a3a947, dispararAlertasDiarios) mas que ficou de fora aqui —
+  // processar regra por regra em sequência arrisca estourar o timeout da
+  // function com muitos tenants/regras ativas, falhando em silêncio pras
+  // últimas da lista (lançamentos recorrentes simplesmente não gerados
+  // naquele dia). Cada regra já é independente (tenant_id e import_key
+  // próprios), sem estado compartilhado entre elas.
+  const resultados = await Promise.all(regras.map((regra) => gerarOcorrenciasDaRegra(supabase, regra, limiteJanela)));
+
   let totalGeradas = 0;
   const erros: string[] = [];
-
-  for (const regra of regras) {
-    const resultado = await gerarOcorrenciasDaRegra(supabase, regra, limiteJanela);
+  regras.forEach((regra, indice) => {
+    const resultado = resultados[indice];
     totalGeradas += resultado.geradas;
     if (resultado.erro) erros.push(`Regra ${regra.id} (${regra.descricao}): ${resultado.erro}`);
-  }
+  });
 
   return { ocorrencias_geradas: totalGeradas, erros };
 }

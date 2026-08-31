@@ -173,6 +173,7 @@ export async function criarOrcamento(
   },
 ): Promise<{ id: string } | { erro: string }> {
   if (!params.pessoaId) return { erro: "Selecione o cliente." };
+  if (!Number.isFinite(params.numeroParcelas) || params.numeroParcelas < 1) return { erro: "Número de parcelas precisa ser pelo menos 1." };
   const erroItens = validarItens(params.itens);
   if (erroItens) return { erro: erroItens };
 
@@ -217,6 +218,7 @@ export async function editarCabecalhoOrcamento(
   },
 ): Promise<Resultado & { validadeResetada?: string }> {
   if (!params.pessoaId) return { erro: "Selecione o cliente." };
+  if (!Number.isFinite(params.numeroParcelas) || params.numeroParcelas < 1) return { erro: "Número de parcelas precisa ser pelo menos 1." };
   const erroItens = validarItens(params.itens);
   if (erroItens) return { erro: erroItens };
 
