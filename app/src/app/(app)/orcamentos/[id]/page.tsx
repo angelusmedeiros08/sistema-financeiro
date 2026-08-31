@@ -27,11 +27,18 @@ const MAPA_STATUS_ORCAMENTO: Record<StatusOrcamentoComercial, { rotulo: string; 
   EXPIRADO: { rotulo: "Expirado", className: "bg-muted text-muted-foreground" },
 };
 
-export default async function PaginaOrcamento({ params }: { params: Promise<{ id: string }> }) {
+export default async function PaginaOrcamento({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ erro?: string }>;
+}) {
   const contexto = await obterUsuarioETenantAtual();
   if ("erro" in contexto) redirect("/entrar");
 
   const { id } = await params;
+  const { erro } = await searchParams;
   const supabase = await createClient();
   const orcamento = await buscarOrcamento(supabase, contexto.tenantId, id);
   if (!orcamento) notFound();
@@ -73,6 +80,12 @@ export default async function PaginaOrcamento({ params }: { params: Promise<{ id
           </div>
           <OrcamentoAcoes orcamentoId={orcamento.id} status={orcamento.status} />
         </div>
+
+        {erro && (
+          <p className="rounded-xl border border-destructive/25 bg-destructive/10 p-4 text-sm text-destructive">
+            O orçamento foi salvo, mas não foi possível enviar: {erro}
+          </p>
+        )}
 
         <OrcamentoForm
           modo="editar"

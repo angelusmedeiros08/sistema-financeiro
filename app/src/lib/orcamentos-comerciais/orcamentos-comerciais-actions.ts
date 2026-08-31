@@ -98,7 +98,18 @@ export async function criarOrcamentoAction(formData: FormData): Promise<Resultad
     // um input com esse name).
     const validade = validadeSugerida();
     const resultadoEnvio = await enviarOrcamento(supabase, { tenantId: contexto.tenantId, orcamentoId: resultado.id, validade });
-    if ("erro" in resultadoEnvio) return resultadoEnvio;
+    if ("erro" in resultadoEnvio) {
+      // Achado em auditoria: `criarOrcamento` acima já persistiu o registro
+      // (em RASCUNHO) — retornar erro aqui deixava o formulário de criação
+      // sem nenhum id, e um segundo clique em "Salvar e enviar" criava um
+      // SEGUNDO orçamento em vez de reaproveitar o primeiro (ex.: cliente
+      // sem e-mail cadastrado — staff cadastra o e-mail e tenta de novo).
+      // Redireciona pro editor do orçamento já criado, com o erro na URL —
+      // dali em diante qualquer novo envio é editarOrcamentoAction (edita),
+      // nunca cria outro.
+      revalidarOrcamento(resultado.id);
+      redirect(`/orcamentos/${resultado.id}?erro=${encodeURIComponent(resultadoEnvio.erro)}`);
+    }
     await enviarEmailDeOrcamento(supabase, { tenantId: contexto.tenantId, tenantNome: contexto.tenantNome, orcamentoId: resultado.id, atualizado: false });
   }
 
