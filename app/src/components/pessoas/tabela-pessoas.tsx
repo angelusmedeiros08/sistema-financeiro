@@ -52,12 +52,15 @@ export function TabelaPessoas({
   pessoas,
   caminhoBase,
   textoVazio,
+  paginacao,
 }: {
   pessoas: LinhaPessoa[];
   caminhoBase: "clientes" | "fornecedores";
   textoVazio: string;
+  /** Paginação real no servidor — `pessoas` já é só a página atual. Ver `paginacaoServidor` em TabelaLista. */
+  paginacao?: { pagina: number; totalPaginas: number; totalRegistros: number; tamanhoPagina: number; hrefBase: string };
 }) {
-  if (pessoas.length === 0) {
+  if (pessoas.length === 0 && !paginacao) {
     return <EstadoVazio texto={textoVazio} />;
   }
 
@@ -66,8 +69,10 @@ export function TabelaPessoas({
       titulo={caminhoBase === "clientes" ? "Clientes" : "Fornecedores"}
       data={pessoas}
       columns={colunas}
-      buscaPlaceholder="Buscar por nome, documento, e-mail…"
+      busca={false}
+      textoVazio={textoVazio}
       linkPara={(p) => `/${caminhoBase}/${p.id}`}
+      paginacaoServidor={paginacao}
     />
   );
 }

@@ -14,19 +14,28 @@ const ABAS = [
   { valor: "transportadoras", rotulo: "Transportadoras", perfil: "TRANSPORTADORA" },
 ] as const;
 
+const TAMANHO_PAGINA = 20;
+
 export default async function PaginaFornecedores({
   searchParams,
 }: {
-  searchParams: Promise<{ aba?: string }>;
+  searchParams: Promise<{ aba?: string; pagina?: string }>;
 }) {
   const contexto = await obterUsuarioETenantAtual();
   if ("erro" in contexto) redirect("/entrar");
 
-  const { aba = "fornecedores" } = await searchParams;
+  const { aba = "fornecedores", pagina: paginaBruta } = await searchParams;
   const abaAtual = ABAS.find((a) => a.valor === aba) ?? ABAS[0];
+  const pagina = Math.max(1, Number(paginaBruta) || 1);
 
   const supabase = await createClient();
-  const fornecedores = await listarPessoas(supabase, { tenant_id: contexto.tenantId, perfil: abaAtual.perfil });
+  const { pessoas: fornecedores, total } = await listarPessoas(supabase, {
+    tenant_id: contexto.tenantId,
+    perfil: abaAtual.perfil,
+    pagina,
+    tamanhoPagina: TAMANHO_PAGINA,
+  });
+  const totalPaginas = Math.max(1, Math.ceil(total / TAMANHO_PAGINA));
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-6">
@@ -55,13 +64,14 @@ export default async function PaginaFornecedores({
         ))}
       </div>
 
-      {fornecedores.length === 0 ? (
+      {total === 0 ? (
         <CtaImportarPessoas rotulo={abaAtual.valor === "transportadoras" ? "transportadora" : "fornecedor"} />
       ) : (
         <TabelaPessoas
           pessoas={fornecedores}
           caminhoBase="fornecedores"
           textoVazio={abaAtual.valor === "transportadoras" ? "Nenhuma transportadora encontrada." : "Nenhum fornecedor encontrado."}
+          paginacao={{ pagina, totalPaginas, totalRegistros: total, tamanhoPagina: TAMANHO_PAGINA, hrefBase: `/fornecedores?aba=${abaAtual.valor}` }}
         />
       )}
     </div>

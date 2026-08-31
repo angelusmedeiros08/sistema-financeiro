@@ -17,19 +17,32 @@ export type LinhaPessoa = {
 // Listagem de /clientes, /fornecedores e da aba Transportadoras — mesma
 // tabela pessoas por baixo, só o filtro de perfil muda. Junta a cidade/UF
 // do endereço principal ativo (se houver) só pra exibição na tabela.
+//
+// Paginação real no servidor (achado em auditoria, 31/08/2026) — diferente
+// das tabelas transacionais (despesas/receitas/vendas/lançamentos/contas a
+// pagar-receber), essa não tinha sido coberta na auditoria de escalabilidade
+// de 30/08, apesar de ser uma tabela que só cresce por tenant (nunca "sai",
+// diferente de parcela quitada). Mesmo padrão: `pagina`/`tamanhoPagina`
+// opcionais (undefined = página 1 inteira, comportamento antigo preservado
+// pra quem ainda não migrou a chamada) via `.range()`.
 export async function listarPessoas(
   supabase: Cliente,
-  params: { tenant_id: string; perfil: PerfilPessoa },
-): Promise<LinhaPessoa[]> {
-  const { data, error } = await supabase
+  params: { tenant_id: string; perfil: PerfilPessoa; pagina?: number; tamanhoPagina?: number },
+): Promise<{ pessoas: LinhaPessoa[]; total: number }> {
+  const tamanhoPagina = params.tamanhoPagina ?? 20;
+  const pagina = Math.max(1, params.pagina ?? 1);
+  const inicio = (pagina - 1) * tamanhoPagina;
+
+  const { data, count, error } = await supabase
     .from("pessoas")
-    .select("id, nome, documento, email, telefone, pessoa_enderecos(cidade, uf, principal, substituido_em)")
+    .select("id, nome, documento, email, telefone, pessoa_enderecos(cidade, uf, principal, substituido_em)", { count: "exact" })
     .eq("tenant_id", params.tenant_id)
     .contains("perfis", [params.perfil])
-    .order("nome");
-  if (error || !data) return [];
+    .order("nome")
+    .range(inicio, inicio + tamanhoPagina - 1);
+  if (error || !data) return { pessoas: [], total: 0 };
 
-  return data.map((p) => {
+  const pessoas = data.map((p) => {
     const enderecoAtivo = (p.pessoa_enderecos ?? []).find((e) => !e.substituido_em && e.principal)
       ?? (p.pessoa_enderecos ?? []).find((e) => !e.substituido_em);
     return {
@@ -42,6 +55,8 @@ export async function listarPessoas(
       uf: enderecoAtivo?.uf ?? null,
     };
   });
+
+  return { pessoas, total: count ?? 0 };
 }
 
 export type DadosPessoa = {

@@ -8,12 +8,23 @@ import { TabelaPessoas } from "@/components/pessoas/tabela-pessoas";
 import { CtaImportarPessoas } from "@/components/pessoas/cta-importar-pessoas";
 import { Button } from "@/components/ui/button";
 
-export default async function PaginaClientes() {
+const TAMANHO_PAGINA = 20;
+
+export default async function PaginaClientes({ searchParams }: { searchParams: Promise<{ pagina?: string }> }) {
   const contexto = await obterUsuarioETenantAtual();
   if ("erro" in contexto) redirect("/entrar");
 
+  const { pagina: paginaBruta } = await searchParams;
+  const pagina = Math.max(1, Number(paginaBruta) || 1);
+
   const supabase = await createClient();
-  const clientes = await listarPessoas(supabase, { tenant_id: contexto.tenantId, perfil: "CLIENTE" });
+  const { pessoas: clientes, total } = await listarPessoas(supabase, {
+    tenant_id: contexto.tenantId,
+    perfil: "CLIENTE",
+    pagina,
+    tamanhoPagina: TAMANHO_PAGINA,
+  });
+  const totalPaginas = Math.max(1, Math.ceil(total / TAMANHO_PAGINA));
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-6">
@@ -27,10 +38,15 @@ export default async function PaginaClientes() {
         </Button>
       </div>
 
-      {clientes.length === 0 ? (
+      {total === 0 ? (
         <CtaImportarPessoas rotulo="cliente" />
       ) : (
-        <TabelaPessoas pessoas={clientes} caminhoBase="clientes" textoVazio="Nenhum cliente encontrado." />
+        <TabelaPessoas
+          pessoas={clientes}
+          caminhoBase="clientes"
+          textoVazio="Nenhum cliente encontrado."
+          paginacao={{ pagina, totalPaginas, totalRegistros: total, tamanhoPagina: TAMANHO_PAGINA, hrefBase: "/clientes" }}
+        />
       )}
     </div>
   );
