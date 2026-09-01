@@ -171,38 +171,28 @@ export async function criarOrcamento(
   const erroItens = validarItensComerciais(params.itens);
   if (erroItens) return { erro: erroItens };
 
-  if (params.importKey) {
-    const { data: existente } = await supabase
-      .from("orcamentos_comerciais")
-      .select("id")
-      .eq("tenant_id", params.tenantId)
-      .eq("import_key", params.importKey)
-      .maybeSingle();
-    if (existente) return { id: existente.id };
-  }
+  // Ver o mesmo comentário em criarVenda (vendas.ts) — idêntica correção:
+  // cabeçalho + itens na mesma transação via RPC, import_key incorporado.
+  const { data: orcamentoId, error } = await supabase.rpc("criar_orcamento_com_itens", {
+    p_tenant_id: params.tenantId,
+    p_pessoa_id: params.pessoaId,
+    p_data_emissao: params.dataEmissao,
+    p_forma_pagamento_id: params.formaPagamentoId || undefined,
+    p_numero_parcelas: params.numeroParcelas,
+    p_primeiro_vencimento: params.primeiroVencimento || undefined,
+    p_observacoes: params.observacoes?.trim() || undefined,
+    p_criado_por: params.criadoPor,
+    p_import_key: params.importKey || undefined,
+    p_itens: params.itens.map((item) => ({
+      produto_servico_id: item.produtoServicoId,
+      quantidade: item.quantidade,
+      preco_unitario: item.precoUnitario,
+    })),
+  });
 
-  const { data: orcamento, error } = await supabase
-    .from("orcamentos_comerciais")
-    .insert({
-      tenant_id: params.tenantId,
-      pessoa_id: params.pessoaId,
-      data_emissao: params.dataEmissao,
-      forma_pagamento_id: params.formaPagamentoId || null,
-      numero_parcelas: params.numeroParcelas,
-      primeiro_vencimento: params.primeiroVencimento || null,
-      observacoes: params.observacoes?.trim() || null,
-      criado_por: params.criadoPor,
-      import_key: params.importKey || null,
-    })
-    .select("id")
-    .single();
+  if (error || !orcamentoId) return { erro: error?.message ?? "Falha ao criar o orçamento." };
 
-  if (error || !orcamento) return { erro: error?.message ?? "Falha ao criar o orçamento." };
-
-  const erroItensSalvos = await substituirItensOrcamento(supabase, { tenantId: params.tenantId, orcamentoId: orcamento.id, itens: params.itens });
-  if (erroItensSalvos) return { erro: erroItensSalvos };
-
-  return { id: orcamento.id };
+  return { id: orcamentoId };
 }
 
 // Editar um orçamento ENVIADO reseta a validade (quem chama dispara um novo

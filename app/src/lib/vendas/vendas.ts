@@ -145,43 +145,37 @@ export async function criarVenda(
   const erroItens = validarItensComerciais(params.itens);
   if (erroItens) return { erro: erroItens };
 
-  if (params.importKey) {
-    const { data: existente } = await supabase
-      .from("vendas")
-      .select("id")
-      .eq("tenant_id", params.tenantId)
-      .eq("import_key", params.importKey)
-      .maybeSingle();
-    if (existente) return { id: existente.id };
-  }
+  // Cabeçalho + itens na mesma transação via RPC (`criar_venda_com_itens`)
+  // — antes eram um .insert() e uma RPC separada: falha na segunda etapa
+  // (rede, timeout) deixava uma venda gravada sem nenhum item, órfã. Mesma
+  // classe de bug já corrigida em criar_evento_financeiro (achado em
+  // revisão de código). A checagem de import_key também migrou pra dentro
+  // da função — fazia parte da mesma correção, não é uma segunda mudança.
+  const { data: vendaId, error } = await supabase.rpc("criar_venda_com_itens", {
+    p_tenant_id: params.tenantId,
+    p_pessoa_id: params.pessoaId,
+    p_data_emissao: params.dataEmissao,
+    p_forma_pagamento_id: params.formaPagamentoId || undefined,
+    p_numero_parcelas: params.numeroParcelas,
+    p_primeiro_vencimento: params.primeiroVencimento || undefined,
+    p_observacoes: params.observacoes?.trim() || undefined,
+    p_criado_por: params.criadoPor,
+    p_import_key: params.importKey || undefined,
+    p_itens: params.itens.map((item) => ({
+      produto_servico_id: item.produtoServicoId,
+      quantidade: item.quantidade,
+      preco_unitario: item.precoUnitario,
+    })),
+  });
 
-  const { data: venda, error } = await supabase
-    .from("vendas")
-    .insert({
-      tenant_id: params.tenantId,
-      pessoa_id: params.pessoaId,
-      data_emissao: params.dataEmissao,
-      forma_pagamento_id: params.formaPagamentoId || null,
-      numero_parcelas: params.numeroParcelas,
-      primeiro_vencimento: params.primeiroVencimento || null,
-      observacoes: params.observacoes?.trim() || null,
-      criado_por: params.criadoPor,
-      import_key: params.importKey || null,
-    })
-    .select("id")
-    .single();
-
-  if (error || !venda) return { erro: error?.message ?? "Falha ao criar a venda." };
-
-  const erroItensSalvos = await substituirItensVenda(supabase, { tenantId: params.tenantId, vendaId: venda.id, itens: params.itens });
-  if (erroItensSalvos) return { erro: erroItensSalvos };
+  if (error || !vendaId) return { erro: error?.message ?? "Falha ao criar a venda." };
 
   if (params.direto) {
-    const resultado = await aprovarVenda(supabase, { tenantId: params.tenantId, vendaId: venda.id });
+    const resultado = await aprovarVenda(supabase, { tenantId: params.tenantId, vendaId });
     if ("erro" in resultado) return resultado;
   }
 
-  return { id: venda.id };
+  return { id: vendaId };
 }
 
 // Substitui todos os itens de uma venda (apaga e reinsere) — só é chamado

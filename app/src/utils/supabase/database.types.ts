@@ -2396,6 +2396,36 @@ export type Database = {
         }
         Returns: string
       }
+      criar_orcamento_com_itens: {
+        Args: {
+          p_criado_por?: string
+          p_data_emissao: string
+          p_forma_pagamento_id?: string
+          p_import_key?: string
+          p_itens: Json
+          p_numero_parcelas: number
+          p_observacoes?: string
+          p_pessoa_id: string
+          p_primeiro_vencimento?: string
+          p_tenant_id: string
+        }
+        Returns: string
+      }
+      criar_venda_com_itens: {
+        Args: {
+          p_criado_por?: string
+          p_data_emissao: string
+          p_forma_pagamento_id?: string
+          p_import_key?: string
+          p_itens: Json
+          p_numero_parcelas: number
+          p_observacoes?: string
+          p_pessoa_id: string
+          p_primeiro_vencimento?: string
+          p_tenant_id: string
+        }
+        Returns: string
+      }
       gerar_venda_de_orcamento: {
         Args: {
           p_criado_por?: string
