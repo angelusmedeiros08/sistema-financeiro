@@ -34,6 +34,12 @@ function revalidarPaginasPessoa(pessoaId?: string) {
     revalidatePath(`/clientes/${pessoaId}`);
     revalidatePath(`/fornecedores/${pessoaId}`);
   }
+  // Marco de "Primeiros passos" (Painel) depende de existir pessoa cadastrada
+  // — sem isso, quem navega de volta pro Painel via um link já pré-carregado
+  // continua vendo o passo como pendente (mesma causa do bug achado no
+  // convite de equipe: cache do cliente do Next não sabe que o dado mudou
+  // até alguém chamar revalidatePath).
+  revalidatePath("/painel");
 }
 
 type EnderecoJson = {

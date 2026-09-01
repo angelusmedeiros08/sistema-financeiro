@@ -36,6 +36,12 @@ export async function criarContaFinanceira(formData: FormData): Promise<Resultad
   if (error) return { erro: error.message };
 
   revalidatePath("/configuracoes/contas-financeiras");
+  // Marco de "Primeiros passos" (Painel) depende deste cadastro — sem isso,
+  // quem navega de volta pro Painel via um link já pré-carregado continua
+  // vendo o passo como pendente (achado ao vivo: mesmo bug do convite de
+  // equipe, mesma causa — cache do cliente do Next não sabe que este dado
+  // mudou até alguém chamar revalidatePath).
+  revalidatePath("/painel");
   return { sucesso: true };
 }
 

@@ -49,6 +49,12 @@ export async function convidarUsuarioAction(formData: FormData): Promise<Resulta
   if ("erro" in resultado) return resultado;
 
   revalidatePath("/configuracoes/equipe");
+  // Marco de "Primeiros passos" (Painel) conta membro ativo da equipe —
+  // achado ao vivo: sem isso, quem convida alguém e volta pro Painel por um
+  // link já pré-carregado continua vendo o passo como pendente (o servidor
+  // já sabe que mudou, mas o cache do lado do cliente do Next não invalida
+  // sozinho — precisa deste revalidatePath explícito).
+  revalidatePath("/painel");
   return { sucesso: true };
 }
 
@@ -69,6 +75,7 @@ export async function cancelarConviteAction(formData: FormData): Promise<Resulta
   if ("erro" in resultado) return resultado;
 
   revalidatePath("/configuracoes/equipe");
+  revalidatePath("/painel");
   return { sucesso: true };
 }
 
@@ -92,5 +99,6 @@ export async function definirAcessoUsuarioAction(formData: FormData): Promise<Re
   if ("erro" in resultado) return resultado;
 
   revalidatePath("/configuracoes/equipe");
+  revalidatePath("/painel");
   return { sucesso: true };
 }
