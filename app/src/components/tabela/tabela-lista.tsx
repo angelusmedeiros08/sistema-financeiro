@@ -19,11 +19,13 @@ import {
   type SortingState,
   type TableFeatures,
 } from "@tanstack/react-table";
-import { CaretLeft, CaretRight, DotsThree, MagnifyingGlass } from "@phosphor-icons/react/dist/ssr";
+import { CaretLeft, CaretRight, DotsThree, MagnifyingGlass, X } from "@phosphor-icons/react/dist/ssr";
 import Link from "next/link";
 import { hrefComPagina } from "./href-pagina";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 // Arquétipo 2 (lista/registro) — motor headless TanStack Table v9 por
@@ -220,6 +222,20 @@ interface TabelaListaProps<TData extends Record<string, any>> {
    * qualquer outro filtro já aplicado (ex. "/vendas?situacao=aprovada").
    */
   paginacaoServidor?: { pagina: number; totalPaginas: number; totalRegistros: number; tamanhoPagina: number; hrefBase: string };
+  /**
+   * Seleção múltipla + barra de ação contextual — sempre por página (em
+   * modo `paginacaoServidor`, só as linhas da página atual estão em
+   * memória; "selecionar tudo" abrange só o que está na tela). A coluna de
+   * checkbox fica fora do `<Link>` de `linkPara` (clique nela nunca
+   * navega), então funciona junto com as duas variantes de linha clicável.
+   */
+  selecao?: {
+    idDaLinha: (linha: TData) => string;
+    selecionados: Set<string>;
+    onSelecionadosChange: (proximo: Set<string>) => void;
+    /** Renderiza a barra fixa no rodapé — recebe os ids selecionados e uma função pra limpar a seleção depois de concluir a ação. */
+    barraAcao: (idsSelecionados: string[], limparSelecao: () => void) => ReactNode;
+  };
 }
 
 export function TabelaLista<TData extends Record<string, any>>({
@@ -234,6 +250,7 @@ export function TabelaLista<TData extends Record<string, any>>({
   linkPara,
   hoverLinha = true,
   paginacaoServidor,
+  selecao,
 }: TabelaListaProps<TData>) {
   const buscaHabilitada = busca && !paginacaoServidor;
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -246,7 +263,7 @@ export function TabelaLista<TData extends Record<string, any>>({
     pageSize: paginacaoServidor ? Number.MAX_SAFE_INTEGER : tamanhoPagina,
   });
 
-  const colunasFinais: ColunaLista<TData>[] = acoes && !linkPara
+  let colunasFinais: ColunaLista<TData>[] = acoes && !linkPara
     ? [
         ...columns,
         {
@@ -271,6 +288,10 @@ export function TabelaLista<TData extends Record<string, any>>({
       ]
     : columns;
 
+  if (selecao) {
+    colunasFinais = [{ id: "_selecao", header: "", enableSorting: false, cell: () => null }, ...colunasFinais];
+  }
+
   const table = useAppTable({
     data,
     columns: colunasFinais,
@@ -283,6 +304,27 @@ export function TabelaLista<TData extends Record<string, any>>({
   const linhas = table.getRowModel().rows;
   const totalFiltrado = paginacaoServidor ? paginacaoServidor.totalRegistros : table.getFilteredRowModel().rows.length;
   const totalPaginas = paginacaoServidor ? paginacaoServidor.totalPaginas : table.getPageCount();
+
+  const idsPaginaAtual = selecao ? linhas.map((r) => selecao.idDaLinha(r.original)) : [];
+  const todosDaPaginaSelecionados = selecao ? idsPaginaAtual.length > 0 && idsPaginaAtual.every((id) => selecao.selecionados.has(id)) : false;
+  const algumDaPaginaSelecionado = selecao ? idsPaginaAtual.some((id) => selecao.selecionados.has(id)) : false;
+  const primeiraColunaDadoIndex = selecao ? 1 : 0;
+
+  function alternarTodosDaPagina() {
+    if (!selecao) return;
+    const proximo = new Set(selecao.selecionados);
+    if (todosDaPaginaSelecionados) idsPaginaAtual.forEach((id) => proximo.delete(id));
+    else idsPaginaAtual.forEach((id) => proximo.add(id));
+    selecao.onSelecionadosChange(proximo);
+  }
+
+  function alternarLinha(id: string) {
+    if (!selecao) return;
+    const proximo = new Set(selecao.selecionados);
+    if (proximo.has(id)) proximo.delete(id);
+    else proximo.add(id);
+    selecao.onSelecionadosChange(proximo);
+  }
 
   return (
     <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-card">
@@ -312,6 +354,17 @@ export function TabelaLista<TData extends Record<string, any>>({
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {
+                  if (header.column.id === "_selecao") {
+                    return (
+                      <th key={header.id} className="w-10 border-b border-border px-3 py-3">
+                        <Checkbox
+                          checked={todosDaPaginaSelecionados ? true : algumDaPaginaSelecionado ? "indeterminate" : false}
+                          onCheckedChange={alternarTodosDaPagina}
+                          aria-label="Selecionar todas as linhas desta página"
+                        />
+                      </th>
+                    );
+                  }
                   const podeOrdenar = !paginacaoServidor && header.column.getCanSort();
                   const ordenacao = header.column.getIsSorted();
                   const numerica = header.column.columnDef.meta?.numerica;
@@ -346,32 +399,57 @@ export function TabelaLista<TData extends Record<string, any>>({
                 </td>
               </tr>
             ) : (
-              linhas.map((row) => (
-                <tr key={row.id} className={cn("group border-b border-border last:border-none", hoverLinha && "hover:bg-muted/40", linkPara && "cursor-pointer")}>
-                  {row.getAllCells().map((cell, i) => (
-                    <td
-                      key={cell.id}
-                      className={cn(
-                        "align-middle",
-                        cell.column.columnDef.meta?.numerica && "text-right",
-                        i === 0 && "relative",
-                        linkPara ? "p-0" : "px-4.5 py-3.5",
-                      )}
-                    >
-                      {i === 0 && (
-                        <span className="absolute inset-y-0 left-0 w-[3px] scale-y-0 rounded-full bg-primary transition-transform group-hover:scale-y-100" />
-                      )}
-                      {linkPara ? (
-                        <Link href={linkPara(row.original)} className="block px-4.5 py-3.5">
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                        </Link>
-                      ) : (
-                        flexRender(cell.column.columnDef.cell, cell.getContext())
-                      )}
-                    </td>
-                  ))}
-                </tr>
-              ))
+              linhas.map((row) => {
+                const idLinha = selecao?.idDaLinha(row.original);
+                const linhaSelecionada = idLinha !== undefined && selecao!.selecionados.has(idLinha);
+                return (
+                  <tr
+                    key={row.id}
+                    className={cn(
+                      "group border-b border-border last:border-none",
+                      (hoverLinha || linhaSelecionada) && "hover:bg-muted/40",
+                      linhaSelecionada && "bg-muted/30",
+                      linkPara && "cursor-pointer",
+                    )}
+                  >
+                    {row.getAllCells().map((cell, i) => {
+                      if (cell.column.id === "_selecao") {
+                        return (
+                          <td key={cell.id} className="w-10 px-3 py-3.5 align-middle">
+                            <Checkbox
+                              checked={linhaSelecionada}
+                              onCheckedChange={() => idLinha && alternarLinha(idLinha)}
+                              aria-label="Selecionar esta linha"
+                            />
+                          </td>
+                        );
+                      }
+                      return (
+                        <td
+                          key={cell.id}
+                          className={cn(
+                            "align-middle",
+                            cell.column.columnDef.meta?.numerica && "text-right",
+                            i === primeiraColunaDadoIndex && "relative",
+                            linkPara ? "p-0" : "px-4.5 py-3.5",
+                          )}
+                        >
+                          {i === primeiraColunaDadoIndex && (
+                            <span className="absolute inset-y-0 left-0 w-[3px] scale-y-0 rounded-full bg-primary transition-transform group-hover:scale-y-100" />
+                          )}
+                          {linkPara ? (
+                            <Link href={linkPara(row.original)} className="block px-4.5 py-3.5">
+                              {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                            </Link>
+                          ) : (
+                            flexRender(cell.column.columnDef.cell, cell.getContext())
+                          )}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>
@@ -418,6 +496,29 @@ export function TabelaLista<TData extends Record<string, any>>({
             >
               <CaretRight size={12} weight="bold" />
             </button>
+          </div>
+        </div>
+      )}
+
+      {selecao && selecao.selecionados.size > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border bg-muted/40 px-4.5 py-3">
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="size-6.5"
+              onClick={() => selecao.onSelecionadosChange(new Set())}
+              aria-label="Limpar seleção"
+            >
+              <X size={14} />
+            </Button>
+            <span className="text-xs font-semibold text-foreground">
+              {selecao.selecionados.size} {selecao.selecionados.size === 1 ? "selecionada" : "selecionadas"}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            {selecao.barraAcao(Array.from(selecao.selecionados), () => selecao.onSelecionadosChange(new Set()))}
           </div>
         </div>
       )}

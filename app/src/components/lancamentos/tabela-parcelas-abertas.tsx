@@ -1,10 +1,14 @@
 "use client";
 
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { EstadoVazio } from "@/components/ui/estado-vazio";
 import { TabelaLista, criarColunaLista } from "@/components/tabela/tabela-lista";
 import { formatarMoeda } from "@/lib/formatacao";
 import { ROTULO_STATUS_PARCELA, COR_STATUS_PARCELA } from "@/lib/status-parcela";
+import { notificarResultado } from "@/lib/feedback/notificar-resultado";
+import { cancelarParcelasEmLoteAction } from "@/lib/contabil/ciclo-vida-parcela-actions";
 import { cn } from "@/lib/utils";
 
 type BaixaResumo = { valor_pago: number; estornado_em: string | null };
@@ -59,15 +63,75 @@ const colunas = helper.columns([
   }),
 ]);
 
+// Barra de ação da seleção em lote — só cancela parcelas que ainda estão
+// canceláveis (PENDENTE/RENEGOCIADO); a acaoLoteAction já rejeita as que
+// não estiverem (ex.: já tem baixa), reportado por linha em vez de travar
+// a seleção inteira no primeiro erro.
+function BarraCancelarEmLote({ parcelaIds, limpar }: { parcelaIds: string[]; limpar: () => void }) {
+  const [motivo, setMotivo] = useState("");
+  const [enviando, setEnviando] = useState(false);
+  const [mostrarCampo, setMostrarCampo] = useState(false);
+
+  async function confirmar() {
+    if (!motivo.trim()) return;
+    setEnviando(true);
+    const resultado = await cancelarParcelasEmLoteAction(parcelaIds, motivo);
+    setEnviando(false);
+    if ("erro" in resultado) {
+      notificarResultado(resultado, "");
+      return;
+    }
+    notificarResultado(
+      { sucesso: true },
+      resultado.falhas.length > 0
+        ? `${resultado.canceladas} cancelada(s), ${resultado.falhas.length} não puderam ser canceladas.`
+        : `${resultado.canceladas} parcela(s) cancelada(s).`,
+    );
+    setMotivo("");
+    setMostrarCampo(false);
+    limpar();
+  }
+
+  if (!mostrarCampo) {
+    return (
+      <Button type="button" variant="destructive" size="sm" onClick={() => setMostrarCampo(true)}>
+        Cancelar selecionadas
+      </Button>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      <input
+        autoFocus
+        value={motivo}
+        onChange={(e) => setMotivo(e.target.value)}
+        placeholder="Motivo do cancelamento..."
+        className="h-8 w-56 rounded-lg border border-border bg-card px-2.5 text-xs text-foreground outline-none focus:border-primary"
+      />
+      <Button type="button" variant="destructive" size="sm" disabled={enviando || !motivo.trim()} onClick={confirmar}>
+        {enviando ? "Cancelando..." : "Confirmar"}
+      </Button>
+      <Button type="button" variant="ghost" size="sm" disabled={enviando} onClick={() => setMostrarCampo(false)}>
+        Voltar
+      </Button>
+    </div>
+  );
+}
+
 // Cada linha navega pra página cheia de detalhe da parcela (ações de dar
 // baixa, renegociar, histórico e cancelar vivem lá, não mais num dropdown
 // aqui na tabela — ver docs/mapeamento-conta-azul-produto-ui.md §2.1).
+// `acaoLote`: seleção múltipla + "Cancelar selecionadas" (Fatia 5 do
+// dossiê UX) — só faz sentido nas telas onde a situação "Em aberto" é o
+// filtro comum (Contas a Pagar/Receber); quem chama decide.
 export function TabelaParcelasAbertas({
   parcelas,
   textoVazio,
   caminhoBase,
   titulo = "Parcelas",
   paginacao,
+  acaoLote = false,
 }: {
   parcelas: ParcelaAberta[];
   textoVazio: string;
@@ -75,7 +139,10 @@ export function TabelaParcelasAbertas({
   titulo?: string;
   /** Paginação real no servidor — `parcelas` já é só a página atual. Ver `paginacaoServidor` em TabelaLista. */
   paginacao?: { pagina: number; totalPaginas: number; totalRegistros: number; tamanhoPagina: number; hrefBase: string };
+  acaoLote?: boolean;
 }) {
+  const [selecionados, setSelecionados] = useState<Set<string>>(new Set());
+
   if (parcelas.length === 0 && !paginacao) {
     return <EstadoVazio texto={textoVazio} />;
   }
@@ -101,6 +168,16 @@ export function TabelaParcelasAbertas({
       textoVazio={textoVazio}
       linkPara={(p) => `/${caminhoBase}/${p.id}`}
       paginacaoServidor={paginacao}
+      selecao={
+        acaoLote
+          ? {
+              idDaLinha: (p) => p.id,
+              selecionados,
+              onSelecionadosChange: setSelecionados,
+              barraAcao: (ids, limpar) => <BarraCancelarEmLote parcelaIds={ids} limpar={limpar} />,
+            }
+          : undefined
+      }
     />
   );
 }

@@ -56,6 +56,35 @@ export async function cancelarParcelaAction(formData: FormData): Promise<Resulta
   return { sucesso: true };
 }
 
+// Fatia 5 do dossiê UX (Ações em lote) — mesma cancelarParcela de sempre,
+// chamada em sequência pra cada id selecionado; motivo único pra todas.
+// Retorna quantas cancelaram e quais falharam (ex.: já tinha baixa
+// registrada entre a seleção e o clique) em vez de parar na primeira
+// falha, pra não deixar metade da seleção sem tentar.
+export async function cancelarParcelasEmLoteAction(
+  parcelaIds: string[],
+  motivo: string,
+): Promise<{ erro: string } | { canceladas: number; falhas: { parcelaId: string; erro: string }[] }> {
+  const motivoLimpo = motivo.trim();
+  if (parcelaIds.length === 0 || !motivoLimpo) return { erro: "Selecione ao menos uma parcela e informe o motivo do cancelamento." };
+
+  const contexto = await obterUsuarioETenantAtual();
+  if ("erro" in contexto) return { erro: contexto.erro };
+
+  const supabase = await createClient();
+  let canceladas = 0;
+  const falhas: { parcelaId: string; erro: string }[] = [];
+
+  for (const parcelaId of parcelaIds) {
+    const resultado = await cancelarParcela(supabase, { tenant_id: contexto.tenantId, parcela_id: parcelaId, motivo: motivoLimpo });
+    if ("erro" in resultado) falhas.push({ parcelaId, erro: resultado.erro });
+    else canceladas++;
+  }
+
+  revalidarPaginasFinanceiras();
+  return { canceladas, falhas };
+}
+
 export async function renegociarParcelaAction(formData: FormData): Promise<ResultadoAcao> {
   const parcelaId = String(formData.get("parcela_id") ?? "");
   const novaData = String(formData.get("nova_data_vencimento") ?? "");

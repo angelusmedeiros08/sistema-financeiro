@@ -88,6 +88,7 @@ export default async function PaginaContasAPagar({
         parcelas={parcelas ?? []}
         textoVazio="Nenhuma conta a pagar nessa situação."
         caminhoBase="contas-a-pagar"
+        acaoLote={filtro.valor === "aberto" || filtro.valor === "vencido" || filtro.valor === "vence30"}
         paginacao={{
           pagina,
           totalPaginas,
