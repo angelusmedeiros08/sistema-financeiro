@@ -31,7 +31,17 @@ export type ItemImportacao = {
   erro: string | null;
   dadosNormalizados: Json;
   desfeitoEm: string | null;
+  desfeitoPor: string | null;
 };
+
+// "Ativo" = criado com sucesso e ainda não desfeito — usado tanto na
+// página de detalhe quanto na tela de desfazer (Estado 5: contagem 0 com
+// item de sucesso existente = a importação inteira já foi revertida antes).
+// Extraído pra função só depois de ficar duplicado nos dois lugares
+// (achado ao escrever a tela dedicada de desfazer).
+export function contarItensAtivos(itens: Pick<ItemImportacao, "status" | "acao" | "desfeitoEm">[]): number {
+  return itens.filter((it) => it.acao === "criar" && it.status === "sucesso" && !it.desfeitoEm).length;
+}
 
 // Cria o lote e um item "pendente" por linha, na abertura do passo de
 // execução — antes de qualquer commit rodar. É isso que dá rastro
@@ -198,7 +208,7 @@ export async function buscarImportacao(
 
   const { data: itens } = await supabase
     .from("importacoes_itens")
-    .select("id, linha_numero, status, acao, pessoa_id, erro, dados_normalizados, desfeito_em")
+    .select("id, linha_numero, status, acao, pessoa_id, erro, dados_normalizados, desfeito_em, desfeito_por")
     .eq("importacao_id", params.importacao_id)
     .order("linha_numero");
 
@@ -225,6 +235,7 @@ export async function buscarImportacao(
       erro: it.erro,
       dadosNormalizados: it.dados_normalizados,
       desfeitoEm: it.desfeito_em,
+      desfeitoPor: it.desfeito_por,
     })),
   };
 }
@@ -239,7 +250,7 @@ export async function buscarItensParaRetomar(
 ): Promise<ItemImportacao[]> {
   const { data } = await supabase
     .from("importacoes_itens")
-    .select("id, linha_numero, status, acao, pessoa_id, erro, dados_normalizados, desfeito_em")
+    .select("id, linha_numero, status, acao, pessoa_id, erro, dados_normalizados, desfeito_em, desfeito_por")
     .eq("importacao_id", params.importacao_id)
     .eq("tenant_id", params.tenant_id)
     .in("status", ["erro", "pendente"])
@@ -253,6 +264,7 @@ export async function buscarItensParaRetomar(
     pessoaId: it.pessoa_id,
     erro: it.erro,
     desfeitoEm: it.desfeito_em,
+    desfeitoPor: it.desfeito_por,
     dadosNormalizados: it.dados_normalizados,
   }));
 }
@@ -469,7 +481,7 @@ export async function desfazerImportacaoPessoas(
       .in("pessoa_id", idsRemovidosComSucesso);
     const itemIds = (itensCriados ?? []).map((i) => i.id);
     if (itemIds.length > 0) {
-      await supabase.from("importacoes_itens").update({ desfeito_em: new Date().toISOString() }).in("id", itemIds);
+      await supabase.from("importacoes_itens").update({ desfeito_em: new Date().toISOString(), desfeito_por: params.criado_por }).in("id", itemIds);
     }
   }
 

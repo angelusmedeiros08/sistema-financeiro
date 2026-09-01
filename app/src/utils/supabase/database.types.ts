@@ -891,6 +891,7 @@ export type Database = {
           criado_em: string
           dados_normalizados: Json
           desfeito_em: string | null
+          desfeito_por: string | null
           erro: string | null
           evento_financeiro_id: string | null
           id: string
@@ -905,6 +906,7 @@ export type Database = {
           criado_em?: string
           dados_normalizados: Json
           desfeito_em?: string | null
+          desfeito_por?: string | null
           erro?: string | null
           evento_financeiro_id?: string | null
           id?: string
@@ -919,6 +921,7 @@ export type Database = {
           criado_em?: string
           dados_normalizados?: Json
           desfeito_em?: string | null
+          desfeito_por?: string | null
           erro?: string | null
           evento_financeiro_id?: string | null
           id?: string
@@ -929,6 +932,13 @@ export type Database = {
           tenant_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "importacoes_itens_desfeito_por_fkey"
+            columns: ["desfeito_por"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "importacoes_itens_evento_financeiro_id_fkey"
             columns: ["evento_financeiro_id"]

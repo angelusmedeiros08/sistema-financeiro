@@ -353,7 +353,7 @@ export async function desfazerImportacaoFinanceira(
 
     await supabase
       .from("importacoes_itens")
-      .update({ desfeito_em: new Date().toISOString(), evento_financeiro_id: eventoFinanceiroIdFinal })
+      .update({ desfeito_em: new Date().toISOString(), desfeito_por: params.criado_por, evento_financeiro_id: eventoFinanceiroIdFinal })
       .eq("id", item.item_id);
   }
 
