@@ -77,12 +77,20 @@ export function DocumentoComercialForm({
   const [produtos, setProdutos] = useState<ProdutoOpcaoComercial[]>(produtosIniciais);
   const [itens, setItens] = useState<LinhaItemComercial[]>(() => (dadosIniciais?.itens.length ? dadosIniciais.itens : [novaLinha()]));
   const dataEmissaoInicial = dadosIniciais?.dataEmissao ?? new Date().toISOString().slice(0, 10);
+  // Gerada uma vez por visita à página — o modo "criar" sempre redireciona
+  // no sucesso (nunca reseta pra tentar de novo na mesma tela), então não
+  // precisa remontar/regenerar como em evento-financeiro-form.tsx. Reenvio
+  // de rede ou duplo clique no mesmo carregamento manda a mesma chave;
+  // criarVenda/criarOrcamento devolvem o registro já criado em vez de
+  // duplicar (Fatia 1 de docs/superpowers/specs/2026-08-31-estados-de-erro-design.md).
+  const [chaveIdempotencia] = useState(() => crypto.randomUUID());
 
   const [, formAction, pendente] = useActionState(async (_: typeof estadoInicial, formData: FormData) => {
     formData.set(
       "itens_json",
       JSON.stringify(itens.map((i) => ({ produtoServicoId: i.produtoServicoId, quantidade: i.quantidade, precoUnitario: i.precoUnitario }))),
     );
+    if (modo === "criar") formData.set("import_key", chaveIdempotencia);
 
     const resultado = modo === "criar" ? await acaoCriar(formData) : await acaoEditar(idDocumento!, formData);
     notificarResultado(resultado, mensagemSucesso);

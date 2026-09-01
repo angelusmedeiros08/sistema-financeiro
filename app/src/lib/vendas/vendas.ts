@@ -131,12 +131,29 @@ export async function criarVenda(
     itens: ItemVendaEntrada[];
     criadoPor?: string;
     direto?: boolean;
+    // Preenchido só pelo formulário (documento-comercial-form.tsx), gerado
+    // uma vez por sessão de preenchimento — dá idempotência: reenvio de
+    // rede ou duplo clique com a mesma chave retorna a venda já criada em
+    // vez de duplicar (mesmo padrão de import_key já usado em
+    // criarEventoFinanceiro/darBaixa, ver Fatia 1 de
+    // docs/superpowers/specs/2026-08-31-estados-de-erro-design.md).
+    importKey?: string;
   },
 ): Promise<{ id: string } | { erro: string }> {
   if (!params.pessoaId) return { erro: "Selecione o cliente." };
   if (!Number.isFinite(params.numeroParcelas) || params.numeroParcelas < 1) return { erro: "Número de parcelas precisa ser pelo menos 1." };
   const erroItens = validarItensComerciais(params.itens);
   if (erroItens) return { erro: erroItens };
+
+  if (params.importKey) {
+    const { data: existente } = await supabase
+      .from("vendas")
+      .select("id")
+      .eq("tenant_id", params.tenantId)
+      .eq("import_key", params.importKey)
+      .maybeSingle();
+    if (existente) return { id: existente.id };
+  }
 
   const { data: venda, error } = await supabase
     .from("vendas")
@@ -149,6 +166,7 @@ export async function criarVenda(
       primeiro_vencimento: params.primeiroVencimento || null,
       observacoes: params.observacoes?.trim() || null,
       criado_por: params.criadoPor,
+      import_key: params.importKey || null,
     })
     .select("id")
     .single();

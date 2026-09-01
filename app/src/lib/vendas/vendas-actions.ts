@@ -31,6 +31,7 @@ export async function criarVendaAction(formData: FormData): Promise<ResultadoAca
     itens: lerItensComerciaisJson(formData),
     criadoPor: contexto.user.id,
     direto: acao === "direto",
+    importKey: String(formData.get("import_key") ?? "") || undefined,
   });
 
   if ("erro" in resultado) return resultado;

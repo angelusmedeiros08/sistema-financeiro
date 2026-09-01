@@ -1218,6 +1218,7 @@ export type Database = {
           data_emissao: string
           forma_pagamento_id: string | null
           id: string
+          import_key: string | null
           motivo_recusa: string | null
           numero: number
           numero_parcelas: number
@@ -1236,6 +1237,7 @@ export type Database = {
           data_emissao: string
           forma_pagamento_id?: string | null
           id?: string
+          import_key?: string | null
           motivo_recusa?: string | null
           numero?: number
           numero_parcelas?: number
@@ -1254,6 +1256,7 @@ export type Database = {
           data_emissao?: string
           forma_pagamento_id?: string | null
           id?: string
+          import_key?: string | null
           motivo_recusa?: string | null
           numero?: number
           numero_parcelas?: number
@@ -2203,6 +2206,7 @@ export type Database = {
           evento_financeiro_id: string | null
           forma_pagamento_id: string | null
           id: string
+          import_key: string | null
           numero: number
           numero_parcelas: number
           observacoes: string | null
@@ -2218,6 +2222,7 @@ export type Database = {
           evento_financeiro_id?: string | null
           forma_pagamento_id?: string | null
           id?: string
+          import_key?: string | null
           numero?: number
           numero_parcelas?: number
           observacoes?: string | null
@@ -2233,6 +2238,7 @@ export type Database = {
           evento_financeiro_id?: string | null
           forma_pagamento_id?: string | null
           id?: string
+          import_key?: string | null
           numero?: number
           numero_parcelas?: number
           observacoes?: string | null

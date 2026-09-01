@@ -59,6 +59,7 @@ export async function criarOrcamentoAction(formData: FormData): Promise<Resultad
     ...dados,
     itens: lerItensComerciaisJson(formData),
     criadoPor: contexto.user.id,
+    importKey: String(formData.get("import_key") ?? "") || undefined,
   });
 
   if ("erro" in resultado) return resultado;

@@ -161,12 +161,25 @@ export async function criarOrcamento(
     observacoes?: string | null;
     itens: ItemOrcamentoEntrada[];
     criadoPor?: string;
+    // Ver o mesmo parâmetro em criarVenda (vendas.ts) — idêntica razão de
+    // ser, documento-comercial-form.tsx gera a chave pros dois.
+    importKey?: string;
   },
 ): Promise<{ id: string } | { erro: string }> {
   if (!params.pessoaId) return { erro: "Selecione o cliente." };
   if (!Number.isFinite(params.numeroParcelas) || params.numeroParcelas < 1) return { erro: "Número de parcelas precisa ser pelo menos 1." };
   const erroItens = validarItensComerciais(params.itens);
   if (erroItens) return { erro: erroItens };
+
+  if (params.importKey) {
+    const { data: existente } = await supabase
+      .from("orcamentos_comerciais")
+      .select("id")
+      .eq("tenant_id", params.tenantId)
+      .eq("import_key", params.importKey)
+      .maybeSingle();
+    if (existente) return { id: existente.id };
+  }
 
   const { data: orcamento, error } = await supabase
     .from("orcamentos_comerciais")
@@ -179,6 +192,7 @@ export async function criarOrcamento(
       primeiro_vencimento: params.primeiroVencimento || null,
       observacoes: params.observacoes?.trim() || null,
       criado_por: params.criadoPor,
+      import_key: params.importKey || null,
     })
     .select("id")
     .single();
