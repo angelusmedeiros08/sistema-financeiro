@@ -1,14 +1,14 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { ArrowRight } from "@phosphor-icons/react/dist/ssr";
 import { createClient } from "@/utils/supabase/server";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
-import { buscarImportacao } from "@/lib/importacoes/importacoes";
+import { buscarImportacao, contarItensAtivos } from "@/lib/importacoes/importacoes";
 import { formatarDataHoraBrasil } from "@/lib/formatacao";
 import type { Json } from "@/utils/supabase/database.types";
 import { BadgeStatusImportacao } from "../badge-status";
 import { RetomarPainel } from "./retomar-painel";
-import { DesfazerPainel } from "./desfazer-painel";
-import { DesfazerPainelFinanceiro } from "./desfazer-painel-financeiro";
+import { BannerDesfeita } from "./desfazer/banner-desfeita";
 import { TabelaErrosImportacao } from "./tabela-erros";
 
 const ROTULO_TIPO: Record<string, string> = {
@@ -45,8 +45,13 @@ export default async function PaginaDetalheImportacao({ params }: { params: Prom
   // (achado em revisão de código).
   const podeRetomar = contagemPendente > 0;
 
+  // Ação de desfazer (Fatia 4 do refino do módulo de Importação) só existe
+  // hoje pros tipos pessoas/financeiro — produtos fica de fora de
+  // propósito (gap pré-existente, fora de escopo, ver spec).
   const itensCriadosSucesso = itens.filter((it) => it.acao === "criar" && it.status === "sucesso");
-  const contagemAtiva = itensCriadosSucesso.filter((it) => !it.desfeitoEm).length;
+  const podeDesfazer = itensCriadosSucesso.length > 0 && (importacao.tipo === "pessoas" || importacao.tipo === "financeiro");
+  const jaFoiDesfeita = podeDesfazer && contarItensAtivos(itens) === 0;
+  const quandoDesfez = jaFoiDesfeita ? (itensCriadosSucesso.find((it) => it.desfeitoEm)?.desfeitoEm ?? null) : null;
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-6">
@@ -83,11 +88,27 @@ export default async function PaginaDetalheImportacao({ params }: { params: Prom
         </div>
       </div>
 
-      {(podeRetomar || itensCriadosSucesso.length > 0) && (
-        <div className="flex flex-wrap items-start gap-6 rounded-2xl bg-card shadow-card p-4">
-          {podeRetomar && <RetomarPainel importacaoId={importacao.id} contagemPendente={contagemPendente} />}
-          {itensCriadosSucesso.length > 0 && importacao.tipo === "financeiro" && <DesfazerPainelFinanceiro importacaoId={importacao.id} />}
-          {itensCriadosSucesso.length > 0 && importacao.tipo === "pessoas" && <DesfazerPainel importacaoId={importacao.id} contagemAtiva={contagemAtiva} />}
+      {podeRetomar && (
+        <div className="rounded-2xl bg-card shadow-card p-4">
+          <RetomarPainel importacaoId={importacao.id} contagemPendente={contagemPendente} />
+        </div>
+      )}
+
+      {podeDesfazer && (
+        <div className="rounded-2xl bg-card shadow-card p-4">
+          {jaFoiDesfeita && quandoDesfez ? (
+            <Link href={`/importacao/historico/${importacao.id}/desfazer`} className="hover:opacity-80">
+              <BannerDesfeita agora={false} quando={quandoDesfez} compacto />
+            </Link>
+          ) : (
+            <Link
+              href={`/importacao/historico/${importacao.id}/desfazer`}
+              className="flex items-center gap-1.5 text-sm font-semibold text-destructive hover:opacity-80"
+            >
+              Desfazer importação
+              <ArrowRight size={14} weight="bold" />
+            </Link>
+          )}
         </div>
       )}
 
