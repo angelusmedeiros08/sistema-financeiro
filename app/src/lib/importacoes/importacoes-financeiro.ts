@@ -146,7 +146,7 @@ export async function preverDesfazerImportacaoFinanceira(
 ): Promise<PreviaDesfazerFinanceira | { erro: string }> {
   const { data: itens, error: erroItens } = await supabase
     .from("importacoes_itens")
-    .select("id, evento_financeiro_id, criado_em")
+    .select("id, evento_financeiro_id, atualizado_em")
     .eq("importacao_id", params.importacao_id)
     .eq("tenant_id", params.tenant_id)
     .eq("status", "sucesso")
@@ -185,16 +185,22 @@ export async function preverDesfazerImportacaoFinanceira(
       // atualiza a parcela ANTES desse registro (mesmo commit da linha),
       // então nunca entra como modificação alheia à própria importação.
       // Sem essa referência, toda linha com baixa automática caía em
-      // "modificado" só por causa do próprio timestamp do import (achado
-      // testando ao vivo — nenhum item quitado por planilha conseguia ser
-      // revertido sem o checkbox "incluir modificados", mesmo sem ninguém
-      // ter tocado nele depois). Baixa (quitado ou parcial) em si não
-      // protege mais contra reversão — só modificação humana genuína
-      // protege, porque preserva uma correção deliberada do operador.
-      const itemCriadoEm = new Date(item.criado_em).getTime();
+      // "modificado" só por causa do próprio timestamp do import. Usa
+      // `item.atualizado_em` (não `criado_em`): o item é criado "pendente"
+      // em lote, ANTES de qualquer linha ser processada, então
+      // `criado_em` sempre antecede a criação do evento — comparar contra
+      // ele classificava TODO item de TODA importação financeira como
+      // "modificado", mesmo sem nenhum humano ter tocado nele (achado ao
+      // vivo: reimportar o mesmo arquivo reaproveitava, via import_key, um
+      // evento que o "desfazer" anterior nunca tinha conseguido apagar —
+      // porque nunca entrava no caminho de exclusão de item "puro").
+      // `atualizado_em` só muda quando o item de fato termina de ser
+      // processado (marcado sucesso/erro), que sempre acontece DEPOIS do
+      // evento e da baixa automática do mesmo commit.
+      const itemAtualizadoEm = new Date(item.atualizado_em).getTime();
       const parcelasDoEvento = (parcelas ?? []).filter((p) => p.evento_financeiro_id === eventoId);
       const modificadoDepoisDoImport =
-        new Date(evento.atualizado_em).getTime() > itemCriadoEm || parcelasDoEvento.some((p) => new Date(p.atualizado_em).getTime() > itemCriadoEm);
+        new Date(evento.atualizado_em).getTime() > itemAtualizadoEm || parcelasDoEvento.some((p) => new Date(p.atualizado_em).getTime() > itemAtualizadoEm);
 
       if (modificadoDepoisDoImport) {
         protegidosPorModificacao.push(registro);

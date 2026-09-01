@@ -888,6 +888,7 @@ export type Database = {
       importacoes_itens: {
         Row: {
           acao: Database["public"]["Enums"]["acao_item_importacao"]
+          atualizado_em: string
           criado_em: string
           dados_normalizados: Json
           desfeito_em: string | null
@@ -903,6 +904,7 @@ export type Database = {
         }
         Insert: {
           acao: Database["public"]["Enums"]["acao_item_importacao"]
+          atualizado_em?: string
           criado_em?: string
           dados_normalizados: Json
           desfeito_em?: string | null
@@ -918,6 +920,7 @@ export type Database = {
         }
         Update: {
           acao?: Database["public"]["Enums"]["acao_item_importacao"]
+          atualizado_em?: string
           criado_em?: string
           dados_normalizados?: Json
           desfeito_em?: string | null
