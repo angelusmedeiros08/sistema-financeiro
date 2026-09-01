@@ -4,6 +4,8 @@ import { createClient } from "@/utils/supabase/server";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
 import { lerParametrosRelatorio } from "@/lib/relatorios/periodo";
 import { buscarAnaliseComparativa, type TipoAnaliseComparativa } from "@/lib/relatorios/analises-comparativas";
+import { limitesDoMes } from "@/lib/relatorios/regime";
+import { montarHrefLancamentosSemDimensao } from "@/lib/relatorios/drill-down";
 import { RelatoriosSubNav } from "../sub-nav";
 import { RelatoriosControles } from "../controles";
 import { ComparativoLinhaAnotada } from "@/components/relatorios/comparativo-linha-anotada";
@@ -29,8 +31,25 @@ export default async function PaginaRelatoriosComparativos({
   const tipoAtivo = TIPOS.find((t) => t.valor === sp.tipo)?.valor ?? "AH";
   const config = TIPOS.find((t) => t.valor === tipoAtivo)!;
 
+  // Preserva regime/tipo/período na URL — "Voltar pro relatório" a partir
+  // de um ponto clicado cai na mesma visão que a pessoa estava vendo.
+  const qsAtual = new URLSearchParams(Object.entries(sp).filter((par): par is [string, string] => par[1] !== undefined)).toString();
+  const origemHref = `/relatorios/comparativos${qsAtual ? `?${qsAtual}` : ""}`;
+
   const supabase = await createClient();
   const pontos = await buscarAnaliseComparativa(supabase, { tenantId: contexto.tenantId, tipo: tipoAtivo, ...params });
+
+  const hrefsPorPonto = pontos.map((p) => {
+    const { inicio, fim } = limitesDoMes(p.chave);
+    const nomeMesPonto = new Date(inicio + "T00:00:00").toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+    return montarHrefLancamentosSemDimensao({
+      regime: params.regime,
+      periodoInicio: inicio,
+      periodoFim: fim,
+      rotulo: `Movimento de ${nomeMesPonto}`,
+      origemHref,
+    });
+  });
 
   function hrefTipo(valor: string) {
     const p = new URLSearchParams(Object.entries(sp).filter(([, v]) => v !== undefined) as [string, string][]);
@@ -68,7 +87,12 @@ export default async function PaginaRelatoriosComparativos({
         <>
           <div className="rounded-2xl bg-card shadow-card p-5">
             <h2 className="mb-4 font-heading text-sm font-bold text-foreground">{config.rotulo}</h2>
-            <ComparativoLinhaAnotada pontos={pontos} nomeComparacao={config.colunaComparacao} mostrarAnotacao={tipoAtivo !== "YTD"} />
+            <ComparativoLinhaAnotada
+              pontos={pontos}
+              nomeComparacao={config.colunaComparacao}
+              mostrarAnotacao={tipoAtivo !== "YTD"}
+              hrefsPorPonto={hrefsPorPonto}
+            />
           </div>
 
           <ComparativosTabela

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { scaleBand, scaleLinear } from "@visx/scale";
 import { BarGroup } from "@visx/shape";
 import { Group } from "@visx/group";
@@ -8,7 +9,9 @@ import { GridRows } from "@visx/grid";
 import { ParentSize } from "@visx/responsive";
 import { useTooltip, useTooltipInPortal, defaultStyles } from "@visx/tooltip";
 import { localPoint } from "@visx/event";
+import { Table } from "@phosphor-icons/react";
 import { formatarMoeda } from "@/lib/formatacao";
+import { cn } from "@/lib/utils";
 
 export type SerieComparativo = { chave: string; nome: string; cor: string };
 
@@ -34,16 +37,21 @@ function GraficoInterno({
   dados,
   eixoX,
   series,
+  ocultas,
+  titulo,
   largura,
   altura,
 }: {
   dados: Record<string, number | string>[];
   eixoX: string;
   series: SerieComparativo[];
+  ocultas: Set<string>;
+  titulo: string;
   largura: number;
   altura: number;
 }) {
-  const chaves = series.map((s) => s.chave);
+  const seriesVisiveis = series.filter((s) => !ocultas.has(s.chave));
+  const chaves = seriesVisiveis.map((s) => s.chave);
   const { tooltipData, tooltipLeft, tooltipTop, tooltipOpen, showTooltip, hideTooltip } = useTooltip<TooltipDado>();
   const { containerRef, TooltipInPortal } = useTooltipInPortal({ scroll: true, detectBounds: true });
 
@@ -62,7 +70,7 @@ function GraficoInterno({
 
   return (
     <div ref={containerRef} className="relative">
-      <svg width={largura} height={altura}>
+      <svg width={largura} height={altura} role="img" aria-label={titulo}>
         <Group left={MARGEM.left} top={MARGEM.top}>
           <GridRows scale={yScale} width={larguraInterna} stroke="var(--border)" />
 
@@ -105,7 +113,7 @@ function GraficoInterno({
                         height={altura}
                         fill={bar.color}
                         rx={3}
-                        style={{ cursor: "pointer", transition: "opacity 0.15s ease" }}
+                        style={{ transition: "opacity 0.15s ease" }}
                         onMouseMove={(evento) => {
                           const coords = localPoint(evento) ?? { x: 0, y: 0 };
                           const serie = series.find((s) => s.chave === bar.key);
@@ -153,27 +161,107 @@ export function ComparativoBarras({
   dados,
   eixoX,
   series,
+  titulo,
   altura = 300,
 }: {
   dados: Record<string, number | string>[];
   eixoX: string;
   series: SerieComparativo[];
+  titulo?: string;
   altura?: number;
 }) {
+  const [ocultas, setOcultas] = useState<Set<string>>(new Set());
+  const [comoTabela, setComoTabela] = useState(false);
+
+  function aoClicar(chave: string) {
+    setOcultas((atual) => {
+      const proximo = new Set(atual);
+      if (proximo.has(chave)) proximo.delete(chave);
+      else proximo.add(chave);
+      if (proximo.size === series.length) proximo.delete(chave);
+      return proximo;
+    });
+  }
+
+  function aoIsolar(chave: string) {
+    setOcultas((atual) => {
+      const jaIsolada = atual.size === series.length - 1 && !atual.has(chave);
+      if (jaIsolada) return new Set();
+      return new Set(series.map((s) => s.chave).filter((c) => c !== chave));
+    });
+  }
+
   return (
     <div>
-      <div style={{ height: altura }}>
-        <ParentSize>
-          {({ width }) => (width > 0 ? <GraficoInterno dados={dados} eixoX={eixoX} series={series} largura={width} altura={altura} /> : null)}
-        </ParentSize>
-      </div>
-      <div className="mt-1 flex flex-wrap items-center gap-4 text-[11px] font-medium text-muted-foreground">
-        {series.map((s) => (
-          <span key={s.chave} className="flex items-center gap-1.5">
-            <span className="size-2 rounded-full" style={{ background: s.cor }} />
-            {s.nome}
-          </span>
-        ))}
+      {comoTabela ? (
+        <div className="overflow-auto rounded-lg border border-border">
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="border-b border-border text-left text-muted-foreground">
+                <th className="px-2 py-1.5 font-medium capitalize">{eixoX}</th>
+                {series.map((s) => (
+                  <th key={s.chave} className="px-2 py-1.5 text-right font-medium">
+                    {s.nome}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {dados.map((d, i) => (
+                <tr key={i} className="border-b border-border last:border-none">
+                  <td className="px-2 py-1.5">{String(d[eixoX])}</td>
+                  {series.map((s) => (
+                    <td key={s.chave} className="px-2 py-1.5 text-right tabular-nums">
+                      {formatarMoeda(Number(d[s.chave] ?? 0))}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div style={{ height: altura }}>
+          <ParentSize>
+            {({ width }) =>
+              width > 0 ? (
+                <GraficoInterno
+                  dados={dados}
+                  eixoX={eixoX}
+                  series={series}
+                  ocultas={ocultas}
+                  titulo={titulo ?? series.map((s) => s.nome).join(" vs. ")}
+                  largura={width}
+                  altura={altura}
+                />
+              ) : null
+            }
+          </ParentSize>
+        </div>
+      )}
+      <div className="mt-1 flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center gap-4 text-[11px] font-medium text-muted-foreground">
+          {series.map((s) => (
+            <button
+              key={s.chave}
+              type="button"
+              onClick={() => aoClicar(s.chave)}
+              onDoubleClick={() => aoIsolar(s.chave)}
+              className={cn("flex items-center gap-1.5 transition-opacity", ocultas.has(s.chave) && "opacity-40")}
+            >
+              <span className="size-2 rounded-full" style={{ background: s.cor }} />
+              {s.nome}
+            </button>
+          ))}
+        </div>
+        <button
+          type="button"
+          onClick={() => setComoTabela((v) => !v)}
+          className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-foreground"
+        >
+          <Table size={12} />
+          {comoTabela ? "Ver gráfico" : "Ver como tabela"}
+        </button>
       </div>
     </div>
   );

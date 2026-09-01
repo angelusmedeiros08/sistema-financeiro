@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { ROTULO_STATUS_PARCELA, COR_STATUS_PARCELA } from "@/lib/status-parcela";
 import { buscarIndicadoresRealizacao, buscarSerieIndicadoresRealizacao, mesAtual } from "@/lib/relatorios/indicadores-gauge";
 import { montarHrefLancamentosSemDimensao } from "@/lib/relatorios/drill-down";
+import { limitesDoMes } from "@/lib/relatorios/regime";
 import { emModoApresentacao } from "@/lib/apresentacao/sessao";
 import { FocoApresentacao } from "@/components/apresentacao/foco-apresentacao";
 import { hojeIsoBrasil } from "@/lib/data-brasil";
@@ -98,6 +99,33 @@ export default async function PaginaPainel({
     origemHref,
   });
 
+  // Um par de hrefs (receitas/despesas) por ponto do FluxoChart — mesmo
+  // mecanismo de montarHrefLancamentosSemDimensao já usado acima, só que
+  // por mês do gráfico em vez de só o mês corrente. limitesDoMes inverte o
+  // chaveIso ("YYYY-MM") de cada ponto pros limites do mês inteiro.
+  const hrefsFluxo = dados.fluxo.map((p) => {
+    const { inicio, fim } = limitesDoMes(p.chaveIso);
+    const nomeMesPonto = new Date(inicio + "T00:00:00").toLocaleDateString("pt-BR", { month: "long" });
+    return {
+      receitas: montarHrefLancamentosSemDimensao({
+        regime: "competencia",
+        tipo: "RECEITA",
+        periodoInicio: inicio,
+        periodoFim: fim,
+        rotulo: `Receitas de ${nomeMesPonto}`,
+        origemHref,
+      }),
+      despesas: montarHrefLancamentosSemDimensao({
+        regime: "competencia",
+        tipo: "DESPESA",
+        periodoInicio: inicio,
+        periodoFim: fim,
+        rotulo: `Despesas de ${nomeMesPonto}`,
+        origemHref,
+      }),
+    };
+  });
+
   // "Foco" — uma apresentação pode apontar pro Painel inteiro OU pra um
   // único cartão/gráfico dele, ampliado, sem o resto do dashboard em volta
   // (feedback do usuário: quer o gráfico em si, não a tela toda). Reusa
@@ -130,7 +158,7 @@ export default async function PaginaPainel({
         {foco === "fluxo-caixa" && (
           <div className="flex min-h-0 w-full flex-1 flex-col rounded-2xl bg-card p-8 shadow-card">
             <h2 className="mb-6 font-heading text-lg font-bold text-foreground">Fluxo de caixa (últimos 6 meses)</h2>
-            <FluxoChart dados={dados.fluxo} apresentacao />
+            <FluxoChart dados={dados.fluxo} hrefsPorMes={hrefsFluxo} apresentacao />
           </div>
         )}
         {foco === "indicadores-realizacao" && (
@@ -284,7 +312,7 @@ export default async function PaginaPainel({
 
         <div className="rounded-2xl bg-card p-5 shadow-card">
           <h2 className="mb-4 font-heading text-sm font-bold text-foreground">Fluxo de caixa (últimos 6 meses)</h2>
-          <FluxoChart dados={dados.fluxo} />
+          <FluxoChart dados={dados.fluxo} hrefsPorMes={hrefsFluxo} />
         </div>
       </div>
 

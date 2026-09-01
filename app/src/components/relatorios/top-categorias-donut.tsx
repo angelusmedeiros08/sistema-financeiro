@@ -131,7 +131,7 @@ export function TopCategoriasDonut({
         <p className="text-sm text-muted-foreground">Nenhuma movimentação no período selecionado.</p>
       ) : (
         <div ref={containerRef} className="relative flex flex-wrap items-center gap-6">
-          <svg viewBox="0 0 200 200" width="170" height="170" className="shrink-0">
+          <svg viewBox="0 0 200 200" width="170" height="170" className="shrink-0" role="img" aria-label={titulo}>
             <Group top={100} left={100}>
               <Pie
                 data={fatias}

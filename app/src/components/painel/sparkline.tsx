@@ -17,7 +17,11 @@ function GraficoInterno({ dados, cor, largura, altura }: { dados: number[]; cor:
   const yScale = scaleLinear<number>({ domain: [Math.min(...dados, 0), Math.max(...dados, 1)], range: [altura - 2, 2] });
 
   return (
-    <svg width={largura} height={altura}>
+    // Decorativo — sempre embutido dentro de um StatCard/IndicadorGauge que
+    // já descreve o valor por texto; dar aria-label aqui narraria a mesma
+    // informação 2x pra leitor de tela. aria-hidden é o tratamento certo,
+    // não um aria-label genérico "tendência" sem valor informativo.
+    <svg width={largura} height={altura} aria-hidden="true">
       <defs>
         <linearGradient id={gradiente} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor={cor} stopOpacity={0.35} />

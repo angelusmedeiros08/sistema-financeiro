@@ -11,7 +11,11 @@ import { GridRows } from "@visx/grid";
 import { useTooltip, useTooltipInPortal, defaultStyles } from "@visx/tooltip";
 import { localPoint } from "@visx/event";
 import type { PontoSerieSaldo } from "@/lib/relatorios/saldo-projetado";
+import { Table } from "@phosphor-icons/react";
 import { formatarMoeda, formatarNumeroAbreviado } from "@/lib/formatacao";
+import { cn } from "@/lib/utils";
+
+type Serie = "realizado" | "projetado";
 
 const MARGEM = { top: 20, right: 12, bottom: 24, left: 52 };
 
@@ -36,7 +40,19 @@ const estiloTooltip = {
 // null (LinePath.defined faz o mesmo que connectNulls={false} do
 // Recharts), linha de referência "hoje" e colchão mínimo desenhadas à
 // mão em vez de <ReferenceLine>.
-function GraficoInterno({ pontos, limiar, largura, altura }: { pontos: PontoSerieSaldo[]; limiar: number; largura: number; altura: number }) {
+function GraficoInterno({
+  pontos,
+  limiar,
+  ocultas,
+  largura,
+  altura,
+}: {
+  pontos: PontoSerieSaldo[];
+  limiar: number;
+  ocultas: Set<Serie>;
+  largura: number;
+  altura: number;
+}) {
   const [hoverIndice, setHoverIndice] = useState<number | null>(null);
   const { tooltipData, tooltipLeft, tooltipTop, tooltipOpen, showTooltip, hideTooltip } = useTooltip<PontoSerieSaldo>();
   const { containerRef, TooltipInPortal } = useTooltipInPortal({ scroll: true, detectBounds: true });
@@ -80,7 +96,7 @@ function GraficoInterno({ pontos, limiar, largura, altura }: { pontos: PontoSeri
 
   return (
     <div ref={containerRef} className="relative">
-      <svg width={largura} height={altura}>
+      <svg width={largura} height={altura} role="img" aria-label="Saldo projetado: realizado até hoje e projeção pros próximos dias.">
         <Group left={MARGEM.left} top={MARGEM.top}>
           <GridRows scale={yScale} width={larguraInterna} stroke="var(--border)" />
 
@@ -100,31 +116,39 @@ function GraficoInterno({ pontos, limiar, largura, altura }: { pontos: PontoSeri
           )}
           <Line from={{ x: xScale(0), y: 0 }} to={{ x: xScale(0), y: alturaInterna }} stroke="var(--muted-foreground)" strokeWidth={1} strokeDasharray="3 3" />
 
-          <LinePath
-            data={pontos}
-            defined={(p) => p.realizado !== null}
-            x={(p) => xScale(p.dias)}
-            y={(p) => yScale(p.realizado ?? 0)}
-            stroke="var(--positivo)"
-            strokeWidth={2.25}
-            curve={curveMonotoneX}
-          />
-          <LinePath
-            data={pontos}
-            defined={(p) => p.projetado !== null}
-            x={(p) => xScale(p.dias)}
-            y={(p) => yScale(p.projetado ?? 0)}
-            stroke="#4C7DF0"
-            strokeWidth={2.25}
-            strokeDasharray="5 4"
-            curve={curveMonotoneX}
-          />
+          {!ocultas.has("realizado") && (
+            <LinePath
+              data={pontos}
+              defined={(p) => p.realizado !== null}
+              x={(p) => xScale(p.dias)}
+              y={(p) => yScale(p.realizado ?? 0)}
+              stroke="var(--positivo)"
+              strokeWidth={2.25}
+              curve={curveMonotoneX}
+            />
+          )}
+          {!ocultas.has("projetado") && (
+            <LinePath
+              data={pontos}
+              defined={(p) => p.projetado !== null}
+              x={(p) => xScale(p.dias)}
+              y={(p) => yScale(p.projetado ?? 0)}
+              stroke="#4C7DF0"
+              strokeWidth={2.25}
+              strokeDasharray="5 4"
+              curve={curveMonotoneX}
+            />
+          )}
 
           {xHover !== null && pontoHover && (
             <>
               <Line from={{ x: xHover, y: 0 }} to={{ x: xHover, y: alturaInterna }} stroke="var(--muted-foreground)" strokeWidth={1} strokeDasharray="3 3" />
-              {pontoHover.realizado !== null && <circle cx={xHover} cy={yScale(pontoHover.realizado)} r={4} fill="var(--positivo)" stroke="var(--card)" strokeWidth={2} />}
-              {pontoHover.projetado !== null && <circle cx={xHover} cy={yScale(pontoHover.projetado)} r={4} fill="#4C7DF0" stroke="var(--card)" strokeWidth={2} />}
+              {!ocultas.has("realizado") && pontoHover.realizado !== null && (
+                <circle cx={xHover} cy={yScale(pontoHover.realizado)} r={4} fill="var(--positivo)" stroke="var(--card)" strokeWidth={2} />
+              )}
+              {!ocultas.has("projetado") && pontoHover.projetado !== null && (
+                <circle cx={xHover} cy={yScale(pontoHover.projetado)} r={4} fill="#4C7DF0" stroke="var(--card)" strokeWidth={2} />
+              )}
             </>
           )}
 
@@ -152,14 +176,14 @@ function GraficoInterno({ pontos, limiar, largura, altura }: { pontos: PontoSeri
         <TooltipInPortal left={tooltipLeft} top={tooltipTop} style={estiloTooltip}>
           <div className="mb-1 font-semibold text-white/60">{rotuloDias(tooltipData.dias)}</div>
           <div className="flex flex-col gap-1">
-            {tooltipData.realizado !== null && (
+            {!ocultas.has("realizado") && tooltipData.realizado !== null && (
               <div className="flex items-center gap-2">
                 <span className="size-2 rounded-full bg-positivo" />
                 <span className="text-white/70">Realizado</span>
                 <span className="ml-auto font-bold tabular-nums">{formatarMoeda(tooltipData.realizado)}</span>
               </div>
             )}
-            {tooltipData.projetado !== null && (
+            {!ocultas.has("projetado") && tooltipData.projetado !== null && (
               <div className="flex items-center gap-2">
                 <span className="size-2 rounded-full bg-[#4C7DF0]" />
                 <span className="text-white/70">Projetado</span>
@@ -174,19 +198,89 @@ function GraficoInterno({ pontos, limiar, largura, altura }: { pontos: PontoSeri
 }
 
 export function SaldoProjetadoChart({ pontos, limiar }: { pontos: PontoSerieSaldo[]; limiar: number }) {
+  const [ocultas, setOcultas] = useState<Set<Serie>>(new Set());
+  const [comoTabela, setComoTabela] = useState(false);
+
+  function aoClicar(serie: Serie) {
+    setOcultas((atual) => {
+      const proximo = new Set(atual);
+      if (proximo.has(serie)) proximo.delete(serie);
+      else proximo.add(serie);
+      if (proximo.size === 2) proximo.delete(serie);
+      return proximo;
+    });
+  }
+
+  function aoIsolar(serie: Serie) {
+    setOcultas((atual) => {
+      const jaIsolada = atual.size === 1 && !atual.has(serie);
+      if (jaIsolada) return new Set();
+      const outras: Serie[] = (["realizado", "projetado"] as Serie[]).filter((s) => s !== serie);
+      return new Set(outras);
+    });
+  }
+
   return (
     <div>
-      <div style={{ height: 220 }}>
-        <ParentSize>{({ width }) => (width > 0 ? <GraficoInterno pontos={pontos} limiar={limiar} largura={width} altura={220} /> : null)}</ParentSize>
-      </div>
-      <div className="mt-1 flex items-center gap-4 text-[11px] font-medium text-muted-foreground">
-        <span className="flex items-center gap-1.5">
-          <span className="h-[2px] w-4 rounded-full bg-positivo" /> Realizado
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="h-[2px] w-4 rounded-full" style={{ backgroundImage: "repeating-linear-gradient(90deg,#4C7DF0 0 4px,transparent 4px 7px)" }} />
-          Projetado
-        </span>
+      {comoTabela ? (
+        <div className="max-h-[220px] overflow-auto rounded-lg border border-border">
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="border-b border-border text-left text-muted-foreground">
+                <th className="px-2 py-1.5 font-medium">Dia</th>
+                <th className="px-2 py-1.5 text-right font-medium">Realizado</th>
+                <th className="px-2 py-1.5 text-right font-medium">Projetado</th>
+              </tr>
+            </thead>
+            <tbody>
+              {pontos.map((p) => (
+                <tr key={p.dias} className="border-b border-border last:border-none">
+                  <td className="px-2 py-1.5">{rotuloDias(p.dias)}</td>
+                  <td className="px-2 py-1.5 text-right tabular-nums">{p.realizado !== null ? formatarMoeda(p.realizado) : "—"}</td>
+                  <td className="px-2 py-1.5 text-right tabular-nums">{p.projetado !== null ? formatarMoeda(p.projetado) : "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div style={{ height: 220 }}>
+          <ParentSize>
+            {({ width }) => (width > 0 ? <GraficoInterno pontos={pontos} limiar={limiar} ocultas={ocultas} largura={width} altura={220} /> : null)}
+          </ParentSize>
+        </div>
+      )}
+      <div className="mt-1 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-4 text-[11px] font-medium text-muted-foreground">
+          <button
+            type="button"
+            onClick={() => aoClicar("realizado")}
+            onDoubleClick={() => aoIsolar("realizado")}
+            className={cn("flex items-center gap-1.5 transition-opacity", ocultas.has("realizado") && "opacity-40")}
+          >
+            <span className="h-[2px] w-4 rounded-full bg-positivo" /> Realizado
+          </button>
+          <button
+            type="button"
+            onClick={() => aoClicar("projetado")}
+            onDoubleClick={() => aoIsolar("projetado")}
+            className={cn("flex items-center gap-1.5 transition-opacity", ocultas.has("projetado") && "opacity-40")}
+          >
+            <span
+              className="h-[2px] w-4 rounded-full"
+              style={{ backgroundImage: "repeating-linear-gradient(90deg,#4C7DF0 0 4px,transparent 4px 7px)" }}
+            />
+            Projetado
+          </button>
+        </div>
+        <button
+          type="button"
+          onClick={() => setComoTabela((v) => !v)}
+          className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-foreground"
+        >
+          <Table size={12} />
+          {comoTabela ? "Ver gráfico" : "Ver como tabela"}
+        </button>
       </div>
     </div>
   );

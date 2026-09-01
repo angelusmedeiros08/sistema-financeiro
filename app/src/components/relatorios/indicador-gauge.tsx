@@ -60,7 +60,7 @@ export function IndicadorGauge({
 
   const conteudo = (
     <>
-      <svg width={72} height={72} className="shrink-0">
+      <svg width={72} height={72} className="shrink-0" role="img" aria-label={`${rotulo}: ${Math.round(percentualClamp * 100)}%`}>
         <Group top={36} left={36}>
           <Pie
             data={fatias}

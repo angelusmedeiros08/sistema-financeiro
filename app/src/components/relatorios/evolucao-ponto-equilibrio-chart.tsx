@@ -69,7 +69,7 @@ function GraficoInterno({ dados, largura, altura }: { dados: PontoEvolucaoPE[]; 
 
   return (
     <div ref={containerRef} className="relative">
-      <svg width={largura} height={altura}>
+      <svg width={largura} height={altura} role="img" aria-label="Evolução do ponto de equilíbrio e da margem de contribuição ao longo do ano.">
         <defs>
           <linearGradient id="areaPontoEquilibrio" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="#4C7DF0" stopOpacity={0.28} />
@@ -94,6 +94,7 @@ function GraficoInterno({ dados, largura, altura }: { dados: PontoEvolucaoPE[]; 
             y={(d) => yScaleMc(d.margemContribuicaoPercentual)}
             stroke="#157F6B"
             strokeWidth={2.25}
+            strokeDasharray="6 4"
             curve={curveMonotoneX}
           />
 

@@ -169,7 +169,7 @@ function GraficoInterno({ barras, largura, altura }: { barras: BarraWaterfall[];
 
   return (
     <div ref={containerRef} className="relative">
-      <svg width={largura} height={altura}>
+      <svg width={largura} height={altura} role="img" aria-label="DRE em cascata: composição do resultado por linha, do topo até o resultado final.">
         <Group left={MARGEM.left} top={MARGEM.top}>
           {Array.from({ length: 5 }, (_, i) => minV + ((maxV - minV) / 4) * i).map((v, i) => (
             <Line key={i} from={{ x: 0, y: y(v) }} to={{ x: larguraInterna, y: y(v) }} stroke="var(--border)" strokeWidth={1} />
@@ -216,7 +216,7 @@ function GraficoInterno({ barras, largura, altura }: { barras: BarraWaterfall[];
                   fillOpacity={hoverIndice === null || emHover ? cor.fillOpacity : cor.fillOpacity * 0.55}
                   stroke={cor.stroke}
                   strokeWidth={cor.strokeWidth}
-                  style={{ transition: "fill-opacity 0.15s ease", cursor: "pointer" }}
+                  style={{ transition: "fill-opacity 0.15s ease" }}
                   onMouseMove={(e) => aoPassarMouse(e, barra, i)}
                   onMouseLeave={aoSairMouse}
                 />

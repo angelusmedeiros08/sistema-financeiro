@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { ParentSize } from "@visx/responsive";
 import { scaleLinear, scalePoint } from "@visx/scale";
 import { LinePath } from "@visx/shape";
@@ -12,6 +13,7 @@ import { Annotation, Connector, CircleSubject, Label } from "@visx/annotation";
 import { useTooltip, useTooltipInPortal, defaultStyles } from "@visx/tooltip";
 import { localPoint } from "@visx/event";
 import { formatarNumeroCompacto, formatarPercentual } from "@/lib/formatacao";
+import { cn } from "@/lib/utils";
 
 export type PontoComparativo = { chave: string; atual: number; comparacao: number; variacaoPercentual: number };
 
@@ -36,15 +38,20 @@ function GraficoInterno({
   pontos,
   nomeComparacao,
   mostrarAnotacao,
+  mostrarComparacao,
+  hrefsPorPonto,
   largura,
   altura,
 }: {
   pontos: PontoComparativo[];
   nomeComparacao: string;
   mostrarAnotacao: boolean;
+  mostrarComparacao: boolean;
+  hrefsPorPonto?: string[];
   largura: number;
   altura: number;
 }) {
+  const router = useRouter();
   const [hoverIndice, setHoverIndice] = useState<number | null>(null);
   const { tooltipData, tooltipLeft, tooltipTop, tooltipOpen, showTooltip, hideTooltip } = useTooltip<PontoComparativo>();
   const { containerRef, TooltipInPortal } = useTooltipInPortal({ scroll: true, detectBounds: true });
@@ -52,7 +59,7 @@ function GraficoInterno({
   const larguraInterna = Math.max(largura - MARGEM.left - MARGEM.right, 10);
   const alturaInterna = Math.max(altura - MARGEM.top - MARGEM.bottom, 10);
 
-  const todosValores = pontos.flatMap((p) => [p.atual, p.comparacao]);
+  const todosValores = mostrarComparacao ? pontos.flatMap((p) => [p.atual, p.comparacao]) : pontos.map((p) => p.atual);
   const yScale = scaleLinear<number>({ domain: [Math.min(0, ...todosValores), Math.max(...todosValores)], range: [alturaInterna, 0], nice: true });
   const xScale = scalePoint<string>({ domain: pontos.map((p) => p.chave), range: [0, larguraInterna], padding: 0.5 });
 
@@ -68,19 +75,21 @@ function GraficoInterno({
 
   return (
     <div ref={containerRef} className="relative">
-      <svg width={largura} height={altura}>
+      <svg width={largura} height={altura} role="img" aria-label={`Comparação de período: ${nomeComparacao.toLowerCase()}, ${pontos.length} pontos.`}>
         <Group left={MARGEM.left} top={MARGEM.top}>
           <GridRows scale={yScale} width={larguraInterna} stroke="var(--border)" />
 
-          <LinePath
-            data={pontos}
-            x={(p) => xScale(p.chave) ?? 0}
-            y={(p) => yScale(p.comparacao)}
-            stroke="var(--muted-foreground)"
-            strokeWidth={1.75}
-            strokeDasharray="5 4"
-            curve={curveMonotoneX}
-          />
+          {mostrarComparacao && (
+            <LinePath
+              data={pontos}
+              x={(p) => xScale(p.chave) ?? 0}
+              y={(p) => yScale(p.comparacao)}
+              stroke="var(--muted-foreground)"
+              strokeWidth={1.75}
+              strokeDasharray="5 4"
+              curve={curveMonotoneX}
+            />
+          )}
           <LinePath
             data={pontos}
             x={(p) => xScale(p.chave) ?? 0}
@@ -90,23 +99,27 @@ function GraficoInterno({
             curve={curveMonotoneX}
           />
 
-          {pontos.map((p, i) => (
-            <circle
-              key={p.chave}
-              cx={xScale(p.chave) ?? 0}
-              cy={yScale(p.atual)}
-              r={hoverIndice === i ? 5 : 3}
-              fill="#4C7DF0"
-              stroke="var(--card)"
-              strokeWidth={2}
-              style={{ transition: "r 0.1s ease", cursor: "pointer" }}
-              onMouseMove={(e) => aoMoverMouse(e, i)}
-              onMouseLeave={() => {
-                setHoverIndice(null);
-                hideTooltip();
-              }}
-            />
-          ))}
+          {pontos.map((p, i) => {
+            const href = hrefsPorPonto?.[i];
+            return (
+              <circle
+                key={p.chave}
+                cx={xScale(p.chave) ?? 0}
+                cy={yScale(p.atual)}
+                r={hoverIndice === i ? 5 : 3}
+                fill="#4C7DF0"
+                stroke="var(--card)"
+                strokeWidth={2}
+                style={{ transition: "r 0.1s ease", cursor: href ? "pointer" : "default" }}
+                onMouseMove={(e) => aoMoverMouse(e, i)}
+                onMouseLeave={() => {
+                  setHoverIndice(null);
+                  hideTooltip();
+                }}
+                onClick={() => href && router.push(href)}
+              />
+            );
+          })}
 
           {mostrarAnotacao && (
             <Annotation x={xUltimo} y={yUltimo} dx={largura - xUltimo > 90 ? 42 : -52} dy={ultimo.variacaoPercentual >= 0 ? -30 : 30}>
@@ -144,11 +157,13 @@ function GraficoInterno({
               <span className="text-white/70">Período</span>
               <span className="ml-auto font-bold tabular-nums">{formatarNumeroCompacto(tooltipData.atual)}</span>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="size-2 rounded-full bg-white/40" />
-              <span className="text-white/70">{nomeComparacao}</span>
-              <span className="ml-auto font-bold tabular-nums">{formatarNumeroCompacto(tooltipData.comparacao)}</span>
-            </div>
+            {mostrarComparacao && (
+              <div className="flex items-center gap-2">
+                <span className="size-2 rounded-full bg-white/40" />
+                <span className="text-white/70">{nomeComparacao}</span>
+                <span className="ml-auto font-bold tabular-nums">{formatarNumeroCompacto(tooltipData.comparacao)}</span>
+              </div>
+            )}
           </div>
         </TooltipInPortal>
       )}
@@ -160,13 +175,17 @@ export function ComparativoLinhaAnotada({
   pontos,
   nomeComparacao,
   mostrarAnotacao = true,
+  hrefsPorPonto,
   altura = 300,
 }: {
   pontos: PontoComparativo[];
   nomeComparacao: string;
   mostrarAnotacao?: boolean;
+  hrefsPorPonto?: string[];
   altura?: number;
 }) {
+  const [mostrarComparacao, setMostrarComparacao] = useState(true);
+
   return (
     <div>
       {/* Legenda fora do ParentSize: o wrapper interno dele é
@@ -177,7 +196,15 @@ export function ComparativoLinhaAnotada({
         <ParentSize>
           {({ width }) =>
             width > 0 ? (
-              <GraficoInterno pontos={pontos} nomeComparacao={nomeComparacao} mostrarAnotacao={mostrarAnotacao} largura={width} altura={altura} />
+              <GraficoInterno
+                pontos={pontos}
+                nomeComparacao={nomeComparacao}
+                mostrarAnotacao={mostrarAnotacao}
+                mostrarComparacao={mostrarComparacao}
+                hrefsPorPonto={hrefsPorPonto}
+                largura={width}
+                altura={altura}
+              />
             ) : null
           }
         </ParentSize>
@@ -186,13 +213,17 @@ export function ComparativoLinhaAnotada({
         <span className="flex items-center gap-1.5">
           <span className="h-[2px] w-4 rounded-full bg-[#4C7DF0]" /> Período
         </span>
-        <span className="flex items-center gap-1.5">
+        <button
+          type="button"
+          onClick={() => setMostrarComparacao((v) => !v)}
+          className={cn("flex items-center gap-1.5 transition-opacity", !mostrarComparacao && "opacity-40")}
+        >
           <span
             className="h-[2px] w-4 rounded-full bg-muted-foreground"
             style={{ backgroundImage: "repeating-linear-gradient(90deg,var(--muted-foreground) 0 4px,transparent 4px 7px)" }}
           />
           {nomeComparacao}
-        </span>
+        </button>
       </div>
     </div>
   );

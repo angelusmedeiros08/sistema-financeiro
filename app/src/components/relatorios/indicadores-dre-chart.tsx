@@ -67,7 +67,7 @@ function GraficoInterno({ dados, largura, altura }: { dados: IndicadorMensal[]; 
 
   return (
     <div ref={containerRef} className="relative">
-      <svg width={largura} height={altura}>
+      <svg width={largura} height={altura} role="img" aria-label="Evolução dos indicadores da DRE ao longo do período.">
         <defs>
           <linearGradient id="areaMargemContribuicao" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="#157F6B" stopOpacity={0.25} />

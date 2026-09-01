@@ -71,7 +71,12 @@ export default async function PaginaRelatoriosVisaoGeral({
   const projecaoD7 = saldoProjetado.projecoes.find((p) => p.dias === 7);
 
   const resultado = dre.at(-1)?.valorAcumulado ?? 0;
-  const fluxoParaGrafico = fluxo.map((p) => ({ mes: p.chave, receitas: p.entradas, despesas: p.saidas }));
+  // chaveIso aqui só serve de key de lista (React) — granularidade deste
+  // relatório é selecionável (dia/semana/mês/...), não sempre "YYYY-MM"
+  // como no Painel, então FluxoChart não recebe hrefsPorMes nesta tela
+  // (drill-down por ponto exigiria matemática de período por granularidade,
+  // fora do escopo desta fatia — ver spec de Gráficos interativos).
+  const fluxoParaGrafico = fluxo.map((p) => ({ mes: p.chave, chaveIso: p.chave, receitas: p.entradas, despesas: p.saidas }));
 
   // Cada bloco vira um elemento nomeado — em apresentação com foco, só o
   // escolhido renderiza (ampliado, sozinho); na navegação normal, os 6

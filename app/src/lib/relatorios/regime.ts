@@ -78,6 +78,16 @@ export function valorComSinal(linha: Pick<MovimentoLinha, "tipo" | "valor">): nu
   return linha.tipo === "RECEITA" ? linha.valor : -linha.valor;
 }
 
+// Inverso de chaveGranularidade("mes") — de "YYYY-MM" pros limites do mês
+// inteiro, em UTC (mesma convenção de data do resto do módulo). Usado pelo
+// drill-down de gráfico por ponto mensal (Painel, Comparativos).
+export function limitesDoMes(chaveIso: string): { inicio: string; fim: string } {
+  const [ano, mes] = chaveIso.split("-").map(Number);
+  const inicio = new Date(Date.UTC(ano, mes - 1, 1)).toISOString().slice(0, 10);
+  const fim = new Date(Date.UTC(ano, mes, 0)).toISOString().slice(0, 10);
+  return { inicio, fim };
+}
+
 export function chaveGranularidade(dataIso: string, granularidade: Granularidade): string {
   const [ano, mes, dia] = dataIso.slice(0, 10).split("-").map(Number);
   switch (granularidade) {

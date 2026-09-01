@@ -132,7 +132,7 @@ async function obterRecebidoPagoDoMes(supabase: Cliente, tenantId: string, pesso
   );
 }
 
-export type PontoFluxo = { mes: string; receitas: number; despesas: number };
+export type PontoFluxo = { mes: string; chaveIso: string; receitas: number; despesas: number };
 
 // Receita e despesa como duas séries separadas (não só o líquido) —
 // padrão visto em toda referência comercial mandada pelo usuário
@@ -173,6 +173,7 @@ async function obterFluxoUltimosMeses(
   const nomesMes = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
   return Array.from(porMes.entries()).map(([chave, { receitas, despesas }]) => ({
     mes: nomesMes[Number(chave.slice(5, 7)) - 1],
+    chaveIso: chave,
     receitas,
     despesas,
   }));
