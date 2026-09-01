@@ -438,6 +438,27 @@ export async function desfazerImportacaoPessoas(
 
   const pessoasRemoviveis = previaAtual.pessoasARemover.filter((p) => !pessoasComFalhaDeEvento.has(p.pessoa_id));
 
+  // Precisa vir ANTES do DELETE de pessoas: o FK importacoes_itens.pessoa_id
+  // é ON DELETE SET NULL, então buscar por pessoa_id depois de deletar
+  // sempre dá zero linhas — o item nunca era marcado desfeito_em, e a tela
+  // de detalhe continuava oferecendo "Desfazer importação" como se nada
+  // tivesse acontecido (achado testando ao vivo).
+  const itemIdPorPessoa = new Map<string, string>();
+  if (pessoasRemoviveis.length > 0) {
+    const { data: itensPorPessoa } = await supabase
+      .from("importacoes_itens")
+      .select("id, pessoa_id")
+      .eq("importacao_id", params.importacao_id)
+      .eq("tenant_id", params.tenant_id)
+      .in(
+        "pessoa_id",
+        pessoasRemoviveis.map((p) => p.pessoa_id),
+      );
+    for (const i of itensPorPessoa ?? []) {
+      if (i.pessoa_id) itemIdPorPessoa.set(i.pessoa_id, i.id);
+    }
+  }
+
   const admin = createAdminClient();
   let removidas = 0;
   const idsRemovidosComSucesso: string[] = [];
@@ -472,17 +493,9 @@ export async function desfazerImportacaoPessoas(
     }
   }
 
-  if (idsRemovidosComSucesso.length > 0) {
-    const { data: itensCriados } = await supabase
-      .from("importacoes_itens")
-      .select("id, pessoa_id")
-      .eq("importacao_id", params.importacao_id)
-      .eq("tenant_id", params.tenant_id)
-      .in("pessoa_id", idsRemovidosComSucesso);
-    const itemIds = (itensCriados ?? []).map((i) => i.id);
-    if (itemIds.length > 0) {
-      await supabase.from("importacoes_itens").update({ desfeito_em: new Date().toISOString(), desfeito_por: params.criado_por }).in("id", itemIds);
-    }
+  const itemIds = idsRemovidosComSucesso.map((id) => itemIdPorPessoa.get(id)).filter((id): id is string => !!id);
+  if (itemIds.length > 0) {
+    await supabase.from("importacoes_itens").update({ desfeito_em: new Date().toISOString(), desfeito_por: params.criado_por }).in("id", itemIds);
   }
 
   const protegidasFinal: PessoaProtegida[] = [
