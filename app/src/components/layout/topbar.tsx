@@ -15,7 +15,8 @@ import { ThemeToggle } from "./theme-toggle";
 import { CommandPaletteBusca } from "./command-palette-busca";
 import { NovoRegistroMenu } from "./novo-registro-menu";
 import { IconeTransmitir } from "./icone-transmitir";
-import { NotificacoesMenu, type NotificacaoAlerta } from "./notificacoes-menu";
+import { NotificacoesMenu } from "./notificacoes-menu";
+import type { NotificacaoItem } from "@/lib/notificacoes/notificacoes";
 import { sair } from "@/app/(auth)/actions";
 import { trocarTenantAtivo } from "@/lib/tenant/trocar-tenant-actions";
 
@@ -30,7 +31,7 @@ export function Topbar({
   tenantId: string;
   tenantsDisponiveis: { id: string; nome: string }[];
   nome: string;
-  notificacoes: NotificacaoAlerta[];
+  notificacoes: NotificacaoItem[];
 }) {
   const outrosTenants = tenantsDisponiveis.filter((t) => t.id !== tenantId);
   return (

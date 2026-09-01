@@ -1,6 +1,7 @@
 "use client";
 
-import { Bell } from "@phosphor-icons/react";
+import Link from "next/link";
+import { Bell, Receipt, HandCoins, Wallet, FileX } from "@phosphor-icons/react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,15 +11,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
+import type { NotificacaoItem, TipoNotificacao } from "@/lib/notificacoes/notificacoes";
 
-export type NotificacaoAlerta = {
-  id: string;
-  tipo: string;
-  enviadoEm: string;
-};
-
-const ROTULO_TIPO: Record<string, string> = {
-  resumo_equipe: "Resumo diário de vencimentos enviado por e-mail",
+const ICONE_TIPO: Record<TipoNotificacao, { icon: typeof Bell; cor: string }> = {
+  resumo_equipe: { icon: Receipt, cor: "bg-muted-foreground" },
+  vencimento_pagar: { icon: Wallet, cor: "bg-destructive" },
+  vencimento_receber: { icon: HandCoins, cor: "bg-positivo" },
+  erro_importacao: { icon: FileX, cor: "bg-destructive" },
 };
 
 const FUSO = "America/Sao_Paulo";
@@ -41,9 +40,9 @@ function formatarQuando(iso: string): string {
   return data.toLocaleDateString("pt-BR", { day: "2-digit", month: "short", timeZone: FUSO });
 }
 
-export function NotificacoesMenu({ notificacoes }: { notificacoes: NotificacaoAlerta[] }) {
+export function NotificacoesMenu({ notificacoes }: { notificacoes: NotificacaoItem[] }) {
   const hoje = diaEm(new Date());
-  const temNovaHoje = notificacoes.some((n) => diaEm(new Date(n.enviadoEm)) === hoje);
+  const temNovaHoje = notificacoes.some((n) => diaEm(new Date(n.quando)) === hoje);
 
   return (
     <DropdownMenu>
@@ -56,18 +55,31 @@ export function NotificacoesMenu({ notificacoes }: { notificacoes: NotificacaoAl
           <span className="sr-only">Notificações</span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-72">
+      <DropdownMenuContent align="end" className="w-80">
         <DropdownMenuLabel>Notificações</DropdownMenuLabel>
         <DropdownMenuSeparator />
         {notificacoes.length === 0 ? (
           <p className="px-2 py-3 text-sm text-muted-foreground">Nenhuma notificação recente.</p>
         ) : (
-          notificacoes.map((n) => (
-            <DropdownMenuItem key={n.id} className="flex-col items-start gap-0.5 whitespace-normal">
-              <span className="text-sm">{ROTULO_TIPO[n.tipo] ?? n.tipo}</span>
-              <span className="text-xs text-muted-foreground">{formatarQuando(n.enviadoEm)}</span>
-            </DropdownMenuItem>
-          ))
+          notificacoes.map((n) => {
+            const { icon: Icon, cor } = ICONE_TIPO[n.tipo];
+            return (
+              <DropdownMenuItem key={n.id} asChild>
+                <Link href={n.href} className="flex items-start gap-2.5 whitespace-normal">
+                  <span className={`mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-md ${cor}`}>
+                    <Icon size={12} weight="bold" className="text-white" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm">{n.titulo}</span>
+                    <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      {n.subtitulo && <span>{n.subtitulo} ·</span>}
+                      {formatarQuando(n.quando)}
+                    </span>
+                  </span>
+                </Link>
+              </DropdownMenuItem>
+            );
+          })
         )}
       </DropdownMenuContent>
     </DropdownMenu>

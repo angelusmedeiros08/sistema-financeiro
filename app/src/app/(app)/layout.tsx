@@ -5,6 +5,7 @@ import { createClient } from "@/utils/supabase/server";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
 import { AppChromeShell } from "@/components/layout/app-chrome-shell";
+import { buscarNotificacoes } from "@/lib/notificacoes/notificacoes";
 
 export default async function LayoutApp({ children }: { children: React.ReactNode }) {
   const contexto = await obterUsuarioETenantAtual();
@@ -28,14 +29,8 @@ export default async function LayoutApp({ children }: { children: React.ReactNod
   }
 
   const supabase = await createClient();
-  const [{ data: alertas }, { data: usuario }] = await Promise.all([
-    supabase
-      .from("alertas_enviados")
-      .select("id, tipo, enviado_em")
-      .eq("tenant_id", contexto.tenantId)
-      .eq("destinatario_id", contexto.user.id)
-      .order("enviado_em", { ascending: false })
-      .limit(5),
+  const [notificacoes, { data: usuario }] = await Promise.all([
+    buscarNotificacoes(supabase, contexto.tenantId, contexto.user.id),
     supabase.from("usuarios").select("nome").eq("id", contexto.user.id).single(),
   ]);
 
@@ -48,7 +43,7 @@ export default async function LayoutApp({ children }: { children: React.ReactNod
           tenantId={contexto.tenantId}
           tenantsDisponiveis={contexto.tenantsDisponiveis}
           nome={usuario?.nome ?? contexto.user.email ?? ""}
-          notificacoes={(alertas ?? []).map((a) => ({ id: a.id, tipo: a.tipo, enviadoEm: a.enviado_em }))}
+          notificacoes={notificacoes}
         />
       }
     >
