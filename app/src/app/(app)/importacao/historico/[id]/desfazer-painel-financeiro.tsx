@@ -3,9 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Spinner, Trash, Warning } from "@phosphor-icons/react";
+import { Trash, Warning } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { IndicadorProcessando } from "@/components/ui/indicador-processando";
 import { preverDesfazerImportacaoFinanceiraAction, desfazerImportacaoFinanceiraAction } from "../actions";
 import type { PreviaDesfazerFinanceira, ResultadoDesfazerFinanceira } from "@/lib/importacoes/importacoes-financeiro";
 
@@ -100,10 +101,10 @@ export function DesfazerPainelFinanceiro({ importacaoId }: { importacaoId: strin
           </Button>
         </div>
         {rodando && (
-          <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Spinner size={12} className="shrink-0 animate-spin" />
-            Isso pode levar alguns segundos. Não feche nem saia desta página até terminar.
-          </p>
+          <IndicadorProcessando
+            titulo="Desfazendo a importação..."
+            descricao="Isso pode levar alguns segundos. Não feche nem saia desta página até terminar."
+          />
         )}
       </div>
     );

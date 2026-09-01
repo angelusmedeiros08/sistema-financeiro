@@ -2,8 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { CheckCircle, DownloadSimple, Spinner, XCircle } from "@phosphor-icons/react";
+import { CheckCircle, DownloadSimple, XCircle } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
+import { IndicadorProcessando } from "@/components/ui/indicador-processando";
 import { baixarArquivoTexto, linhaCsvSegura } from "@/lib/importacao/download";
 import { COLUNAS_TEMPLATE } from "@/lib/importacao/template";
 import { executarImportacaoFinanceiraAction, revalidarPosImportacaoAction } from "./actions";
@@ -112,15 +113,10 @@ export function PassoResultado({
       </div>
 
       {!concluido && (
-        <div className="flex items-center gap-3 rounded-xl bg-muted/40 p-4">
-          <Spinner size={20} className="shrink-0 animate-spin text-muted-foreground" />
-          <div>
-            <p className="text-sm font-medium text-foreground">
-              Importando {linhas.length} lançamento{linhas.length === 1 ? "" : "s"}...
-            </p>
-            <p className="text-xs text-muted-foreground">Isso pode levar alguns segundos. Não feche nem saia desta página até terminar.</p>
-          </div>
-        </div>
+        <IndicadorProcessando
+          titulo={`Importando ${linhas.length} lançamento${linhas.length === 1 ? "" : "s"}...`}
+          descricao="Isso pode levar alguns segundos. Não feche nem saia desta página até terminar."
+        />
       )}
 
       {erroGeral && <p className="text-sm text-destructive">Falha ao importar: {erroGeral}</p>}

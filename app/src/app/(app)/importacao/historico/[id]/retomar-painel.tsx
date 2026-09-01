@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { ArrowClockwise, Spinner } from "@phosphor-icons/react";
+import { ArrowClockwise } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
+import { IndicadorProcessando } from "@/components/ui/indicador-processando";
 import { retomarImportacaoAction } from "../actions";
 
 // Sem prop `tipo` de propósito — o servidor deriva do próprio registro
@@ -35,10 +36,10 @@ export function RetomarPainel({ importacaoId, contagemPendente }: { importacaoId
 
   if (rodando) {
     return (
-      <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-        <Spinner size={12} className="shrink-0 animate-spin" />
-        Retomando... isso pode levar alguns segundos. Não feche nem saia desta página até terminar.
-      </p>
+      <IndicadorProcessando
+        titulo="Retomando..."
+        descricao="Isso pode levar alguns segundos. Não feche nem saia desta página até terminar."
+      />
     );
   }
 
