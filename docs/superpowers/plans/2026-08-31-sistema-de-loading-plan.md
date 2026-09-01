@@ -40,10 +40,20 @@ _Teste:_ ao vivo — recarregar `/painel`, `/indicadores` e `/portal` (throttle 
 
 ## Fatia 4 — Relatórios
 
-`loading.tsx` novo em cada uma das 12 rotas (`SkeletonChart` + `SkeletonTable`, Seção "Mapeamento" da spec): `/relatorios`, `/relatorios/visao-geral`, `/relatorios/dre`, `/relatorios/dfc`, `/relatorios/fluxo-caixa`, `/relatorios/centro-custo`, `/relatorios/aging`, `/relatorios/despesas`, `/relatorios/ponto-equilibrio`, `/relatorios/comparativos`, `/relatorios/contas-bancarias`, `/relatorios/orcado-realizado`.
+Correção encontrada ao implementar: `/relatorios`, `/relatorios/fluxo-caixa` e `/relatorios/orcado-realizado` são `redirect()` puros (pra `/relatorios/visao-geral`, `/fluxo-caixa` e `/previsionamento` respectivamente) — sem conteúdo próprio, `loading.tsx` neles não teria efeito (o redirect nem deixa o React montar nada). Ficam fora. Restam 9 rotas reais, cada uma com o par de componentes que a página de fato usa (não é sempre Chart+Table — algumas são só um gráfico, outras só tabela):
+
+- `/relatorios/visao-geral` — `SkeletonChart` (fluxo) + `SkeletonChart` (waterfall) + `SkeletonTable` (aging) + donuts.
+- `/relatorios/dre` — `SkeletonTable` (matriz) por padrão; a spec não precisa cobrir as 3 abas (matriz/cascata/indicadores) com fidelidade, só a inicial.
+- `/relatorios/dfc` — `SkeletonTable` (matriz).
+- `/relatorios/centro-custo` — `SkeletonTable`.
+- `/relatorios/aging` — `SkeletonChart` (barras) + `SkeletonTable`.
+- `/relatorios/despesas` — `SkeletonTable`.
+- `/relatorios/ponto-equilibrio` — `SkeletonChart` (linha).
+- `/relatorios/comparativos` — `SkeletonTable`.
+- `/relatorios/contas-bancarias` — `SkeletonKpiCard` × N (é `StatCard` por conta, não tabela).
 
 _Depende de:_ Fatia 1.
-_Teste:_ ao vivo — 3 dessas 12 rotas (uma com gráfico predominante tipo `/relatorios/dre`, uma tabular tipo `/relatorios/aging`, uma mista), confirmar geometria do skeleton batendo com a tela real. Não precisa das 12.
+_Teste:_ ao vivo — 3 dessas 9 rotas (uma com gráfico predominante tipo `/relatorios/dre`, uma tabular tipo `/relatorios/aging`, uma mista), confirmar geometria do skeleton batendo com a tela real. Não precisa das 9.
 
 ## Fatia 5 — Listagens
 
