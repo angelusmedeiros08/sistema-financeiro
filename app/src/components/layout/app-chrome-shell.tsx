@@ -6,6 +6,7 @@ import { PARAM_APRESENTACAO } from "@/lib/apresentacao/sessao";
 import { caminhoElegivel } from "@/lib/apresentacao/catalogo";
 import { ApresentacaoShell } from "@/components/apresentacao/apresentacao-shell";
 import { BotaoVoltar } from "@/components/layout/botao-voltar";
+import { OfflineBanner } from "@/components/layout/offline-banner";
 
 // (app)/layout.tsx é um Server Component e não recebe searchParams (só
 // Page.tsx recebe — layouts não re-renderizam na troca de query, ficariam
@@ -21,6 +22,7 @@ function ChromeNormal({ sidebar, topbar, children }: PropsChrome) {
       {sidebar}
       <div className="flex min-w-0 flex-1 flex-col">
         {topbar}
+        <OfflineBanner />
         <main className="flex-1 px-4 py-8 lg:px-8">
           <BotaoVoltar />
           {children}
