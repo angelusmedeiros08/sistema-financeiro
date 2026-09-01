@@ -219,50 +219,136 @@ export async function preverDesfazerImportacaoFinanceira(
   const entidadesARemover: EntidadeClassificada[] = [];
   const entidadesPreservadas: (EntidadeClassificada & { motivo: string })[] = [];
 
-  for (const e of entidadesCriadas ?? []) {
-    const tipo = e.tipo_entidade as TipoEntidade;
-    const usoFora = await verificarUsoEntidadeForaDoConjunto(admin, { tenant_id: params.tenant_id, tipo_entidade: tipo, entidade_id: e.entidade_id, eventoIdsIgnorados: idsRevertidos });
-    const nome = await buscarNomeEntidade(admin, tipo, e.entidade_id);
-    if (usoFora) {
-      entidadesPreservadas.push({ tipo_entidade: tipo, entidade_id: e.entidade_id, nome, motivo: "em uso fora desta importação" });
+  // Em lote (1 consulta por tipo de entidade, não 1 por entidade) — com uma
+  // importação grande (dezenas de categorias/pessoas/centros de custo
+  // criados), o loop antigo fazia 2 round-trips sequenciais POR entidade
+  // (nome + verificação de uso), e a tela de prévia ficava travada no
+  // esqueleto de carregamento por vários segundos esperando isso terminar
+  // um de cada vez (achado testando ao vivo com uma planilha real de 61
+  // cadastros).
+  const listaEntidades = (entidadesCriadas ?? []).map((e) => ({ tipo_entidade: e.tipo_entidade as TipoEntidade, entidade_id: e.entidade_id }));
+  const [nomePorChave, usadasForaPorChave] = await Promise.all([
+    buscarNomesEmLote(admin, listaEntidades),
+    verificarUsoForaDoConjuntoEmLote(admin, { tenant_id: params.tenant_id, entidades: listaEntidades, eventoIdsIgnorados: idsRevertidos }),
+  ]);
+
+  for (const e of listaEntidades) {
+    const chave = chaveEntidade(e.tipo_entidade, e.entidade_id);
+    const nome = nomePorChave.get(chave) ?? e.entidade_id;
+    if (usadasForaPorChave.has(chave)) {
+      entidadesPreservadas.push({ tipo_entidade: e.tipo_entidade, entidade_id: e.entidade_id, nome, motivo: "em uso fora desta importação" });
     } else {
-      entidadesARemover.push({ tipo_entidade: tipo, entidade_id: e.entidade_id, nome });
+      entidadesARemover.push({ tipo_entidade: e.tipo_entidade, entidade_id: e.entidade_id, nome });
     }
   }
 
   return { aReverter, comBaixaRevertida, protegidosPorModificacao, entidadesARemover, entidadesPreservadas };
 }
 
-async function buscarNomeEntidade(admin: ReturnType<typeof createAdminClient>, tipo: TipoEntidade, id: string): Promise<string> {
-  const { data } = await admin.from(TABELA_POR_TIPO_ENTIDADE[tipo]).select("nome").eq("id", id).maybeSingle();
-  return data?.nome ?? id;
+// Chave composta tipo:id — evita colisão teórica entre um uuid de
+// categoria e um de pessoa (tabelas diferentes, mas o mesmo Map serve as 4).
+function chaveEntidade(tipo: TipoEntidade, id: string): string {
+  return `${tipo}:${id}`;
 }
 
-async function verificarUsoEntidadeForaDoConjunto(
+async function buscarNomesEmLote(
   admin: ReturnType<typeof createAdminClient>,
-  params: { tenant_id: string; tipo_entidade: TipoEntidade; entidade_id: string; eventoIdsIgnorados: Set<string> },
-): Promise<boolean> {
-  if (params.tipo_entidade === "pessoa") {
-    const { data } = await admin.from("eventos_financeiros").select("id").eq("tenant_id", params.tenant_id).eq("pessoa_id", params.entidade_id);
-    return (data ?? []).some((e) => !params.eventoIdsIgnorados.has(e.id));
+  entidades: { tipo_entidade: TipoEntidade; entidade_id: string }[],
+): Promise<Map<string, string>> {
+  const idsPorTipo = new Map<TipoEntidade, string[]>();
+  for (const e of entidades) {
+    const lista = idsPorTipo.get(e.tipo_entidade) ?? [];
+    lista.push(e.entidade_id);
+    idsPorTipo.set(e.tipo_entidade, lista);
   }
-  if (params.tipo_entidade === "categoria") {
-    const { data } = await admin.from("rateio_categoria").select("evento_financeiro_id").eq("tenant_id", params.tenant_id).eq("categoria_id", params.entidade_id);
-    return (data ?? []).some((r) => !params.eventoIdsIgnorados.has(r.evento_financeiro_id));
+
+  const nomePorChave = new Map<string, string>();
+  await Promise.all(
+    Array.from(idsPorTipo.entries()).map(async ([tipo, ids]) => {
+      const { data } = await admin.from(TABELA_POR_TIPO_ENTIDADE[tipo]).select("id, nome").in("id", ids);
+      for (const row of data ?? []) nomePorChave.set(chaveEntidade(tipo, row.id), row.nome);
+    }),
+  );
+  return nomePorChave;
+}
+
+// forma_pagamento: usada em baixas, não em eventos — qualquer baixa
+// vinculada já é "fora do conjunto" por definição (baixa nunca é criada
+// pela importação em si, só pelo usuário depois) — por isso não filtra por
+// eventoIdsIgnorados como os outros 3 tipos.
+async function verificarUsoForaDoConjuntoEmLote(
+  admin: ReturnType<typeof createAdminClient>,
+  params: { tenant_id: string; entidades: { tipo_entidade: TipoEntidade; entidade_id: string }[]; eventoIdsIgnorados: Set<string> },
+): Promise<Set<string>> {
+  const idsPorTipo = new Map<TipoEntidade, string[]>();
+  for (const e of params.entidades) {
+    const lista = idsPorTipo.get(e.tipo_entidade) ?? [];
+    lista.push(e.entidade_id);
+    idsPorTipo.set(e.tipo_entidade, lista);
   }
-  if (params.tipo_entidade === "centro_custo") {
-    const { data } = await admin
-      .from("rateio_centro_custo")
-      .select("rateio_categoria_id, rateio_categoria!inner(evento_financeiro_id)")
-      .eq("tenant_id", params.tenant_id)
-      .eq("centro_custo_id", params.entidade_id);
-    return (data ?? []).some((r) => !params.eventoIdsIgnorados.has((r.rateio_categoria as unknown as { evento_financeiro_id: string }).evento_financeiro_id));
+
+  const usadasFora = new Set<string>();
+  const tarefas: Promise<void>[] = [];
+
+  const idsPessoa = idsPorTipo.get("pessoa");
+  if (idsPessoa) {
+    tarefas.push(
+      (async () => {
+        const { data } = await admin.from("eventos_financeiros").select("id, pessoa_id").eq("tenant_id", params.tenant_id).in("pessoa_id", idsPessoa);
+        for (const e of data ?? []) {
+          if (e.pessoa_id && !params.eventoIdsIgnorados.has(e.id)) usadasFora.add(chaveEntidade("pessoa", e.pessoa_id));
+        }
+      })(),
+    );
   }
-  // forma_pagamento: usada em baixas, não em eventos — qualquer baixa
-  // vinculada já é "fora do conjunto" por definição (baixa nunca é criada
-  // pela importação em si, só pelo usuário depois).
-  const { data } = await admin.from("baixas").select("id").eq("tenant_id", params.tenant_id).eq("forma_pagamento_id", params.entidade_id).limit(1);
-  return (data ?? []).length > 0;
+
+  const idsCategoria = idsPorTipo.get("categoria");
+  if (idsCategoria) {
+    tarefas.push(
+      (async () => {
+        const { data } = await admin
+          .from("rateio_categoria")
+          .select("categoria_id, evento_financeiro_id")
+          .eq("tenant_id", params.tenant_id)
+          .in("categoria_id", idsCategoria);
+        for (const r of data ?? []) {
+          if (!params.eventoIdsIgnorados.has(r.evento_financeiro_id)) usadasFora.add(chaveEntidade("categoria", r.categoria_id));
+        }
+      })(),
+    );
+  }
+
+  const idsCentroCusto = idsPorTipo.get("centro_custo");
+  if (idsCentroCusto) {
+    tarefas.push(
+      (async () => {
+        const { data } = await admin
+          .from("rateio_centro_custo")
+          .select("centro_custo_id, rateio_categoria!inner(evento_financeiro_id)")
+          .eq("tenant_id", params.tenant_id)
+          .in("centro_custo_id", idsCentroCusto);
+        for (const r of data ?? []) {
+          const eventoId = (r.rateio_categoria as unknown as { evento_financeiro_id: string }).evento_financeiro_id;
+          if (r.centro_custo_id && !params.eventoIdsIgnorados.has(eventoId)) usadasFora.add(chaveEntidade("centro_custo", r.centro_custo_id));
+        }
+      })(),
+    );
+  }
+
+  const idsFormaPagamento = idsPorTipo.get("forma_pagamento");
+  if (idsFormaPagamento) {
+    tarefas.push(
+      (async () => {
+        const { data } = await admin.from("baixas").select("forma_pagamento_id").eq("tenant_id", params.tenant_id).in("forma_pagamento_id", idsFormaPagamento);
+        for (const b of data ?? []) {
+          if (b.forma_pagamento_id) usadasFora.add(chaveEntidade("forma_pagamento", b.forma_pagamento_id));
+        }
+      })(),
+    );
+  }
+
+  await Promise.all(tarefas);
+  return usadasFora;
 }
 
 export type ResultadoDesfazerFinanceira = {
