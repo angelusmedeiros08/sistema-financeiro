@@ -11,6 +11,7 @@ import {
   SlidersHorizontal,
   ChartBar,
   Users,
+  ClockCounterClockwise,
 } from "@phosphor-icons/react/dist/ssr";
 
 type IconeConfig = ComponentType<{ size?: number; weight?: "regular" | "bold" | "fill"; className?: string }>;
@@ -48,6 +49,9 @@ export const GRUPOS_CONFIGURACOES: {
   },
   {
     rotulo: "Equipe",
-    itens: [{ href: "/configuracoes/equipe", rotulo: "Equipe", descricao: "Quem tem acesso e com qual papel.", icon: Users }],
+    itens: [
+      { href: "/configuracoes/equipe", rotulo: "Equipe", descricao: "Quem tem acesso e com qual papel.", icon: Users },
+      { href: "/configuracoes/auditoria", rotulo: "Trilha de auditoria", descricao: "Quem fez o quê, e quando.", icon: ClockCounterClockwise },
+    ],
   },
 ] as const;
