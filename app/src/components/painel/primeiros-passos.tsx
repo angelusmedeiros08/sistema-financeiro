@@ -5,8 +5,10 @@ import { cn } from "@/lib/utils";
 
 const PASSOS = [
   { chave: "contaFinanceira" as const, rotulo: "Cadastre uma conta financeira", href: "/configuracoes/contas-financeiras" },
-  { chave: "cliente" as const, rotulo: "Cadastre seu primeiro cliente", href: "/clientes/novo" },
+  { chave: "pessoa" as const, rotulo: "Cadastre um cliente ou fornecedor", href: "/clientes/novo" },
   { chave: "lancamento" as const, rotulo: "Registre seu primeiro lançamento", href: "/despesas" },
+  { chave: "baixa" as const, rotulo: "Dê baixa num lançamento pendente", href: "/contas-a-receber" },
+  { chave: "equipe" as const, rotulo: "Convide alguém da sua equipe", href: "/configuracoes/equipe" },
 ];
 
 export function PrimeirosPassosCard({ passos }: { passos: PrimeirosPassos }) {

@@ -235,21 +235,33 @@ function deltaPercentual(atual: number, anterior: number): number | undefined {
 
 export type PrimeirosPassos = {
   contaFinanceira: boolean;
-  cliente: boolean;
+  pessoa: boolean;
   lancamento: boolean;
+  baixa: boolean;
+  equipe: boolean;
 };
 
+// Ampliado de 3 pra 5 marcos (Fatia 8 do dossiê UX) — mesma filosofia de
+// antes: cada item é derivado de dado real do tenant (nunca um checklist
+// local que perde estado ao trocar de aba/dispositivo), só a lista cresceu.
+// `pessoa` generaliza o antigo "cliente" (qualquer perfil conta, cliente
+// ou fornecedor — o marco é "você já cadastrou alguém", não uma dimensão
+// específica). `equipe` conta qualquer vínculo além do dono da conta.
 async function obterPrimeirosPassos(supabase: Cliente, tenantId: string): Promise<PrimeirosPassos> {
-  const [contas, clientes, lancamentos] = await Promise.all([
+  const [contas, pessoas, lancamentos, baixas, equipe] = await Promise.all([
     supabase.from("contas_financeiras").select("id", { count: "exact", head: true }).eq("tenant_id", tenantId),
-    supabase.from("pessoas").select("id", { count: "exact", head: true }).eq("tenant_id", tenantId).contains("perfis", ["CLIENTE"]),
+    supabase.from("pessoas").select("id", { count: "exact", head: true }).eq("tenant_id", tenantId),
     supabase.from("eventos_financeiros").select("id", { count: "exact", head: true }).eq("tenant_id", tenantId),
+    supabase.from("baixas").select("id", { count: "exact", head: true }).eq("tenant_id", tenantId),
+    supabase.from("usuario_tenant").select("id", { count: "exact", head: true }).eq("tenant_id", tenantId).eq("ativo", true),
   ]);
 
   return {
     contaFinanceira: (contas.count ?? 0) > 0,
-    cliente: (clientes.count ?? 0) > 0,
+    pessoa: (pessoas.count ?? 0) > 0,
     lancamento: (lancamentos.count ?? 0) > 0,
+    baixa: (baixas.count ?? 0) > 0,
+    equipe: (equipe.count ?? 0) > 1,
   };
 }
 
