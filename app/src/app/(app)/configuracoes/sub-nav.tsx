@@ -3,38 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-
-const GRUPOS = [
-  {
-    rotulo: "Cadastros",
-    itens: [
-      { href: "/configuracoes/categorias", rotulo: "Categorias" },
-      { href: "/configuracoes/plano-de-contas", rotulo: "Plano de contas" },
-      { href: "/configuracoes/centros-custo", rotulo: "Centros de custo" },
-      { href: "/configuracoes/formas-pagamento", rotulo: "Formas de pagamento" },
-      { href: "/configuracoes/contas-financeiras", rotulo: "Contas financeiras" },
-    ],
-  },
-  {
-    rotulo: "Automação",
-    itens: [
-      { href: "/configuracoes/regras-categorizacao", rotulo: "Regras de categorização" },
-      { href: "/configuracoes/mapeamento-colunas", rotulo: "Mapeamento de colunas" },
-      { href: "/configuracoes/recorrencias", rotulo: "Recorrências" },
-    ],
-  },
-  {
-    rotulo: "Personalização",
-    itens: [
-      { href: "/configuracoes/campos-personalizados", rotulo: "Campos personalizados" },
-      { href: "/configuracoes/estrutura-dre", rotulo: "Estrutura de DRE" },
-    ],
-  },
-  {
-    rotulo: "Equipe",
-    itens: [{ href: "/configuracoes/equipe", rotulo: "Equipe" }],
-  },
-] as const;
+import { GRUPOS_CONFIGURACOES as GRUPOS } from "./grupos";
 
 // Mesmo padrão de sub-nav agrupada da seção de Relatórios (ver
 // relatorios/sub-nav.tsx) — 10 pills soltas numa linha só, sem hierarquia,
