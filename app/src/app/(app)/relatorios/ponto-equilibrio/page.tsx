@@ -130,6 +130,7 @@ export default async function PaginaRelatoriosPontoEquilibrio({
       <div className="rounded-2xl bg-card shadow-card p-5">
         <p className="mb-1 text-xs font-semibold text-muted-foreground">Margem de segurança</p>
         <p className={cn("text-xl font-bold tabular-nums", margemDeSeguranca >= 0 ? "text-positivo" : "text-destructive")}>
+          {margemDeSeguranca > 0 ? "+" : ""}
           {formatarMoeda(margemDeSeguranca)}
         </p>
         <p className="text-xs text-muted-foreground">{formatarPercentual(margemDeSegurancaPercentual)} acima do ponto de equilíbrio</p>

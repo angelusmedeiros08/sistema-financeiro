@@ -45,6 +45,7 @@ export default async function PaginaRelatoriosCentroCusto({
                   valorFormatado={formatarMoeda(l.saldo)}
                 />
                 <span className={cn("min-w-28 shrink-0 text-right text-xs font-semibold tabular-nums", l.saldo >= 0 ? "text-positivo" : "text-destructive")}>
+                  {l.saldo > 0 ? "+" : ""}
                   {formatarMoeda(l.saldo)}
                 </span>
               </div>

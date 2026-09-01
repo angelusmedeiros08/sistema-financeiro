@@ -59,9 +59,16 @@ declare module "@tanstack/react-table" {
 
 export type TipoLinhaMatriz = "detalhe" | "subtotal" | "final";
 
+// Mesmo reforço de sinal de ValorLista (tabela-lista.tsx) — "+" explícito
+// no positivo, não só cor (WCAG 1.4.1).
 /** Valor tabular-nums colorido por sinal — recebe o texto já formatado (ex: "–" pra zero). */
 export function ValorMatriz({ valor, formatado }: { valor: number; formatado: string }) {
-  return <span className={valor > 0 ? "text-positivo" : valor < 0 ? "text-destructive" : "text-muted-foreground/40"}>{formatado}</span>;
+  return (
+    <span className={valor > 0 ? "text-positivo" : valor < 0 ? "text-destructive" : "text-muted-foreground/40"}>
+      {valor > 0 ? "+" : ""}
+      {formatado}
+    </span>
+  );
 }
 
 /** Coluna AV% — percentual de participação com mini-barra horizontal. */

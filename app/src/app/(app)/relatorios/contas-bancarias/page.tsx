@@ -53,6 +53,7 @@ export default async function PaginaRelatoriosContasBancarias({
                 <div>
                   <p className="text-xs text-muted-foreground">Saldo do período</p>
                   <p className={cn("font-semibold tabular-nums", c.saldoPeriodo >= 0 ? "text-positivo" : "text-destructive")}>
+                    {c.saldoPeriodo > 0 ? "+" : ""}
                     {formatarNumeroCompacto(c.saldoPeriodo)}
                   </p>
                 </div>

@@ -111,10 +111,19 @@ export function CelulaLideranca({ icone: Icone, cor, primario, secundario }: { i
   );
 }
 
+// "+" explícito no positivo — moeda/percentual formatada já traz o "-" do
+// negativo (Intl.NumberFormat), mas nada diferenciava o positivo além da
+// cor. WCAG 1.4.1: cor nunca pode ser o único jeito de comunicar sinal
+// (achado na varredura de Gráficos interativos, estendido pra toda tabela
+// que usa este componente — é o valor tabular-nums colorido mais usado do
+// sistema).
 /** Valor tabular-nums colorido por sinal — recebe o texto já formatado (moeda/percentual). */
 export function ValorLista({ valor, formatado }: { valor: number; formatado: string }) {
   return (
-    <span className={cn("font-bold tabular-nums", valor > 0 ? "text-positivo" : valor < 0 ? "text-destructive" : "text-foreground")}>{formatado}</span>
+    <span className={cn("font-bold tabular-nums", valor > 0 ? "text-positivo" : valor < 0 ? "text-destructive" : "text-foreground")}>
+      {valor > 0 ? "+" : ""}
+      {formatado}
+    </span>
   );
 }
 
