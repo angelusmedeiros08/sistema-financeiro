@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter, usePathname, useSearchParams } from "next/navigation";
-import { CalendarBlank, CaretDown, Check, Clock } from "@phosphor-icons/react/dist/ssr";
+import { CalendarBlank, CaretDown, Check, Clock, Spinner } from "@phosphor-icons/react/dist/ssr";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuCheckboxItem } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { GatilhoFiltro } from "@/components/relatorios/gatilho-filtro";
+import { useNavegacaoFiltro } from "@/lib/hooks/use-navegacao-filtro";
 import type { Regime, Granularidade } from "@/lib/relatorios/regime";
 
 const REGIMES: { valor: Regime; rotulo: string }[] = [
@@ -51,24 +51,13 @@ export function RelatoriosControles({
   dataInicio: string;
   dataFim: string;
 }) {
-  const pathname = usePathname();
-  const router = useRouter();
-  const searchParams = useSearchParams();
   const [inicio, setInicio] = useState(dataInicio);
   const [fim, setFim] = useState(dataFim);
   const [periodoAberto, setPeriodoAberto] = useState(false);
-
-  function navegarCom(chave: string, valor: string) {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set(chave, valor);
-    router.push(`${pathname}?${params.toString()}`);
-  }
+  const { navegarCom, pendente } = useNavegacaoFiltro();
 
   function aplicarPeriodo() {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("data_inicio", inicio);
-    params.set("data_fim", fim);
-    router.push(`${pathname}?${params.toString()}`);
+    navegarCom({ data_inicio: inicio, data_fim: fim });
     setPeriodoAberto(false);
   }
 
@@ -77,13 +66,19 @@ export function RelatoriosControles({
 
   return (
     <div className="flex flex-wrap items-center gap-2">
+      {pendente && (
+        <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Spinner size={13} className="shrink-0 animate-spin" />
+          Atualizando…
+        </span>
+      )}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <GatilhoFiltro icone={Clock} rotulo="Regime" valor={rotuloRegime} />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-56">
           {REGIMES.map((r) => (
-            <DropdownMenuCheckboxItem key={r.valor} checked={regime === r.valor} onSelect={() => navegarCom("regime", r.valor)}>
+            <DropdownMenuCheckboxItem key={r.valor} checked={regime === r.valor} onSelect={() => navegarCom({ regime: r.valor })}>
               {r.rotulo}
             </DropdownMenuCheckboxItem>
           ))}
@@ -96,7 +91,7 @@ export function RelatoriosControles({
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-40">
           {GRANULARIDADES.map((g) => (
-            <DropdownMenuCheckboxItem key={g.valor} checked={granularidade === g.valor} onSelect={() => navegarCom("granularidade", g.valor)}>
+            <DropdownMenuCheckboxItem key={g.valor} checked={granularidade === g.valor} onSelect={() => navegarCom({ granularidade: g.valor })}>
               {g.rotulo}
             </DropdownMenuCheckboxItem>
           ))}

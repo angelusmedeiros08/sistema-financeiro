@@ -6,13 +6,14 @@
 // visão (Matriz mensal/Cascata/Indicadores), que não é filtro de dado, é
 // modo de exibição — por isso ganha um tratamento visualmente diferente
 // (trilho segmentado) em vez do mesmo pill de filtro do Regime.
-import { useRouter, usePathname, useSearchParams } from "next/navigation";
-import { Clock } from "@phosphor-icons/react/dist/ssr";
+import { useSearchParams } from "next/navigation";
+import { Clock, Spinner } from "@phosphor-icons/react/dist/ssr";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuCheckboxItem } from "@/components/ui/dropdown-menu";
 import { GatilhoFiltro } from "@/components/relatorios/gatilho-filtro";
 import { AnoStepper } from "@/components/relatorios/ano-stepper";
 import { cn } from "@/lib/utils";
 import { PARAM_APRESENTACAO } from "@/lib/apresentacao/sessao";
+import { useNavegacaoFiltro } from "@/lib/hooks/use-navegacao-filtro";
 import type { Regime } from "@/lib/relatorios/regime";
 
 const REGIMES: { valor: Regime; rotulo: string }[] = [
@@ -28,15 +29,8 @@ const ABAS = [
 ] as const;
 
 export function DreControles({ regime, ano, aba }: { regime: Regime; ano: number; aba: string }) {
-  const pathname = usePathname();
-  const router = useRouter();
   const searchParams = useSearchParams();
-
-  function navegarCom(chave: string, valor: string) {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set(chave, valor);
-    router.push(`${pathname}?${params.toString()}`);
-  }
+  const { navegarCom, pendente } = useNavegacaoFiltro();
 
   const rotuloRegime = REGIMES.find((r) => r.valor === regime)?.rotulo ?? regime;
   // O seletor de aba fica redundante em apresentação — o catálogo já aponta
@@ -48,20 +42,26 @@ export function DreControles({ regime, ano, aba }: { regime: Regime; ano: number
   return (
     <div className="flex flex-wrap items-center justify-between gap-3">
       <div className="flex flex-wrap items-center gap-2">
+        {pendente && (
+          <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Spinner size={13} className="shrink-0 animate-spin" />
+            Atualizando…
+          </span>
+        )}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <GatilhoFiltro icone={Clock} rotulo="Regime" valor={rotuloRegime} />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-56">
             {REGIMES.map((r) => (
-              <DropdownMenuCheckboxItem key={r.valor} checked={regime === r.valor} onSelect={() => navegarCom("regime", r.valor)}>
+              <DropdownMenuCheckboxItem key={r.valor} checked={regime === r.valor} onSelect={() => navegarCom({ regime: r.valor })}>
                 {r.rotulo}
               </DropdownMenuCheckboxItem>
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <AnoStepper ano={ano} onMudar={(novoAno) => navegarCom("ano", String(novoAno))} />
+        <AnoStepper ano={ano} onMudar={(novoAno) => navegarCom({ ano: String(novoAno) })} />
       </div>
 
       {!emApresentacao && (
@@ -70,7 +70,7 @@ export function DreControles({ regime, ano, aba }: { regime: Regime; ano: number
             <button
               key={a.valor}
               type="button"
-              onClick={() => navegarCom("aba", a.valor)}
+              onClick={() => navegarCom({ aba: a.valor })}
               className={cn(
                 "rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
                 aba === a.valor ? "bg-card text-foreground shadow-sm font-semibold" : "text-muted-foreground hover:text-foreground",
