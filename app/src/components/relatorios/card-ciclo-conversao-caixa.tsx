@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import { TermoComDica } from "@/components/formularios/termo-com-dica";
+import { formatarIndice } from "@/lib/formatacao";
 
 // Mesma tipografia/cor de CardPrazoMedio (indicadores/page.tsx): positivo
 // (cliente atrasa mais que você atrasa fornecedor) é ruim, negativo é bom.
@@ -14,12 +15,12 @@ export function CardCicloConversaoCaixa({ dias, pmrDias, pmpDias }: { dias: numb
       </p>
       <p className={cn("text-2xl font-bold tabular-nums", dias > 0 ? "text-destructive" : "text-positivo")}>
         {dias >= 0 ? "+" : ""}
-        {dias.toFixed(1)} dias
+        {formatarIndice(dias)} dias
       </p>
       <p className="text-xs text-muted-foreground">
         PMR {pmrDias >= 0 ? "+" : ""}
-        {pmrDias.toFixed(1)}d − PMP {pmpDias >= 0 ? "+" : ""}
-        {pmpDias.toFixed(1)}d
+        {formatarIndice(pmrDias)}d − PMP {pmpDias >= 0 ? "+" : ""}
+        {formatarIndice(pmpDias)}d
       </p>
     </div>
   );
