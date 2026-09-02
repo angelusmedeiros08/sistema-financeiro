@@ -355,11 +355,11 @@ export function SidebarConteudo({ emailUsuario, emSheet = false }: { emailUsuari
   if (emSheet) {
     return (
       <div className="flex h-full min-h-0 flex-col gap-6 bg-card px-4 py-6 text-foreground">
-        <div className="flex shrink-0 items-center gap-2.5 px-2">
-          <span className="flex size-6 items-center justify-center rounded-md bg-gradient-to-br from-[#D8583A] to-[#A87C1F] font-heading text-[11px] font-bold text-white">
-            F
-          </span>
-          <span className="font-heading text-[15px] font-bold tracking-tight">Finanssi</span>
+        <div className="flex shrink-0 items-center gap-2 px-2">
+          <img src="/logo/icone-claro.png" alt="" className="size-8 shrink-0 object-contain dark:hidden" />
+          <img src="/logo/icone-escuro.png" alt="" className="hidden size-8 shrink-0 object-contain dark:block" />
+          <img src="/logo/texto-claro.png" alt="Finanssi" className="h-7 w-auto dark:hidden" />
+          <img src="/logo/texto-escuro.png" alt="Finanssi" className="hidden h-7 w-auto dark:block" />
         </div>
         {renderLista()}
       </div>
@@ -379,12 +379,6 @@ export function SidebarConteudo({ emailUsuario, emSheet = false }: { emailUsuari
       >
         {/* Rail: sempre visível, ícones apenas — fica no fluxo normal (nunca some), reserva o espaço fixo do layout. */}
         <div className="flex h-full flex-col items-center gap-1 border-r border-border bg-card px-2 py-6 text-foreground">
-          <div className="mb-5 flex size-9 shrink-0 items-center justify-center">
-            <span className="flex size-6 items-center justify-center rounded-md bg-gradient-to-br from-[#D8583A] to-[#A87C1F] font-heading text-[11px] font-bold text-white">
-              N
-            </span>
-          </div>
-
           {ITENS_NAV.map((item) => {
             const ativo = itemAtivo(item, pathname);
             const Icon = item.icon;
@@ -442,11 +436,11 @@ export function SidebarConteudo({ emailUsuario, emSheet = false }: { emailUsuari
           )}
         >
           <div className="flex h-full min-h-0 flex-col gap-6 bg-card px-4 py-6 text-foreground">
-            <div className="flex shrink-0 items-center gap-2.5 px-2">
-              <span className="flex size-6 items-center justify-center rounded-md bg-gradient-to-br from-[#D8583A] to-[#A87C1F] font-heading text-[11px] font-bold text-white">
-                F
-              </span>
-              <span className="font-heading text-[15px] font-bold tracking-tight">Finanssi</span>
+            <div className="flex shrink-0 items-center gap-2 px-2">
+              <img src="/logo/icone-claro.png" alt="" className="size-8 shrink-0 object-contain dark:hidden" />
+              <img src="/logo/icone-escuro.png" alt="" className="hidden size-8 shrink-0 object-contain dark:block" />
+              <img src="/logo/texto-claro.png" alt="Finanssi" className="h-7 w-auto dark:hidden" />
+              <img src="/logo/texto-escuro.png" alt="Finanssi" className="hidden h-7 w-auto dark:block" />
             </div>
             {renderLista()}
           </div>

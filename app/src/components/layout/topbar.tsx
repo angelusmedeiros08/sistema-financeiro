@@ -49,9 +49,12 @@ export function Topbar({
         </SheetContent>
       </Sheet>
 
-      <span className="hidden shrink-0 font-heading text-[15px] font-bold tracking-tight text-foreground lg:inline">
-        Finanssi
-      </span>
+      <div className="hidden shrink-0 items-center gap-2.5 lg:flex">
+        <img src="/logo/icone-claro.png" alt="" className="size-7 shrink-0 object-contain dark:hidden" />
+        <img src="/logo/icone-escuro.png" alt="" className="hidden size-7 shrink-0 object-contain dark:block" />
+        <img src="/logo/texto-claro.png" alt="Finanssi" className="h-7 w-auto dark:hidden" />
+        <img src="/logo/texto-escuro.png" alt="Finanssi" className="hidden h-7 w-auto dark:block" />
+      </div>
 
       <div className="hidden min-w-0 flex-1 justify-center lg:flex">
         <CommandPaletteBusca />
