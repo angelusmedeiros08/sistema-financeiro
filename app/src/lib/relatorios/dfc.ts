@@ -1,6 +1,7 @@
 import type { Cliente, MovimentoLinha } from "./regime";
 import { buscarMovimento, valorComSinal } from "./regime";
 import { buscarAnaliseCategorias } from "./analise-despesas";
+import { montarHrefLancamentos } from "./drill-down";
 import type { Database } from "@/utils/supabase/database.types";
 
 type IdDfcLinhaDre = Database["public"]["Enums"]["id_dfc_linha_dre"];
@@ -30,6 +31,11 @@ export type LinhaDfcMatriz = {
   mesesRealizado: number[];
   totalPrevisto: number;
   totalRealizado: number;
+  // Só Realizado tem link (mesmo princípio de Orçado×Realizado: Previsto é
+  // vencimento futuro, sem baixa ainda) e só nas 3 atividades reais —
+  // "Geração de caixa" é a soma das outras 3, sem filtro único que bata.
+  hrefsPorMesRealizado: (string | null)[];
+  hrefTotalRealizado: string | null;
 };
 
 // Previsto (vencimento) e Realizado (pagamento) lado a lado, mesma leitura
@@ -37,9 +43,13 @@ export type LinhaDfcMatriz = {
 // por atividade de DFC em vez de entradas/saídas cruas. "Geração de caixa"
 // é a soma de tudo que tem id_dfc não nulo, não uma lista de exclusão por
 // nome (ver spec 2026-08-14-dfc-por-atividade-design.md).
-export async function buscarDFCMatriz(supabase: Cliente, params: { tenantId: string; ano: number }): Promise<LinhaDfcMatriz[]> {
+export async function buscarDFCMatriz(supabase: Cliente, params: { tenantId: string; ano: number; origemHref: string }): Promise<LinhaDfcMatriz[]> {
   const dataInicio = `${params.ano}-01-01`;
   const dataFim = `${params.ano}-12-31`;
+  const limitesDoMes = Array.from({ length: 12 }, (_, i) => ({
+    inicio: `${params.ano}-${String(i + 1).padStart(2, "0")}-01`,
+    fim: new Date(Date.UTC(params.ano, i + 1, 0)).toISOString().slice(0, 10),
+  }));
 
   const { data: linhas } = await supabase
     .from("linhas_dre")
@@ -79,6 +89,17 @@ export async function buscarDFCMatriz(supabase: Cliente, params: { tenantId: str
   acumular(movimentoPrevisto, "previsto");
   acumular(movimentoRealizado, "realizado");
 
+  function hrefRealizado(atividade: AtividadeDfc, periodoInicio: string, periodoFim: string): string {
+    return montarHrefLancamentos({
+      tipoEntidade: "atividade_dfc",
+      entidadeId: atividade,
+      regime: "realizado",
+      periodoInicio,
+      periodoFim,
+      origemHref: params.origemHref,
+    });
+  }
+
   const atividades: AtividadeDfc[] = ["OPERACIONAL", "INVESTIMENTO", "FINANCIAMENTO"];
   const linhasResultado: LinhaDfcMatriz[] = atividades.map((atividade) => {
     const mesesPrevisto = somaPorAtividade[atividade].previsto;
@@ -90,6 +111,8 @@ export async function buscarDFCMatriz(supabase: Cliente, params: { tenantId: str
       mesesRealizado,
       totalPrevisto: mesesPrevisto.reduce((s, v) => s + v, 0),
       totalRealizado: mesesRealizado.reduce((s, v) => s + v, 0),
+      hrefsPorMesRealizado: limitesDoMes.map((m) => hrefRealizado(atividade, m.inicio, m.fim)),
+      hrefTotalRealizado: hrefRealizado(atividade, dataInicio, dataFim),
     };
   });
 
@@ -101,6 +124,8 @@ export async function buscarDFCMatriz(supabase: Cliente, params: { tenantId: str
     rotulo: ROTULO_ATIVIDADE.GERACAO_CAIXA,
     mesesPrevisto: mesesGeracaoPrevisto,
     mesesRealizado: mesesGeracaoRealizado,
+    hrefsPorMesRealizado: new Array(12).fill(null),
+    hrefTotalRealizado: null,
     totalPrevisto: mesesGeracaoPrevisto.reduce((s, v) => s + v, 0),
     totalRealizado: mesesGeracaoRealizado.reduce((s, v) => s + v, 0),
   });

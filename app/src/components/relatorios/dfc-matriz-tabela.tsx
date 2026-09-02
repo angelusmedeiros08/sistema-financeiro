@@ -8,9 +8,23 @@
 // cabeçalho usa um grupo por mês (12 grupos de 3 folhas), não um grupo só
 // cobrindo os 12 meses como na DRE.
 import { useMemo } from "react";
+import Link from "next/link";
 import { formatarNumeroCompacto } from "@/lib/formatacao";
 import type { LinhaDfcMatriz } from "@/lib/relatorios/dfc";
 import { TabelaMatriz, criarColunaMatriz, ValorMatriz, type TipoLinhaMatriz } from "@/components/tabela/tabela-matriz";
+
+// Realizado com link (Previsto nunca tem — vencimento futuro, sem baixa
+// ainda, mesmo padrão de Orçado×Realizado). "Geração de caixa" tampouco
+// (soma das 3 atividades, sem filtro único que bata) — href chega null.
+function CelulaRealizado({ valor, href }: { valor: number; href: string | null }) {
+  const conteudo = formatarNumeroCompacto(valor);
+  if (!href) return conteudo;
+  return (
+    <Link href={href} className="block hover:underline">
+      {conteudo}
+    </Link>
+  );
+}
 
 const NOMES_MES = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 const IDS_MES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
@@ -52,7 +66,7 @@ function colunasDoMes(idMes: string, nomeMes: string, indiceMes: number) {
         header: "Real.",
         meta: { numerica: true },
         enableSorting: false,
-        cell: (info) => formatarNumeroCompacto(info.getValue()),
+        cell: (info) => <CelulaRealizado valor={info.getValue()} href={info.row.original.hrefsPorMesRealizado[indiceMes]} />,
       }),
       helper.accessor((linha) => linha.mesesRealizado[indiceMes] - linha.mesesPrevisto[indiceMes], {
         id: `${idMes}_variacao`,
@@ -94,7 +108,7 @@ export function DfcMatrizTabela({ linhas, ano }: { linhas: LinhaDfcMatriz[]; ano
               header: "Real.",
               meta: { numerica: true, totalizador: true },
               enableSorting: false,
-              cell: (info) => formatarNumeroCompacto(info.getValue()),
+              cell: (info) => <CelulaRealizado valor={info.getValue()} href={info.row.original.hrefTotalRealizado} />,
             }),
             helper.accessor((linha) => linha.totalRealizado - linha.totalPrevisto, {
               id: "total_variacao",

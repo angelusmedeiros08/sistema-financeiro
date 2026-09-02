@@ -28,7 +28,7 @@ export default async function PaginaRelatoriosDfc({
 
   const supabase = await createClient();
   const [linhas, composicaoFluxo] = await Promise.all([
-    buscarDFCMatriz(supabase, { tenantId: contexto.tenantId, ano }),
+    buscarDFCMatriz(supabase, { tenantId: contexto.tenantId, ano, origemHref }),
     buscarComposicaoFluxoCaixa(supabase, { tenantId: contexto.tenantId, ano, origemHref }),
   ]);
 
