@@ -76,6 +76,28 @@ function GraficoInterno({
     hideTooltip();
   }
 
+  // O <rect> de hover fica por cima dos círculos na ordem de pintura do SVG
+  // (precisa vir depois pra capturar mousemove no gráfico inteiro), então é
+  // ele quem tem que tratar o clique — um onClick só nos círculos nunca
+  // dispara, o rect intercepta antes (achado ao vivo: clique num ponto não
+  // levava pra lançamentos). Navega pra série (receita/despesa) mais perto
+  // do Y clicado dentre as visíveis.
+  function aoClicar(evento: React.MouseEvent) {
+    const coords = localPoint(evento);
+    if (!coords || dados.length === 0 || !hrefsPorMes) return;
+    const passo = larguraInterna / Math.max(dados.length - 1, 1);
+    const indice = Math.max(0, Math.min(dados.length - 1, Math.round((coords.x - MARGEM.left) / passo)));
+    const href = hrefsPorMes[indice];
+    if (!href) return;
+    const ponto = dados[indice];
+    const yClique = coords.y - MARGEM.top;
+    const candidatas = (["receitas", "despesas"] as Serie[])
+      .filter((s) => !ocultas.has(s))
+      .map((s) => ({ serie: s, dist: Math.abs(yScale(ponto[s]) - yClique) }))
+      .sort((a, b) => a.dist - b.dist);
+    if (candidatas.length > 0) router.push(href[candidatas[0].serie]);
+  }
+
   const pontoHover = hoverIndice !== null ? dados[hoverIndice] : null;
   const xHover = pontoHover ? (xScale(pontoHover.mes) ?? null) : null;
   const hrefHover = hoverIndice !== null ? hrefsPorMes?.[hoverIndice] : undefined;
@@ -149,28 +171,10 @@ function GraficoInterno({
             <>
               <Line from={{ x: xHover, y: 0 }} to={{ x: xHover, y: alturaInterna }} stroke="var(--muted-foreground)" strokeWidth={1} strokeDasharray="3 3" />
               {!ocultas.has("receitas") && (
-                <circle
-                  cx={xHover}
-                  cy={yScale(pontoHover.receitas)}
-                  r={5}
-                  fill="var(--positivo)"
-                  stroke="var(--card)"
-                  strokeWidth={2}
-                  style={{ cursor: hrefHover ? "pointer" : "default" }}
-                  onClick={() => hrefHover && router.push(hrefHover.receitas)}
-                />
+                <circle cx={xHover} cy={yScale(pontoHover.receitas)} r={5} fill="var(--positivo)" stroke="var(--card)" strokeWidth={2} />
               )}
               {!ocultas.has("despesas") && (
-                <circle
-                  cx={xHover}
-                  cy={yScale(pontoHover.despesas)}
-                  r={5}
-                  fill="var(--destructive)"
-                  stroke="var(--card)"
-                  strokeWidth={2}
-                  style={{ cursor: hrefHover ? "pointer" : "default" }}
-                  onClick={() => hrefHover && router.push(hrefHover.despesas)}
-                />
+                <circle cx={xHover} cy={yScale(pontoHover.despesas)} r={5} fill="var(--destructive)" stroke="var(--card)" strokeWidth={2} />
               )}
             </>
           )}
@@ -183,7 +187,15 @@ function GraficoInterno({
             tickStroke="var(--border)"
           />
 
-          <rect width={larguraInterna} height={alturaInterna} fill="transparent" onMouseMove={aoMoverMouse} onMouseLeave={aoSairMouse} />
+          <rect
+            width={larguraInterna}
+            height={alturaInterna}
+            fill="transparent"
+            style={{ cursor: hrefsPorMes ? "pointer" : "default" }}
+            onMouseMove={aoMoverMouse}
+            onMouseLeave={aoSairMouse}
+            onClick={aoClicar}
+          />
         </Group>
       </svg>
 
