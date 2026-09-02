@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
@@ -18,9 +19,12 @@ export default async function PaginaRelatoriosContasBancarias({
   const contexto = await obterUsuarioETenantAtual();
   if ("erro" in contexto) redirect("/entrar");
 
-  const params = lerParametrosRelatorio(await searchParams);
+  const spBrutos = await searchParams;
+  const params = lerParametrosRelatorio(spBrutos);
+  const qsAtual = new URLSearchParams(Object.entries(spBrutos).filter((par): par is [string, string] => par[1] !== undefined)).toString();
+  const origemHref = `/relatorios/contas-bancarias${qsAtual ? `?${qsAtual}` : ""}`;
   const supabase = await createClient();
-  const contas = await buscarContasBancarias(supabase, { tenantId: contexto.tenantId, ...params });
+  const contas = await buscarContasBancarias(supabase, { tenantId: contexto.tenantId, ...params, origemHref });
   const saldoTotal = contas.reduce((soma, c) => soma + c.saldoAcumulado, 0);
 
   return (
@@ -42,14 +46,14 @@ export default async function PaginaRelatoriosContasBancarias({
                 <span className="text-lg font-bold tabular-nums text-foreground">{formatarMoedaOuTraco(c.saldoAcumulado)}</span>
               </div>
               <div className="grid grid-cols-1 gap-3 border-t border-border pt-3 text-sm sm:grid-cols-3">
-                <div>
+                <Link href={c.hrefCredito} className="rounded-lg hover:bg-muted">
                   <p className="text-xs text-muted-foreground">Crédito no período</p>
                   <p className="font-semibold tabular-nums text-positivo">{formatarNumeroCompacto(c.credito)}</p>
-                </div>
-                <div>
+                </Link>
+                <Link href={c.hrefDebito} className="rounded-lg hover:bg-muted">
                   <p className="text-xs text-muted-foreground">Débito no período</p>
                   <p className="font-semibold tabular-nums text-destructive">{formatarNumeroCompacto(c.debito)}</p>
-                </div>
+                </Link>
                 <div>
                   <p className="text-xs text-muted-foreground">Saldo do período</p>
                   <p className={cn("font-semibold tabular-nums", c.saldoPeriodo >= 0 ? "text-positivo" : "text-destructive")}>

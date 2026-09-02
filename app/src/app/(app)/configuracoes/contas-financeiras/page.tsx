@@ -93,7 +93,7 @@ async function VisaoGeralContasFinanceiras({ tenantId, supabase }: { tenantId: s
   const dataInicio = somarDias(dataFim, -30);
 
   const [contas, resumoReceber, resumoPagar] = await Promise.all([
-    buscarContasBancarias(supabase, { tenantId, regime: "competencia", dataInicio, dataFim }),
+    buscarContasBancarias(supabase, { tenantId, regime: "competencia", dataInicio, dataFim, origemHref: "/configuracoes/contas-financeiras?aba=visao-geral" }),
     buscarResumoVencimentos(supabase, { tenantId, tipo: "RECEITA" }),
     buscarResumoVencimentos(supabase, { tenantId, tipo: "DESPESA" }),
   ]);
@@ -130,14 +130,14 @@ async function VisaoGeralContasFinanceiras({ tenantId, supabase }: { tenantId: s
               </div>
               <p className="text-xs text-muted-foreground">Últimos 30 dias</p>
               <div className="mt-2 grid grid-cols-2 gap-3 text-sm">
-                <div>
+                <Link href={c.hrefCredito} className="rounded-lg hover:bg-muted">
                   <p className="text-xs text-muted-foreground">Crédito</p>
                   <p className="font-semibold tabular-nums text-positivo">{formatarMoeda(c.credito)}</p>
-                </div>
-                <div>
+                </Link>
+                <Link href={c.hrefDebito} className="rounded-lg hover:bg-muted">
                   <p className="text-xs text-muted-foreground">Débito</p>
                   <p className="font-semibold tabular-nums text-destructive">{formatarMoeda(c.debito)}</p>
-                </div>
+                </Link>
               </div>
             </div>
           ))}

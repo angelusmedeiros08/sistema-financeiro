@@ -1,5 +1,6 @@
 import type { Cliente, Regime } from "./regime";
 import { buscarMovimento } from "./regime";
+import { montarHrefLancamentos } from "./drill-down";
 
 export type ExtratoContaBancaria = {
   contaFinanceiraId: string;
@@ -8,6 +9,13 @@ export type ExtratoContaBancaria = {
   debito: number;
   saldoPeriodo: number;
   saldoAcumulado: number;
+  // Só crédito/débito têm link — saldoPeriodo é subtração (mesmo motivo de
+  // Centro de Custo) e saldoAcumulado inclui saldo_inicial cadastrado à mão
+  // (sem lançamento nenhum por trás) mais todo o histórico desde a criação
+  // da conta, não só o período selecionado — nenhum dos dois bate com uma
+  // lista de lançamentos filtrada.
+  hrefCredito: string;
+  hrefDebito: string;
 };
 
 // Extrato gerencial por conta: crédito/débito/saldo do período (na janela
@@ -25,7 +33,7 @@ export type ExtratoContaBancaria = {
 // volume — o saldo acumulado ficaria errado sem nenhum erro visível.
 export async function buscarContasBancarias(
   supabase: Cliente,
-  params: { tenantId: string; regime: Regime; dataInicio: string; dataFim: string },
+  params: { tenantId: string; regime: Regime; dataInicio: string; dataFim: string; origemHref: string },
 ): Promise<ExtratoContaBancaria[]> {
   const { data: contas } = await supabase
     .from("contas_financeiras")
@@ -54,6 +62,14 @@ export async function buscarContasBancarias(
   return contas.map((conta) => {
     const { credito, debito } = porContaPeriodo.get(conta.id) ?? { credito: 0, debito: 0 };
     const totalDesdeInicio = porContaDesdeInicio.get(conta.id);
+    const hrefBase = {
+      tipoEntidade: "conta_financeira" as const,
+      entidadeId: conta.id,
+      regime: params.regime,
+      periodoInicio: params.dataInicio,
+      periodoFim: params.dataFim,
+      origemHref: params.origemHref,
+    };
     return {
       contaFinanceiraId: conta.id,
       nome: conta.nome,
@@ -61,6 +77,8 @@ export async function buscarContasBancarias(
       debito,
       saldoPeriodo: credito - debito,
       saldoAcumulado: Number(conta.saldo_inicial) + (Number(totalDesdeInicio?.credito ?? 0) - Number(totalDesdeInicio?.debito ?? 0)),
+      hrefCredito: montarHrefLancamentos({ ...hrefBase, tipo: "RECEITA" }),
+      hrefDebito: montarHrefLancamentos({ ...hrefBase, tipo: "DESPESA" }),
     };
   });
 }
