@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { ArrowRight } from "@phosphor-icons/react/dist/ssr";
 import type { CategoriaFluxo, ComposicaoFluxoCaixa as ComposicaoFluxoCaixaDados } from "@/lib/relatorios/dfc";
 import { formatarNumeroAbreviado } from "@/lib/formatacao";
@@ -7,7 +8,10 @@ import { cn } from "@/lib/utils";
 // diagrama de Sankey, trocado por duas colunas de barra horizontal (ver
 // motivo completo em lib/relatorios/dfc.ts, buscarComposicaoFluxoCaixa).
 // Server component puro: sem hover/estado, então não precisa de "use
-// client" como o Sankey antigo (ECharts) precisava.
+// client" como o Sankey antigo (ECharts) precisava. "Outras receitas/
+// despesas" (resto agregado) fica sem link — agruparTopN não carrega uma
+// lista de ids até esse ponto, só a soma (mesmo motivo de qualquer bucket
+// "Outras" sem lista de ids sobrevivente).
 function Coluna({ titulo, categorias, tom }: { titulo: string; categorias: CategoriaFluxo[]; tom: "receita" | "despesa" }) {
   const maior = Math.max(...categorias.map((c) => c.valor), 1);
   return (
@@ -17,30 +21,39 @@ function Coluna({ titulo, categorias, tom }: { titulo: string; categorias: Categ
         {titulo}
       </h3>
       <div className="flex flex-col gap-2.5">
-        {categorias.map((c) => (
-          <div key={c.nome}>
-            <div className="mb-1 flex items-baseline justify-between gap-2">
-              <span className={cn("truncate text-xs font-semibold", c.outros ? "font-medium text-muted-foreground" : "text-foreground")} title={c.nome}>
-                {c.nome}
-              </span>
-              <span className={cn("shrink-0 text-xs font-bold tabular-nums", c.outros ? "font-medium text-muted-foreground" : "text-muted-foreground")}>
-                {formatarNumeroAbreviado(c.valor)}
-              </span>
+        {categorias.map((c) => {
+          const linha = (
+            <div>
+              <div className="mb-1 flex items-baseline justify-between gap-2">
+                <span className={cn("truncate text-xs font-semibold", c.outros ? "font-medium text-muted-foreground" : "text-foreground")} title={c.nome}>
+                  {c.nome}
+                </span>
+                <span className={cn("shrink-0 text-xs font-bold tabular-nums", c.outros ? "font-medium text-muted-foreground" : "text-muted-foreground")}>
+                  {formatarNumeroAbreviado(c.valor)}
+                </span>
+              </div>
+              <div className="h-2 overflow-hidden rounded-full bg-muted">
+                <div
+                  className={cn("h-full rounded-full", c.outros && "opacity-50")}
+                  style={{
+                    width: `${Math.max((c.valor / maior) * 100, 2)}%`,
+                    background:
+                      tom === "receita"
+                        ? "linear-gradient(90deg, var(--chart-1), var(--positivo))"
+                        : "linear-gradient(90deg, var(--primary), var(--destructive))",
+                  }}
+                />
+              </div>
             </div>
-            <div className="h-2 overflow-hidden rounded-full bg-muted">
-              <div
-                className={cn("h-full rounded-full", c.outros && "opacity-50")}
-                style={{
-                  width: `${Math.max((c.valor / maior) * 100, 2)}%`,
-                  background:
-                    tom === "receita"
-                      ? "linear-gradient(90deg, var(--chart-1), var(--positivo))"
-                      : "linear-gradient(90deg, var(--primary), var(--destructive))",
-                }}
-              />
-            </div>
-          </div>
-        ))}
+          );
+          return c.href ? (
+            <Link key={c.nome} href={c.href} className="rounded-lg hover:bg-muted">
+              {linha}
+            </Link>
+          ) : (
+            <div key={c.nome}>{linha}</div>
+          );
+        })}
       </div>
     </div>
   );

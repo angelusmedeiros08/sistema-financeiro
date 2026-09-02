@@ -100,6 +100,7 @@ export default async function PaginaRelatoriosComparativos({
             pontos={pontos}
             colunaComparacao={config.colunaComparacao}
             mostrarVariacao={tipoAtivo !== "YTD"}
+            hrefsPorPonto={hrefsPorPonto}
           />
         </>
       )}

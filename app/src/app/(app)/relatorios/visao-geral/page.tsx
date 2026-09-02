@@ -123,23 +123,27 @@ export default async function PaginaRelatoriosVisaoGeral({
         rotulo="% Realizado de contas a receber"
         valor={indicadoresCAR.percentualRealizado}
         serie={serieCAR.map((p) => ({ mes: p.mes, valor: p.percentualRealizado }))}
+        href="/contas-a-receber?situacao=todos"
       />
       <IndicadorGauge
         rotulo="% Realizado de contas a pagar"
         valor={indicadoresCAP.percentualRealizado}
         serie={serieCAP.map((p) => ({ mes: p.mes, valor: p.percentualRealizado }))}
+        href="/contas-a-pagar?situacao=todos"
       />
       <IndicadorGauge
         rotulo="% Pago em atraso (a receber)"
         valor={indicadoresCAR.percentualPagoEmAtraso}
         invertido
         serie={serieCAR.map((p) => ({ mes: p.mes, valor: p.percentualPagoEmAtraso }))}
+        href="/contas-a-receber?situacao=vencido"
       />
       <IndicadorGauge
         rotulo="% Pago em atraso (a pagar)"
         valor={indicadoresCAP.percentualPagoEmAtraso}
         invertido
         serie={serieCAP.map((p) => ({ mes: p.mes, valor: p.percentualPagoEmAtraso }))}
+        href="/contas-a-pagar?situacao=vencido"
       />
     </div>
   );

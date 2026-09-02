@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ArrowUp, ArrowDown } from "@phosphor-icons/react/dist/ssr";
 import { createClient } from "@/utils/supabase/server";
@@ -212,13 +213,15 @@ export default async function PaginaIndicadores({
           ) : (
             <ul className="flex flex-col gap-2.5">
               {distribuicaoFormaPagamento.map((f) => (
-                <li key={f.formaPagamentoId ?? "nao-informado"} className="flex items-center justify-between gap-3 text-sm">
-                  <span className="flex-1 truncate text-foreground">{f.nome}</span>
-                  <span className="shrink-0 tabular-nums text-muted-foreground">{formatarMoeda(f.valorTotal)}</span>
-                  <span className={cn("min-w-20 shrink-0 text-right text-xs font-semibold tabular-nums", f.atrasoMedioDias > 0 ? "text-destructive" : "text-positivo")}>
-                    {f.atrasoMedioDias >= 0 ? "+" : ""}
-                    {formatarIndice(f.atrasoMedioDias)}d
-                  </span>
+                <li key={f.formaPagamentoId ?? "nao-informado"}>
+                  <Link href={f.href} className="flex items-center justify-between gap-3 rounded-lg text-sm hover:bg-muted">
+                    <span className="flex-1 truncate text-foreground">{f.nome}</span>
+                    <span className="shrink-0 tabular-nums text-muted-foreground">{formatarMoeda(f.valorTotal)}</span>
+                    <span className={cn("min-w-20 shrink-0 text-right text-xs font-semibold tabular-nums", f.atrasoMedioDias > 0 ? "text-destructive" : "text-positivo")}>
+                      {f.atrasoMedioDias >= 0 ? "+" : ""}
+                      {formatarIndice(f.atrasoMedioDias)}d
+                    </span>
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -317,7 +320,7 @@ function ListaVariacaoCategorias({
   linhas,
 }: {
   titulo: string;
-  linhas: { categoriaId: string; nome: string; valorMesAtual: number; valorMesAnterior: number; variacaoPercentual: number }[];
+  linhas: { categoriaId: string; nome: string; valorMesAtual: number; valorMesAnterior: number; variacaoPercentual: number; href: string }[];
 }) {
   const principais = linhas.slice(0, 6);
   return (
@@ -330,13 +333,15 @@ function ListaVariacaoCategorias({
           {principais.map((l) => {
             const positivo = l.variacaoPercentual >= 0;
             return (
-              <li key={l.categoriaId} className="flex items-center gap-3 text-sm">
-                <span className="flex-1 truncate text-foreground">{l.nome}</span>
-                <span className="shrink-0 tabular-nums text-muted-foreground">{formatarMoeda(l.valorMesAtual)}</span>
-                <span className={cn("flex shrink-0 items-center gap-0.5 text-xs font-semibold tabular-nums", positivo ? "text-positivo" : "text-destructive")}>
-                  {positivo ? <ArrowUp size={11} weight="bold" /> : <ArrowDown size={11} weight="bold" />}
-                  {formatarPercentual(Math.abs(l.variacaoPercentual))}
-                </span>
+              <li key={l.categoriaId}>
+                <Link href={l.href} className="flex items-center gap-3 rounded-lg text-sm hover:bg-muted">
+                  <span className="flex-1 truncate text-foreground">{l.nome}</span>
+                  <span className="shrink-0 tabular-nums text-muted-foreground">{formatarMoeda(l.valorMesAtual)}</span>
+                  <span className={cn("flex shrink-0 items-center gap-0.5 text-xs font-semibold tabular-nums", positivo ? "text-positivo" : "text-destructive")}>
+                    {positivo ? <ArrowUp size={11} weight="bold" /> : <ArrowDown size={11} weight="bold" />}
+                    {formatarPercentual(Math.abs(l.variacaoPercentual))}
+                  </span>
+                </Link>
               </li>
             );
           })}

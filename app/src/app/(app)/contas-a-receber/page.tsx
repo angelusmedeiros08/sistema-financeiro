@@ -27,7 +27,7 @@ const TAMANHO_PAGINA = 20;
 export default async function PaginaContasAReceber({
   searchParams,
 }: {
-  searchParams: Promise<{ situacao?: string; pagina?: string; evento?: string }>;
+  searchParams: Promise<{ situacao?: string; pagina?: string; evento?: string; pessoa?: string }>;
 }) {
   const contexto = await obterUsuarioETenantAtual();
   if ("erro" in contexto) {
@@ -35,7 +35,7 @@ export default async function PaginaContasAReceber({
   }
   const { tenantId } = contexto;
 
-  const { situacao, pagina: paginaBruta, evento } = await searchParams;
+  const { situacao, pagina: paginaBruta, evento, pessoa } = await searchParams;
   // Com `evento` (link "ver a venda gerada" no detalhe da Venda), o padrão
   // vira "todos": a venda pode ter parcela já quitada/cancelada, e quem
   // clicou quer ver TODAS as parcelas desta venda específica, não só as em
@@ -59,6 +59,7 @@ export default async function PaginaContasAReceber({
     .range(inicio, inicio + TAMANHO_PAGINA - 1);
 
   if (evento) query = query.eq("eventos_financeiros.id", evento);
+  if (pessoa) query = query.eq("eventos_financeiros.pessoa_id", pessoa);
   if (filtro.status) query = query.in("status", filtro.status);
   if (filtro.janela === "vencido") {
     query = query.lt("data_vencimento", limitesJanelaVencimento(0).hojeIso);
@@ -100,7 +101,11 @@ export default async function PaginaContasAReceber({
           totalPaginas,
           totalRegistros: totalParcelas ?? 0,
           tamanhoPagina: TAMANHO_PAGINA,
-          hrefBase: evento ? `/contas-a-receber?situacao=${filtro.valor}&evento=${evento}` : `/contas-a-receber?situacao=${filtro.valor}`,
+          hrefBase: evento
+            ? `/contas-a-receber?situacao=${filtro.valor}&evento=${evento}`
+            : pessoa
+              ? `/contas-a-receber?situacao=${filtro.valor}&pessoa=${pessoa}`
+              : `/contas-a-receber?situacao=${filtro.valor}`,
         }}
       />
     </div>

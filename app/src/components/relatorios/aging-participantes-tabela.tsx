@@ -55,6 +55,18 @@ const colunas = helper.columns([
 
 // Top 10 por desenho (o rótulo já diz "Maiores devedores/credores" — é um
 // ranking curto, não um cadastro completo), então sem paginação de propósito.
+// `href` ausente só na linha "Sem pessoa vinculada" (sem id pra filtrar) —
+// linkPara() cai na própria página nesse caso raro, em vez de quebrar o
+// contrato de `linkPara` (sempre retorna string).
 export function AgingParticipantesTabela({ titulo, linhas }: { titulo: string; linhas: AgingPorParticipante[] }) {
-  return <TabelaLista titulo={titulo} data={linhas.slice(0, 10)} columns={colunas} busca={false} textoVazio="Nada em aberto." />;
+  return (
+    <TabelaLista
+      titulo={titulo}
+      data={linhas.slice(0, 10)}
+      columns={colunas}
+      busca={false}
+      textoVazio="Nada em aberto."
+      linkPara={(linha) => linha.href ?? "/relatorios/aging"}
+    />
+  );
 }

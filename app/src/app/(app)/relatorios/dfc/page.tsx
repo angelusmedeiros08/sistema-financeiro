@@ -24,10 +24,12 @@ export default async function PaginaRelatoriosDfc({
   const emApresentacao = emModoApresentacao(sp);
   const foco = sp.foco;
 
+  const origemHref = `/relatorios/dfc?ano=${ano}`;
+
   const supabase = await createClient();
   const [linhas, composicaoFluxo] = await Promise.all([
     buscarDFCMatriz(supabase, { tenantId: contexto.tenantId, ano }),
-    buscarComposicaoFluxoCaixa(supabase, { tenantId: contexto.tenantId, ano }),
+    buscarComposicaoFluxoCaixa(supabase, { tenantId: contexto.tenantId, ano, origemHref }),
   ]);
 
   const secaoComposicao = (

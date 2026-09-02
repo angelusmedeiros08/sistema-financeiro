@@ -3,6 +3,7 @@ import type { Database } from "@/utils/supabase/database.types";
 import { buscarAnaliseCategorias } from "./analise-despesas";
 import { mesAtual } from "./indicadores-gauge";
 import { hojeIsoBrasil } from "@/lib/data-brasil";
+import { montarHrefLancamentos } from "./drill-down";
 
 type TipoCategoria = Database["public"]["Enums"]["tipo_categoria"];
 
@@ -12,6 +13,11 @@ export type LinhaVariacaoCategoria = {
   valorMesAtual: number;
   valorMesAnterior: number;
   variacaoPercentual: number;
+  // Sempre do mês atual (o número em destaque na lista) — quando a
+  // categoria não teve movimento este mês (só no anterior), o link ainda
+  // aponta pro mês atual, mostrando a lista vazia (correto: é exatamente
+  // o que "R$0,00 este mês" significa).
+  href: string;
 };
 
 function mesAnterior(): { inicio: string; fim: string } {
@@ -42,15 +48,27 @@ export async function buscarVariacaoCategorias(
   const anteriorPorId = new Map(linhasAnterior.map((l) => [l.categoriaId, l.total]));
   const idsVistos = new Set(linhasAtual.map((l) => l.categoriaId));
 
+  function hrefDoMesAtual(categoriaId: string): string {
+    return montarHrefLancamentos({
+      tipoEntidade: "categoria",
+      entidadeId: categoriaId,
+      regime: "competencia",
+      tipo: params.tipo,
+      periodoInicio: atual.inicio,
+      periodoFim: atual.fim,
+      origemHref: "/indicadores",
+    });
+  }
+
   const linhas: LinhaVariacaoCategoria[] = linhasAtual.map((l) => {
     const valorMesAnterior = anteriorPorId.get(l.categoriaId) ?? 0;
     const variacaoPercentual = valorMesAnterior > 0 ? (l.total - valorMesAnterior) / valorMesAnterior : l.total > 0 ? 1 : 0;
-    return { categoriaId: l.categoriaId, nome: l.categoriaNome, valorMesAtual: l.total, valorMesAnterior, variacaoPercentual };
+    return { categoriaId: l.categoriaId, nome: l.categoriaNome, valorMesAtual: l.total, valorMesAnterior, variacaoPercentual, href: hrefDoMesAtual(l.categoriaId) };
   });
 
   for (const l of linhasAnterior) {
     if (idsVistos.has(l.categoriaId)) continue;
-    linhas.push({ categoriaId: l.categoriaId, nome: l.categoriaNome, valorMesAtual: 0, valorMesAnterior: l.total, variacaoPercentual: -1 });
+    linhas.push({ categoriaId: l.categoriaId, nome: l.categoriaNome, valorMesAtual: 0, valorMesAnterior: l.total, variacaoPercentual: -1, href: hrefDoMesAtual(l.categoriaId) });
   }
 
   return linhas.sort((a, b) => Math.abs(b.variacaoPercentual) - Math.abs(a.variacaoPercentual));

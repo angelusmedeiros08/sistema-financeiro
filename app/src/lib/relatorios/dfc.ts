@@ -108,7 +108,7 @@ export async function buscarDFCMatriz(supabase: Cliente, params: { tenantId: str
   return linhasResultado;
 }
 
-export type CategoriaFluxo = { nome: string; valor: number; outros?: boolean };
+export type CategoriaFluxo = { nome: string; valor: number; outros?: boolean; href?: string };
 export type ComposicaoFluxoCaixa = {
   receitas: CategoriaFluxo[];
   despesas: CategoriaFluxo[];
@@ -129,24 +129,20 @@ const MAX_CATEGORIAS_COMPOSICAO = 5;
 // legível, não depende de proporção com a maior categoria. Complementar à
 // matriz por atividade, não substituto (Seção 5 da pesquisa de referências
 // visuais).
-export async function buscarComposicaoFluxoCaixa(supabase: Cliente, params: { tenantId: string; ano: number }): Promise<ComposicaoFluxoCaixa> {
+export async function buscarComposicaoFluxoCaixa(supabase: Cliente, params: { tenantId: string; ano: number; origemHref: string }): Promise<ComposicaoFluxoCaixa> {
   const dataInicio = `${params.ano}-01-01`;
   const dataFim = `${params.ano}-12-31`;
 
-  // origemHref exigido pela assinatura mas nunca usado aqui — agruparTopN
-  // abaixo descarta o href junto com o resto de LinhaAnaliseCategoria,
-  // esta composição não é renderizada como donut clicável (ver spec, fora
-  // do escopo da 1ª leva).
   const [receitas, despesas] = await Promise.all([
-    buscarAnaliseCategorias(supabase, { tenantId: params.tenantId, regime: "realizado", dataInicio, dataFim, tipo: "RECEITA", origemHref: "/relatorios/dfc" }),
-    buscarAnaliseCategorias(supabase, { tenantId: params.tenantId, regime: "realizado", dataInicio, dataFim, tipo: "DESPESA", origemHref: "/relatorios/dfc" }),
+    buscarAnaliseCategorias(supabase, { tenantId: params.tenantId, regime: "realizado", dataInicio, dataFim, tipo: "RECEITA", origemHref: params.origemHref }),
+    buscarAnaliseCategorias(supabase, { tenantId: params.tenantId, regime: "realizado", dataInicio, dataFim, tipo: "DESPESA", origemHref: params.origemHref }),
   ]);
 
   function agruparTopN(linhas: typeof receitas, rotuloResto: string): CategoriaFluxo[] {
     const ordenadas = [...linhas].filter((l) => l.total > 0).sort((a, b) => b.total - a.total);
     const principais = ordenadas.slice(0, MAX_CATEGORIAS_COMPOSICAO);
     const resto = ordenadas.slice(MAX_CATEGORIAS_COMPOSICAO).reduce((soma, l) => soma + l.total, 0);
-    const grupos: CategoriaFluxo[] = principais.map((l) => ({ nome: l.categoriaNome, valor: l.total }));
+    const grupos: CategoriaFluxo[] = principais.map((l) => ({ nome: l.categoriaNome, valor: l.total, href: l.href }));
     if (resto > 0) grupos.push({ nome: rotuloResto, valor: resto, outros: true });
     return grupos;
   }

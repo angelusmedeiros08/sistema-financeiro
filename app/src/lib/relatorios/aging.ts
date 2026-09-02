@@ -173,6 +173,10 @@ export type AgingPorParticipante = {
   nome: string;
   totalEmAberto: number;
   diasDeAtrasoMaximo: number;
+  // Ausente quando não há pessoa vinculada — não existe filtro de "sem
+  // pessoa" em Contas a Receber/Pagar hoje, diferente do mecanismo de
+  // /lancamentos (que aceita o literal `nenhuma`).
+  href?: string;
 };
 
 export async function buscarAgingPorParticipante(
@@ -201,6 +205,18 @@ export async function buscarAgingPorParticipante(
       nome: pessoa?.nome ?? "Sem pessoa vinculada",
       totalEmAberto: 0,
       diasDeAtrasoMaximo: 0,
+      // `totalEmAberto` soma TODO status em STATUS_VENCIDO (não só o que já
+      // venceu — inclui pendente ainda dentro do prazo), então o destino
+      // certo é a situação padrão "aberto" (PENDENTE/RECEBIDO_PARCIAL/
+      // RENEGOCIADO em contas-a-receber/pagar), não "vencido" (que teria
+      // um filtro de data extra e subcontaria). RENEGOCIADO não existe em
+      // STATUS_VENCIDO — na base real hoje (checado ao vivo) só há
+      // PENDENTE, então os dois filtros coincidem; se um dia existir
+      // parcela renegociada, "aberto" passaria a contar um pouco a mais
+      // que `totalEmAberto` — risco aceito, não há filtro pronto que
+      // reproduza STATUS_VENCIDO exatamente sem criar uma situação nova só
+      // pra isso.
+      href: pessoa?.id ? `/${params.tipo === "RECEITA" ? "contas-a-receber" : "contas-a-pagar"}?pessoa=${pessoa.id}` : undefined,
     };
     atual.totalEmAberto += saldo;
     atual.diasDeAtrasoMaximo = Math.max(atual.diasDeAtrasoMaximo, atraso);

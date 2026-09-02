@@ -17,11 +17,15 @@ export function ComparativosTabela({
   pontos,
   colunaComparacao,
   mostrarVariacao,
+  hrefsPorPonto,
 }: {
   titulo: string;
   pontos: PontoAnaliseComparativa[];
   colunaComparacao: string;
   mostrarVariacao: boolean;
+  // Mesmo array (por índice) que ComparativoLinhaAnotada já recebe — o
+  // gráfico acima já é clicável com esses hrefs, a tabela só reaproveita.
+  hrefsPorPonto?: string[];
 }) {
   const colunas = useMemo(() => {
     const base = [
@@ -73,6 +77,7 @@ export function ComparativosTabela({
       columns={colunas}
       buscaPlaceholder="Buscar período…"
       textoVazio="Sem movimentação suficiente no período para comparar."
+      linkPara={hrefsPorPonto ? (linha) => hrefsPorPonto[pontos.indexOf(linha)] : undefined}
     />
   );
 }

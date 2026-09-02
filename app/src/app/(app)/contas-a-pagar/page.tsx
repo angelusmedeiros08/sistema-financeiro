@@ -27,7 +27,7 @@ const TAMANHO_PAGINA = 20;
 export default async function PaginaContasAPagar({
   searchParams,
 }: {
-  searchParams: Promise<{ situacao?: string; pagina?: string }>;
+  searchParams: Promise<{ situacao?: string; pagina?: string; pessoa?: string }>;
 }) {
   const contexto = await obterUsuarioETenantAtual();
   if ("erro" in contexto) {
@@ -35,7 +35,7 @@ export default async function PaginaContasAPagar({
   }
   const { tenantId } = contexto;
 
-  const { situacao = "aberto", pagina: paginaBruta } = await searchParams;
+  const { situacao = "aberto", pagina: paginaBruta, pessoa } = await searchParams;
   const filtro = FILTROS.find((f) => f.valor === situacao) ?? FILTROS[0];
   const pagina = Math.max(1, Number(paginaBruta) || 1);
   const inicio = (pagina - 1) * TAMANHO_PAGINA;
@@ -53,6 +53,7 @@ export default async function PaginaContasAPagar({
     .order("data_vencimento", { ascending: true })
     .range(inicio, inicio + TAMANHO_PAGINA - 1);
 
+  if (pessoa) query = query.eq("eventos_financeiros.pessoa_id", pessoa);
   if (filtro.status) query = query.in("status", filtro.status);
   if (filtro.janela === "vencido") {
     query = query.lt("data_vencimento", limitesJanelaVencimento(0).hojeIso);
@@ -94,7 +95,7 @@ export default async function PaginaContasAPagar({
           totalPaginas,
           totalRegistros: totalParcelas ?? 0,
           tamanhoPagina: TAMANHO_PAGINA,
-          hrefBase: `/contas-a-pagar?situacao=${filtro.valor}`,
+          hrefBase: pessoa ? `/contas-a-pagar?situacao=${filtro.valor}&pessoa=${pessoa}` : `/contas-a-pagar?situacao=${filtro.valor}`,
         }}
       />
     </div>
