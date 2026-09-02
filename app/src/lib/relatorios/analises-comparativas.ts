@@ -7,7 +7,12 @@ export type PontoAnaliseComparativa = {
   chave: string;
   atual: number;
   comparacao: number;
-  variacaoPercentual: number;
+  // null = sem base de comparação de verdade (mês anterior/ano anterior sem
+  // movimento) — nunca confundir com "0% de variação de verdade" (achado em
+  // auditoria de UX). YTD sempre manda 0 aqui de propósito: não representa
+  // variação nenhuma, a coluna nem aparece pra esse tipo (ver
+  // comparativos-tabela.tsx, `mostrarVariacao`).
+  variacaoPercentual: number | null;
 };
 
 function somarPorMes(movimento: Awaited<ReturnType<typeof buscarMovimento>>): Map<string, number> {
@@ -54,7 +59,7 @@ export async function buscarAnaliseComparativa(
         chave,
         atual,
         comparacao: anterior,
-        variacaoPercentual: anterior !== 0 ? (atual - anterior) / Math.abs(anterior) : 0,
+        variacaoPercentual: anterior !== 0 ? (atual - anterior) / Math.abs(anterior) : null,
       };
     });
   }
@@ -78,7 +83,7 @@ export async function buscarAnaliseComparativa(
       chave,
       atual,
       comparacao,
-      variacaoPercentual: comparacao !== 0 ? (atual - comparacao) / Math.abs(comparacao) : 0,
+      variacaoPercentual: comparacao !== 0 ? (atual - comparacao) / Math.abs(comparacao) : null,
     };
   });
 }

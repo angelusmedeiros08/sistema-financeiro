@@ -15,7 +15,10 @@ import { localPoint } from "@visx/event";
 import { formatarNumeroCompacto, formatarPercentual } from "@/lib/formatacao";
 import { cn } from "@/lib/utils";
 
-export type PontoComparativo = { chave: string; atual: number; comparacao: number; variacaoPercentual: number };
+// null = sem base de comparação de verdade (não é 0% de variação) — mesmo
+// motivo/mesmo tipo de PontoAnaliseComparativa (lib/relatorios/analises-comparativas.ts),
+// só que redeclarado localmente aqui.
+export type PontoComparativo = { chave: string; atual: number; comparacao: number; variacaoPercentual: number | null };
 
 const MARGEM = { top: 32, right: 16, bottom: 28, left: 12 };
 
@@ -122,13 +125,17 @@ function GraficoInterno({
           })}
 
           {mostrarAnotacao && (
-            <Annotation x={xUltimo} y={yUltimo} dx={largura - xUltimo > 90 ? 42 : -52} dy={ultimo.variacaoPercentual >= 0 ? -30 : 30}>
+            <Annotation x={xUltimo} y={yUltimo} dx={largura - xUltimo > 90 ? 42 : -52} dy={ultimo.variacaoPercentual !== null && ultimo.variacaoPercentual < 0 ? 30 : -30}>
               <Connector stroke="var(--muted-foreground)" />
               <CircleSubject radius={3} stroke="#4C7DF0" />
               <Label
                 backgroundFill="#1A1D1F"
                 showAnchorLine={false}
-                title={`${ultimo.variacaoPercentual >= 0 ? "+" : ""}${formatarPercentual(ultimo.variacaoPercentual)}`}
+                title={
+                  ultimo.variacaoPercentual === null
+                    ? "sem comparação"
+                    : `${ultimo.variacaoPercentual >= 0 ? "+" : ""}${formatarPercentual(ultimo.variacaoPercentual)}`
+                }
                 titleFontSize={12}
                 titleFontWeight={700}
                 horizontalAnchor={largura - xUltimo > 90 ? "start" : "end"}

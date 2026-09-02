@@ -114,7 +114,11 @@ export type LinhaPrevistoRealizado = {
   meses: { mes: number; previsto: number; realizado: number }[];
   totalPrevisto: number;
   totalRealizado: number;
-  desvioPercentual: number;
+  // null = sem meta cadastrada (totalPrevisto = 0), não dá pra calcular
+  // desvio — nunca confundir com "0% de desvio de verdade" (achado em
+  // auditoria de UX: caía em 0 antes, indistinguível de "dentro do
+  // orçamento" quando na real não havia orçamento nenhum definido).
+  desvioPercentual: number | null;
   // Só o Realizado tem link — Previsto é meta cadastrada à mão (tabela
   // orcamentos), não existe lançamento nenhum por trás pra mostrar.
   hrefRealizado: string;
@@ -161,7 +165,7 @@ export async function buscarPrevistoRealizado(
         meses,
         totalPrevisto,
         totalRealizado,
-        desvioPercentual: totalPrevisto > 0 ? (totalRealizado - totalPrevisto) / totalPrevisto : 0,
+        desvioPercentual: totalPrevisto > 0 ? (totalRealizado - totalPrevisto) / totalPrevisto : null,
         hrefRealizado: montarHrefLancamentos({
           tipoEntidade: "categoria",
           entidadeId: linha.categoriaId,

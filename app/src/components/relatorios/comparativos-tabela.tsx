@@ -8,6 +8,7 @@ import { useMemo } from "react";
 import type { PontoAnaliseComparativa } from "@/lib/relatorios/analises-comparativas";
 import { formatarNumeroCompacto, formatarPercentual } from "@/lib/formatacao";
 import { TabelaLista, criarColunaLista, ValorLista } from "@/components/tabela/tabela-lista";
+import { DicaContextual } from "@/components/formularios/dica-contextual";
 
 const helper = criarColunaLista<PontoAnaliseComparativa>();
 
@@ -49,7 +50,18 @@ export function ComparativosTabela({
         id: "variacao",
         header: "Variação",
         meta: { numerica: true },
-        cell: (info) => <ValorLista valor={info.getValue()} formatado={formatarPercentual(info.getValue())} />,
+        cell: (info) => {
+          const valor = info.getValue();
+          if (valor === null) {
+            return (
+              <span className="flex items-center justify-end gap-1">
+                <ValorLista valor={null} formatado="" />
+                <DicaContextual titulo="Sem dado para comparar" texto="Não há movimento registrado no período de comparação." />
+              </span>
+            );
+          }
+          return <ValorLista valor={valor} formatado={formatarPercentual(valor)} />;
+        },
       }),
     ]);
   }, [colunaComparacao, mostrarVariacao]);

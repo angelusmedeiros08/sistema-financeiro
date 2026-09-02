@@ -3,6 +3,7 @@ import type { LinhaPrevistoRealizado } from "@/lib/previsionamento/previsionamen
 import { formatarMoeda, formatarNumeroCompacto, formatarPercentual } from "@/lib/formatacao";
 import { cn } from "@/lib/utils";
 import { TrilhoBarra } from "./trilho-barra";
+import { DicaContextual } from "@/components/formularios/dica-contextual";
 
 // Previsto (cinza) e realizado (colorido) lado a lado por categoria, mesma
 // escala — desvio positivo é ruim pra despesa (gastou mais que o
@@ -18,16 +19,29 @@ export function PrevistoRealizadoBarras({ linhas }: { linhas: LinhaPrevistoReali
   return (
     <div className="flex flex-col gap-4">
       {linhas.map((linha) => {
-        const estourou = linha.tipo === "DESPESA" ? linha.desvioPercentual > 0 : linha.desvioPercentual < 0;
-        const corDesvio = linha.desvioPercentual === 0 ? "text-muted-foreground" : estourou ? "text-destructive" : "text-positivo";
+        const desvio = linha.desvioPercentual;
+        const estourou = desvio !== null && (linha.tipo === "DESPESA" ? desvio > 0 : desvio < 0);
+        const corDesvio = desvio === null || desvio === 0 ? "text-muted-foreground" : estourou ? "text-destructive" : "text-positivo";
 
         return (
           <div key={linha.categoriaId}>
             <div className="mb-1.5 flex items-baseline justify-between gap-2">
               <span className="text-xs font-semibold text-foreground">{linha.categoriaNome}</span>
-              <span className={cn("text-xs font-bold tabular-nums", corDesvio)}>
-                {linha.desvioPercentual > 0 ? "+" : ""}
-                {formatarPercentual(linha.desvioPercentual)}
+              <span className={cn("flex items-center gap-1 text-xs font-bold tabular-nums", corDesvio)}>
+                {linha.desvioPercentual === null ? (
+                  <>
+                    —
+                    <DicaContextual
+                      titulo="Sem meta cadastrada"
+                      texto="Nenhum valor previsto foi definido pra esta categoria neste mês — não dá pra calcular desvio."
+                    />
+                  </>
+                ) : (
+                  <>
+                    {linha.desvioPercentual > 0 ? "+" : ""}
+                    {formatarPercentual(linha.desvioPercentual)}
+                  </>
+                )}
               </span>
             </div>
             <div className="flex flex-col gap-1">

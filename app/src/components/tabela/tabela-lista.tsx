@@ -117,8 +117,11 @@ export function CelulaLideranca({ icone: Icone, cor, primario, secundario }: { i
 // (achado na varredura de Gráficos interativos, estendido pra toda tabela
 // que usa este componente — é o valor tabular-nums colorido mais usado do
 // sistema).
-/** Valor tabular-nums colorido por sinal — recebe o texto já formatado (moeda/percentual). */
-export function ValorLista({ valor, formatado }: { valor: number; formatado: string }) {
+/** Valor tabular-nums colorido por sinal — recebe o texto já formatado (moeda/percentual). `valor: null` (sem dado pra comparar, não é 0 de verdade) renderiza só um travessão, sem cor de sinal. */
+export function ValorLista({ valor, formatado }: { valor: number | null; formatado: string }) {
+  if (valor === null) {
+    return <span className="font-bold tabular-nums text-muted-foreground">—</span>;
+  }
   return (
     <span className={cn("font-bold tabular-nums", valor > 0 ? "text-positivo" : valor < 0 ? "text-destructive" : "text-foreground")}>
       {valor > 0 ? "+" : ""}
