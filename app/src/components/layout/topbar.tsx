@@ -57,7 +57,8 @@ export function Topbar({
         <CommandPaletteBusca />
       </div>
 
-      <div className="min-w-0 flex-1 lg:hidden">
+      <div className="flex min-w-0 flex-1 items-center gap-1.5 lg:hidden">
+        <CommandPaletteBusca variante="icone" />
         <p className="truncate text-sm font-semibold text-foreground">{tenantNome}</p>
       </div>
 

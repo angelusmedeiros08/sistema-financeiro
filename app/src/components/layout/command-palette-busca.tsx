@@ -11,6 +11,7 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
+import { Button } from "@/components/ui/button";
 import { TODOS_ITENS_FOLHA } from "./sidebar";
 import { buscarGlobal, type ResultadoBusca } from "@/lib/busca/busca-global";
 
@@ -27,7 +28,14 @@ function estaEmCampoDeTexto(alvo: EventTarget | null) {
   return tag === "INPUT" || tag === "TEXTAREA" || alvo.isContentEditable;
 }
 
-export function CommandPaletteBusca() {
+// `variante="icone"`: abaixo de `lg` (1024px) a Topbar esconde o botão
+// completo inteiro (ver topbar.tsx) e mostra o nome do tenant no lugar —
+// sem isso, a busca ficava sem NENHUM jeito visual/clicável de abrir
+// abaixo desse breakpoint, só o atalho de teclado Ctrl+K/`/` (que
+// continua funcionando nos dois casos, é o useEffect abaixo, independente
+// do trigger visível). Mesmo estado/CommandDialog nos dois casos, só o
+// botão-trigger muda — evita duplicar a lógica de busca.
+export function CommandPaletteBusca({ variante = "completo" }: { variante?: "completo" | "icone" }) {
   const [aberto, setAberto] = useState(false);
   const [termo, setTermo] = useState("");
   const [termoAnterior, setTermoAnterior] = useState(termo);
@@ -103,17 +111,23 @@ export function CommandPaletteBusca() {
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setAberto(true)}
-        className="flex h-9 w-full max-w-64 items-center gap-2 rounded-lg border border-border bg-secondary/60 px-3 text-sm text-muted-foreground transition-colors hover:bg-secondary"
-      >
-        <MagnifyingGlass size={15} />
-        <span className="flex-1 text-left">Pesquisar</span>
-        <kbd className="rounded border border-border bg-card px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
-          Ctrl K
-        </kbd>
-      </button>
+      {variante === "icone" ? (
+        <Button variant="ghost" size="icon" onClick={() => setAberto(true)} aria-label="Pesquisar" title="Pesquisar">
+          <MagnifyingGlass size={17} />
+        </Button>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setAberto(true)}
+          className="flex h-9 w-full max-w-64 items-center gap-2 rounded-lg border border-border bg-secondary/60 px-3 text-sm text-muted-foreground transition-colors hover:bg-secondary"
+        >
+          <MagnifyingGlass size={15} />
+          <span className="flex-1 text-left">Pesquisar</span>
+          <kbd className="rounded border border-border bg-card px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
+            Ctrl K
+          </kbd>
+        </button>
+      )}
 
       <CommandDialog open={aberto} onOpenChange={setAberto} title="Pesquisar" description="Navegar ou buscar cliente, fornecedor, lançamento e venda">
         <CommandInput placeholder="Ir para uma tela, ou buscar por nome..." value={termo} onValueChange={setTermo} />
