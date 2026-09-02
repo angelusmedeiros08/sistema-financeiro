@@ -9,6 +9,15 @@ export function formatarMoeda(valor: number): string {
   return formatadorMoeda.format(valor);
 }
 
+// Variante pra telas onde zero de verdade (nenhum movimento) deve ler como
+// "-" em vez de "R$0,00" repetido — não é o padrão de formatarMoeda em si
+// (formulários/totais continuam querendo "R$0,00" explícito), só de telas
+// específicas que já adotaram essa convenção (ex.: Contas bancárias, pra
+// bater com os subcampos ao lado que já usam formatarNumeroCompacto).
+export function formatarMoedaOuTraco(valor: number): string {
+  return valor === 0 ? "-" : formatarMoeda(valor);
+}
+
 const formatadorPercentual = new Intl.NumberFormat("pt-BR", {
   style: "percent",
   minimumFractionDigits: 1,

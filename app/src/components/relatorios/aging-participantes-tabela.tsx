@@ -44,7 +44,11 @@ const colunas = helper.columns([
     meta: { numerica: true },
     cell: (info) => {
       const dias = info.getValue();
-      return <span className={dias > 0 ? "text-destructive" : "text-muted-foreground"}>{dias > 0 ? `${dias} dias` : "em dia"}</span>;
+      return (
+        <span className={dias > 0 ? "text-destructive" : "text-muted-foreground"}>
+          {dias > 0 ? `${dias} ${dias === 1 ? "dia" : "dias"}` : "em dia"}
+        </span>
+      );
     },
   }),
 ]);

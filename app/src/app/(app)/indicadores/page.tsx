@@ -18,7 +18,7 @@ import { BadgeSaudeFinanceira } from "@/components/relatorios/badge-saude-financ
 import { CardLiquidez } from "@/components/relatorios/card-liquidez";
 import { CardCicloConversaoCaixa } from "@/components/relatorios/card-ciclo-conversao-caixa";
 import { TermoComDica } from "@/components/formularios/termo-com-dica";
-import { formatarMoeda, formatarPercentual } from "@/lib/formatacao";
+import { formatarMoeda, formatarPercentual, formatarIndice } from "@/lib/formatacao";
 import { cn } from "@/lib/utils";
 import { emModoApresentacao } from "@/lib/apresentacao/sessao";
 import { FocoApresentacao } from "@/components/apresentacao/foco-apresentacao";
@@ -217,7 +217,7 @@ export default async function PaginaIndicadores({
                   <span className="shrink-0 tabular-nums text-muted-foreground">{formatarMoeda(f.valorTotal)}</span>
                   <span className={cn("min-w-20 shrink-0 text-right text-xs font-semibold tabular-nums", f.atrasoMedioDias > 0 ? "text-destructive" : "text-positivo")}>
                     {f.atrasoMedioDias >= 0 ? "+" : ""}
-                    {f.atrasoMedioDias.toFixed(1)}d
+                    {formatarIndice(f.atrasoMedioDias)}d
                   </span>
                 </li>
               ))}
@@ -305,7 +305,7 @@ function CardPrazoMedio({ titulo, dias, quantidadeBaixas }: { titulo: React.Reac
       <p className="mb-1 text-xs font-semibold text-muted-foreground">{titulo}</p>
       <p className={cn("text-2xl font-bold tabular-nums", dias > 0 ? "text-destructive" : "text-positivo")}>
         {dias >= 0 ? "+" : ""}
-        {dias.toFixed(1)} dias
+        {formatarIndice(dias)} dias
       </p>
       <p className="text-xs text-muted-foreground">{quantidadeBaixas} baixa(s) nos últimos 6 meses</p>
     </div>

@@ -7,7 +7,7 @@ import { RelatoriosSubNav } from "../sub-nav";
 import { RelatoriosControles } from "../controles";
 import { StatCard } from "@/components/painel/stat-card";
 import { EstadoVazio } from "@/components/ui/estado-vazio";
-import { formatarMoeda, formatarNumeroCompacto } from "@/lib/formatacao";
+import { formatarMoedaOuTraco, formatarNumeroCompacto } from "@/lib/formatacao";
 import { cn } from "@/lib/utils";
 
 export default async function PaginaRelatoriosContasBancarias({
@@ -29,7 +29,7 @@ export default async function PaginaRelatoriosContasBancarias({
       <RelatoriosSubNav />
       <RelatoriosControles {...params} />
 
-      <StatCard variant="hero" label="Saldo total em contas ativas" valor={formatarMoeda(saldoTotal)} />
+      <StatCard variant="hero" label="Saldo total em contas ativas" valor={formatarMoedaOuTraco(saldoTotal)} />
 
       {contas.length === 0 ? (
         <EstadoVazio texto="Nenhuma conta financeira ativa cadastrada." />
@@ -39,7 +39,7 @@ export default async function PaginaRelatoriosContasBancarias({
             <div key={c.contaFinanceiraId} className="rounded-2xl bg-card shadow-card p-5">
               <div className="mb-3 flex items-center justify-between">
                 <h2 className="font-heading text-sm font-bold text-foreground">{c.nome}</h2>
-                <span className="text-lg font-bold tabular-nums text-foreground">{formatarMoeda(c.saldoAcumulado)}</span>
+                <span className="text-lg font-bold tabular-nums text-foreground">{formatarMoedaOuTraco(c.saldoAcumulado)}</span>
               </div>
               <div className="grid grid-cols-1 gap-3 border-t border-border pt-3 text-sm sm:grid-cols-3">
                 <div>
