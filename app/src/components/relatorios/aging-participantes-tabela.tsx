@@ -6,6 +6,7 @@
 // categoria — reaproveita o mesmo avatar de iniciais colorido por nome já
 // usado em Pessoas/Equipe (corPorNome), não o glifo de ícone do arquétipo
 // lista original (esse é pra categoria de lançamento, não pra entidade).
+import Link from "next/link";
 import type { AgingPorParticipante } from "@/lib/relatorios/aging";
 import { formatarNumeroCompacto } from "@/lib/formatacao";
 import { corPorNome } from "@/lib/cor-por-nome";
@@ -36,7 +37,17 @@ const colunas = helper.columns([
     id: "emAberto",
     header: "Em aberto",
     meta: { numerica: true },
-    cell: (info) => <span className="font-semibold tabular-nums">{formatarNumeroCompacto(info.getValue())}</span>,
+    cell: (info) => {
+      const href = info.row.original.href;
+      const conteudo = <span className="font-semibold tabular-nums">{formatarNumeroCompacto(info.getValue())}</span>;
+      return href ? (
+        <Link href={href} className="hover:underline">
+          {conteudo}
+        </Link>
+      ) : (
+        conteudo
+      );
+    },
   }),
   helper.accessor("diasDeAtrasoMaximo", {
     id: "atraso",
@@ -55,18 +66,15 @@ const colunas = helper.columns([
 
 // Top 10 por desenho (o rótulo já diz "Maiores devedores/credores" — é um
 // ranking curto, não um cadastro completo), então sem paginação de propósito.
-// `href` ausente só na linha "Sem pessoa vinculada" (sem id pra filtrar) —
-// linkPara() cai na própria página nesse caso raro, em vez de quebrar o
-// contrato de `linkPara` (sempre retorna string).
+// Link só na célula "Em aberto" (não a linha inteira via `linkPara`) — a
+// linha "Sem pessoa vinculada" não tem `href` (sem id pra filtrar), e
+// `linkPara` exige string sempre; usar `linkPara` com um fallback pra própria
+// página deixava essa linha com a MESMA affordance de hover das outras sem
+// navegar de verdade (achado em revisão de código, mesmo padrão já corrigido
+// em centro-custo-tabela.tsx). `hoverLinha={false}` tira o realce de linha
+// inteira, já que só uma célula é clicável.
 export function AgingParticipantesTabela({ titulo, linhas }: { titulo: string; linhas: AgingPorParticipante[] }) {
   return (
-    <TabelaLista
-      titulo={titulo}
-      data={linhas.slice(0, 10)}
-      columns={colunas}
-      busca={false}
-      textoVazio="Nada em aberto."
-      linkPara={(linha) => linha.href ?? "/relatorios/aging"}
-    />
+    <TabelaLista titulo={titulo} data={linhas.slice(0, 10)} columns={colunas} busca={false} textoVazio="Nada em aberto." hoverLinha={false} />
   );
 }
