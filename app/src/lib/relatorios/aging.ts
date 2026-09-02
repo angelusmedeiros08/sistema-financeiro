@@ -34,7 +34,7 @@ const FAIXAS_A_VENCER = [
   { min: 31, max: 365, rotulo: "A vencer 31-365 dias" },
 ] as const;
 
-export type FaixaAging = { rotulo: string; total: number; quantidade: number };
+export type FaixaAging = { rotulo: string; total: number; quantidade: number; href: string };
 
 export type AgingResultado = {
   vencido: FaixaAging[];
@@ -54,9 +54,35 @@ function diasDeAtraso(dataVencimento: string, hojeIso: string): number {
   return Math.floor((hoje - vencimento) / (1000 * 60 * 60 * 24));
 }
 
-function classificar(parcelas: ParcelaEmAberto[], hojeIso: string): AgingResultado {
-  const vencido = FAIXAS_VENCIDO.map((f) => ({ rotulo: f.rotulo, total: 0, quantidade: 0 }));
-  const aVencer = FAIXAS_A_VENCER.map((f) => ({ rotulo: f.rotulo, total: 0, quantidade: 0 }));
+// Destino de uma faixa é sempre Contas a Receber/Pagar (nunca /lancamentos —
+// aging é sobre status de parcela em aberto, não movimento contábil por
+// regime; ver spec 2026-09-02-drill-down-5a-leva). `vencimento_de`/`ate` são
+// os limites de data exatos que reproduzem o mesmo filtro de status+data que
+// `classificar` usou pra somar aquela faixa — faixa aberta ("180+ dias") não
+// tem limite inferior.
+function hrefFaixa(tipo: "RECEITA" | "DESPESA", vencDe: string | null, vencAte: string): string {
+  const destino = tipo === "RECEITA" ? "/contas-a-receber" : "/contas-a-pagar";
+  const params = new URLSearchParams({ vencimento_ate: vencAte });
+  if (vencDe) params.set("vencimento_de", vencDe);
+  return `${destino}?${params.toString()}`;
+}
+
+function classificar(parcelas: ParcelaEmAberto[], hojeIso: string, tipo: "RECEITA" | "DESPESA"): AgingResultado {
+  const vencido = FAIXAS_VENCIDO.map((f) => ({
+    rotulo: f.rotulo,
+    total: 0,
+    quantidade: 0,
+    // atraso ∈ [min,max] ⇔ vencimento ∈ [hoje−max, hoje−min]. max=Infinity
+    // (última faixa) não gera limite inferior.
+    href: hrefFaixa(tipo, Number.isFinite(f.max) ? somarDias(hojeIso, -f.max) : null, somarDias(hojeIso, -f.min)),
+  }));
+  const aVencer = FAIXAS_A_VENCER.map((f) => ({
+    rotulo: f.rotulo,
+    total: 0,
+    quantidade: 0,
+    // diasParaVencer ∈ [min,max] ⇔ vencimento ∈ [hoje+min, hoje+max].
+    href: hrefFaixa(tipo, somarDias(hojeIso, f.min), somarDias(hojeIso, f.max)),
+  }));
 
   for (const parcela of parcelas) {
     const atraso = diasDeAtraso(parcela.dataVencimento, hojeIso);
@@ -105,7 +131,7 @@ export async function buscarAging(
     return { valor: Number(p.valor) - pago, dataVencimento: p.data_vencimento };
   });
 
-  return classificar(parcelas, hojeIsoBrasil());
+  return classificar(parcelas, hojeIsoBrasil(), params.tipo);
 }
 
 export type ResumoVencimentos = {

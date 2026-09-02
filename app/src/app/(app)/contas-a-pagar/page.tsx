@@ -27,7 +27,7 @@ const TAMANHO_PAGINA = 20;
 export default async function PaginaContasAPagar({
   searchParams,
 }: {
-  searchParams: Promise<{ situacao?: string; pagina?: string; pessoa?: string }>;
+  searchParams: Promise<{ situacao?: string; pagina?: string; pessoa?: string; vencimento_de?: string; vencimento_ate?: string }>;
 }) {
   const contexto = await obterUsuarioETenantAtual();
   if ("erro" in contexto) {
@@ -35,7 +35,7 @@ export default async function PaginaContasAPagar({
   }
   const { tenantId } = contexto;
 
-  const { situacao, pagina: paginaBruta, pessoa } = await searchParams;
+  const { situacao, pagina: paginaBruta, pessoa, vencimento_de: vencDe, vencimento_ate: vencAte } = await searchParams;
   const filtro = FILTROS.find((f) => f.valor === (situacao ?? "aberto")) ?? FILTROS[0];
   const pagina = Math.max(1, Number(paginaBruta) || 1);
   const inicio = (pagina - 1) * TAMANHO_PAGINA;
@@ -54,16 +54,22 @@ export default async function PaginaContasAPagar({
     .range(inicio, inicio + TAMANHO_PAGINA - 1);
 
   if (pessoa) query = query.eq("eventos_financeiros.pessoa_id", pessoa);
-  // Mesmo motivo de contas-a-receber/page.tsx: com `pessoa` e nenhuma
-  // situação explícita, usa STATUS_VENCIDO (o mesmo conjunto que
-  // buscarAgingPorParticipante soma), não o status de "aberto".
-  if (pessoa && !situacao) query = query.in("status", STATUS_VENCIDO);
-  else if (filtro.status) query = query.in("status", filtro.status);
-  if (filtro.janela === "vencido") {
-    query = query.lt("data_vencimento", limitesJanelaVencimento(0).hojeIso);
-  } else if (filtro.janela === "vence30") {
-    const { hojeIso, limiteIso } = limitesJanelaVencimento(30);
-    query = query.gte("data_vencimento", hojeIso).lte("data_vencimento", limiteIso);
+  // `vencimento_de`/`vencimento_ate` (link de faixa do Aging) tem
+  // prioridade — mesmo raciocínio de contas-a-receber/page.tsx.
+  if (vencDe || vencAte) {
+    query = query.in("status", STATUS_VENCIDO);
+    if (vencDe) query = query.gte("data_vencimento", vencDe);
+    if (vencAte) query = query.lte("data_vencimento", vencAte);
+  } else if (pessoa && !situacao) {
+    query = query.in("status", STATUS_VENCIDO);
+  } else {
+    if (filtro.status) query = query.in("status", filtro.status);
+    if (filtro.janela === "vencido") {
+      query = query.lt("data_vencimento", limitesJanelaVencimento(0).hojeIso);
+    } else if (filtro.janela === "vence30") {
+      const { hojeIso, limiteIso } = limitesJanelaVencimento(30);
+      query = query.gte("data_vencimento", hojeIso).lte("data_vencimento", limiteIso);
+    }
   }
 
   const { data: parcelas, count: totalParcelas } = await query;
@@ -99,7 +105,13 @@ export default async function PaginaContasAPagar({
           totalPaginas,
           totalRegistros: totalParcelas ?? 0,
           tamanhoPagina: TAMANHO_PAGINA,
-          hrefBase: pessoa ? `/contas-a-pagar?situacao=${filtro.valor}&pessoa=${pessoa}` : `/contas-a-pagar?situacao=${filtro.valor}`,
+          hrefBase: (() => {
+            const p = new URLSearchParams({ situacao: filtro.valor });
+            if (pessoa) p.set("pessoa", pessoa);
+            if (vencDe) p.set("vencimento_de", vencDe);
+            if (vencAte) p.set("vencimento_ate", vencAte);
+            return `/contas-a-pagar?${p.toString()}`;
+          })(),
         }}
       />
     </div>

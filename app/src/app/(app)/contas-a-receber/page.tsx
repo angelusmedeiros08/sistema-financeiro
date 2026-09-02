@@ -27,7 +27,14 @@ const TAMANHO_PAGINA = 20;
 export default async function PaginaContasAReceber({
   searchParams,
 }: {
-  searchParams: Promise<{ situacao?: string; pagina?: string; evento?: string; pessoa?: string }>;
+  searchParams: Promise<{
+    situacao?: string;
+    pagina?: string;
+    evento?: string;
+    pessoa?: string;
+    vencimento_de?: string;
+    vencimento_ate?: string;
+  }>;
 }) {
   const contexto = await obterUsuarioETenantAtual();
   if ("erro" in contexto) {
@@ -35,7 +42,7 @@ export default async function PaginaContasAReceber({
   }
   const { tenantId } = contexto;
 
-  const { situacao, pagina: paginaBruta, evento, pessoa } = await searchParams;
+  const { situacao, pagina: paginaBruta, evento, pessoa, vencimento_de: vencDe, vencimento_ate: vencAte } = await searchParams;
   // Com `evento` (link "ver a venda gerada" no detalhe da Venda), o padrão
   // vira "todos": a venda pode ter parcela já quitada/cancelada, e quem
   // clicou quer ver TODAS as parcelas desta venda específica, não só as em
@@ -68,13 +75,26 @@ export default async function PaginaContasAReceber({
   // inclui ATRASADO que aging conta). Achado em revisão de código: hoje os
   // dois batem por acidente (nenhuma parcela tem RENEGOCIADO/ATRASADO na
   // base), mas divergiriam silenciosamente se algum dia existisse uma.
-  if (pessoa && !situacao) query = query.in("status", STATUS_VENCIDO);
-  else if (filtro.status) query = query.in("status", filtro.status);
-  if (filtro.janela === "vencido") {
-    query = query.lt("data_vencimento", limitesJanelaVencimento(0).hojeIso);
-  } else if (filtro.janela === "vence30") {
-    const { hojeIso, limiteIso } = limitesJanelaVencimento(30);
-    query = query.gte("data_vencimento", hojeIso).lte("data_vencimento", limiteIso);
+  // `vencimento_de`/`vencimento_ate` (link de faixa do Aging) tem prioridade
+  // sobre `pessoa`/situação — mesmo raciocínio do `pessoa` sem situação:
+  // status precisa ser EXATAMENTE STATUS_VENCIDO (o que `buscarAging` soma
+  // por faixa), não o de "aberto"/"vencido" (que não bate: "aberto" tem
+  // RENEGOCIADO a mais, "vencido" tem um corte de data fixo em hoje que uma
+  // faixa "a vencer" nunca teria como bater).
+  if (vencDe || vencAte) {
+    query = query.in("status", STATUS_VENCIDO);
+    if (vencDe) query = query.gte("data_vencimento", vencDe);
+    if (vencAte) query = query.lte("data_vencimento", vencAte);
+  } else if (pessoa && !situacao) {
+    query = query.in("status", STATUS_VENCIDO);
+  } else {
+    if (filtro.status) query = query.in("status", filtro.status);
+    if (filtro.janela === "vencido") {
+      query = query.lt("data_vencimento", limitesJanelaVencimento(0).hojeIso);
+    } else if (filtro.janela === "vence30") {
+      const { hojeIso, limiteIso } = limitesJanelaVencimento(30);
+      query = query.gte("data_vencimento", hojeIso).lte("data_vencimento", limiteIso);
+    }
   }
 
   const { data: parcelas, count: totalParcelas } = await query;
@@ -110,11 +130,14 @@ export default async function PaginaContasAReceber({
           totalPaginas,
           totalRegistros: totalParcelas ?? 0,
           tamanhoPagina: TAMANHO_PAGINA,
-          hrefBase: evento
-            ? `/contas-a-receber?situacao=${filtro.valor}&evento=${evento}`
-            : pessoa
-              ? `/contas-a-receber?situacao=${filtro.valor}&pessoa=${pessoa}`
-              : `/contas-a-receber?situacao=${filtro.valor}`,
+          hrefBase: (() => {
+            const p = new URLSearchParams({ situacao: filtro.valor });
+            if (evento) p.set("evento", evento);
+            if (pessoa) p.set("pessoa", pessoa);
+            if (vencDe) p.set("vencimento_de", vencDe);
+            if (vencAte) p.set("vencimento_ate", vencAte);
+            return `/contas-a-receber?${p.toString()}`;
+          })(),
         }}
       />
     </div>

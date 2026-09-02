@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { formatarMoeda, formatarNumeroCompacto } from "@/lib/formatacao";
 import type { AgingResultado } from "@/lib/relatorios/aging";
 import { TrilhoBarra } from "./trilho-barra";
@@ -25,7 +26,7 @@ export function AgingBarras({ titulo, dados }: { titulo: React.ReactNode; dados:
       ) : (
         <div className="flex flex-col gap-2.5">
           {faixas.map((faixa, i) => (
-            <div key={faixa.rotulo} className="flex items-center gap-3">
+            <Link key={faixa.rotulo} href={faixa.href} className="flex items-center gap-3 rounded-lg hover:bg-muted">
               <span className="w-24 shrink-0 text-xs text-muted-foreground">{faixa.rotulo}</span>
               <TrilhoBarra
                 valorPercentual={faixa.total / maior}
@@ -35,7 +36,7 @@ export function AgingBarras({ titulo, dados }: { titulo: React.ReactNode; dados:
               <span className="min-w-20 shrink-0 text-right text-xs font-semibold tabular-nums text-foreground">
                 {formatarNumeroCompacto(faixa.total)}
               </span>
-            </div>
+            </Link>
           ))}
         </div>
       )}
