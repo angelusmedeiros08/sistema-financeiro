@@ -11,6 +11,7 @@ import { PessoaCombobox } from "./pessoa-combobox";
 import { ProdutoServicoCombobox } from "./produto-servico-combobox";
 import { formatarMoeda, parseNumeroBR } from "@/lib/formatacao";
 import { notificarResultado } from "@/lib/feedback/notificar-resultado";
+import { hojeIsoBrasil } from "@/lib/data-brasil";
 
 export type ProdutoOpcaoComercial = { id: string; nome: string; precoVenda: number };
 
@@ -76,7 +77,7 @@ export function DocumentoComercialForm({
 }) {
   const [produtos, setProdutos] = useState<ProdutoOpcaoComercial[]>(produtosIniciais);
   const [itens, setItens] = useState<LinhaItemComercial[]>(() => (dadosIniciais?.itens.length ? dadosIniciais.itens : [novaLinha()]));
-  const dataEmissaoInicial = dadosIniciais?.dataEmissao ?? new Date().toISOString().slice(0, 10);
+  const dataEmissaoInicial = dadosIniciais?.dataEmissao ?? hojeIsoBrasil();
   // Gerada uma vez por visita à página — o modo "criar" sempre redireciona
   // no sucesso (nunca reseta pra tentar de novo na mesma tela), então não
   // precisa remontar/regenerar como em evento-financeiro-form.tsx. Reenvio
@@ -185,9 +186,12 @@ export function DocumentoComercialForm({
 
       <div className="rounded-2xl bg-card shadow-card p-5">
         <h2 className="mb-3 text-xs font-bold uppercase tracking-wide text-muted-foreground">Itens</h2>
-        <div className="space-y-2 overflow-x-auto">
+
+        {/* Desktop: grid de 5 colunas — cabe Produto/Qtd/Preço/Subtotal/remover
+            numa linha só sem precisar de rótulo por campo. */}
+        <div className="hidden space-y-2 md:block">
           {itens.map((item, indice) => (
-            <div key={indice} className="grid min-w-[540px] grid-cols-[1fr_84px_100px_100px_auto] items-center gap-2">
+            <div key={indice} className="grid grid-cols-[1fr_84px_100px_100px_auto] items-center gap-2">
               <ProdutoServicoCombobox
                 produtos={produtos}
                 value={item.produtoServicoId}
@@ -212,6 +216,55 @@ export function DocumentoComercialForm({
               <Button type="button" variant="ghost" size="icon" disabled={itens.length <= 1} onClick={() => removerLinha(indice)}>
                 <X size={15} />
               </Button>
+            </div>
+          ))}
+        </div>
+
+        {/* Mobile: os mesmos 3 campos não cabem numa linha em 375px — o grid
+            de 5 colunas escondia Preço unitário atrás de scroll horizontal
+            sem nenhuma pista visual (achado em auditoria de UX). Cada item
+            vira um card, mesmo padrão de renderGrupoMobile em
+            previsionamento/grade-previsionamento.tsx. */}
+        <div className="flex flex-col gap-2 md:hidden">
+          {itens.map((item, indice) => (
+            <div key={indice} className="rounded-xl border border-border bg-muted/20 p-3">
+              <div className="space-y-1">
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Produto/Serviço</span>
+                <ProdutoServicoCombobox
+                  produtos={produtos}
+                  value={item.produtoServicoId}
+                  onChange={(id, produto) => escolherProduto(indice, id, produto)}
+                  onCriado={registrarProdutoNovo}
+                />
+              </div>
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Quantidade</span>
+                  <Input
+                    type="text"
+                    inputMode="decimal"
+                    value={formatarNumero(item.quantidade)}
+                    onChange={(e) => atualizarLinha(indice, { quantidade: parseNumeroBR(e.target.value) })}
+                    aria-label="Quantidade"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Preço unitário</span>
+                  <Input
+                    type="text"
+                    inputMode="decimal"
+                    value={formatarNumero(item.precoUnitario)}
+                    onChange={(e) => atualizarLinha(indice, { precoUnitario: parseNumeroBR(e.target.value) })}
+                    aria-label="Preço unitário"
+                  />
+                </div>
+              </div>
+              <div className="mt-3 flex items-center justify-between border-t border-border pt-2.5">
+                <span className="text-sm font-semibold tabular-nums text-foreground">{formatarMoeda(item.quantidade * item.precoUnitario)}</span>
+                <Button type="button" variant="ghost" size="icon" disabled={itens.length <= 1} onClick={() => removerLinha(indice)}>
+                  <X size={15} />
+                </Button>
+              </div>
             </div>
           ))}
         </div>
