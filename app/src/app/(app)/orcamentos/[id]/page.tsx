@@ -65,19 +65,14 @@ export default async function PaginaOrcamento({
     return (
       <div className="mx-auto flex max-w-3xl flex-col gap-6">
         <div className="flex items-start justify-between gap-4">
-          <div>
-            <Link href="/orcamentos" className="text-xs text-muted-foreground hover:text-foreground">
-              ← Orçamentos
-            </Link>
-            <div className="mt-1 flex items-center gap-2">
-              <h1 className="text-xl font-bold tracking-tight text-foreground">Orçamento #{orcamento.numero}</h1>
-              <Badge variant="outline" className={cn("border-none text-[11px] font-semibold", className)}>
-                {rotulo}
-              </Badge>
-              {orcamento.status === "ENVIADO" && orcamento.validade && (
-                <span className="text-xs text-muted-foreground">válido até {formatarDataIsoParaBR(orcamento.validade)}</span>
-              )}
-            </div>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-bold tracking-tight text-foreground">Orçamento #{orcamento.numero}</h1>
+            <Badge variant="outline" className={cn("border-none text-[11px] font-semibold", className)}>
+              {rotulo}
+            </Badge>
+            {orcamento.status === "ENVIADO" && orcamento.validade && (
+              <span className="text-xs text-muted-foreground">válido até {formatarDataIsoParaBR(orcamento.validade)}</span>
+            )}
           </div>
           <OrcamentoAcoes orcamentoId={orcamento.id} status={orcamento.status} />
         </div>
@@ -114,16 +109,11 @@ export default async function PaginaOrcamento({
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-6">
       <div className="flex items-start justify-between gap-4">
-        <div>
-          <Link href="/orcamentos" className="text-xs text-muted-foreground hover:text-foreground">
-            ← Orçamentos
-          </Link>
-          <div className="mt-1 flex items-center gap-2">
-            <h1 className="text-xl font-bold tracking-tight text-foreground">Orçamento #{orcamento.numero}</h1>
-            <Badge variant="outline" className={cn("border-none text-[11px] font-semibold", className)}>
-              {rotulo}
-            </Badge>
-          </div>
+        <div className="flex items-center gap-2">
+          <h1 className="text-xl font-bold tracking-tight text-foreground">Orçamento #{orcamento.numero}</h1>
+          <Badge variant="outline" className={cn("border-none text-[11px] font-semibold", className)}>
+            {rotulo}
+          </Badge>
         </div>
         <OrcamentoAcoes orcamentoId={orcamento.id} status={orcamento.status} />
       </div>

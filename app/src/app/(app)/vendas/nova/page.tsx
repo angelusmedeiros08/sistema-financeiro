@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
@@ -19,12 +18,7 @@ export default async function PaginaNovaVenda() {
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-6">
-      <div>
-        <Link href="/vendas" className="text-xs text-muted-foreground hover:text-foreground">
-          ← Vendas
-        </Link>
-        <h1 className="mt-1 text-xl font-bold tracking-tight text-foreground">Nova venda</h1>
-      </div>
+      <h1 className="text-xl font-bold tracking-tight text-foreground">Nova venda</h1>
 
       <VendaForm
         modo="criar"

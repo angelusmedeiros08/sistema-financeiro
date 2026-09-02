@@ -56,10 +56,7 @@ export default async function PaginaDetalheImportacao({ params }: { params: Prom
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-6">
       <div>
-        <Link href="/importacao/historico" className="text-xs font-medium text-muted-foreground hover:text-foreground">
-          ← Central de Importações
-        </Link>
-        <div className="mt-1 flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <h1 className="text-xl font-bold tracking-tight text-foreground">{importacao.nomeArquivo}</h1>
           <BadgeStatusImportacao status={importacao.status} />
         </div>

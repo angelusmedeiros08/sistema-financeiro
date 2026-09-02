@@ -1,5 +1,4 @@
 import { redirect, notFound } from "next/navigation";
-import Link from "next/link";
 import { createClient } from "@/utils/supabase/server";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
 import { buscarEventoParaEdicao } from "@/lib/contabil/buscar-evento";
@@ -26,9 +25,6 @@ export default async function PaginaEditarReceita({ params }: { params: Promise<
   if (evento.estornado) {
     return (
       <div className="mx-auto flex max-w-3xl flex-col gap-4">
-        <Link href="/receitas" className="text-sm text-muted-foreground hover:text-foreground">
-          ← Receitas
-        </Link>
         <div className="rounded-2xl bg-card shadow-card p-5">
           <p className="text-sm font-medium text-foreground">{evento.descricao}</p>
           <p className="mt-1 text-sm text-muted-foreground">Este lançamento foi estornado e não pode mais ser editado.</p>

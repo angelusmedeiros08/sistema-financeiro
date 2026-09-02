@@ -16,10 +16,7 @@ export default async function PaginaHistoricoImportacoes() {
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-6">
       <div>
-        <Link href="/importacao" className="text-xs font-medium text-muted-foreground hover:text-foreground">
-          ← Importação
-        </Link>
-        <h1 className="mt-1 text-xl font-bold tracking-tight text-foreground">Central de Importações</h1>
+        <h1 className="text-xl font-bold tracking-tight text-foreground">Central de Importações</h1>
         <p className="mt-1 text-sm text-muted-foreground">Histórico de lotes importados, com resultado linha a linha, retomar e desfazer.</p>
       </div>
 
