@@ -80,8 +80,14 @@ function classificar(parcelas: ParcelaEmAberto[], hojeIso: string, tipo: "RECEIT
     rotulo: f.rotulo,
     total: 0,
     quantidade: 0,
-    // diasParaVencer ∈ [min,max] ⇔ vencimento ∈ [hoje+min, hoje+max].
-    href: hrefFaixa(tipo, somarDias(hojeIso, f.min), somarDias(hojeIso, f.max)),
+    // diasParaVencer ∈ [min,max] ⇔ vencimento ∈ [hoje+min, hoje+max] — mas
+    // diasParaVencer nunca é 0 na prática (abaixo, `atraso >= 0` já desvia
+    // vencimento=hoje pro bucket `vencido`), então o piso real da 1ª faixa
+    // é hoje+1, não hoje+0. Sem isso o href incluía parcelas que vencem
+    // hoje, já contadas no total da faixa "vencido 0-15 dias" — quem
+    // clicasse em "A vencer 0-15 dias" veria uma lista maior que o total
+    // exibido ali (achado em revisão de código).
+    href: hrefFaixa(tipo, somarDias(hojeIso, Math.max(1, f.min)), somarDias(hojeIso, f.max)),
   }));
 
   for (const parcela of parcelas) {
