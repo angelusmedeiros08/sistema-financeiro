@@ -18,6 +18,7 @@ export type LinhaImportacao = {
 const ROTULO_TIPO: Record<string, string> = {
   pessoas: "Clientes/Fornecedores",
   financeiro: "Lançamentos financeiros",
+  produtos: "Produtos",
 };
 
 const helper = criarColunaLista<LinhaImportacao>();

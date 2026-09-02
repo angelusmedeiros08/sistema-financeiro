@@ -43,13 +43,12 @@ export default async function PaginaAuditoria({ searchParams }: { searchParams: 
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-6">
-      <h1 className="text-xl font-bold tracking-tight text-foreground">Configurações</h1>
+      <h1 className="text-xl font-bold tracking-tight text-foreground">Trilha de auditoria</h1>
       <ConfiguracoesSubNav />
 
       <div className="rounded-2xl bg-card shadow-card p-5">
         <div className="mb-1">
-          <h2 className="font-heading text-sm font-bold text-foreground">Trilha de auditoria</h2>
-          <p className="mt-1 text-xs text-muted-foreground">Quem fez o quê, e quando — lançamentos, estornos e mudanças de equipe.</p>
+          <p className="text-xs text-muted-foreground">Quem fez o quê, e quando — lançamentos, estornos e mudanças de equipe.</p>
         </div>
 
         {eventos.length === 0 ? (
