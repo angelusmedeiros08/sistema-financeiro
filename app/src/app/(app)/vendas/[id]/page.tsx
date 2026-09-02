@@ -53,14 +53,9 @@ export default async function PaginaVenda({ params }: { params: Promise<{ id: st
     return (
       <div className="mx-auto flex max-w-3xl flex-col gap-6">
         <div className="flex items-start justify-between gap-4">
-          <div>
-            <Link href="/vendas" className="text-xs text-muted-foreground hover:text-foreground">
-              ← Vendas
-            </Link>
-            <div className="mt-1 flex items-center gap-2">
-              <h1 className="text-xl font-bold tracking-tight text-foreground">Venda #{venda.numero}</h1>
-              {badgeStatus(venda.status)}
-            </div>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-bold tracking-tight text-foreground">Venda #{venda.numero}</h1>
+            {badgeStatus(venda.status)}
           </div>
           <VendaAcoes vendaId={venda.id} status={venda.status} />
         </div>
@@ -88,16 +83,9 @@ export default async function PaginaVenda({ params }: { params: Promise<{ id: st
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <Link href="/vendas" className="text-xs text-muted-foreground hover:text-foreground">
-            ← Vendas
-          </Link>
-          <div className="mt-1 flex items-center gap-2">
-            <h1 className="text-xl font-bold tracking-tight text-foreground">Venda #{venda.numero}</h1>
-            {badgeStatus(venda.status)}
-          </div>
-        </div>
+      <div className="flex items-center gap-2">
+        <h1 className="text-xl font-bold tracking-tight text-foreground">Venda #{venda.numero}</h1>
+        {badgeStatus(venda.status)}
       </div>
 
       <div className="rounded-2xl bg-card shadow-card p-5">
@@ -138,7 +126,18 @@ export default async function PaginaVenda({ params }: { params: Promise<{ id: st
 
       {venda.status === "APROVADO" && (
         <p className="text-xs text-muted-foreground">
-          Venda aprovada — o lançamento e as parcelas ficam em Contas a Receber. Ajustes (estorno, renegociação, cancelamento) acontecem por lá.
+          Venda aprovada —{" "}
+          {venda.eventoFinanceiroId ? (
+            <Link
+              href={`/contas-a-receber?evento=${venda.eventoFinanceiroId}&situacao=todos`}
+              className="font-medium text-foreground underline underline-offset-2"
+            >
+              o lançamento e as parcelas
+            </Link>
+          ) : (
+            "o lançamento e as parcelas"
+          )}{" "}
+          ficam em Contas a Receber. Ajustes (estorno, renegociação, cancelamento) acontecem por lá.
         </p>
       )}
     </div>
