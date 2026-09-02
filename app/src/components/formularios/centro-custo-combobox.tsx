@@ -26,9 +26,9 @@ export function CentroCustoCombobox({ centrosCusto, centroCustoInicial }: { cent
       <Popover open={aberto} onOpenChange={setAberto}>
         <PopoverTrigger asChild>
           <Button type="button" variant="outline" role="combobox" aria-expanded={aberto} className="w-full justify-between font-normal">
-            <span className={cn("flex items-center gap-2 truncate", !rotuloAtual && "text-muted-foreground")}>
-              <Tag size={15} />
-              {rotuloAtual || "Centro de custo (opcional)..."}
+            <span className={cn("flex min-w-0 items-center gap-2", !rotuloAtual && "text-muted-foreground")}>
+              <Tag size={15} className="shrink-0" />
+              <span className="truncate">{rotuloAtual || "Centro de custo (opcional)..."}</span>
             </span>
             <CaretUpDown size={14} className="shrink-0 opacity-50" />
           </Button>

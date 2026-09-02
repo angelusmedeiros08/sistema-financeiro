@@ -35,7 +35,11 @@ const colunas = helper.columns([
   helper.accessor((p) => p.eventos_financeiros?.pessoas?.nome ?? "-", {
     id: "pessoa",
     header: "Pessoa",
-    cell: (info) => <span className="text-muted-foreground">{info.getValue()}</span>,
+    cell: (info) => (
+      <span className="block max-w-[160px] truncate text-muted-foreground" title={info.getValue()}>
+        {info.getValue()}
+      </span>
+    ),
   }),
   helper.accessor((p) => new Date(p.data_vencimento + "T00:00:00").toLocaleDateString("pt-BR"), {
     id: "vencimento",
