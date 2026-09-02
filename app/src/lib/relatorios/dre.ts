@@ -1,5 +1,6 @@
 import type { Cliente, Regime } from "./regime";
 import { buscarMovimento, valorComSinal } from "./regime";
+import { montarHrefLancamentos } from "./drill-down";
 import type { Database } from "@/utils/supabase/database.types";
 
 type TipoCalcLinhaDre = Database["public"]["Enums"]["tipo_linha_dre"];
@@ -16,6 +17,10 @@ export type LinhaDreResultado = {
   tipoCalc: TipoCalcLinhaDre;
   valorDireto: number;
   valorAcumulado: number;
+  // Só linhas FOLHA têm link — SUBTOTAL/RESULTADO_NAO_OPERACIONAL são o
+  // acumulado de várias linhas FOLHA juntas, sem um único conjunto de
+  // categorias (logo sem lista de lançamentos) que bata com esse valor.
+  href: string | null;
 };
 
 type LinhaComCategorias = {
@@ -75,7 +80,7 @@ async function buscarLinhasEMovimento(supabase: Cliente, params: { tenantId: str
 
 export async function buscarDRE(
   supabase: Cliente,
-  params: { tenantId: string; regime: Regime; dataInicio: string; dataFim: string },
+  params: { tenantId: string; regime: Regime; dataInicio: string; dataFim: string; origemHref: string },
 ): Promise<LinhaDreResultado[]> {
   const { linhas, movimento } = await buscarLinhasEMovimento(supabase, params);
 
@@ -103,6 +108,17 @@ export async function buscarDRE(
       tipoCalc: linha.tipo_calc,
       valorDireto,
       valorAcumulado: acumulado,
+      href:
+        linha.tipo_calc === "FOLHA"
+          ? montarHrefLancamentos({
+              tipoEntidade: "linha_dre",
+              entidadeId: linha.id,
+              regime: params.regime,
+              periodoInicio: params.dataInicio,
+              periodoFim: params.dataFim,
+              origemHref: params.origemHref,
+            })
+          : null,
     };
   });
 }
@@ -116,6 +132,10 @@ export type LinhaDreMatriz = {
   meses: number[];
   total: number;
   avPercentual: number;
+  // Só linhas FOLHA — mesmo motivo de LinhaDreResultado.href. Um href por
+  // mês (período daquele mês específico) + um pro Total (ano inteiro).
+  hrefsPorMes: (string | null)[];
+  hrefTotal: string | null;
 };
 
 // Matriz Jan-Dez + Total + AV% — cada coluna (cada mês, e o total do ano) é
@@ -124,10 +144,17 @@ export type LinhaDreMatriz = {
 // diferença (soma de 12 acumulados mensais não é o acumulado do ano).
 export async function buscarDREMatriz(
   supabase: Cliente,
-  params: { tenantId: string; regime: Regime; ano: number },
+  params: { tenantId: string; regime: Regime; ano: number; origemHref: string },
 ): Promise<LinhaDreMatriz[]> {
   const dataInicio = `${params.ano}-01-01`;
   const dataFim = `${params.ano}-12-31`;
+  // Limites de cada mês do ano selecionado — dia 0 do mês seguinte (UTC) é
+  // o último dia do mês corrente, mesmo truque já usado em
+  // buscarResumoVencimentos (aging.ts).
+  const limitesDoMes = Array.from({ length: 12 }, (_, i) => ({
+    inicio: `${params.ano}-${String(i + 1).padStart(2, "0")}-01`,
+    fim: new Date(Date.UTC(params.ano, i + 1, 0)).toISOString().slice(0, 10),
+  }));
   const { linhas, movimento } = await buscarLinhasEMovimento(supabase, { tenantId: params.tenantId, regime: params.regime, dataInicio, dataFim });
 
   const somaPorCategoriaMes = new Map<string, number[]>();
@@ -161,6 +188,16 @@ export async function buscarDREMatriz(
 
   return linhas.map((linha) => {
     const total = colunaTotal.get(linha.id) ?? 0;
+    const ehFolha = linha.tipo_calc === "FOLHA";
+    const hrefPara = (periodoInicio: string, periodoFim: string) =>
+      montarHrefLancamentos({
+        tipoEntidade: "linha_dre",
+        entidadeId: linha.id,
+        regime: params.regime,
+        periodoInicio,
+        periodoFim,
+        origemHref: params.origemHref,
+      });
     return {
       id: linha.id,
       ordem: linha.ordem,
@@ -170,6 +207,8 @@ export async function buscarDREMatriz(
       meses: colunasMensais.map((c) => c.get(linha.id) ?? 0),
       total,
       avPercentual: totalReceitasOperacionais !== 0 ? total / totalReceitasOperacionais : 0,
+      hrefsPorMes: ehFolha ? limitesDoMes.map((m) => hrefPara(m.inicio, m.fim)) : new Array(12).fill(null),
+      hrefTotal: ehFolha ? hrefPara(dataInicio, dataFim) : null,
     };
   });
 }
@@ -187,7 +226,10 @@ export async function buscarDREIndicadores(
   supabase: Cliente,
   params: { tenantId: string; regime: Regime; ano: number },
 ): Promise<IndicadorMensal[]> {
-  const matriz = await buscarDREMatriz(supabase, params);
+  // origemHref não é lido por IndicadoresDreChart (só mc/margemBruta/
+  // ebitda/margemLiquida) — passado vazio de propósito, não desperdiça
+  // uma URL real que ninguém usa.
+  const matriz = await buscarDREMatriz(supabase, { ...params, origemHref: "" });
   const porConceito = new Map(matriz.filter((l) => l.conceitoFixo).map((l) => [l.conceitoFixo, l]));
   const receitaLiquida = porConceito.get("RECEITA_LIQUIDA");
   const mc = porConceito.get("MARGEM_CONTRIBUICAO");

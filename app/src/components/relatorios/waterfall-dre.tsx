@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { ParentSize } from "@visx/responsive";
 import { scaleBand } from "@visx/scale";
 import { Bar, Line } from "@visx/shape";
@@ -11,7 +12,14 @@ import type { Database } from "@/utils/supabase/database.types";
 import { formatarMoeda, formatarNumeroAbreviado } from "@/lib/formatacao";
 import { cn } from "@/lib/utils";
 
-type LinhaWaterfall = { rotulo: string; tipoCalc: Database["public"]["Enums"]["tipo_linha_dre"]; valorDireto: number };
+type LinhaWaterfall = {
+  rotulo: string;
+  tipoCalc: Database["public"]["Enums"]["tipo_linha_dre"];
+  valorDireto: number;
+  // Só linhas FOLHA (delta) têm — checkpoint/final são o acumulado de
+  // várias linhas juntas, sem um conjunto de categorias único por trás.
+  href?: string | null;
+};
 
 type TipoBarraWaterfall = "delta" | "checkpoint" | "final";
 
@@ -25,6 +33,7 @@ type BarraWaterfall = {
   // tempo (o tipo já diz qual dos dois significados vale).
   valorMostrado: number;
   nivel: number;
+  href?: string | null;
 };
 
 // Waterfall via @visx/shape (Bar/Line/Group prontos, mas escala Y e eixo
@@ -60,6 +69,7 @@ function montarBarras(linhas: LinhaWaterfall[]): BarraWaterfall[] {
         alto: Math.max(inicio, acumulado),
         valorMostrado: linha.valorDireto,
         nivel: acumulado,
+        href: linha.href,
       });
       return;
     }
@@ -134,6 +144,7 @@ const estiloTooltip = {
 };
 
 function GraficoInterno({ barras, largura, altura }: { barras: BarraWaterfall[]; largura: number; altura: number }) {
+  const router = useRouter();
   const [hoverIndice, setHoverIndice] = useState<number | null>(null);
   const { tooltipData, tooltipLeft, tooltipTop, tooltipOpen, showTooltip, hideTooltip } = useTooltip<BarraWaterfall>();
   const { containerRef, TooltipInPortal } = useTooltipInPortal({ scroll: true, detectBounds: true });
@@ -216,9 +227,10 @@ function GraficoInterno({ barras, largura, altura }: { barras: BarraWaterfall[];
                   fillOpacity={hoverIndice === null || emHover ? cor.fillOpacity : cor.fillOpacity * 0.55}
                   stroke={cor.stroke}
                   strokeWidth={cor.strokeWidth}
-                  style={{ transition: "fill-opacity 0.15s ease" }}
+                  style={{ transition: "fill-opacity 0.15s ease", cursor: barra.href ? "pointer" : "default" }}
                   onMouseMove={(e) => aoPassarMouse(e, barra, i)}
                   onMouseLeave={aoSairMouse}
+                  onClick={() => barra.href && router.push(barra.href)}
                 />
                 {barra.tipo === "delta" ? (
                   <text
@@ -286,6 +298,7 @@ function GraficoInterno({ barras, largura, altura }: { barras: BarraWaterfall[];
             {tooltipData.tipo === "delta" ? "Variação: " : "Acumulado: "}
             {formatarMoeda(tooltipData.valorMostrado)}
           </div>
+          {tooltipData.href && <div className="mt-0.5 text-[11px] text-muted-foreground/70">Clique pra ver os lançamentos</div>}
         </TooltipInPortal>
       )}
     </div>

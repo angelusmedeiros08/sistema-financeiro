@@ -13,9 +13,25 @@
 // mesmo motivo estrutural real: 3 sub-colunas por mês). Achado do usuário
 // vendo o sistema de verdade, não fazia parte do arquétipo original.
 import { useMemo } from "react";
+import Link from "next/link";
 import { formatarNumeroCompacto } from "@/lib/formatacao";
 import type { LinhaDreMatriz } from "@/lib/relatorios/dre";
 import { TabelaMatriz, criarColunaMatriz, ValorMatriz, CelulaAV, type TipoLinhaMatriz } from "@/components/tabela/tabela-matriz";
+
+// Célula com link só quando a linha é FOLHA (`href` presente) — subtotal/
+// final não têm um conjunto de categorias único por trás (ver comentário em
+// lib/relatorios/dre.ts, LinhaDreMatriz.href*). Link por célula, não linha
+// inteira (cada mês tem seu próprio período) — mesmo padrão de
+// centro-custo-tabela.tsx.
+function CelulaValor({ valor, href }: { valor: number; href: string | null }) {
+  const conteudo = <ValorMatriz valor={valor} formatado={formatarNumeroCompacto(valor)} />;
+  if (!href) return conteudo;
+  return (
+    <Link href={href} className="block hover:underline">
+      {conteudo}
+    </Link>
+  );
+}
 
 const NOMES_MES = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 const IDS_MES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
@@ -44,7 +60,7 @@ const colunasMensais = helper.columns(
       header: NOMES_MES[i],
       meta: { numerica: true },
       enableSorting: false,
-      cell: (info) => <ValorMatriz valor={info.getValue()} formatado={formatarNumeroCompacto(info.getValue())} />,
+      cell: (info) => <CelulaValor valor={info.getValue()} href={info.row.original.hrefsPorMes[i]} />,
     }),
   ),
 );
@@ -69,7 +85,7 @@ export function DreMatrizTabela({ linhas, ano }: { linhas: LinhaDreMatriz[]; ano
           header: "Total",
           meta: { numerica: true, totalizador: true },
           enableSorting: false,
-          cell: (info) => <ValorMatriz valor={info.getValue()} formatado={formatarNumeroCompacto(info.getValue())} />,
+          cell: (info) => <CelulaValor valor={info.getValue()} href={info.row.original.hrefTotal} />,
         }),
         helper.accessor("avPercentual", {
           id: "av",

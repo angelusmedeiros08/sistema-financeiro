@@ -39,18 +39,19 @@ export default async function PaginaRelatoriosDre({
   const aba = ABAS.some((a) => a.valor === sp.aba) ? sp.aba! : "matriz";
   const emApresentacao = emModoApresentacao(sp);
 
-  const supabase = await createClient();
-  const [linhas, indicadores] = await Promise.all([
-    buscarDREMatriz(supabase, { tenantId: contexto.tenantId, regime, ano }),
-    buscarDREIndicadores(supabase, { tenantId: contexto.tenantId, regime, ano }),
-  ]);
-  const linhasVisiveis = detalhado ? linhas : linhas.filter((l) => l.tipoCalc !== "FOLHA");
-
   function href(overrides: Record<string, string>) {
     const p = new URLSearchParams(Object.entries(sp).filter(([, v]) => v !== undefined) as [string, string][]);
     for (const [chave, valor] of Object.entries(overrides)) p.set(chave, valor);
     return `/relatorios/dre?${p.toString()}`;
   }
+  const origemHref = href({});
+
+  const supabase = await createClient();
+  const [linhas, indicadores] = await Promise.all([
+    buscarDREMatriz(supabase, { tenantId: contexto.tenantId, regime, ano, origemHref }),
+    buscarDREIndicadores(supabase, { tenantId: contexto.tenantId, regime, ano }),
+  ]);
+  const linhasVisiveis = detalhado ? linhas : linhas.filter((l) => l.tipoCalc !== "FOLHA");
 
   return (
     <div className="flex w-full flex-col gap-6">
@@ -86,7 +87,7 @@ export default async function PaginaRelatoriosDre({
         <div className="rounded-2xl bg-card shadow-card p-6">
           <h2 className="mb-1 font-heading text-base font-bold text-foreground">DRE em cascata ({ano})</h2>
           <p className="mb-5 text-xs text-muted-foreground">Total do ano, linha a linha, na ordem real de tbTotalizadoresDRE.</p>
-          <WaterfallDre linhas={linhas.map((l) => ({ rotulo: l.rotulo, tipoCalc: l.tipoCalc, valorDireto: l.total }))} altura={520} />
+          <WaterfallDre linhas={linhas.map((l) => ({ rotulo: l.rotulo, tipoCalc: l.tipoCalc, valorDireto: l.total, href: l.hrefTotal }))} altura={520} />
         </div>
       )}
 

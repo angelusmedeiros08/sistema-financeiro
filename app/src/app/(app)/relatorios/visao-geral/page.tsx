@@ -51,7 +51,7 @@ export default async function PaginaRelatoriosVisaoGeral({
 
   const [dre, fluxo, pontoEquilibrio, agingReceita, agingDespesa, resumoReceber, resumoPagar, indicadoresCAR, indicadoresCAP, serieCAR, serieCAP, topReceitas, topDespesas, concentracao, saldoProjetado] =
     await Promise.all([
-      buscarDRE(supabase, { tenantId, ...params }),
+      buscarDRE(supabase, { tenantId, ...params, origemHref }),
       buscarFluxoCaixaGrade(supabase, { tenantId, ...params }),
       buscarPontoEquilibrio(supabase, { tenantId, ...params }),
       buscarAging(supabase, { tenantId, tipo: "RECEITA" }),
