@@ -60,7 +60,16 @@ export default async function PaginaContasAReceber({
 
   if (evento) query = query.eq("eventos_financeiros.id", evento);
   if (pessoa) query = query.eq("eventos_financeiros.pessoa_id", pessoa);
-  if (filtro.status) query = query.in("status", filtro.status);
+  // Com `pessoa` (link de "Maiores devedores" em Aging) e nenhuma situação
+  // explícita, o status precisa ser EXATAMENTE `STATUS_VENCIDO` (o mesmo
+  // conjunto que `buscarAgingPorParticipante` soma como `totalEmAberto`) —
+  // não o status de "aberto" (`PENDENTE/RECEBIDO_PARCIAL/RENEGOCIADO`), que
+  // diverge nos dois sentidos (inclui RENEGOCIADO que aging não conta, não
+  // inclui ATRASADO que aging conta). Achado em revisão de código: hoje os
+  // dois batem por acidente (nenhuma parcela tem RENEGOCIADO/ATRASADO na
+  // base), mas divergiriam silenciosamente se algum dia existisse uma.
+  if (pessoa && !situacao) query = query.in("status", STATUS_VENCIDO);
+  else if (filtro.status) query = query.in("status", filtro.status);
   if (filtro.janela === "vencido") {
     query = query.lt("data_vencimento", limitesJanelaVencimento(0).hojeIso);
   } else if (filtro.janela === "vence30") {

@@ -35,8 +35,8 @@ export default async function PaginaContasAPagar({
   }
   const { tenantId } = contexto;
 
-  const { situacao = "aberto", pagina: paginaBruta, pessoa } = await searchParams;
-  const filtro = FILTROS.find((f) => f.valor === situacao) ?? FILTROS[0];
+  const { situacao, pagina: paginaBruta, pessoa } = await searchParams;
+  const filtro = FILTROS.find((f) => f.valor === (situacao ?? "aberto")) ?? FILTROS[0];
   const pagina = Math.max(1, Number(paginaBruta) || 1);
   const inicio = (pagina - 1) * TAMANHO_PAGINA;
 
@@ -54,7 +54,11 @@ export default async function PaginaContasAPagar({
     .range(inicio, inicio + TAMANHO_PAGINA - 1);
 
   if (pessoa) query = query.eq("eventos_financeiros.pessoa_id", pessoa);
-  if (filtro.status) query = query.in("status", filtro.status);
+  // Mesmo motivo de contas-a-receber/page.tsx: com `pessoa` e nenhuma
+  // situação explícita, usa STATUS_VENCIDO (o mesmo conjunto que
+  // buscarAgingPorParticipante soma), não o status de "aberto".
+  if (pessoa && !situacao) query = query.in("status", STATUS_VENCIDO);
+  else if (filtro.status) query = query.in("status", filtro.status);
   if (filtro.janela === "vencido") {
     query = query.lt("data_vencimento", limitesJanelaVencimento(0).hojeIso);
   } else if (filtro.janela === "vence30") {

@@ -206,16 +206,14 @@ export async function buscarAgingPorParticipante(
       totalEmAberto: 0,
       diasDeAtrasoMaximo: 0,
       // `totalEmAberto` soma TODO status em STATUS_VENCIDO (não só o que já
-      // venceu — inclui pendente ainda dentro do prazo), então o destino
-      // certo é a situação padrão "aberto" (PENDENTE/RECEBIDO_PARCIAL/
-      // RENEGOCIADO em contas-a-receber/pagar), não "vencido" (que teria
-      // um filtro de data extra e subcontaria). RENEGOCIADO não existe em
-      // STATUS_VENCIDO — na base real hoje (checado ao vivo) só há
-      // PENDENTE, então os dois filtros coincidem; se um dia existir
-      // parcela renegociada, "aberto" passaria a contar um pouco a mais
-      // que `totalEmAberto` — risco aceito, não há filtro pronto que
-      // reproduza STATUS_VENCIDO exatamente sem criar uma situação nova só
-      // pra isso.
+      // venceu — inclui pendente ainda dentro do prazo), então não pode
+      // usar a situação "vencido" (tem filtro de data extra, subcontaria).
+      // Sem `situacao` na URL, contas-a-receber/pagar detecta `pessoa` sem
+      // situação explícita e filtra por STATUS_VENCIDO diretamente (não
+      // pelo status de "aberto", que é um conjunto diferente:
+      // PENDENTE/RECEBIDO_PARCIAL/RENEGOCIADO) — acham em revisão de código
+      // que os dois conjuntos divergiam (RENEGOCIADO só num, ATRASADO só no
+      // outro), corrigido pra usar STATUS_VENCIDO exato dos dois lados.
       href: pessoa?.id ? `/${params.tipo === "RECEITA" ? "contas-a-receber" : "contas-a-pagar"}?pessoa=${pessoa.id}` : undefined,
     };
     atual.totalEmAberto += saldo;
