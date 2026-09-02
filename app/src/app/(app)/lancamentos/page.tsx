@@ -18,7 +18,16 @@ const DIMENSOES = [
   { param: "forma_pagamento_id", dimensao: "forma_pagamento" as const },
   { param: "centro_custo_id", dimensao: "centro_custo" as const },
   { param: "pessoa_id", dimensao: "pessoa" as const },
+  { param: "conta_financeira_id", dimensao: "conta_financeira" as const },
 ];
+
+// linha_dre e atividade_dfc ficam fora do laço genérico de DIMENSOES
+// acima: cada clique aponta pra exatamente 1 linha/atividade (nunca uma
+// lista "Outras" nem um bucket "nenhuma" — não existe "linha de DRE não
+// informada" do jeito que existe "categoria não informada"), então o
+// parsing é mais simples (1 string) em vez de `parseValor`.
+const ATIVIDADES_DFC = ["OPERACIONAL", "INVESTIMENTO", "FINANCIAMENTO"] as const;
+type AtividadeDfc = (typeof ATIVIDADES_DFC)[number];
 
 const REGIMES: Regime[] = ["competencia", "previsto", "realizado"];
 const TAMANHO_PAGINA = 20;
@@ -79,7 +88,15 @@ export default async function PaginaLancamentos({
 
   const dimensaoAtiva = DIMENSOES.find((d) => sp[d.param] !== undefined);
   let filtro: FiltroLancamentos;
-  if (dimensaoAtiva) {
+  if (sp.linha_dre_id) {
+    filtro = { dimensao: "linha_dre", valor: sp.linha_dre_id, regime, apenasTipo };
+  } else if (sp.atividade_dfc) {
+    // Nunca repassa o valor cru pra query — só os 3 literais do enum são
+    // aceitos, qualquer outra coisa (incl. tentativa de injeção) cai no
+    // notFound() abaixo, igual um id de dimensão inválido.
+    if (!ATIVIDADES_DFC.includes(sp.atividade_dfc as AtividadeDfc)) notFound();
+    filtro = { dimensao: "atividade_dfc", valor: sp.atividade_dfc as AtividadeDfc, regime, apenasTipo };
+  } else if (dimensaoAtiva) {
     const valor = parseValor(sp[dimensaoAtiva.param]);
     if (!valor) notFound();
     filtro = { dimensao: dimensaoAtiva.dimensao, valor, regime, apenasTipo };

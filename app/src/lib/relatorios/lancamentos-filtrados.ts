@@ -37,12 +37,29 @@ type ValorFiltro = string[] | "nenhuma";
 // explícito de quem chama.
 export type FiltroLancamentos =
   | {
-      dimensao: "categoria" | "forma_pagamento" | "centro_custo" | "pessoa";
+      dimensao: "categoria" | "forma_pagamento" | "centro_custo" | "pessoa" | "conta_financeira";
       valor: ValorFiltro;
       // Ignorado por "forma_pagamento" — ver comentário no topo do arquivo.
       regime: Regime;
       // Presente quando a fatia clicada já era, ela mesma, só de um tipo
       // (ex.: "Entradas" de um centro de custo) — ver comentário em drill-down.ts.
+      apenasTipo?: "RECEITA" | "DESPESA";
+    }
+  | {
+      // Linha de DRE e atividade da DFC são, na prática, "um grupo nomeado
+      // de categorias" — resolvidos pra uma lista de categoria ids antes
+      // de chegar em buscarPorMovimento, com o nome vindo da própria linha/
+      // atividade (nunca de "Outras categorias" genérico, nem de texto cru
+      // da URL — ver spec 2026-09-02-drill-down-4a-leva).
+      dimensao: "linha_dre";
+      valor: string;
+      regime: Regime;
+      apenasTipo?: "RECEITA" | "DESPESA";
+    }
+  | {
+      dimensao: "atividade_dfc";
+      valor: "OPERACIONAL" | "INVESTIMENTO" | "FINANCIAMENTO";
+      regime: Regime;
       apenasTipo?: "RECEITA" | "DESPESA";
     }
   | {
@@ -109,7 +126,83 @@ export async function buscarLancamentosFiltrados(
         rotuloVarios: "Outras pessoas",
         apenasTipo: filtro.apenasTipo,
       });
+    case "conta_financeira":
+      return buscarPorMovimento(supabase, tenantId, filtro.valor, filtro.regime, periodoInicio, periodoFim, pagina, tamanhoPagina, {
+        campo: "contaFinanceiraId",
+        buscarRotulo: (id) => buscarNome(supabase, "contas_financeiras", tenantId, id),
+        rotuloNenhuma: "Sem conta vinculada",
+        rotuloVarios: "Outras contas",
+        apenasTipo: filtro.apenasTipo,
+      });
+    case "linha_dre": {
+      const { ids, nome } = await categoriasDaLinhaDre(supabase, tenantId, filtro.valor);
+      if (ids.length === 0) return VAZIO("-");
+      return buscarPorMovimento(supabase, tenantId, ids, filtro.regime, periodoInicio, periodoFim, pagina, tamanhoPagina, {
+        campo: "categoriaId",
+        buscarRotulo: async () => nome,
+        rotuloNenhuma: nome,
+        rotuloVarios: nome,
+        apenasTipo: filtro.apenasTipo,
+      });
+    }
+    case "atividade_dfc": {
+      const ids = await categoriasDaAtividade(supabase, tenantId, filtro.valor);
+      const nome = ROTULO_ATIVIDADE[filtro.valor];
+      if (ids.length === 0) return VAZIO(nome);
+      return buscarPorMovimento(supabase, tenantId, ids, filtro.regime, periodoInicio, periodoFim, pagina, tamanhoPagina, {
+        campo: "categoriaId",
+        buscarRotulo: async () => nome,
+        rotuloNenhuma: nome,
+        rotuloVarios: nome,
+        apenasTipo: filtro.apenasTipo,
+      });
+    }
   }
+}
+
+const ROTULO_ATIVIDADE: Record<"OPERACIONAL" | "INVESTIMENTO" | "FINANCIAMENTO", string> = {
+  OPERACIONAL: "Atividades operacionais",
+  INVESTIMENTO: "Atividades de investimento",
+  FINANCIAMENTO: "Atividades de financiamento",
+};
+
+// Categorias que compõem uma linha de DRE (via linha_dre_categorias) — o
+// nome vem da própria linha, nunca de "Outras categorias" genérico (uma
+// linha de DRE é um agrupamento nomeado deliberado, não um resto de top-N).
+async function categoriasDaLinhaDre(supabase: Cliente, tenantId: string, linhaId: string): Promise<{ ids: string[]; nome: string }> {
+  const { data } = await supabase
+    .from("linhas_dre")
+    .select("rotulo, linha_dre_categorias(categoria_id)")
+    .eq("tenant_id", tenantId)
+    .eq("id", linhaId)
+    .maybeSingle();
+  if (!data) return { ids: [], nome: "-" };
+  return { ids: data.linha_dre_categorias.map((c) => c.categoria_id), nome: data.rotulo };
+}
+
+// Mesmo dobramento de NAO_OPERACIONAL_* dentro de OPERACIONAL que
+// buscarDFCMatriz (lib/relatorios/dfc.ts) já usa pra montar a matriz — as 3
+// atividades continuam somando os MESMOS ids de categoria que a matriz
+// mostrou, então o total bate exato.
+async function categoriasDaAtividade(
+  supabase: Cliente,
+  tenantId: string,
+  atividade: "OPERACIONAL" | "INVESTIMENTO" | "FINANCIAMENTO",
+): Promise<string[]> {
+  const { data: linhas } = await supabase
+    .from("linhas_dre")
+    .select("id_dfc, linha_dre_categorias(categoria_id)")
+    .eq("tenant_id", tenantId)
+    .not("id_dfc", "is", null);
+
+  const ids: string[] = [];
+  for (const linha of linhas ?? []) {
+    if (!linha.id_dfc) continue;
+    const dobrada = linha.id_dfc === "INVESTIMENTO" || linha.id_dfc === "FINANCIAMENTO" ? linha.id_dfc : "OPERACIONAL";
+    if (dobrada !== atividade) continue;
+    for (const c of linha.linha_dre_categorias) ids.push(c.categoria_id);
+  }
+  return ids;
 }
 
 // Ordena os eventos agregados pela data mais recente de movimento e recorta
@@ -130,7 +223,7 @@ function paginarEventos(
 
 async function buscarNome(
   supabase: Cliente,
-  tabela: "categorias_financeiras" | "centros_custo" | "pessoas" | "formas_pagamento",
+  tabela: "categorias_financeiras" | "centros_custo" | "pessoas" | "formas_pagamento" | "contas_financeiras",
   tenantId: string,
   id: string,
 ): Promise<string> {
@@ -231,7 +324,7 @@ async function buscarPorMovimento(
   pagina: number,
   tamanhoPagina: number,
   opcoes: {
-    campo: "categoriaId" | "centroCustoId" | "pessoaId";
+    campo: "categoriaId" | "centroCustoId" | "pessoaId" | "contaFinanceiraId";
     buscarRotulo: (id: string) => Promise<string>;
     rotuloNenhuma: string;
     rotuloVarios: string;

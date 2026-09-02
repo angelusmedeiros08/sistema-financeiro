@@ -8,13 +8,16 @@
 // não em brainstorming). Todo tipo de entidade cai igual em /lancamentos.
 import type { Regime } from "./regime";
 
-export type TipoEntidadeDrillDown = "pessoa" | "categoria" | "forma_pagamento" | "centro_custo";
+export type TipoEntidadeDrillDown = "pessoa" | "categoria" | "forma_pagamento" | "centro_custo" | "conta_financeira" | "linha_dre" | "atividade_dfc";
 
 const PARAM_POR_TIPO: Record<TipoEntidadeDrillDown, string> = {
   pessoa: "pessoa_id",
   categoria: "categoria_id",
   forma_pagamento: "forma_pagamento_id",
   centro_custo: "centro_custo_id",
+  conta_financeira: "conta_financeira_id",
+  linha_dre: "linha_dre_id",
+  atividade_dfc: "atividade_dfc",
 };
 
 // Base comum às duas variantes de destino (com dimensão e sem) — regime,
