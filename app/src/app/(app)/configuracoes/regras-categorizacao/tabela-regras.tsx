@@ -140,10 +140,26 @@ export function TabelaRegras({
             if (editandoId === regra.id) {
               return (
                 <div className="flex justify-end gap-1">
-                  <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0" disabled={enviando} onClick={() => setEditandoId(null)}>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 w-7 p-0"
+                    disabled={enviando}
+                    onClick={() => setEditandoId(null)}
+                    aria-label="Cancelar edição"
+                  >
                     <X size={14} />
                   </Button>
-                  <Button type="button" variant="outline" size="sm" className="h-7 w-7 p-0" disabled={enviando} onClick={() => salvarEdicao(regra.id)}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-7 w-7 p-0"
+                    disabled={enviando}
+                    onClick={() => salvarEdicao(regra.id)}
+                    aria-label="Salvar edição"
+                  >
                     {enviando ? <Spinner size={13} className="animate-spin" /> : <Check size={14} />}
                   </Button>
                 </div>
@@ -153,7 +169,10 @@ export function TabelaRegras({
               <div className="flex justify-end">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <button className="flex size-7 items-center justify-center rounded-[7px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
+                    <button
+                      className="flex size-7 items-center justify-center rounded-[7px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                      aria-label="Mais ações"
+                    >
                       <DotsThree size={18} weight="bold" />
                     </button>
                   </DropdownMenuTrigger>

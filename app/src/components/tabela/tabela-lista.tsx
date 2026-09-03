@@ -167,6 +167,7 @@ function PagerServidor({
           <Link
             href={hrefComPagina(hrefBase, pagina - 1)}
             className="flex size-6.5 items-center justify-center rounded-[7px] bg-muted text-muted-foreground transition-colors hover:text-foreground"
+            aria-label="Página anterior"
           >
             <CaretLeft size={12} weight="bold" />
           </Link>
@@ -191,6 +192,7 @@ function PagerServidor({
           <Link
             href={hrefComPagina(hrefBase, pagina + 1)}
             className="flex size-6.5 items-center justify-center rounded-[7px] bg-muted text-muted-foreground transition-colors hover:text-foreground"
+            aria-label="Próxima página"
           >
             <CaretRight size={12} weight="bold" />
           </Link>
@@ -288,7 +290,10 @@ export function TabelaLista<TData extends Record<string, any>>({
             return (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="flex size-7 items-center justify-center rounded-[7px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
+                  <button
+                    className="flex size-7 items-center justify-center rounded-[7px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                    aria-label="Mais ações"
+                  >
                     <DotsThree size={18} weight="bold" />
                   </button>
                 </DropdownMenuTrigger>
@@ -486,6 +491,7 @@ export function TabelaLista<TData extends Record<string, any>>({
               onClick={() => table.previousPage()}
               disabled={!table.getCanPreviousPage()}
               className="flex size-6.5 items-center justify-center rounded-[7px] bg-muted text-muted-foreground transition-colors hover:text-foreground disabled:opacity-40"
+              aria-label="Página anterior"
             >
               <CaretLeft size={12} weight="bold" />
             </button>
@@ -505,6 +511,7 @@ export function TabelaLista<TData extends Record<string, any>>({
               onClick={() => table.nextPage()}
               disabled={!table.getCanNextPage()}
               className="flex size-6.5 items-center justify-center rounded-[7px] bg-muted text-muted-foreground transition-colors hover:text-foreground disabled:opacity-40"
+              aria-label="Próxima página"
             >
               <CaretRight size={12} weight="bold" />
             </button>
