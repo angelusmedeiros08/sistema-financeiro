@@ -71,7 +71,9 @@ function LinhaAnexo({
   return (
     <div className="grid gap-2 rounded-xl border border-border p-3 sm:grid-cols-[110px_1fr_150px_auto]">
       <div className="space-y-1">
-        <Label className="text-xs">Forma</Label>
+        <Label htmlFor={`anexo_${indice}_forma`} className="text-xs">
+          Forma
+        </Label>
         <Select
           name={`anexo_${indice}_forma`}
           defaultValue={forma}
@@ -80,7 +82,7 @@ function LinhaAnexo({
             onFormaChange(v as "ARQUIVO" | "LINK");
           }}
         >
-          <SelectTrigger className="w-full">
+          <SelectTrigger id={`anexo_${indice}_forma`} className="w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -91,18 +93,22 @@ function LinhaAnexo({
       </div>
 
       <div className="space-y-1">
-        <Label className="text-xs">{forma === "ARQUIVO" ? "Arquivo" : "URL"}</Label>
+        <Label htmlFor={forma === "ARQUIVO" ? `anexo_${indice}_arquivo` : `anexo_${indice}_url`} className="text-xs">
+          {forma === "ARQUIVO" ? "Arquivo" : "URL"}
+        </Label>
         {forma === "ARQUIVO" ? (
-          <Input name={`anexo_${indice}_arquivo`} type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" className="text-sm" />
+          <Input id={`anexo_${indice}_arquivo`} name={`anexo_${indice}_arquivo`} type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" className="text-sm" />
         ) : (
-          <Input name={`anexo_${indice}_url`} type="url" placeholder="https://..." />
+          <Input id={`anexo_${indice}_url`} name={`anexo_${indice}_url`} type="url" placeholder="https://..." />
         )}
       </div>
 
       <div className="space-y-1">
-        <Label className="text-xs">Tipo</Label>
+        <Label htmlFor={`anexo_${indice}_tipo`} className="text-xs">
+          Tipo
+        </Label>
         <Select name={`anexo_${indice}_tipo`} defaultValue="OUTROS">
-          <SelectTrigger className="w-full">
+          <SelectTrigger id={`anexo_${indice}_tipo`} className="w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
