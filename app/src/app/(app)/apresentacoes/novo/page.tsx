@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
 import { ApresentacaoForm } from "../apresentacao-form";
+import { TituloPagina } from "@/components/layout/titulo-pagina";
 
 export default async function PaginaNovaApresentacao() {
   const contexto = await obterUsuarioETenantAtual();
@@ -8,7 +9,7 @@ export default async function PaginaNovaApresentacao() {
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-6">
-      <h1 className="text-xl font-bold tracking-tight text-foreground">Nova apresentação</h1>
+      <TituloPagina>Nova apresentação</TituloPagina>
       <ApresentacaoForm />
     </div>
   );

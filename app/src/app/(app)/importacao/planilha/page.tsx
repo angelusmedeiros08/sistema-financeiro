@@ -7,6 +7,7 @@ import { buscarEntidadesExistentes } from "@/lib/importacao/resolucao";
 import { buscarRegrasMapeamento } from "@/lib/importacao/regras-mapeamento";
 import { EstadoVazio } from "@/components/ui/estado-vazio";
 import { ImportarPlanilhaWizard } from "./wizard";
+import { TituloPagina } from "@/components/layout/titulo-pagina";
 
 export default async function PaginaImportarPlanilha() {
   const contexto = await obterUsuarioETenantAtual();
@@ -26,7 +27,7 @@ export default async function PaginaImportarPlanilha() {
         <ArrowLeft size={14} />
         Importação
       </Link>
-      <h1 className="text-xl font-bold tracking-tight text-foreground">Importar planilha</h1>
+      <TituloPagina>Importar planilha</TituloPagina>
 
       {!contasFinanceiras || contasFinanceiras.length === 0 ? (
         <EstadoVazio texto="Cadastre uma conta financeira antes de importar — a importação precisa de uma conta pra registrar as baixas automáticas." />

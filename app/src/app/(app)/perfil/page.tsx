@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SignOut } from "@phosphor-icons/react/dist/ssr";
 import { sair } from "@/app/(auth)/actions";
+import { TituloPagina } from "@/components/layout/titulo-pagina";
 
 export default async function PaginaPerfil() {
   const contexto = await obterUsuarioETenantAtual();
@@ -25,7 +26,7 @@ export default async function PaginaPerfil() {
 
   return (
     <div className="mx-auto flex max-w-xl flex-col gap-6">
-      <h1 className="text-xl font-bold tracking-tight text-foreground">Meu perfil</h1>
+      <TituloPagina>Meu perfil</TituloPagina>
 
       <div className="flex items-center gap-4 rounded-2xl bg-card p-5 shadow-card">
         <span className="flex size-14 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#D8583A] to-[#A87C1F] text-xl font-bold text-white">

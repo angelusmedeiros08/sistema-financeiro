@@ -5,6 +5,7 @@ import { criarReceita } from "./actions";
 import { EventoFinanceiroForm } from "@/components/formularios/evento-financeiro-form";
 import { TabelaEventos } from "@/components/lancamentos/tabela-eventos";
 import { CtaImportarPlanilha } from "@/components/lancamentos/cta-importar";
+import { TituloPagina } from "@/components/layout/titulo-pagina";
 
 const TAMANHO_PAGINA = 20;
 
@@ -53,7 +54,7 @@ export default async function PaginaReceitas({ searchParams }: { searchParams: P
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-6">
-      <h1 className="text-xl font-bold tracking-tight text-foreground">Receitas</h1>
+      <TituloPagina>Receitas</TituloPagina>
 
       <section>
         <h2 className="mb-3 text-xs font-bold uppercase tracking-wide text-muted-foreground">Nova receita</h2>

@@ -8,6 +8,7 @@ import { EstadoVazio } from "@/components/ui/estado-vazio";
 import { cn } from "@/lib/utils";
 import { NovaCategoriaForm } from "./nova-categoria-form";
 import { CategoriaLinha } from "./categoria-linha";
+import { TituloPagina } from "@/components/layout/titulo-pagina";
 
 const TIPOS = [
   { valor: "RECEITA", rotulo: "Receitas" },
@@ -41,7 +42,7 @@ export default async function PaginaCategorias({
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-6">
-      <h1 className="text-xl font-bold tracking-tight text-foreground">Categorias</h1>
+      <TituloPagina>Categorias</TituloPagina>
 
       <div className="flex gap-1">
         {TIPOS.map((t) => (
@@ -49,7 +50,7 @@ export default async function PaginaCategorias({
             key={t.valor}
             href={`/configuracoes/categorias?tipo=${t.valor}`}
             className={cn(
-              "rounded-full px-3 py-1.5 text-xs font-medium",
+              "rounded-md px-3 py-1.5 text-xs font-medium",
               tipo === t.valor ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted",
             )}
           >

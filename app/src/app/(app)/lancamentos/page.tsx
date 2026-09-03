@@ -8,6 +8,7 @@ import type { Regime } from "@/lib/relatorios/regime";
 import { TabelaEventos } from "@/components/lancamentos/tabela-eventos";
 import { formatarMoeda, formatarDataComAno } from "@/lib/formatacao";
 import { caminhoInternoSeguro } from "@/lib/caminho-seguro";
+import { TituloPagina } from "@/components/layout/titulo-pagina";
 
 // Destino de todo clique em gráfico — sempre exatamente uma dessas 4
 // dimensões chega por vez; a ordem aqui só define qual vence se mais de uma
@@ -135,7 +136,7 @@ export default async function PaginaLancamentos({
       )}
 
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h1 className="text-xl font-bold tracking-tight text-foreground">Lançamentos em {resultado.rotulo}</h1>
+        <TituloPagina>Lançamentos em {resultado.rotulo}</TituloPagina>
         <span className="font-heading text-2xl font-bold tabular-nums text-foreground">{formatarMoeda(resultado.total)}</span>
       </div>
 

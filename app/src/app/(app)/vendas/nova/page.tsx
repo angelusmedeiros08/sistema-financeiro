@@ -4,6 +4,7 @@ import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
 import { listarProdutosServicos } from "@/lib/produtos-servicos/produtos-servicos";
 import { listarPessoasParaCombobox } from "@/lib/pessoas/buscar-pessoa";
 import { VendaForm } from "../venda-form";
+import { TituloPagina } from "@/components/layout/titulo-pagina";
 
 export default async function PaginaNovaVenda() {
   const contexto = await obterUsuarioETenantAtual();
@@ -18,7 +19,7 @@ export default async function PaginaNovaVenda() {
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-6">
-      <h1 className="text-xl font-bold tracking-tight text-foreground">Nova venda</h1>
+      <TituloPagina>Nova venda</TituloPagina>
 
       <VendaForm
         modo="criar"

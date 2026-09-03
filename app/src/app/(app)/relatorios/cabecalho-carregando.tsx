@@ -1,4 +1,5 @@
 import { RelatoriosSubNav } from "./sub-nav";
+import { TituloPagina } from "@/components/layout/titulo-pagina";
 
 // Título e sub-nav são estáticos em toda página de /relatorios (mesmo texto,
 // mesmos links, sem fetch de dado) — mostrados de verdade aqui, não como
@@ -9,7 +10,7 @@ import { RelatoriosSubNav } from "./sub-nav";
 export function CabecalhoRelatoriosCarregando() {
   return (
     <>
-      <h1 className="text-xl font-bold tracking-tight text-foreground">Relatórios</h1>
+      <TituloPagina>Relatórios</TituloPagina>
       <RelatoriosSubNav />
     </>
   );

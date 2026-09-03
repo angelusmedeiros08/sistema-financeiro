@@ -12,6 +12,7 @@ import type { Database } from "@/utils/supabase/database.types";
 import { cn } from "@/lib/utils";
 import { VendaForm } from "../venda-form";
 import { VendaAcoes } from "../venda-acoes";
+import { TituloPagina } from "@/components/layout/titulo-pagina";
 
 type StatusVenda = Database["public"]["Enums"]["status_venda"];
 
@@ -54,7 +55,7 @@ export default async function PaginaVenda({ params }: { params: Promise<{ id: st
       <div className="mx-auto flex max-w-3xl flex-col gap-6">
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-center gap-2">
-            <h1 className="text-xl font-bold tracking-tight text-foreground">Venda #{venda.numero}</h1>
+            <TituloPagina>Venda #{venda.numero}</TituloPagina>
             {badgeStatus(venda.status)}
           </div>
           <VendaAcoes vendaId={venda.id} status={venda.status} />
@@ -84,7 +85,7 @@ export default async function PaginaVenda({ params }: { params: Promise<{ id: st
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-6">
       <div className="flex items-center gap-2">
-        <h1 className="text-xl font-bold tracking-tight text-foreground">Venda #{venda.numero}</h1>
+        <TituloPagina>Venda #{venda.numero}</TituloPagina>
         {badgeStatus(venda.status)}
       </div>
 

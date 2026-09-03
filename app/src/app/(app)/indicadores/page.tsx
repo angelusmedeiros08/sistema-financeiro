@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils";
 import { emModoApresentacao } from "@/lib/apresentacao/sessao";
 import { FocoApresentacao } from "@/components/apresentacao/foco-apresentacao";
 import { hojeIsoBrasil } from "@/lib/data-brasil";
+import { TituloPagina } from "@/components/layout/titulo-pagina";
 
 export default async function PaginaIndicadores({
   searchParams,
@@ -258,7 +259,7 @@ export default async function PaginaIndicadores({
 
   return (
     <div className="flex w-full flex-col gap-6">
-      <h1 className="text-xl font-bold tracking-tight text-foreground">Indicadores</h1>
+      <TituloPagina>Indicadores</TituloPagina>
       {secaoSaldoProjetado}
       {secaoConcentracao}
       {secaoVariacaoCategorias}

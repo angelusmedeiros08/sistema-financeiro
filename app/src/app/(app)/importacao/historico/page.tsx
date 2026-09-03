@@ -5,6 +5,7 @@ import { createClient } from "@/utils/supabase/server";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
 import { listarImportacoes } from "@/lib/importacoes/importacoes";
 import { TabelaHistoricoImportacoes } from "./tabela-historico";
+import { TituloPagina } from "@/components/layout/titulo-pagina";
 
 export default async function PaginaHistoricoImportacoes() {
   const contexto = await obterUsuarioETenantAtual();
@@ -16,7 +17,7 @@ export default async function PaginaHistoricoImportacoes() {
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-6">
       <div>
-        <h1 className="text-xl font-bold tracking-tight text-foreground">Central de Importações</h1>
+        <TituloPagina>Central de Importações</TituloPagina>
         <p className="mt-1 text-sm text-muted-foreground">Histórico de lotes importados, com resultado linha a linha, retomar e desfazer.</p>
       </div>
 

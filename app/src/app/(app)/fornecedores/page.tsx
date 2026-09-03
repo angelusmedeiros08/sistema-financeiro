@@ -8,6 +8,7 @@ import { TabelaPessoas } from "@/components/pessoas/tabela-pessoas";
 import { CtaImportarPessoas } from "@/components/pessoas/cta-importar-pessoas";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { TituloPagina } from "@/components/layout/titulo-pagina";
 
 const ABAS = [
   { valor: "fornecedores", rotulo: "Fornecedores", perfil: "FORNECEDOR" },
@@ -40,7 +41,7 @@ export default async function PaginaFornecedores({
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-xl font-bold tracking-tight text-foreground">Fornecedores</h1>
+        <TituloPagina>Fornecedores</TituloPagina>
         <Button asChild size="sm" className="gap-1.5">
           <Link href="/fornecedores/novo">
             <Plus size={15} weight="bold" />
@@ -55,7 +56,7 @@ export default async function PaginaFornecedores({
             key={a.valor}
             href={`/fornecedores?aba=${a.valor}`}
             className={cn(
-              "rounded-full px-3 py-1 text-xs font-medium",
+              "rounded-md px-3 py-1 text-xs font-medium",
               abaAtual.valor === a.valor ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted",
             )}
           >

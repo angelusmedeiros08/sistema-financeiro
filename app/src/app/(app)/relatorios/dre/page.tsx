@@ -11,6 +11,7 @@ import { WaterfallDre } from "@/components/relatorios/waterfall-dre";
 import { IndicadoresDreChart } from "@/components/relatorios/indicadores-dre-chart";
 import { DreMatrizTabela } from "@/components/relatorios/dre-matriz-tabela";
 import { hojeIsoBrasil } from "@/lib/data-brasil";
+import { TituloPagina } from "@/components/layout/titulo-pagina";
 
 const REGIMES: { valor: Regime; rotulo: string }[] = [
   { valor: "competencia", rotulo: "Competência" },
@@ -58,7 +59,7 @@ export default async function PaginaRelatoriosDre({
       <RelatoriosSubNav />
       <div className="flex min-w-0 flex-1 flex-col gap-6">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h1 className="text-xl font-bold tracking-tight text-foreground">Relatórios</h1>
+          <TituloPagina>Relatórios</TituloPagina>
           {!emApresentacao && (
             <Link href="/configuracoes/estrutura-dre" className="text-xs font-semibold text-primary hover:underline">
               Configurar estrutura da DRE

@@ -7,6 +7,7 @@ import { listarPessoas } from "@/lib/pessoas/buscar-pessoa";
 import { TabelaPessoas } from "@/components/pessoas/tabela-pessoas";
 import { CtaImportarPessoas } from "@/components/pessoas/cta-importar-pessoas";
 import { Button } from "@/components/ui/button";
+import { TituloPagina } from "@/components/layout/titulo-pagina";
 
 const TAMANHO_PAGINA = 20;
 
@@ -29,7 +30,7 @@ export default async function PaginaClientes({ searchParams }: { searchParams: P
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-xl font-bold tracking-tight text-foreground">Clientes</h1>
+        <TituloPagina>Clientes</TituloPagina>
         <Button asChild size="sm" className="gap-1.5">
           <Link href="/clientes/novo">
             <Plus size={15} weight="bold" />

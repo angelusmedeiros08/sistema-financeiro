@@ -6,6 +6,7 @@ import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
 import { buscarEntidadesExistentes } from "@/lib/importacao/resolucao";
 import { EstadoVazio } from "@/components/ui/estado-vazio";
 import { ImportarIAWizard } from "./wizard";
+import { TituloPagina } from "@/components/layout/titulo-pagina";
 
 export default async function PaginaImportarIA() {
   const contexto = await obterUsuarioETenantAtual();
@@ -24,7 +25,7 @@ export default async function PaginaImportarIA() {
         <ArrowLeft size={14} />
         Importação
       </Link>
-      <h1 className="text-xl font-bold tracking-tight text-foreground">Importar com IA</h1>
+      <TituloPagina>Importar com IA</TituloPagina>
 
       {!contasFinanceiras || contasFinanceiras.length === 0 ? (
         <EstadoVazio texto="Cadastre uma conta financeira antes de importar — a importação precisa de uma conta pra registrar as baixas automáticas." />

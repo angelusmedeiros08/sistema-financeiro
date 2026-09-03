@@ -3,6 +3,7 @@ import { createClient } from "@/utils/supabase/server";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
 import { obterApresentacaoComSlides } from "@/lib/apresentacao/apresentacoes";
 import { ApresentacaoForm } from "../apresentacao-form";
+import { TituloPagina } from "@/components/layout/titulo-pagina";
 
 export default async function PaginaEditarApresentacao({ params }: { params: Promise<{ id: string }> }) {
   const contexto = await obterUsuarioETenantAtual();
@@ -15,7 +16,7 @@ export default async function PaginaEditarApresentacao({ params }: { params: Pro
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-6">
-      <h1 className="text-xl font-bold tracking-tight text-foreground">Editar apresentação</h1>
+      <TituloPagina>Editar apresentação</TituloPagina>
       <ApresentacaoForm
         existente={{
           id: apresentacao.id,

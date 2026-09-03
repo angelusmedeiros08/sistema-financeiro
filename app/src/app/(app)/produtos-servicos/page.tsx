@@ -5,6 +5,7 @@ import { listarProdutosServicos } from "@/lib/produtos-servicos/produtos-servico
 import { EstadoVazio } from "@/components/ui/estado-vazio";
 import { NovoProdutoServicoForm } from "./novo-produto-servico-form";
 import { TabelaProdutosServicos } from "./tabela-produtos-servicos";
+import { TituloPagina } from "@/components/layout/titulo-pagina";
 
 const TAMANHO_PAGINA = 20;
 
@@ -26,7 +27,7 @@ export default async function PaginaProdutosServicos({ searchParams }: { searchP
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-6">
       <div>
-        <h1 className="text-xl font-bold tracking-tight text-foreground">Produtos e serviços</h1>
+        <TituloPagina>Produtos e serviços</TituloPagina>
         <p className="mt-1 text-sm text-muted-foreground">O catálogo que alimenta a tela de Vendas.</p>
       </div>
 

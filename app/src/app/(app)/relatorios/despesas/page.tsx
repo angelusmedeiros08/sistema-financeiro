@@ -6,6 +6,7 @@ import { buscarAnaliseCategorias } from "@/lib/relatorios/analise-despesas";
 import { RelatoriosSubNav } from "../sub-nav";
 import { RelatoriosControles } from "../controles";
 import { DespesasTabela } from "@/components/relatorios/despesas-tabela";
+import { TituloPagina } from "@/components/layout/titulo-pagina";
 
 export default async function PaginaRelatoriosDespesas({
   searchParams,
@@ -26,7 +27,7 @@ export default async function PaginaRelatoriosDespesas({
     <div className="flex w-full items-start gap-8">
       <RelatoriosSubNav />
       <div className="flex min-w-0 flex-1 flex-col gap-6">
-        <h1 className="text-xl font-bold tracking-tight text-foreground">Relatórios</h1>
+        <TituloPagina>Relatórios</TituloPagina>
         <RelatoriosControles {...params} />
 
         <p className="text-xs text-muted-foreground">

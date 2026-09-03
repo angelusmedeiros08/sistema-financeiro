@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
 import { TabelaEventos } from "@/components/lancamentos/tabela-eventos";
+import { TituloPagina } from "@/components/layout/titulo-pagina";
 
 // Histórico combinado (receita + despesa) — sem formulário de criação
 // acima, diferente das páginas /despesas e /receitas do app interno.
@@ -24,7 +25,7 @@ export default async function PaginaPortalLancamentos() {
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-6">
-      <h1 className="text-xl font-bold tracking-tight text-foreground">Lançamentos</h1>
+      <TituloPagina>Lançamentos</TituloPagina>
       <TabelaEventos eventos={eventos ?? []} textoVazio="Nenhum lançamento ainda." />
     </div>
   );

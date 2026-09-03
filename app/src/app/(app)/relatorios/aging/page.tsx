@@ -8,6 +8,7 @@ import { AgingBarras } from "@/components/relatorios/aging-barras";
 import { AgingParticipantesTabela } from "@/components/relatorios/aging-participantes-tabela";
 import { formatarMoeda, formatarNumeroCompacto } from "@/lib/formatacao";
 import { TermoComDica } from "@/components/formularios/termo-com-dica";
+import { TituloPagina } from "@/components/layout/titulo-pagina";
 
 export default async function PaginaRelatoriosAging() {
   const contexto = await obterUsuarioETenantAtual();
@@ -25,7 +26,7 @@ export default async function PaginaRelatoriosAging() {
     <div className="flex w-full items-start gap-8">
       <RelatoriosSubNav />
       <div className="flex min-w-0 flex-1 flex-col gap-6">
-        <h1 className="text-xl font-bold tracking-tight text-foreground">Relatórios</h1>
+        <TituloPagina>Relatórios</TituloPagina>
 
         <p className="text-sm text-muted-foreground">
           Aging analítico: não usa o seletor de Regime/Granularidade, mostra o saldo em aberto de todas as parcelas

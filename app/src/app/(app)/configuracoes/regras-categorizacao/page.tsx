@@ -3,6 +3,7 @@ import { createClient } from "@/utils/supabase/server";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
 import { listarRegras } from "@/lib/conciliacao/regras";
 import { TabelaRegras } from "./tabela-regras";
+import { TituloPagina } from "@/components/layout/titulo-pagina";
 
 export default async function PaginaRegrasCategorizacao() {
   const contexto = await obterUsuarioETenantAtual();
@@ -19,7 +20,7 @@ export default async function PaginaRegrasCategorizacao() {
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-6">
       <div>
-        <h1 className="text-xl font-bold tracking-tight text-foreground">Regras de categorização</h1>
+        <TituloPagina>Regras de categorização</TituloPagina>
         <p className="mt-1 text-sm text-muted-foreground">
           Toda vez que você confirma uma categoria pra uma descrição do banco na conciliação, uma regra nasce sozinha e passa a sugerir a
           mesma categoria da próxima vez.

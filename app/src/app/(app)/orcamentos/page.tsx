@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { TabelaOrcamentos } from "./tabela-orcamentos";
 import type { Database } from "@/utils/supabase/database.types";
 import { cn } from "@/lib/utils";
+import { TituloPagina } from "@/components/layout/titulo-pagina";
 
 type StatusOrcamentoComercial = Database["public"]["Enums"]["status_orcamento_comercial"];
 
@@ -41,7 +42,7 @@ export default async function PaginaOrcamentos({ searchParams }: { searchParams:
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold tracking-tight text-foreground">Orçamentos</h1>
+        <TituloPagina>Orçamentos</TituloPagina>
         <Button asChild size="sm" className="gap-1.5">
           <Link href="/orcamentos/nova">
             <Plus size={14} />
@@ -56,7 +57,7 @@ export default async function PaginaOrcamentos({ searchParams }: { searchParams:
             key={f.valor}
             href={`/orcamentos?situacao=${f.valor}`}
             className={cn(
-              "rounded-full px-3 py-1 text-xs font-medium",
+              "rounded-md px-3 py-1 text-xs font-medium",
               filtro.valor === f.valor ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted",
             )}
           >

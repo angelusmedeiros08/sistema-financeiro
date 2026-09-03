@@ -6,6 +6,7 @@ import { NovaFormaPagamentoForm } from "./nova-forma-pagamento-form";
 import { TabelaFormasPagamento } from "./tabela-formas-pagamento";
 import { EstadoVazio } from "@/components/ui/estado-vazio";
 import { cn } from "@/lib/utils";
+import { TituloPagina } from "@/components/layout/titulo-pagina";
 
 const FILTROS = [
   { valor: "ativos", rotulo: "Ativos" },
@@ -37,7 +38,7 @@ export default async function PaginaFormasPagamento({
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-6">
-      <h1 className="text-xl font-bold tracking-tight text-foreground">Formas de pagamento</h1>
+      <TituloPagina>Formas de pagamento</TituloPagina>
 
       <section>
         <h2 className="mb-3 text-xs font-bold uppercase tracking-wide text-muted-foreground">Nova forma de pagamento</h2>
@@ -52,7 +53,7 @@ export default async function PaginaFormasPagamento({
                 key={f.valor}
                 href={`/configuracoes/formas-pagamento?filtro=${f.valor}`}
                 className={cn(
-                  "rounded-full px-3 py-1 text-xs font-medium",
+                  "rounded-md px-3 py-1 text-xs font-medium",
                   filtro === f.valor ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted",
                 )}
               >

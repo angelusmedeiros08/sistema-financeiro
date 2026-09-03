@@ -1,29 +1,28 @@
 import type { Metadata } from "next";
-import localFont from "next/font/local";
+import { Inter } from "next/font/google";
 import { Toaster } from "sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
 
-// Fontes auto-hospedadas (não usamos Google Fonts CDN em runtime — nada de
-// requisição de terceiro no carregamento da página). Satoshi não tem versão
-// variável na Fontshare — 3 arquivos estáticos (500/700/900) cobrem os pesos
-// que os títulos/KPIs realmente usam. Plus Jakarta Sans é variável
-// (200–800), um único arquivo — só o subset "latin" (cobre todos os
-// acentos do português: ã, ç, õ etc.).
-const fonteDisplay = localFont({
-  src: [
-    { path: "./fonts/satoshi-medium.woff2", weight: "500", style: "normal" },
-    { path: "./fonts/satoshi-bold.woff2", weight: "700", style: "normal" },
-    { path: "./fonts/satoshi-black.woff2", weight: "900", style: "normal" },
-  ],
+// Satoshi + Plus Jakarta Sans trocadas por Inter única (achado em varredura
+// de design, 03/09/2026: o par anterior — mesma fundição da General Sans,
+// popularizado por Fontshare/v0/Cursor — virou o "segundo clichê" depois
+// do próprio Inter, reconhecível como kit de fonte de SaaS-starter).
+// Referências premium (Linear, Attio) usam Inter puro — a diferenciação
+// vem de peso/tracking/disciplina de escala, não de fonte exótica.
+// `next/font/google` baixa e auto-hospeda em build, sem requisição de
+// terceiro em runtime (mesma garantia que o setup local anterior tinha).
+const fonteDisplay = Inter({
+  subsets: ["latin"],
+  weight: ["600", "700", "800"],
   variable: "--font-display",
   display: "swap",
 });
 
-const fonteCorpo = localFont({
-  src: "./fonts/plus-jakarta-sans.woff2",
+const fonteCorpo = Inter({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
   variable: "--font-body",
-  weight: "200 800",
   display: "swap",
 });
 

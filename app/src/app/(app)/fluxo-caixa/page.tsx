@@ -8,6 +8,7 @@ import { RelatoriosControles } from "../relatorios/controles";
 import { ComparativoBarras } from "@/components/relatorios/comparativo-barras";
 import { FluxoDiarioTabela, FluxoPrevistoRealizadoTabela } from "@/components/relatorios/fluxo-caixa-tabelas";
 import { cn } from "@/lib/utils";
+import { TituloPagina } from "@/components/layout/titulo-pagina";
 
 const ABAS = [
   { valor: "diario", rotulo: "Diário" },
@@ -36,7 +37,7 @@ export default async function PaginaFluxoCaixa({
 
   return (
     <div className="flex w-full flex-col gap-6">
-      <h1 className="text-xl font-bold tracking-tight text-foreground">Fluxo de caixa</h1>
+      <TituloPagina>Fluxo de caixa</TituloPagina>
       <RelatoriosControles {...params} />
 
       <div className="flex gap-1">
@@ -45,7 +46,7 @@ export default async function PaginaFluxoCaixa({
             key={a.valor}
             href={hrefAba(a.valor)}
             className={cn(
-              "rounded-full px-3 py-1 text-xs font-medium",
+              "rounded-md px-3 py-1 text-xs font-medium",
               aba === a.valor ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted",
             )}
           >

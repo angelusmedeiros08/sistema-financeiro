@@ -8,6 +8,7 @@ import { montarUrlSlide } from "@/lib/apresentacao/sessao";
 import { Button } from "@/components/ui/button";
 import { EstadoVazio } from "@/components/ui/estado-vazio";
 import { ExcluirApresentacaoButton } from "./excluir-apresentacao-button";
+import { TituloPagina } from "@/components/layout/titulo-pagina";
 
 export default async function PaginaApresentacoes() {
   const contexto = await obterUsuarioETenantAtual();
@@ -20,7 +21,7 @@ export default async function PaginaApresentacoes() {
     <div className="mx-auto flex max-w-3xl flex-col gap-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-xl font-bold tracking-tight text-foreground">Apresentações</h1>
+          <TituloPagina>Apresentações</TituloPagina>
           <p className="text-sm text-muted-foreground">
             Monte um roteiro de telas do sistema pra apresentar numa reunião ou deixar rodando numa TV.
           </p>

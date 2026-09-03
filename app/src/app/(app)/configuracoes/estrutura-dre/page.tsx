@@ -6,6 +6,7 @@ import { EstadoVazio } from "@/components/ui/estado-vazio";
 import { NovaLinhaDreForm } from "./nova-linha-form";
 import { LinhaDreItem } from "./linha-dre-item";
 import { ModeloCompletoButton } from "./modelo-completo-button";
+import { TituloPagina } from "@/components/layout/titulo-pagina";
 
 export default async function PaginaEstruturaDre() {
   const contexto = await obterUsuarioETenantAtual();
@@ -27,7 +28,7 @@ export default async function PaginaEstruturaDre() {
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-6">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h1 className="text-xl font-bold tracking-tight text-foreground">Estrutura de DRE</h1>
+        <TituloPagina>Estrutura de DRE</TituloPagina>
         <ModeloCompletoButton />
       </div>
 

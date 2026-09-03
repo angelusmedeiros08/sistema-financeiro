@@ -5,6 +5,7 @@ import { listarPlanoDeContas } from "@/lib/contabil/plano-contas";
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { NovaContaForm } from "./nova-conta-form";
 import { ContaLinha } from "./conta-linha";
+import { TituloPagina } from "@/components/layout/titulo-pagina";
 
 export default async function PaginaPlanoDeContas() {
   const contexto = await obterUsuarioETenantAtual();
@@ -15,7 +16,7 @@ export default async function PaginaPlanoDeContas() {
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-6">
-      <h1 className="text-xl font-bold tracking-tight text-foreground">Plano de contas</h1>
+      <TituloPagina>Plano de contas</TituloPagina>
 
       <p className="text-sm text-muted-foreground">
         Estrutura contábil formal do tenant — cada categoria usada nos lançamentos aponta pra uma dessas contas. Contas com{" "}

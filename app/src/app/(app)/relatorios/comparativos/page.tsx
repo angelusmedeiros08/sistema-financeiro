@@ -11,6 +11,7 @@ import { RelatoriosControles } from "../controles";
 import { ComparativoLinhaAnotada } from "@/components/relatorios/comparativo-linha-anotada";
 import { ComparativosTabela } from "@/components/relatorios/comparativos-tabela";
 import { cn } from "@/lib/utils";
+import { TituloPagina } from "@/components/layout/titulo-pagina";
 
 const TIPOS: { valor: TipoAnaliseComparativa; rotulo: string; colunaComparacao: string }[] = [
   { valor: "AH", rotulo: "Análise horizontal (mês vs. mês anterior)", colunaComparacao: "Mês anterior" },
@@ -61,7 +62,7 @@ export default async function PaginaRelatoriosComparativos({
     <div className="flex w-full items-start gap-8">
       <RelatoriosSubNav />
       <div className="flex min-w-0 flex-1 flex-col gap-6">
-        <h1 className="text-xl font-bold tracking-tight text-foreground">Relatórios</h1>
+        <TituloPagina>Relatórios</TituloPagina>
         <RelatoriosControles {...params} />
 
         <div className="flex flex-wrap gap-1">
@@ -70,7 +71,7 @@ export default async function PaginaRelatoriosComparativos({
               key={t.valor}
               href={hrefTipo(t.valor)}
               className={cn(
-                "rounded-full px-3 py-1 text-xs font-medium",
+                "rounded-md px-3 py-1 text-xs font-medium",
                 tipoAtivo === t.valor ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted",
               )}
             >

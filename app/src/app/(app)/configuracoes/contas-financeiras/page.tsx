@@ -12,6 +12,7 @@ import { EstadoVazio } from "@/components/ui/estado-vazio";
 import { StatCard } from "@/components/painel/stat-card";
 import { formatarMoeda } from "@/lib/formatacao";
 import { cn } from "@/lib/utils";
+import { TituloPagina } from "@/components/layout/titulo-pagina";
 
 const ABAS = [
   { valor: "contas", rotulo: "Contas" },
@@ -31,7 +32,7 @@ export default async function PaginaContasFinanceiras({
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-6">
-      <h1 className="text-xl font-bold tracking-tight text-foreground">Contas financeiras</h1>
+      <TituloPagina>Contas financeiras</TituloPagina>
 
       <div className="flex gap-1">
         {ABAS.map((a) => (
@@ -39,7 +40,7 @@ export default async function PaginaContasFinanceiras({
             key={a.valor}
             href={`/configuracoes/contas-financeiras?aba=${a.valor}`}
             className={cn(
-              "rounded-full px-3 py-1 text-xs font-medium",
+              "rounded-md px-3 py-1 text-xs font-medium",
               aba === a.valor ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted",
             )}
           >

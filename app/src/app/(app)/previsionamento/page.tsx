@@ -8,6 +8,7 @@ import { GradePrevisionamento } from "./grade-previsionamento";
 import { PrevistoRealizadoBarras } from "@/components/relatorios/previsto-realizado-barras";
 import { cn } from "@/lib/utils";
 import { hojeIsoBrasil } from "@/lib/data-brasil";
+import { TituloPagina } from "@/components/layout/titulo-pagina";
 
 const ABAS = [
   { valor: "cadastro", rotulo: "Cadastro de meta" },
@@ -43,7 +44,7 @@ export default async function PaginaPrevisionamento({
 
   return (
     <div className="flex w-full flex-col gap-6">
-      <h1 className="text-xl font-bold tracking-tight text-foreground">Previsionamento</h1>
+      <TituloPagina>Previsionamento</TituloPagina>
 
       <div className="flex gap-1">
         {ABAS.map((a) => (
@@ -51,7 +52,7 @@ export default async function PaginaPrevisionamento({
             key={a.valor}
             href={href({ aba: a.valor })}
             className={cn(
-              "rounded-full px-3 py-1.5 text-xs font-medium",
+              "rounded-md px-3 py-1.5 text-xs font-medium",
               aba === a.valor ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted",
             )}
           >

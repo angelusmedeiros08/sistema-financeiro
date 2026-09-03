@@ -12,6 +12,7 @@ import { emModoApresentacao } from "@/lib/apresentacao/sessao";
 import { FocoApresentacao } from "@/components/apresentacao/foco-apresentacao";
 import { hojeIsoBrasil } from "@/lib/data-brasil";
 import { TermoComDica } from "@/components/formularios/termo-com-dica";
+import { TituloPagina } from "@/components/layout/titulo-pagina";
 
 const REGIMES: { valor: Regime; rotulo: string }[] = [
   { valor: "competencia", rotulo: "Competência" },
@@ -163,7 +164,7 @@ export default async function PaginaRelatoriosPontoEquilibrio({
     <div className="flex w-full items-start gap-8">
       <RelatoriosSubNav />
       <div className="flex min-w-0 flex-1 flex-col gap-6">
-        <h1 className="text-xl font-bold tracking-tight text-foreground">Relatórios</h1>
+        <TituloPagina>Relatórios</TituloPagina>
 
         {secaoControles}
         {secaoAtual}

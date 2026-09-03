@@ -72,7 +72,7 @@ export function DreControles({ regime, ano, aba }: { regime: Regime; ano: number
               type="button"
               onClick={() => navegarCom({ aba: a.valor })}
               className={cn(
-                "rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
+                "rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
                 aba === a.valor ? "bg-card text-foreground shadow-sm font-semibold" : "text-muted-foreground hover:text-foreground",
               )}
             >

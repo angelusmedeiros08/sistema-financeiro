@@ -5,6 +5,7 @@ import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
 import { createClient } from "@/utils/supabase/server";
 import { buscarProdutosExistentes } from "@/lib/importacao/produtos/correspondencia";
 import { ImportarProdutosWizard } from "./wizard";
+import { TituloPagina } from "@/components/layout/titulo-pagina";
 
 export default async function PaginaImportarProdutos() {
   const contexto = await obterUsuarioETenantAtual();
@@ -22,7 +23,7 @@ export default async function PaginaImportarProdutos() {
         <ArrowLeft size={14} />
         Importação
       </Link>
-      <h1 className="text-xl font-bold tracking-tight text-foreground">Importar produtos</h1>
+      <TituloPagina>Importar produtos</TituloPagina>
 
       <ImportarProdutosWizard categoriasReceitaIniciais={categorias ?? []} produtosExistentesIniciais={produtosExistentes} />
     </div>

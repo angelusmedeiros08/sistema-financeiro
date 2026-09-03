@@ -3,6 +3,7 @@ import { createClient } from "@/utils/supabase/server";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
 import { EstadoVazio } from "@/components/ui/estado-vazio";
 import { TabelaRecorrencias } from "./tabela-recorrencias";
+import { TituloPagina } from "@/components/layout/titulo-pagina";
 
 export default async function PaginaRecorrencias() {
   const contexto = await obterUsuarioETenantAtual();
@@ -19,7 +20,7 @@ export default async function PaginaRecorrencias() {
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-6">
-      <h1 className="text-xl font-bold tracking-tight text-foreground">Recorrências</h1>
+      <TituloPagina>Recorrências</TituloPagina>
 
       <section className="flex flex-col gap-3">
         <p className="text-xs text-muted-foreground">Criadas ao marcar &quot;Repetir lançamento?&quot; numa despesa ou receita.</p>

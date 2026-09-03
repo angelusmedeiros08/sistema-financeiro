@@ -25,6 +25,7 @@ import { emModoApresentacao } from "@/lib/apresentacao/sessao";
 import { FocoApresentacao } from "@/components/apresentacao/foco-apresentacao";
 import { formatarMoeda, formatarPercentual } from "@/lib/formatacao";
 import { cn } from "@/lib/utils";
+import { TituloPagina } from "@/components/layout/titulo-pagina";
 
 export default async function PaginaRelatoriosVisaoGeral({
   searchParams,
@@ -216,7 +217,7 @@ export default async function PaginaRelatoriosVisaoGeral({
       <RelatoriosSubNav />
       <div className="flex min-w-0 flex-1 flex-col gap-6">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h1 className="text-xl font-bold tracking-tight text-foreground">Relatórios</h1>
+          <TituloPagina>Relatórios</TituloPagina>
         </div>
 
         <RelatoriosControles {...params} />

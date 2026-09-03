@@ -6,6 +6,7 @@ import { TabelaParcelasAbertas } from "@/components/lancamentos/tabela-parcelas-
 import { STATUS_VENCIDO, STATUS_VENCE_EM_30, limitesJanelaVencimento } from "@/lib/relatorios/aging";
 import type { Database } from "@/utils/supabase/database.types";
 import { cn } from "@/lib/utils";
+import { TituloPagina } from "@/components/layout/titulo-pagina";
 
 type StatusParcela = Database["public"]["Enums"]["status_parcela"];
 
@@ -103,7 +104,7 @@ export default async function PaginaContasAReceber({
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-xl font-bold tracking-tight text-foreground">Contas a receber</h1>
+        <TituloPagina>Contas a receber</TituloPagina>
         <div className="flex flex-wrap gap-1">
           {FILTROS.map((f) => (
             <Link
@@ -111,7 +112,7 @@ export default async function PaginaContasAReceber({
               href={`/contas-a-receber?situacao=${f.valor}`}
               aria-current={filtro.valor === f.valor ? "true" : undefined}
               className={cn(
-                "rounded-full px-3 py-1 text-xs font-medium",
+                "rounded-md px-3 py-1 text-xs font-medium",
                 filtro.valor === f.valor ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted",
               )}
             >

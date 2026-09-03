@@ -122,7 +122,7 @@ export function PassoEntradaIA({
           type="button"
           onClick={() => setModo("texto")}
           className={cn(
-            "flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
+            "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
             modo === "texto" ? "bg-card text-foreground shadow-sm font-semibold" : "text-muted-foreground hover:text-foreground",
           )}
         >
@@ -133,7 +133,7 @@ export function PassoEntradaIA({
           type="button"
           onClick={() => setModo("imagem")}
           className={cn(
-            "flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
+            "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
             modo === "imagem" ? "bg-card text-foreground shadow-sm font-semibold" : "text-muted-foreground hover:text-foreground",
           )}
         >

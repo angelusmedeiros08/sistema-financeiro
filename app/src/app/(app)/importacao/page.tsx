@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { Coins, Users, Package, Sparkle, ArrowRight, ClockCounterClockwise } from "@phosphor-icons/react/dist/ssr";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
 import { cn } from "@/lib/utils";
+import { TituloPagina } from "@/components/layout/titulo-pagina";
 
 type CardImportacao = {
   titulo: string;
@@ -26,7 +27,7 @@ export default async function PaginaImportacao() {
     <div className="mx-auto flex max-w-3xl flex-col gap-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold tracking-tight text-foreground">Importação</h1>
+          <TituloPagina>Importação</TituloPagina>
           <p className="mt-1 text-sm text-muted-foreground">Escolha o que você quer importar.</p>
         </div>
         <Link

@@ -6,6 +6,7 @@ import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
 import { listarCamposPersonalizados } from "@/lib/pessoas/buscar-pessoa";
 import { buscarRegrasMapeamento } from "@/lib/importacao/regras-mapeamento";
 import { ImportarPessoasWizard } from "./wizard";
+import { TituloPagina } from "@/components/layout/titulo-pagina";
 
 export default async function PaginaImportarPessoas() {
   const contexto = await obterUsuarioETenantAtual();
@@ -25,7 +26,7 @@ export default async function PaginaImportarPessoas() {
         <ArrowLeft size={14} />
         Importação
       </Link>
-      <h1 className="text-xl font-bold tracking-tight text-foreground">Importar clientes/fornecedores</h1>
+      <TituloPagina>Importar clientes/fornecedores</TituloPagina>
 
       <ImportarPessoasWizard
         pessoasExistentesIniciais={pessoasExistentes ?? []}

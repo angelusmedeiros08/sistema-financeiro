@@ -12,6 +12,7 @@ import { formatarMoeda } from "@/lib/formatacao";
 import { cn } from "@/lib/utils";
 import { ROTULO_STATUS_PARCELA, COR_STATUS_PARCELA } from "@/lib/status-parcela";
 import { hojeIsoBrasil } from "@/lib/data-brasil";
+import { TituloPagina } from "@/components/layout/titulo-pagina";
 
 // Mesmíssima leitura de dados do painel interno (obterDadosPainel é pura
 // apresentação, sem nenhuma ação de escrita) — só o shell ao redor muda.
@@ -30,7 +31,7 @@ export default async function PaginaPortal() {
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h1 className="text-xl font-bold tracking-tight text-foreground">Painel financeiro</h1>
+        <TituloPagina>Painel financeiro</TituloPagina>
         <p className="text-sm capitalize text-muted-foreground">{hoje}</p>
       </div>
 

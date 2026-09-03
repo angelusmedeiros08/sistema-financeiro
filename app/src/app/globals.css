@@ -91,8 +91,14 @@
   --chart-5: #8cb84a;
   --chart-6: #b45fc7;
   --chart-7: #ef6f9a;
-  --radius: 0.875rem;
-  --shadow-card: 0 1px 2px 0 rgb(26 29 31 / 0.05), 0 14px 28px -10px rgb(26 29 31 / 0.12);
+  /* Reduzidos (achado em varredura de design, 03/09/2026): --radius de
+     0.875rem deixava rounded-2xl (cartão) em ~25px, "cara de IA" de tanto
+     arredondamento; --shadow-card tinha uma segunda camada difusa grande
+     (borda + sombra difusa juntas é o tell mais citado na pesquisa de
+     densidade desta sessão) — vira só a camada fina, mais próxima de
+     hairline do que de elevação flutuante. */
+  --radius: 0.5rem;
+  --shadow-card: 0 1px 2px 0 rgb(26 29 31 / 0.05);
   --sidebar: #14181a;
   --sidebar-foreground: #e9eae5;
   --sidebar-primary: #e2694b;
@@ -137,7 +143,7 @@
   --chart-5: #a3d065;
   --chart-6: #cb84da;
   --chart-7: #f58fa3;
-  --shadow-card: 0 1px 2px 0 rgb(0 0 0 / 0.3), 0 16px 32px -12px rgb(0 0 0 / 0.55);
+  --shadow-card: 0 1px 2px 0 rgb(0 0 0 / 0.4);
   --sidebar: #0f1311;
   --sidebar-foreground: #e9eae5;
   --sidebar-primary: #e2694b;

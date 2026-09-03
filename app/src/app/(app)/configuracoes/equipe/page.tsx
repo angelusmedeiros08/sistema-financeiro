@@ -3,6 +3,7 @@ import { createClient } from "@/utils/supabase/server";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
 import { ConvidarForm } from "./convidar-form";
 import { TabelaEquipe } from "./tabela-equipe";
+import { TituloPagina } from "@/components/layout/titulo-pagina";
 
 export default async function PaginaEquipe() {
   const contexto = await obterUsuarioETenantAtual();
@@ -27,7 +28,7 @@ export default async function PaginaEquipe() {
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-6">
-      <h1 className="text-xl font-bold tracking-tight text-foreground">Equipe</h1>
+      <TituloPagina>Equipe</TituloPagina>
 
       {souAdmin && (
         <section>

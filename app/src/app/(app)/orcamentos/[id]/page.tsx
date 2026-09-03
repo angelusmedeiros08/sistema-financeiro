@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import type { Database } from "@/utils/supabase/database.types";
 import { OrcamentoForm } from "../orcamento-form";
 import { OrcamentoAcoes } from "../orcamento-acoes";
+import { TituloPagina } from "@/components/layout/titulo-pagina";
 
 type StatusOrcamentoComercial = Database["public"]["Enums"]["status_orcamento_comercial"];
 
@@ -66,7 +67,7 @@ export default async function PaginaOrcamento({
       <div className="mx-auto flex max-w-3xl flex-col gap-6">
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-center gap-2">
-            <h1 className="text-xl font-bold tracking-tight text-foreground">Orçamento #{orcamento.numero}</h1>
+            <TituloPagina>Orçamento #{orcamento.numero}</TituloPagina>
             <Badge variant="outline" className={cn("border-none text-[11px] font-semibold", className)}>
               {rotulo}
             </Badge>
@@ -110,7 +111,7 @@ export default async function PaginaOrcamento({
     <div className="mx-auto flex max-w-3xl flex-col gap-6">
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-2">
-          <h1 className="text-xl font-bold tracking-tight text-foreground">Orçamento #{orcamento.numero}</h1>
+          <TituloPagina>Orçamento #{orcamento.numero}</TituloPagina>
           <Badge variant="outline" className={cn("border-none text-[11px] font-semibold", className)}>
             {rotulo}
           </Badge>

@@ -5,6 +5,7 @@ import { createClient } from "@/utils/supabase/server";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
 import { buscarLinhasParaConciliarAction } from "./actions";
 import { WizardConciliacao } from "./wizard";
+import { TituloPagina } from "@/components/layout/titulo-pagina";
 
 export default async function PaginaConciliarConta({ params }: { params: Promise<{ id: string }> }) {
   const contexto = await obterUsuarioETenantAtual();
@@ -30,7 +31,7 @@ export default async function PaginaConciliarConta({ params }: { params: Promise
         Contas financeiras
       </Link>
       <div>
-        <h1 className="text-xl font-bold tracking-tight text-foreground">Conciliar {conta.nome}</h1>
+        <TituloPagina>Conciliar {conta.nome}</TituloPagina>
         <p className="mt-1 text-sm text-muted-foreground">Importe o extrato do banco e bata contra o que já está lançado.</p>
       </div>
 

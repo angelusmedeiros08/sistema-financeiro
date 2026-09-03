@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { TabelaVendas } from "./tabela-vendas";
 import type { Database } from "@/utils/supabase/database.types";
 import { cn } from "@/lib/utils";
+import { TituloPagina } from "@/components/layout/titulo-pagina";
 
 type StatusVenda = Database["public"]["Enums"]["status_venda"];
 
@@ -39,7 +40,7 @@ export default async function PaginaVendas({ searchParams }: { searchParams: Pro
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold tracking-tight text-foreground">Vendas</h1>
+        <TituloPagina>Vendas</TituloPagina>
         <Button asChild size="sm" className="gap-1.5">
           <Link href="/vendas/nova">
             <Plus size={14} />
@@ -54,7 +55,7 @@ export default async function PaginaVendas({ searchParams }: { searchParams: Pro
             key={f.valor}
             href={`/vendas?situacao=${f.valor}`}
             className={cn(
-              "rounded-full px-3 py-1 text-xs font-medium",
+              "rounded-md px-3 py-1 text-xs font-medium",
               filtro.valor === f.valor ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted",
             )}
           >

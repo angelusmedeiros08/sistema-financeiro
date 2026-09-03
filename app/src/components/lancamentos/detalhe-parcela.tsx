@@ -22,6 +22,7 @@ import { notificarResultado } from "@/lib/feedback/notificar-resultado";
 import { AnexosLista, type Anexo } from "./anexos-lista";
 import { AnexoForm } from "./anexo-form";
 import { CancelarDialog } from "./cancelar-dialog";
+import { TituloPagina } from "@/components/layout/titulo-pagina";
 
 type Baixa = {
   id: string;
@@ -197,7 +198,7 @@ export function DetalheParcela({
       <section className="rounded-2xl bg-card shadow-card p-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h1 className="text-xl font-bold tracking-tight text-foreground">{parcela.descricao}</h1>
+            <TituloPagina>{parcela.descricao}</TituloPagina>
             <p className="mt-1 text-sm text-muted-foreground">
               {parcela.pessoaNome ?? "Sem pessoa vinculada"} · competência {formatarData(parcela.dataCompetencia)}
             </p>

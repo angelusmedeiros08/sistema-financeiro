@@ -10,6 +10,7 @@ import { StatCard } from "@/components/painel/stat-card";
 import { EstadoVazio } from "@/components/ui/estado-vazio";
 import { formatarMoedaOuTraco, formatarNumeroCompacto } from "@/lib/formatacao";
 import { cn } from "@/lib/utils";
+import { TituloPagina } from "@/components/layout/titulo-pagina";
 
 export default async function PaginaRelatoriosContasBancarias({
   searchParams,
@@ -31,7 +32,7 @@ export default async function PaginaRelatoriosContasBancarias({
     <div className="flex w-full items-start gap-8">
       <RelatoriosSubNav />
       <div className="flex min-w-0 flex-1 flex-col gap-6">
-        <h1 className="text-xl font-bold tracking-tight text-foreground">Relatórios</h1>
+        <TituloPagina>Relatórios</TituloPagina>
         <RelatoriosControles {...params} />
 
         <StatCard variant="hero" label="Saldo total em contas ativas" valor={formatarMoedaOuTraco(saldoTotal)} />

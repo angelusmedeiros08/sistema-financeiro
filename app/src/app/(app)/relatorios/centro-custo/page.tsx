@@ -9,6 +9,7 @@ import { TrilhoBarra } from "@/components/relatorios/trilho-barra";
 import { CentroCustoTabela } from "@/components/relatorios/centro-custo-tabela";
 import { formatarMoeda } from "@/lib/formatacao";
 import { cn } from "@/lib/utils";
+import { TituloPagina } from "@/components/layout/titulo-pagina";
 
 export default async function PaginaRelatoriosCentroCusto({
   searchParams,
@@ -30,7 +31,7 @@ export default async function PaginaRelatoriosCentroCusto({
     <div className="flex w-full items-start gap-8">
       <RelatoriosSubNav />
       <div className="flex min-w-0 flex-1 flex-col gap-6">
-        <h1 className="text-xl font-bold tracking-tight text-foreground">Relatórios</h1>
+        <TituloPagina>Relatórios</TituloPagina>
         <RelatoriosControles {...params} />
 
         {linhas.length > 0 && (

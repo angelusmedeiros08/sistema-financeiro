@@ -10,6 +10,7 @@ import { BadgeStatusImportacao } from "../badge-status";
 import { RetomarPainel } from "./retomar-painel";
 import { BannerDesfeita } from "./desfazer/banner-desfeita";
 import { TabelaErrosImportacao } from "./tabela-erros";
+import { TituloPagina } from "@/components/layout/titulo-pagina";
 
 const ROTULO_TIPO: Record<string, string> = {
   pessoas: "Clientes/Fornecedores",
@@ -57,7 +58,7 @@ export default async function PaginaDetalheImportacao({ params }: { params: Prom
     <div className="mx-auto flex max-w-4xl flex-col gap-6">
       <div>
         <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-xl font-bold tracking-tight text-foreground">{importacao.nomeArquivo}</h1>
+          <TituloPagina>{importacao.nomeArquivo}</TituloPagina>
           <BadgeStatusImportacao status={importacao.status} />
         </div>
         <p className="mt-1 text-sm text-muted-foreground">
