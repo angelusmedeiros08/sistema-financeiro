@@ -478,7 +478,11 @@ export async function desfazerImportacaoPessoas(
     // evento que já tivesse sido estornado numa tentativa anterior desta
     // mesma pessoa — esse nem aparece mais em eventosAReverter (a prévia só
     // lista evento vivo), mas continua com o FK preso do jeito antigo.
-    const { error: erroDesvincular } = await admin.from("eventos_financeiros").update({ pessoa_id: null }).eq("pessoa_id", p.pessoa_id);
+    const { error: erroDesvincular } = await admin
+      .from("eventos_financeiros")
+      .update({ pessoa_id: null })
+      .eq("pessoa_id", p.pessoa_id)
+      .eq("tenant_id", params.tenant_id);
     if (erroDesvincular) {
       pessoasComErroDeDelete.push({ pessoa_id: p.pessoa_id, nome: p.nome, motivo: erroDesvincular.message });
       continue;
