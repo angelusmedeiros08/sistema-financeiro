@@ -14,12 +14,15 @@ import {
   recusarOrcamentoManualAction,
 } from "@/lib/orcamentos-comerciais/orcamentos-comerciais-actions";
 import { notificarResultado } from "@/lib/feedback/notificar-resultado";
+import { hojeIsoBrasil } from "@/lib/data-brasil";
 import type { Database } from "@/utils/supabase/database.types";
 
 type StatusOrcamentoComercial = Database["public"]["Enums"]["status_orcamento_comercial"];
 
 function validadeSugerida(): string {
-  return new Date(new Date().getTime() + 15 * 86_400_000).toISOString().slice(0, 10);
+  const data = new Date(hojeIsoBrasil() + "T00:00:00Z");
+  data.setUTCDate(data.getUTCDate() + 15);
+  return data.toISOString().slice(0, 10);
 }
 
 export function OrcamentoAcoes({ orcamentoId, status }: { orcamentoId: string; status: StatusOrcamentoComercial }) {
@@ -62,7 +65,7 @@ export function OrcamentoAcoes({ orcamentoId, status }: { orcamentoId: string; s
               id="validade_envio"
               type="date"
               value={validade}
-              min={new Date().toISOString().slice(0, 10)}
+              min={hojeIsoBrasil()}
               onChange={(e) => setValidade(e.target.value)}
               className="h-8 w-36 text-xs"
             />
@@ -93,7 +96,7 @@ export function OrcamentoAcoes({ orcamentoId, status }: { orcamentoId: string; s
               id="validade_reenvio"
               type="date"
               value={validade}
-              min={new Date().toISOString().slice(0, 10)}
+              min={hojeIsoBrasil()}
               onChange={(e) => setValidade(e.target.value)}
               className="h-8 w-36 text-xs"
             />

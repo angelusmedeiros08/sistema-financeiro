@@ -13,6 +13,7 @@ import { darBaixa } from "@/lib/contabil/baixa-actions";
 import { AnexoCampos } from "@/components/formularios/anexo-campos";
 import { FormaPagamentoCombobox } from "@/components/formularios/forma-pagamento-combobox";
 import { notificarResultado } from "@/lib/feedback/notificar-resultado";
+import { hojeIsoBrasil } from "@/lib/data-brasil";
 
 type ContaFinanceira = { id: string; nome: string };
 type FormaPagamento = { id: string; nome: string };
@@ -99,8 +100,8 @@ export function FormularioBaixa({
               name="data_pagamento"
               type="date"
               required
-              max={new Date().toISOString().slice(0, 10)}
-              defaultValue={new Date().toISOString().slice(0, 10)}
+              max={hojeIsoBrasil()}
+              defaultValue={hojeIsoBrasil()}
             />
           </div>
           <div className="space-y-1.5">

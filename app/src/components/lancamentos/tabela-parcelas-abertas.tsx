@@ -10,6 +10,7 @@ import { ROTULO_STATUS_PARCELA, COR_STATUS_PARCELA } from "@/lib/status-parcela"
 import { notificarResultado } from "@/lib/feedback/notificar-resultado";
 import { cancelarParcelasEmLoteAction } from "@/lib/contabil/ciclo-vida-parcela-actions";
 import { cn } from "@/lib/utils";
+import { hojeIsoBrasil } from "@/lib/data-brasil";
 
 type BaixaResumo = { valor_pago: number; estornado_em: string | null };
 
@@ -151,7 +152,7 @@ export function TabelaParcelasAbertas({
     return <EstadoVazio texto={textoVazio} />;
   }
 
-  const hojeISO = new Date().toISOString().slice(0, 10);
+  const hojeISO = hojeIsoBrasil();
 
   const linhas: LinhaParcela[] = parcelas.map((parcela) => {
     const baixas = parcela.baixas ?? [];
