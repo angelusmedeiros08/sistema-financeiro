@@ -12,7 +12,7 @@ import { Sparkline } from "./sparkline";
 // marca, não por preenchimento; as outras variantes ficam idênticas entre
 // si (o nome da variante hoje só documenta a intenção original do card).
 const cartaoVariantes = cva(
-  "group/stat relative flex flex-col gap-3 overflow-hidden rounded-2xl border border-border bg-card p-5 text-card-foreground",
+  "group/stat relative flex h-full flex-col gap-3 overflow-hidden rounded-2xl border border-border bg-card p-5 text-card-foreground",
   {
     variants: {
       variant: {
@@ -108,7 +108,13 @@ export function StatCard({ label, valor, detalhe, variant, delta, serie, icon: I
         {valor}
       </span>
 
-      {detalhe && <span className="text-xs font-medium text-muted-foreground">{detalhe}</span>}
+      {/* Sempre renderizada (mesmo vazia) — cartões lado a lado numa mesma
+          fileira só com alguns tendo "detalhe" ficavam com alturas
+          diferentes (achado em feedback ao vivo, 03/09/2026: "Recebido/
+          Pago do mês" mais baixos que "A receber/A pagar", sem "Vencido").
+          Espaço reservado com nbsp em vez de altura fixa — acompanha o
+          tamanho real da fonte em qualquer zoom/densidade. */}
+      <span className="text-xs font-medium text-muted-foreground">{detalhe || " "}</span>
 
       {serie && serie.length > 1 && (
         <div className="-mx-1 mt-1 h-9">

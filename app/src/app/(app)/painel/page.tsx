@@ -217,8 +217,17 @@ export default async function PaginaPainel({
           )}
         </div>
 
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-          <div className="lg:col-span-5">
+        {/* Grade única de 12 colunas pra tudo (achado em feedback ao vivo,
+            03/09/2026: eram duas grades empilhadas — a de baixo, com 4
+            cards, nunca alinhava com a borda dos 2 cards de cima, e os 2
+            de cima tinham proporção 5/7, sem relação limpa com os 4 de
+            baixo). Hero+Resultado viram 6+6 (simétricos entre si); cada
+            indicador vira 3 — dois indicadores somados (3+3=6) batem
+            exatamente com a borda de um card de cima. md (tablet): grade
+            de 2 colunas só, cada item ocupa a largura padrão (1 de 2) —
+            hero ao lado de Resultado, indicadores em 2×2. */}
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-12">
+          <div className="lg:col-span-6">
             <MotionCard index={0}>
               <StatCard
                 variant="hero"
@@ -229,7 +238,7 @@ export default async function PaginaPainel({
               />
             </MotionCard>
           </div>
-          <div className="lg:col-span-7">
+          <div className="lg:col-span-6">
             <MotionCard index={1}>
               <StatCard
                 variant={dados.resultadoDoMes.liquido >= 0 ? "teal" : "coral"}
@@ -250,38 +259,41 @@ export default async function PaginaPainel({
               </StatCard>
             </MotionCard>
           </div>
-        </div>
 
-        {/* xl (não lg): com a coluna lateral de 320px, 4 cards em lg (1024px)
-            sobravam ~145px cada, apertando o rótulo em maiúsculas até
-            quebrar linha (achado em varredura de design, 03/09/2026). */}
-        <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
-          <MotionCard index={2}>
-            <StatCard
-              variant="teal"
-              icon={HandCoins}
-              label="A receber (30 dias)"
-              valor={formatarMoeda(dados.aReceber.total)}
-              detalhe={`Vencido: ${formatarMoeda(dados.vencidosReceber.vencidoTotal)}`}
-              href="/contas-a-receber?situacao=vence30"
-            />
-          </MotionCard>
-          <MotionCard index={3}>
-            <StatCard variant="azul" icon={Coins} label="Recebido (mês)" valor={formatarMoeda(dados.recebidoDoMes)} href={hrefRecebidoDoMes} />
-          </MotionCard>
-          <MotionCard index={4}>
-            <StatCard
-              variant="ambar"
-              icon={CreditCard}
-              label="A pagar (30 dias)"
-              valor={formatarMoeda(dados.aPagar.total)}
-              detalhe={`Vencido: ${formatarMoeda(dados.vencidosPagar.vencidoTotal)}`}
-              href="/contas-a-pagar?situacao=vence30"
-            />
-          </MotionCard>
-          <MotionCard index={5}>
-            <StatCard variant="roxo" icon={Wallet} label="Pago (mês)" valor={formatarMoeda(dados.pagoDoMes)} href={hrefPagoDoMes} />
-          </MotionCard>
+          <div className="lg:col-span-3">
+            <MotionCard index={2}>
+              <StatCard
+                variant="teal"
+                icon={HandCoins}
+                label="A receber (30 dias)"
+                valor={formatarMoeda(dados.aReceber.total)}
+                detalhe={`Vencido: ${formatarMoeda(dados.vencidosReceber.vencidoTotal)}`}
+                href="/contas-a-receber?situacao=vence30"
+              />
+            </MotionCard>
+          </div>
+          <div className="lg:col-span-3">
+            <MotionCard index={3}>
+              <StatCard variant="azul" icon={Coins} label="Recebido (mês)" valor={formatarMoeda(dados.recebidoDoMes)} href={hrefRecebidoDoMes} />
+            </MotionCard>
+          </div>
+          <div className="lg:col-span-3">
+            <MotionCard index={4}>
+              <StatCard
+                variant="ambar"
+                icon={CreditCard}
+                label="A pagar (30 dias)"
+                valor={formatarMoeda(dados.aPagar.total)}
+                detalhe={`Vencido: ${formatarMoeda(dados.vencidosPagar.vencidoTotal)}`}
+                href="/contas-a-pagar?situacao=vence30"
+              />
+            </MotionCard>
+          </div>
+          <div className="lg:col-span-3">
+            <MotionCard index={5}>
+              <StatCard variant="roxo" icon={Wallet} label="Pago (mês)" valor={formatarMoeda(dados.pagoDoMes)} href={hrefPagoDoMes} />
+            </MotionCard>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
