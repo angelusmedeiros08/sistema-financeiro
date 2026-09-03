@@ -4,30 +4,30 @@ import { ArrowUpRight, ArrowDownRight, ArrowRight } from "@phosphor-icons/react/
 import { cn } from "@/lib/utils";
 import { Sparkline } from "./sparkline";
 
-const cartaoVariantes = cva("group/stat relative flex flex-col gap-3 overflow-hidden rounded-2xl p-5", {
-  variants: {
-    variant: {
-      hero: "bg-gradient-to-br from-[#D8583A] to-[#A87C1F] text-white shadow-card",
-      sage: "bg-card text-card-foreground shadow-card",
-      coral: "bg-card text-card-foreground shadow-card",
-      ambar: "bg-card text-card-foreground shadow-card",
-      teal: "bg-card text-card-foreground shadow-card",
-      roxo: "bg-card text-card-foreground shadow-card",
-      azul: "bg-card text-card-foreground shadow-card",
+// Gradiente diagonal no card "hero" + chip de ícone em cor arco-íris por
+// variante removidos (achado em varredura de design, 03/09/2026: cor
+// decorativa sem relação com o dado é o tell mais citado). Cor vira sinal
+// só onde significa algo (delta positivo/negativo) — "hero" (o número mais
+// importante da tela) se distingue por uma borda de destaque na cor de
+// marca, não por preenchimento; as outras variantes ficam idênticas entre
+// si (o nome da variante hoje só documenta a intenção original do card).
+const cartaoVariantes = cva(
+  "group/stat relative flex flex-col gap-3 overflow-hidden rounded-2xl border border-border bg-card p-5 text-card-foreground",
+  {
+    variants: {
+      variant: {
+        hero: "border-l-[3px] border-l-primary",
+        sage: "",
+        coral: "",
+        ambar: "",
+        teal: "",
+        roxo: "",
+        azul: "",
+      },
     },
+    defaultVariants: { variant: "sage" },
   },
-  defaultVariants: { variant: "sage" },
-});
-
-const corChip: Record<string, string> = {
-  hero: "rgba(255,255,255,0.22)",
-  sage: "#8CB84A",
-  coral: "#B23A2E",
-  ambar: "#E3A62F",
-  teal: "#0FA37E",
-  roxo: "#B45FC7",
-  azul: "#4C7DF0",
-};
+);
 
 type IconType = React.ComponentType<{ size?: number; weight?: "regular" | "bold" | "fill"; className?: string }>;
 
@@ -70,27 +70,19 @@ type StatCardProps = VariantProps<typeof cartaoVariantes> & {
 export function StatCard({ label, valor, detalhe, variant, delta, serie, icon: Icon, href, ariaLabel, children }: StatCardProps) {
   const v = variant ?? "sage";
   const deltaPositivo = typeof delta === "number" && delta >= 0;
-  const corDelta = v === "hero" ? "text-white" : deltaPositivo ? "text-positivo" : "text-destructive";
-  const corSpark = v === "hero" ? "#ffffff" : deltaPositivo ? "var(--positivo)" : "var(--destructive)";
+  const corDelta = deltaPositivo ? "text-positivo" : "text-destructive";
+  const corSpark = deltaPositivo ? "var(--positivo)" : "var(--destructive)";
 
   const conteudo = (
     <>
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2.5">
           {Icon && (
-            <span
-              className={cn(
-                "flex size-8 shrink-0 items-center justify-center rounded-lg",
-                v === "hero" ? "text-white" : "text-white",
-              )}
-              style={{ background: corChip[v] }}
-            >
-              <Icon size={16} weight="bold" />
+            <span className={cn("flex size-8 shrink-0 items-center justify-center", v === "hero" ? "text-primary" : "text-muted-foreground")}>
+              <Icon size={18} weight="bold" />
             </span>
           )}
-          <span className={cn("text-[11px] font-bold uppercase tracking-wider", v === "hero" ? "text-white/80" : "text-muted-foreground")}>
-            {label}
-          </span>
+          <span className="text-[11px] font-bold tracking-wider text-muted-foreground uppercase">{label}</span>
         </div>
         {typeof delta === "number" && (
           <span className={cn("flex items-center gap-0.5 text-xs font-bold tabular-nums", corDelta)}>
@@ -116,11 +108,7 @@ export function StatCard({ label, valor, detalhe, variant, delta, serie, icon: I
         {valor}
       </span>
 
-      {detalhe && (
-        <span className={cn("text-xs font-medium", v === "hero" ? "text-white/80" : "text-muted-foreground")}>
-          {detalhe}
-        </span>
-      )}
+      {detalhe && <span className="text-xs font-medium text-muted-foreground">{detalhe}</span>}
 
       {serie && serie.length > 1 && (
         <div className="-mx-1 mt-1 h-9">
@@ -134,13 +122,12 @@ export function StatCard({ label, valor, detalhe, variant, delta, serie, icon: I
         <ArrowRight
           size={14}
           weight="bold"
-          className={cn(
+          className={
             // group-focus-visible além do hover — sem isso, quem navega
             // por teclado nunca vê a pista de "isto é clicável" que o
             // mouse recebe (achado na auditoria de acessibilidade).
-            "absolute right-4 bottom-4 opacity-0 transition-opacity group-hover/stat:opacity-100 group-focus-visible/stat:opacity-100",
-            v === "hero" ? "text-white/80" : "text-muted-foreground",
-          )}
+            "absolute right-4 bottom-4 text-muted-foreground opacity-0 transition-opacity group-hover/stat:opacity-100 group-focus-visible/stat:opacity-100"
+          }
         />
       )}
     </>
@@ -176,7 +163,7 @@ export function StatCard({ label, valor, detalhe, variant, delta, serie, icon: I
     // nunca alcançava nem o conteúdo nem o Link). `isolate` limita a
     // comparação de z-index aos filhos diretos deste card.
     return (
-      <div className={cn(cartaoVariantes({ variant }), "relative isolate transition-shadow hover:shadow-lg")}>
+      <div className={cn(cartaoVariantes({ variant }), "relative isolate transition-colors hover:border-primary/40")}>
         <Link
           href={href}
           aria-label={ariaLabel ?? (typeof label === "string" ? `${label}: ${valor}` : valor)}

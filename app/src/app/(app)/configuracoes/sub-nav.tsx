@@ -19,7 +19,9 @@ export function ConfiguracoesSubNav() {
     <nav className="flex w-52 shrink-0 flex-col gap-5">
       {GRUPOS.map((grupo) => (
         <div key={grupo.rotulo} className="flex flex-col gap-0.5">
-          <h2 className="px-2.5 pb-1.5 text-[10px] font-bold tracking-wider text-muted-foreground uppercase">{grupo.rotulo}</h2>
+          <h2 className="mb-1 border-b border-border px-2.5 pb-1.5 text-[11px] font-bold tracking-wider text-foreground/80 uppercase">
+            {grupo.rotulo}
+          </h2>
           {grupo.itens.map((item) => {
             const ativo = pathname.startsWith(item.href);
             return (
