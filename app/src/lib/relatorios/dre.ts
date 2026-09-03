@@ -336,31 +336,21 @@ export async function removerLinhaDre(supabase: Cliente, params: { tenantId: str
 }
 
 // Reescreve a ordem de todas as linhas do tenant conforme a lista recebida
-// (arrasta-e-solta na UI). Duas passagens: primeiro joga todo mundo pra
-// ordem negativa (nunca colide com o intervalo positivo real nem entre si),
-// depois grava a ordem final — evita violar a constraint unique(tenant_id,
-// ordem) no meio do caminho, já que o cliente Supabase não expõe uma
-// transação multi-statement pra isso.
+// (arrasta-e-solta na UI). RPC atômica (achado em varredura de melhorias —
+// antes eram duas passagens de updates via chamadas PostgREST separadas,
+// sem transação entre elas; uma falha no meio deixava `ordem` inconsistente
+// sem rollback nem aviso). A função faz as duas passagens (ordem negativa
+// temporária, depois final — evita violar a constraint unique(tenant_id,
+// ordem) no meio do caminho) dentro de uma única transação de banco.
 export async function reordenarLinhasDre(
   supabase: Cliente,
   params: { tenantId: string; linhaIdsEmOrdem: string[] },
 ): Promise<Resultado> {
-  for (let i = 0; i < params.linhaIdsEmOrdem.length; i++) {
-    const { error } = await supabase
-      .from("linhas_dre")
-      .update({ ordem: -(i + 1) })
-      .eq("id", params.linhaIdsEmOrdem[i])
-      .eq("tenant_id", params.tenantId);
-    if (error) return { erro: error.message };
-  }
-  for (let i = 0; i < params.linhaIdsEmOrdem.length; i++) {
-    const { error } = await supabase
-      .from("linhas_dre")
-      .update({ ordem: i + 1 })
-      .eq("id", params.linhaIdsEmOrdem[i])
-      .eq("tenant_id", params.tenantId);
-    if (error) return { erro: error.message };
-  }
+  const { error } = await supabase.rpc("reordenar_linhas_dre", {
+    p_tenant_id: params.tenantId,
+    p_linha_ids: params.linhaIdsEmOrdem,
+  });
+  if (error) return { erro: error.message };
   return { sucesso: true };
 }
 
