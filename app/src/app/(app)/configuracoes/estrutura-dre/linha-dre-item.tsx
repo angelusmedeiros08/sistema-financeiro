@@ -67,6 +67,7 @@ export function LinhaDreItem({
             disabled={ehPrimeira || pendente}
             onClick={() => mover(-1)}
             className="text-muted-foreground hover:text-foreground disabled:opacity-30"
+            aria-label="Mover linha para cima"
           >
             <ArrowUp size={14} />
           </button>
@@ -75,6 +76,7 @@ export function LinhaDreItem({
             disabled={ehUltima || pendente}
             onClick={() => mover(1)}
             className="text-muted-foreground hover:text-foreground disabled:opacity-30"
+            aria-label="Mover linha para baixo"
           >
             <ArrowDown size={14} />
           </button>
@@ -146,6 +148,7 @@ export function LinhaDreItem({
                   const resultado = await desvincularCategoriaDreAction(formData);
                   notificarResultado(resultado, "Categoria desvinculada.");
                 })}
+                aria-label={`Desvincular categoria "${categoria.nome}"`}
               >
                 <X size={11} />
               </button>
