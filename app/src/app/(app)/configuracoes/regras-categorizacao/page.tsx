@@ -2,7 +2,6 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
 import { listarRegras } from "@/lib/conciliacao/regras";
-import { ConfiguracoesSubNav } from "../sub-nav";
 import { TabelaRegras } from "./tabela-regras";
 
 export default async function PaginaRegrasCategorizacao() {
@@ -26,7 +25,6 @@ export default async function PaginaRegrasCategorizacao() {
           mesma categoria da próxima vez.
         </p>
       </div>
-      <ConfiguracoesSubNav />
 
       <TabelaRegras regrasIniciais={regras} categorias={categorias ?? []} pessoas={pessoas ?? []} />
     </div>

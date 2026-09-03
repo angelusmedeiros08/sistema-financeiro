@@ -2,7 +2,6 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
 import { EstadoVazio } from "@/components/ui/estado-vazio";
-import { ConfiguracoesSubNav } from "../sub-nav";
 import { TabelaRecorrencias } from "./tabela-recorrencias";
 
 export default async function PaginaRecorrencias() {
@@ -21,7 +20,6 @@ export default async function PaginaRecorrencias() {
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-6">
       <h1 className="text-xl font-bold tracking-tight text-foreground">Recorrências</h1>
-      <ConfiguracoesSubNav />
 
       <section className="flex flex-col gap-3">
         <p className="text-xs text-muted-foreground">Criadas ao marcar &quot;Repetir lançamento?&quot; numa despesa ou receita.</p>

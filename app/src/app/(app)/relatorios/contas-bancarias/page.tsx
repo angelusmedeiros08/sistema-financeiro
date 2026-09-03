@@ -28,44 +28,46 @@ export default async function PaginaRelatoriosContasBancarias({
   const saldoTotal = contas.reduce((soma, c) => soma + c.saldoAcumulado, 0);
 
   return (
-    <div className="flex w-full flex-col gap-6">
-      <h1 className="text-xl font-bold tracking-tight text-foreground">Relatórios</h1>
+    <div className="flex w-full items-start gap-8">
       <RelatoriosSubNav />
-      <RelatoriosControles {...params} />
+      <div className="flex min-w-0 flex-1 flex-col gap-6">
+        <h1 className="text-xl font-bold tracking-tight text-foreground">Relatórios</h1>
+        <RelatoriosControles {...params} />
 
-      <StatCard variant="hero" label="Saldo total em contas ativas" valor={formatarMoedaOuTraco(saldoTotal)} />
+        <StatCard variant="hero" label="Saldo total em contas ativas" valor={formatarMoedaOuTraco(saldoTotal)} />
 
-      {contas.length === 0 ? (
-        <EstadoVazio texto="Nenhuma conta financeira ativa cadastrada." />
-      ) : (
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          {contas.map((c) => (
-            <div key={c.contaFinanceiraId} className="rounded-2xl bg-card shadow-card p-5">
-              <div className="mb-3 flex items-center justify-between">
-                <h2 className="font-heading text-sm font-bold text-foreground">{c.nome}</h2>
-                <span className="text-lg font-bold tabular-nums text-foreground">{formatarMoedaOuTraco(c.saldoAcumulado)}</span>
-              </div>
-              <div className="grid grid-cols-1 gap-3 border-t border-border pt-3 text-sm sm:grid-cols-3">
-                <Link href={c.hrefCredito} className="rounded-lg hover:bg-muted">
-                  <p className="text-xs text-muted-foreground">Crédito no período</p>
-                  <p className="font-semibold tabular-nums text-positivo">{formatarNumeroCompacto(c.credito)}</p>
-                </Link>
-                <Link href={c.hrefDebito} className="rounded-lg hover:bg-muted">
-                  <p className="text-xs text-muted-foreground">Débito no período</p>
-                  <p className="font-semibold tabular-nums text-destructive">{formatarNumeroCompacto(c.debito)}</p>
-                </Link>
-                <div>
-                  <p className="text-xs text-muted-foreground">Saldo do período</p>
-                  <p className={cn("font-semibold tabular-nums", c.saldoPeriodo >= 0 ? "text-positivo" : "text-destructive")}>
-                    {c.saldoPeriodo > 0 ? "+" : ""}
-                    {formatarNumeroCompacto(c.saldoPeriodo)}
-                  </p>
+        {contas.length === 0 ? (
+          <EstadoVazio texto="Nenhuma conta financeira ativa cadastrada." />
+        ) : (
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            {contas.map((c) => (
+              <div key={c.contaFinanceiraId} className="rounded-2xl bg-card shadow-card p-5">
+                <div className="mb-3 flex items-center justify-between">
+                  <h2 className="font-heading text-sm font-bold text-foreground">{c.nome}</h2>
+                  <span className="text-lg font-bold tabular-nums text-foreground">{formatarMoedaOuTraco(c.saldoAcumulado)}</span>
+                </div>
+                <div className="grid grid-cols-1 gap-3 border-t border-border pt-3 text-sm sm:grid-cols-3">
+                  <Link href={c.hrefCredito} className="rounded-lg hover:bg-muted">
+                    <p className="text-xs text-muted-foreground">Crédito no período</p>
+                    <p className="font-semibold tabular-nums text-positivo">{formatarNumeroCompacto(c.credito)}</p>
+                  </Link>
+                  <Link href={c.hrefDebito} className="rounded-lg hover:bg-muted">
+                    <p className="text-xs text-muted-foreground">Débito no período</p>
+                    <p className="font-semibold tabular-nums text-destructive">{formatarNumeroCompacto(c.debito)}</p>
+                  </Link>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Saldo do período</p>
+                    <p className={cn("font-semibold tabular-nums", c.saldoPeriodo >= 0 ? "text-positivo" : "text-destructive")}>
+                      {c.saldoPeriodo > 0 ? "+" : ""}
+                      {formatarNumeroCompacto(c.saldoPeriodo)}
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

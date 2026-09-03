@@ -4,7 +4,6 @@ import { CaretLeft, CaretRight, ArrowUUpLeft, Receipt, UserPlus } from "@phospho
 import { createClient } from "@/utils/supabase/server";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
 import { buscarTrilhaAuditoria, type EventoAuditoria } from "@/lib/auditoria/auditoria";
-import { ConfiguracoesSubNav } from "../sub-nav";
 import { hrefComPagina } from "@/components/tabela/href-pagina";
 import { EstadoVazio } from "@/components/ui/estado-vazio";
 
@@ -44,7 +43,6 @@ export default async function PaginaAuditoria({ searchParams }: { searchParams: 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-6">
       <h1 className="text-xl font-bold tracking-tight text-foreground">Trilha de auditoria</h1>
-      <ConfiguracoesSubNav />
 
       <div className="rounded-2xl bg-card shadow-card p-5">
         <div className="mb-1">

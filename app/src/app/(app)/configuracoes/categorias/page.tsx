@@ -6,7 +6,6 @@ import { listarCategorias } from "@/lib/contabil/categorias";
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { EstadoVazio } from "@/components/ui/estado-vazio";
 import { cn } from "@/lib/utils";
-import { ConfiguracoesSubNav } from "../sub-nav";
 import { NovaCategoriaForm } from "./nova-categoria-form";
 import { CategoriaLinha } from "./categoria-linha";
 
@@ -43,7 +42,6 @@ export default async function PaginaCategorias({
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-6">
       <h1 className="text-xl font-bold tracking-tight text-foreground">Categorias</h1>
-      <ConfiguracoesSubNav />
 
       <div className="flex gap-1">
         {TIPOS.map((t) => (

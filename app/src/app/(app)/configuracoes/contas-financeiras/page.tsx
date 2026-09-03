@@ -6,7 +6,6 @@ import { buscarContasBancarias } from "@/lib/relatorios/contas-bancarias";
 import { buscarResumoVencimentos } from "@/lib/relatorios/aging";
 import { hojeIsoBrasil } from "@/lib/data-brasil";
 import { somarDias } from "@/lib/relatorios/saldo-projetado";
-import { ConfiguracoesSubNav } from "../sub-nav";
 import { NovaContaFinanceiraForm } from "./nova-conta-form";
 import { TabelaContasFinanceiras } from "./tabela-contas-financeiras";
 import { EstadoVazio } from "@/components/ui/estado-vazio";
@@ -33,7 +32,6 @@ export default async function PaginaContasFinanceiras({
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-6">
       <h1 className="text-xl font-bold tracking-tight text-foreground">Contas financeiras</h1>
-      <ConfiguracoesSubNav />
 
       <div className="flex gap-1">
         {ABAS.map((a) => (

@@ -58,52 +58,54 @@ export default async function PaginaRelatoriosComparativos({
   }
 
   return (
-    <div className="flex w-full flex-col gap-6">
-      <h1 className="text-xl font-bold tracking-tight text-foreground">Relatórios</h1>
+    <div className="flex w-full items-start gap-8">
       <RelatoriosSubNav />
-      <RelatoriosControles {...params} />
+      <div className="flex min-w-0 flex-1 flex-col gap-6">
+        <h1 className="text-xl font-bold tracking-tight text-foreground">Relatórios</h1>
+        <RelatoriosControles {...params} />
 
-      <div className="flex flex-wrap gap-1">
-        {TIPOS.map((t) => (
-          <Link
-            key={t.valor}
-            href={hrefTipo(t.valor)}
-            className={cn(
-              "rounded-full px-3 py-1 text-xs font-medium",
-              tipoAtivo === t.valor ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted",
-            )}
-          >
-            {t.rotulo}
-          </Link>
-        ))}
-      </div>
-
-      {pontos.length === 0 ? (
-        <div className="rounded-2xl bg-card shadow-card p-5">
-          <h2 className="mb-4 font-heading text-sm font-bold text-foreground">{config.rotulo}</h2>
-          <p className="text-sm text-muted-foreground">Sem movimentação suficiente no período para comparar.</p>
+        <div className="flex flex-wrap gap-1">
+          {TIPOS.map((t) => (
+            <Link
+              key={t.valor}
+              href={hrefTipo(t.valor)}
+              className={cn(
+                "rounded-full px-3 py-1 text-xs font-medium",
+                tipoAtivo === t.valor ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted",
+              )}
+            >
+              {t.rotulo}
+            </Link>
+          ))}
         </div>
-      ) : (
-        <>
+
+        {pontos.length === 0 ? (
           <div className="rounded-2xl bg-card shadow-card p-5">
             <h2 className="mb-4 font-heading text-sm font-bold text-foreground">{config.rotulo}</h2>
-            <ComparativoLinhaAnotada
+            <p className="text-sm text-muted-foreground">Sem movimentação suficiente no período para comparar.</p>
+          </div>
+        ) : (
+          <>
+            <div className="rounded-2xl bg-card shadow-card p-5">
+              <h2 className="mb-4 font-heading text-sm font-bold text-foreground">{config.rotulo}</h2>
+              <ComparativoLinhaAnotada
+                pontos={pontos}
+                nomeComparacao={config.colunaComparacao}
+                mostrarAnotacao={tipoAtivo !== "YTD"}
+                hrefsPorPonto={hrefsPorPonto}
+              />
+            </div>
+
+            <ComparativosTabela
+              titulo={config.rotulo}
               pontos={pontos}
-              nomeComparacao={config.colunaComparacao}
-              mostrarAnotacao={tipoAtivo !== "YTD"}
+              colunaComparacao={config.colunaComparacao}
+              mostrarVariacao={tipoAtivo !== "YTD"}
               hrefsPorPonto={hrefsPorPonto}
             />
-          </div>
-
-          <ComparativosTabela
-            titulo={config.rotulo}
-            pontos={pontos}
-            colunaComparacao={config.colunaComparacao}
-            mostrarVariacao={tipoAtivo !== "YTD"}
-            hrefsPorPonto={hrefsPorPonto}
-          />
-        </>
-      )}
+          </>
+        )}
+      </div>
     </div>
   );
 }

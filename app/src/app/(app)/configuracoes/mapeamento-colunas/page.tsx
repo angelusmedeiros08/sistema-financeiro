@@ -4,7 +4,6 @@ import { createClient } from "@/utils/supabase/server";
 import { listarRegrasMapeamento } from "@/lib/importacao/regras-mapeamento";
 import { COLUNAS_TEMPLATE } from "@/lib/importacao/template";
 import { COLUNAS_TEMPLATE_FIXAS } from "@/lib/pessoas/importacao/template";
-import { ConfiguracoesSubNav } from "../sub-nav";
 import { TabelaMapeamento } from "./tabela-mapeamento";
 
 const ROTULO_POR_CHAVE: Record<string, string> = Object.fromEntries(
@@ -27,7 +26,6 @@ export default async function PaginaMapeamentoColunas() {
           próxima vez.
         </p>
       </div>
-      <ConfiguracoesSubNav />
 
       <TabelaMapeamento
         regrasIniciais={regras.map((r) => ({ ...r, chaveColunaRotulo: ROTULO_POR_CHAVE[r.chaveColuna] ?? r.chaveColuna }))}

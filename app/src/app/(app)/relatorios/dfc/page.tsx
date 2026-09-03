@@ -58,22 +58,23 @@ export default async function PaginaRelatoriosDfc({
   }
 
   return (
-    <div className="flex w-full flex-col gap-6">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h1 className="text-xl font-bold tracking-tight text-foreground">Relatórios</h1>
-        {!emApresentacao && (
-          <Link href="/configuracoes/estrutura-dre" className="text-xs font-semibold text-primary hover:underline">
-            Configurar estrutura da DRE
-          </Link>
-        )}
-      </div>
-
+    <div className="flex w-full items-start gap-8">
       <RelatoriosSubNav />
+      <div className="flex min-w-0 flex-1 flex-col gap-6">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h1 className="text-xl font-bold tracking-tight text-foreground">Relatórios</h1>
+          {!emApresentacao && (
+            <Link href="/configuracoes/estrutura-dre" className="text-xs font-semibold text-primary hover:underline">
+              Configurar estrutura da DRE
+            </Link>
+          )}
+        </div>
 
-      <DfcControles ano={ano} />
+        <DfcControles ano={ano} />
 
-      {secaoComposicao}
-      {secaoMatriz}
+        {secaoComposicao}
+        {secaoMatriz}
+      </div>
     </div>
   );
 }

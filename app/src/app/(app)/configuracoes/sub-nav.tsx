@@ -5,57 +5,38 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { GRUPOS_CONFIGURACOES as GRUPOS } from "./grupos";
 
-// Mesmo padrão de sub-nav agrupada da seção de Relatórios (ver
-// relatorios/sub-nav.tsx) — 10 pills soltas numa linha só, sem hierarquia,
-// tinham o mesmo problema de "parede de laranja" que a sub-nav de
-// Relatórios tinha antes da reforma. Grupo de 1 item só ("Equipe") não
-// ganha o cartão de fundo, só o rótulo — mesma regra, evita caixa vazia
-// em volta de uma pill sozinha.
+// Navegação lateral vertical (achado em varredura de design, 03/09/2026:
+// o padrão anterior — "rótulo do grupo colado com os itens ao lado, numa
+// linha horizontal" — incomodava mesmo depois de ajustar cor/sombra/
+// tamanho). Cada grupo agora é um título sozinho na própria linha, com os
+// itens empilhados abaixo — mesmo padrão de configurações do GitHub/
+// Linear/Stripe. Renderizada por configuracoes/layout.tsx como coluna
+// fixa ao lado do conteúdo (nunca mais acima dele).
 export function ConfiguracoesSubNav() {
   const pathname = usePathname();
 
   return (
-    <div className="flex flex-wrap gap-2 border-b border-border pb-4">
-      {GRUPOS.map((grupo) => {
-        const grupoAtivo = grupo.itens.some((item) => pathname.startsWith(item.href));
-        const solo = grupo.itens.length === 1;
-
-        return (
-          <div
-            key={grupo.rotulo}
-            className={cn(
-              "flex flex-col gap-1.5 rounded-2xl",
-              !solo && "px-2.5 pt-2 pb-2.5",
-              !solo && (grupoAtivo ? "bg-primary/8" : "bg-muted/60"),
-            )}
-          >
-            <span className={cn("px-0.5 text-[9.5px] font-bold tracking-wider uppercase", grupoAtivo ? "text-primary" : "text-muted-foreground")}>
-              {grupo.rotulo}
-            </span>
-            <div className="flex flex-wrap gap-1.5">
-              {grupo.itens.map((item) => {
-                const ativo = pathname.startsWith(item.href);
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={cn(
-                      "rounded-full px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition-colors",
-                      ativo
-                        ? "bg-primary text-primary-foreground shadow-[0_3px_10px_-2px_rgba(216,88,58,0.45)]"
-                        : solo
-                          ? "bg-muted text-muted-foreground hover:bg-muted/70 hover:text-foreground"
-                          : "bg-card text-muted-foreground shadow-[0_1px_1px_rgba(26,29,31,0.04)] hover:text-foreground",
-                    )}
-                  >
-                    {item.rotulo}
-                  </Link>
-                );
-              })}
-            </div>
-          </div>
-        );
-      })}
-    </div>
+    <nav className="flex w-52 shrink-0 flex-col gap-5">
+      {GRUPOS.map((grupo) => (
+        <div key={grupo.rotulo} className="flex flex-col gap-0.5">
+          <h2 className="px-2.5 pb-1.5 text-[10px] font-bold tracking-wider text-muted-foreground uppercase">{grupo.rotulo}</h2>
+          {grupo.itens.map((item) => {
+            const ativo = pathname.startsWith(item.href);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  "rounded-md px-2.5 py-1.5 text-[13px] font-medium transition-colors",
+                  ativo ? "bg-primary/12 font-semibold text-primary" : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+                )}
+              >
+                {item.rotulo}
+              </Link>
+            );
+          })}
+        </div>
+      ))}
+    </nav>
   );
 }

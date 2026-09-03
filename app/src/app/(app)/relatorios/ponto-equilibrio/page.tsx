@@ -160,13 +160,15 @@ export default async function PaginaRelatoriosPontoEquilibrio({
   }
 
   return (
-    <div className="flex w-full flex-col gap-6">
-      <h1 className="text-xl font-bold tracking-tight text-foreground">Relatórios</h1>
+    <div className="flex w-full items-start gap-8">
       <RelatoriosSubNav />
+      <div className="flex min-w-0 flex-1 flex-col gap-6">
+        <h1 className="text-xl font-bold tracking-tight text-foreground">Relatórios</h1>
 
-      {secaoControles}
-      {secaoAtual}
-      {secaoEvolucao}
+        {secaoControles}
+        {secaoAtual}
+        {secaoEvolucao}
+      </div>
     </div>
   );
 }

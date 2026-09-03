@@ -3,7 +3,6 @@ import { createClient } from "@/utils/supabase/server";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
 import { listarLinhasDreConfig } from "@/lib/relatorios/dre";
 import { EstadoVazio } from "@/components/ui/estado-vazio";
-import { ConfiguracoesSubNav } from "../sub-nav";
 import { NovaLinhaDreForm } from "./nova-linha-form";
 import { LinhaDreItem } from "./linha-dre-item";
 import { ModeloCompletoButton } from "./modelo-completo-button";
@@ -31,7 +30,6 @@ export default async function PaginaEstruturaDre() {
         <h1 className="text-xl font-bold tracking-tight text-foreground">Estrutura de DRE</h1>
         <ModeloCompletoButton />
       </div>
-      <ConfiguracoesSubNav />
 
       <p className="text-sm text-muted-foreground">
         Cada linha <strong>Folha</strong> soma as categorias vinculadas a ela; cada linha <strong>Subtotal</strong>{" "}

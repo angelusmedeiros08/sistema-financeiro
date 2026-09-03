@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
-import { ConfiguracoesSubNav } from "../sub-nav";
 import { ConvidarForm } from "./convidar-form";
 import { TabelaEquipe } from "./tabela-equipe";
 
@@ -29,7 +28,6 @@ export default async function PaginaEquipe() {
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-6">
       <h1 className="text-xl font-bold tracking-tight text-foreground">Equipe</h1>
-      <ConfiguracoesSubNav />
 
       {souAdmin && (
         <section>

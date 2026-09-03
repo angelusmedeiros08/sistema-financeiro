@@ -27,34 +27,36 @@ export default async function PaginaRelatoriosCentroCusto({
   const maiorSaldoAbsoluto = Math.max(...linhas.map((l) => Math.abs(l.saldo)), 1);
 
   return (
-    <div className="flex w-full flex-col gap-6">
-      <h1 className="text-xl font-bold tracking-tight text-foreground">Relatórios</h1>
+    <div className="flex w-full items-start gap-8">
       <RelatoriosSubNav />
-      <RelatoriosControles {...params} />
+      <div className="flex min-w-0 flex-1 flex-col gap-6">
+        <h1 className="text-xl font-bold tracking-tight text-foreground">Relatórios</h1>
+        <RelatoriosControles {...params} />
 
-      {linhas.length > 0 && (
-        <div className="rounded-2xl bg-card shadow-card p-5">
-          <h2 className="mb-4 font-heading text-sm font-bold text-foreground">Resultado por centro de custo</h2>
-          <div className="flex flex-col gap-2.5">
-            {linhas.map((l) => (
-              <div key={l.centroCustoId} className="flex items-center gap-3">
-                <span className="w-40 shrink-0 truncate text-xs font-medium text-foreground">{l.nome}</span>
-                <TrilhoBarra
-                  valorPercentual={Math.abs(l.saldo) / maiorSaldoAbsoluto}
-                  cor={l.saldo >= 0 ? "var(--positivo)" : "var(--destructive)"}
-                  valorFormatado={formatarMoeda(l.saldo)}
-                />
-                <span className={cn("min-w-28 shrink-0 text-right text-xs font-semibold tabular-nums", l.saldo >= 0 ? "text-positivo" : "text-destructive")}>
-                  {l.saldo > 0 ? "+" : ""}
-                  {formatarMoeda(l.saldo)}
-                </span>
-              </div>
-            ))}
+        {linhas.length > 0 && (
+          <div className="rounded-2xl bg-card shadow-card p-5">
+            <h2 className="mb-4 font-heading text-sm font-bold text-foreground">Resultado por centro de custo</h2>
+            <div className="flex flex-col gap-2.5">
+              {linhas.map((l) => (
+                <div key={l.centroCustoId} className="flex items-center gap-3">
+                  <span className="w-40 shrink-0 truncate text-xs font-medium text-foreground">{l.nome}</span>
+                  <TrilhoBarra
+                    valorPercentual={Math.abs(l.saldo) / maiorSaldoAbsoluto}
+                    cor={l.saldo >= 0 ? "var(--positivo)" : "var(--destructive)"}
+                    valorFormatado={formatarMoeda(l.saldo)}
+                  />
+                  <span className={cn("min-w-28 shrink-0 text-right text-xs font-semibold tabular-nums", l.saldo >= 0 ? "text-positivo" : "text-destructive")}>
+                    {l.saldo > 0 ? "+" : ""}
+                    {formatarMoeda(l.saldo)}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      <CentroCustoTabela linhas={linhas} />
+        <CentroCustoTabela linhas={linhas} />
+      </div>
     </div>
   );
 }

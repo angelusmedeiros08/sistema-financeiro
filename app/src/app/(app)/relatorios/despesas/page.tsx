@@ -23,17 +23,19 @@ export default async function PaginaRelatoriosDespesas({
   const linhas = await buscarAnaliseCategorias(supabase, { tenantId: contexto.tenantId, ...params, tipo: "DESPESA", origemHref });
 
   return (
-    <div className="flex w-full flex-col gap-6">
-      <h1 className="text-xl font-bold tracking-tight text-foreground">Relatórios</h1>
+    <div className="flex w-full items-start gap-8">
       <RelatoriosSubNav />
-      <RelatoriosControles {...params} />
+      <div className="flex min-w-0 flex-1 flex-col gap-6">
+        <h1 className="text-xl font-bold tracking-tight text-foreground">Relatórios</h1>
+        <RelatoriosControles {...params} />
 
-      <p className="text-xs text-muted-foreground">
-        Categorias ordenadas do maior para o menor gasto, com participação e acumulado. Identifica quais poucas
-        categorias respondem pela maior parte da despesa.
-      </p>
+        <p className="text-xs text-muted-foreground">
+          Categorias ordenadas do maior para o menor gasto, com participação e acumulado. Identifica quais poucas
+          categorias respondem pela maior parte da despesa.
+        </p>
 
-      <DespesasTabela linhas={linhas} />
+        <DespesasTabela linhas={linhas} />
+      </div>
     </div>
   );
 }

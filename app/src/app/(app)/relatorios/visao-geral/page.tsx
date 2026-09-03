@@ -212,23 +212,25 @@ export default async function PaginaRelatoriosVisaoGeral({
   }
 
   return (
-    <div className="flex w-full flex-col gap-6">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h1 className="text-xl font-bold tracking-tight text-foreground">Relatórios</h1>
-      </div>
-
+    <div className="flex w-full items-start gap-8">
       <RelatoriosSubNav />
-      <RelatoriosControles {...params} />
+      <div className="flex min-w-0 flex-1 flex-col gap-6">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h1 className="text-xl font-bold tracking-tight text-foreground">Relatórios</h1>
+        </div>
 
-      {secaoKpis}
-      {secaoIndicadoresRealizacao}
-      {/* Cada gráfico na sua própria linha, largura cheia — dividir a tela
-          em 2 colunas espremia a cascata (23 linhas reais) até virar
-          ilegível, mesmo motivo já corrigido no DRE dedicado. */}
-      {secaoFluxoCaixa}
-      {secaoDreCascata}
-      {secaoTopCategorias}
-      {secaoAging}
+        <RelatoriosControles {...params} />
+
+        {secaoKpis}
+        {secaoIndicadoresRealizacao}
+        {/* Cada gráfico na sua própria linha, largura cheia — dividir a tela
+            em 2 colunas espremia a cascata (23 linhas reais) até virar
+            ilegível, mesmo motivo já corrigido no DRE dedicado. */}
+        {secaoFluxoCaixa}
+        {secaoDreCascata}
+        {secaoTopCategorias}
+        {secaoAging}
+      </div>
     </div>
   );
 }

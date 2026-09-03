@@ -22,28 +22,30 @@ export default async function PaginaRelatoriosAging() {
   ]);
 
   return (
-    <div className="flex w-full flex-col gap-6">
-      <h1 className="text-xl font-bold tracking-tight text-foreground">Relatórios</h1>
+    <div className="flex w-full items-start gap-8">
       <RelatoriosSubNav />
+      <div className="flex min-w-0 flex-1 flex-col gap-6">
+        <h1 className="text-xl font-bold tracking-tight text-foreground">Relatórios</h1>
 
-      <p className="text-sm text-muted-foreground">
-        Aging analítico: não usa o seletor de Regime/Granularidade, mostra o saldo em aberto de todas as parcelas
-        pendentes hoje, por faixa de vencimento, o mesmo cálculo de <em>Contas a receber</em> e <em>Contas a pagar</em>.
-      </p>
+        <p className="text-sm text-muted-foreground">
+          Aging analítico: não usa o seletor de Regime/Granularidade, mostra o saldo em aberto de todas as parcelas
+          pendentes hoje, por faixa de vencimento, o mesmo cálculo de <em>Contas a receber</em> e <em>Contas a pagar</em>.
+        </p>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <AgingBarras titulo={<TermoComDica termo="aging">Vencido: a receber</TermoComDica>} dados={agingReceita} />
-        <AgingBarras titulo={<TermoComDica termo="aging">Vencido: a pagar</TermoComDica>} dados={agingDespesa} />
-      </div>
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <AgingBarras titulo={<TermoComDica termo="aging">Vencido: a receber</TermoComDica>} dados={agingReceita} />
+          <AgingBarras titulo={<TermoComDica termo="aging">Vencido: a pagar</TermoComDica>} dados={agingDespesa} />
+        </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <FaixasAVencer titulo="A vencer: a receber" dados={agingReceita} cor="var(--positivo)" />
-        <FaixasAVencer titulo="A vencer: a pagar" dados={agingDespesa} cor="#C98A1F" />
-      </div>
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <FaixasAVencer titulo="A vencer: a receber" dados={agingReceita} cor="var(--positivo)" />
+          <FaixasAVencer titulo="A vencer: a pagar" dados={agingDespesa} cor="#C98A1F" />
+        </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <AgingParticipantesTabela titulo="Maiores devedores (a receber)" linhas={participantesReceita} />
-        <AgingParticipantesTabela titulo="Maiores credores (a pagar)" linhas={participantesDespesa} />
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <AgingParticipantesTabela titulo="Maiores devedores (a receber)" linhas={participantesReceita} />
+          <AgingParticipantesTabela titulo="Maiores credores (a pagar)" linhas={participantesDespesa} />
+        </div>
       </div>
     </div>
   );
