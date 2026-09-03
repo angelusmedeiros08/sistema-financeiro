@@ -213,7 +213,14 @@ export function DocumentoComercialForm({
                 aria-label="Preço unitário"
               />
               <span className="text-right text-sm tabular-nums text-foreground">{formatarMoeda(item.quantidade * item.precoUnitario)}</span>
-              <Button type="button" variant="ghost" size="icon" disabled={itens.length <= 1} onClick={() => removerLinha(indice)}>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                disabled={itens.length <= 1}
+                onClick={() => removerLinha(indice)}
+                aria-label="Remover item"
+              >
                 <X size={15} />
               </Button>
             </div>

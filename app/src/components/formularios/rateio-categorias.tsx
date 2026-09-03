@@ -217,6 +217,7 @@ export function RateioCategorias({
                   size="icon"
                   disabled={linhas.length <= 2}
                   onClick={() => removerLinha(indice)}
+                  aria-label="Remover categoria do rateio"
                 >
                   <X size={15} />
                 </Button>
@@ -296,6 +297,7 @@ export function RateioCategorias({
                               className="size-7"
                               disabled={linha.subLinhasCentroCusto.length <= 2}
                               onClick={() => removerSubLinha(indice, indiceSub)}
+                              aria-label="Remover centro de custo"
                             >
                               <X size={13} />
                             </Button>
