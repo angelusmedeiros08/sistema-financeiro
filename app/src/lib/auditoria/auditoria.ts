@@ -18,6 +18,12 @@ export type EventoAuditoria = {
 // só faltava uma tela expondo isso pro usuário final. `usuario_tenant`
 // completa com o outro tipo de evento que o dossiê pediu (mudança de
 // equipe), que não vive no ledger.
+//
+// Paginação real via `vw_trilha_auditoria` (achado em varredura de
+// melhorias) — antes fazia duas buscas `.range(0, inicio+tamanhoPagina-1)`
+// (uma por fonte) toda vez, rebuscando do zero a cada página avançada, só
+// pra intercalar por data em JS depois. A view unifica as duas fontes com
+// UNION ALL, permitindo um único `.range()` de verdade na consulta final.
 export async function buscarTrilhaAuditoria(
   supabase: Cliente,
   tenantId: string,
@@ -25,52 +31,28 @@ export async function buscarTrilhaAuditoria(
 ): Promise<{ eventos: EventoAuditoria[]; total: number }> {
   const inicio = (params.pagina - 1) * params.tamanhoPagina;
 
-  // Busca as duas fontes com folga (tamanho de página inteiro em cada) e
-  // intercala por data — nenhuma das duas pagina "de verdade" em conjunto
-  // com a outra, então a página exibida corta no ponto certo depois do
-  // merge, não antes.
-  const [{ data: lancamentos, count: totalLancamentos }, { data: membros, count: totalMembros }] = await Promise.all([
-    supabase
-      .from("lancamentos")
-      .select("id, descricao, criado_em, criado_por, estornado_de_id", { count: "exact" })
-      .eq("tenant_id", tenantId)
-      .order("criado_em", { ascending: false })
-      .range(0, inicio + params.tamanhoPagina - 1),
-    supabase
-      .from("usuario_tenant")
-      .select("usuario_id, convidado_em", { count: "exact" })
-      .eq("tenant_id", tenantId)
-      .order("convidado_em", { ascending: false })
-      .range(0, inicio + params.tamanhoPagina - 1),
-  ]);
+  const { data, count } = await supabase
+    .from("vw_trilha_auditoria")
+    .select("id, quando, usuario_id, acao, descricao", { count: "exact" })
+    .eq("tenant_id", tenantId)
+    .order("quando", { ascending: false })
+    .range(inicio, inicio + params.tamanhoPagina - 1);
 
   const idsUsuarios = new Set<string>();
-  (lancamentos ?? []).forEach((l) => l.criado_por && idsUsuarios.add(l.criado_por));
-  (membros ?? []).forEach((m) => m.usuario_id && idsUsuarios.add(m.usuario_id));
+  (data ?? []).forEach((e) => e.usuario_id && idsUsuarios.add(e.usuario_id));
 
   const { data: usuarios } = idsUsuarios.size
     ? await supabase.from("usuarios").select("id, nome").in("id", Array.from(idsUsuarios))
     : { data: [] as { id: string; nome: string }[] };
   const nomePorId = new Map((usuarios ?? []).map((u) => [u.id, u.nome]));
 
-  const eventosLancamento: EventoAuditoria[] = (lancamentos ?? []).map((l) => ({
-    id: `lanc-${l.id}`,
-    quando: l.criado_em,
-    quemNome: (l.criado_por && nomePorId.get(l.criado_por)) || "Sistema",
-    acao: l.estornado_de_id ? "estorno" : "lancamento",
-    descricao: l.descricao,
+  const eventos: EventoAuditoria[] = (data ?? []).map((e) => ({
+    id: e.id ?? "",
+    quando: e.quando ?? "",
+    quemNome: (e.usuario_id && nomePorId.get(e.usuario_id)) || (e.acao === "membro" ? "Alguém" : "Sistema"),
+    acao: (e.acao ?? "lancamento") as EventoAuditoria["acao"],
+    descricao: e.descricao ?? "",
   }));
 
-  const eventosEquipe: EventoAuditoria[] = (membros ?? []).map((m) => ({
-    id: `equipe-${m.usuario_id}-${m.convidado_em}`,
-    quando: m.convidado_em,
-    quemNome: nomePorId.get(m.usuario_id) || "Alguém",
-    acao: "membro",
-    descricao: "entrou pra equipe",
-  }));
-
-  const todos = [...eventosLancamento, ...eventosEquipe].sort((a, b) => (a.quando < b.quando ? 1 : -1));
-  const pagina = todos.slice(inicio, inicio + params.tamanhoPagina);
-
-  return { eventos: pagina, total: (totalLancamentos ?? 0) + (totalMembros ?? 0) };
+  return { eventos, total: count ?? 0 };
 }
