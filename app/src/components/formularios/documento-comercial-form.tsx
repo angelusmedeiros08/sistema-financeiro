@@ -268,7 +268,14 @@ export function DocumentoComercialForm({
               </div>
               <div className="mt-3 flex items-center justify-between border-t border-border pt-2.5">
                 <span className="text-sm font-semibold tabular-nums text-foreground">{formatarMoeda(item.quantidade * item.precoUnitario)}</span>
-                <Button type="button" variant="ghost" size="icon" disabled={itens.length <= 1} onClick={() => removerLinha(indice)}>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  disabled={itens.length <= 1}
+                  onClick={() => removerLinha(indice)}
+                  aria-label="Remover item"
+                >
                   <X size={15} />
                 </Button>
               </div>
