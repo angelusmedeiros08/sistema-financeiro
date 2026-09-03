@@ -41,7 +41,11 @@ export function IconeTransmitir() {
 
   return (
     <Button variant="ghost" size="icon" disabled={carregando} onClick={apresentar} aria-label="Apresentar esta tela" title="Apresentar esta tela">
-      {carregando ? <Spinner size={17} className="animate-spin" /> : <Broadcast size={17} />}
+      {carregando ? (
+        <Spinner size={19} weight="bold" className="animate-spin" />
+      ) : (
+        <Broadcast size={19} weight="bold" />
+      )}
     </Button>
   );
 }

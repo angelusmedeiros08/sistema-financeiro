@@ -48,7 +48,7 @@ export function NotificacoesMenu({ notificacoes }: { notificacoes: NotificacaoIt
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon" className="relative" title="Notificações">
-          <Bell size={19} />
+          <Bell size={19} weight="bold" />
           {temNovaHoje && (
             <span className="absolute right-1.5 top-1.5 size-1.5 rounded-full bg-destructive" />
           )}

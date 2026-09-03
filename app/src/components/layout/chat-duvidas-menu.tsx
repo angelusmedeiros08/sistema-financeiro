@@ -17,7 +17,7 @@ export function ChatDuvidasMenu() {
   return (
     <Sheet open={aberto} onOpenChange={setAberto}>
       <Button variant="ghost" size="icon" aria-label="Tirar dúvidas" title="Tirar dúvidas" onClick={() => setAberto(true)}>
-        <ChatCircleDots size={19} />
+        <ChatCircleDots size={19} weight="bold" />
       </Button>
       <SheetContent side="right" className="w-full sm:max-w-md">
         <SheetHeader>

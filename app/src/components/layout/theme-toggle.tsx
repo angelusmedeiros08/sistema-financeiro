@@ -22,7 +22,7 @@ export function ThemeToggle() {
       title={montado ? (escuro ? "Mudar para tema claro" : "Mudar para tema escuro") : "Alternar tema"}
       onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
     >
-      {escuro ? <Sun size={19} /> : <Moon size={19} />}
+      {escuro ? <Sun size={19} weight="bold" /> : <Moon size={19} weight="bold" />}
       <span className="sr-only">Alternar tema</span>
     </Button>
   );

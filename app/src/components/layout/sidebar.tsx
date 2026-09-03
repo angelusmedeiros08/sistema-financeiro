@@ -282,7 +282,7 @@ export function SidebarConteudo({ emailUsuario, emSheet = false }: { emailUsuari
                     className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium text-muted-foreground/50"
                     title="Em breve"
                   >
-                    <Icon size={17} weight="regular" />
+                    <Icon size={19} weight="bold" />
                     <span className="flex-1">{item.label}</span>
                     <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide">
                       em breve
@@ -302,7 +302,7 @@ export function SidebarConteudo({ emailUsuario, emSheet = false }: { emailUsuari
                       ativo ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground",
                     )}
                   >
-                    <Icon size={17} weight={ativo ? "bold" : "regular"} />
+                    <Icon size={19} weight="bold" />
                     <span className="flex-1 text-left">{item.label}</span>
                     <CaretRight size={13} />
                   </button>
@@ -318,7 +318,7 @@ export function SidebarConteudo({ emailUsuario, emSheet = false }: { emailUsuari
                       ativo ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground",
                     )}
                   >
-                    <Icon size={17} weight={ativo ? "bold" : "regular"} />
+                    <Icon size={19} weight="bold" />
                     {item.label}
                   </Link>
                   <BotaoEstrela ativo={favoritado} onToggle={() => alternarFavorito(item.href, item.label)} />
@@ -380,7 +380,7 @@ export function SidebarConteudo({ emailUsuario, emSheet = false }: { emailUsuari
                   title={`${item.label} (em breve)`}
                   className="flex size-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground/40"
                 >
-                  <Icon size={18} weight="regular" />
+                  <Icon size={20} weight="bold" />
                 </div>
               );
             }
@@ -396,7 +396,7 @@ export function SidebarConteudo({ emailUsuario, emSheet = false }: { emailUsuari
                   )}
                 >
                   <span className="sr-only">{item.label}</span>
-                  <Icon size={18} weight={ativo ? "bold" : "regular"} />
+                  <Icon size={20} weight="bold" />
                 </div>
               );
             }
@@ -412,7 +412,7 @@ export function SidebarConteudo({ emailUsuario, emSheet = false }: { emailUsuari
                 )}
               >
                 <span className="sr-only">{item.label}</span>
-                <Icon size={18} weight={ativo ? "bold" : "regular"} />
+                <Icon size={20} weight="bold" />
               </Link>
             );
           })}
