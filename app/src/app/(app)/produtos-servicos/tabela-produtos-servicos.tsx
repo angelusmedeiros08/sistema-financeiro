@@ -20,9 +20,12 @@ const helper = criarColunaLista<ProdutoServico>();
 export function TabelaProdutosServicos({
   produtosServicos,
   categoriasReceita,
+  paginacao,
 }: {
   produtosServicos: ProdutoServico[];
   categoriasReceita: { id: string; nome: string }[];
+  /** Paginação real no servidor — `produtosServicos` já é só a página atual. Ver `paginacaoServidor` em TabelaLista. */
+  paginacao?: { pagina: number; totalPaginas: number; totalRegistros: number; tamanhoPagina: number; hrefBase: string };
 }) {
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
@@ -137,7 +140,14 @@ export function TabelaProdutosServicos({
             if (editandoId !== p.id) {
               return (
                 <div className="flex justify-end">
-                  <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => iniciarEdicao(p)}>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 w-7 p-0"
+                    onClick={() => iniciarEdicao(p)}
+                    aria-label="Editar"
+                  >
                     <PencilSimple size={14} />
                   </Button>
                 </div>
@@ -150,10 +160,26 @@ export function TabelaProdutosServicos({
                     <Checkbox checked={ativo} onCheckedChange={(v) => setAtivo(v === true)} />
                     Ativo
                   </label>
-                  <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0" disabled={enviando} onClick={() => setEditandoId(null)}>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 w-7 p-0"
+                    disabled={enviando}
+                    onClick={() => setEditandoId(null)}
+                    aria-label="Cancelar edição"
+                  >
                     <X size={14} />
                   </Button>
-                  <Button type="button" variant="outline" size="sm" className="h-7 w-7 p-0" disabled={enviando} onClick={() => salvar(p)}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-7 w-7 p-0"
+                    disabled={enviando}
+                    onClick={() => salvar(p)}
+                    aria-label="Salvar edição"
+                  >
                     {enviando ? <Spinner size={13} className="animate-spin" /> : <Check size={14} />}
                   </Button>
                 </div>
@@ -165,9 +191,18 @@ export function TabelaProdutosServicos({
     [editandoId, nome, tipo, preco, categoriaId, ativo, enviando, categoriasReceita],
   );
 
-  if (produtosServicos.length === 0) {
+  if (produtosServicos.length === 0 && !paginacao) {
     return <EstadoVazio texto="Nenhum produto ou serviço ainda." />;
   }
 
-  return <TabelaLista titulo="Produtos e serviços" data={produtosServicos} columns={colunas} busca={false} textoVazio="Nenhum produto ou serviço ainda." />;
+  return (
+    <TabelaLista
+      titulo="Produtos e serviços"
+      data={produtosServicos}
+      columns={colunas}
+      busca={false}
+      textoVazio="Nenhum produto ou serviço ainda."
+      paginacaoServidor={paginacao}
+    />
+  );
 }
