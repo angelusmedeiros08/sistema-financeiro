@@ -29,7 +29,7 @@ export default async function PaginaPerfil() {
       <TituloPagina>Meu perfil</TituloPagina>
 
       <div className="flex items-center gap-4 rounded-2xl bg-card p-5 shadow-card">
-        <span className="flex size-14 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#D8583A] to-[#A87C1F] text-xl font-bold text-white">
+        <span className="flex size-14 shrink-0 items-center justify-center rounded-full bg-primary text-xl font-bold text-primary-foreground">
           {inicial}
         </span>
         <div className="min-w-0">

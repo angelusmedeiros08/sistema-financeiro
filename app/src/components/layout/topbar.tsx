@@ -73,9 +73,13 @@ export function Topbar({
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
+            {/* Gradiente diagonal removido (achado em varredura de design,
+                03/09/2026: mesma marca de card decorativo já tirada do
+                StatCard) — avatar vira preenchimento sólido na cor de
+                marca, sem perder identidade nenhuma. */}
             <button
               type="button"
-              className="ml-1 flex size-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#D8583A] to-[#A87C1F] text-sm font-bold text-white transition-opacity hover:opacity-90"
+              className="ml-1 flex size-8 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90"
               title={nome}
             >
               {nome.charAt(0).toUpperCase()}
