@@ -4,34 +4,7 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { PARAM_APRESENTACAO } from "@/lib/apresentacao/sessao";
-
-const GRUPOS = [
-  {
-    rotulo: "Geral",
-    itens: [{ href: "/relatorios/visao-geral", rotulo: "Visão geral" }],
-  },
-  {
-    rotulo: "Demonstrativos",
-    itens: [
-      { href: "/relatorios/dre", rotulo: "DRE" },
-      { href: "/relatorios/dfc", rotulo: "DFC" },
-    ],
-  },
-  {
-    rotulo: "Análises",
-    itens: [
-      { href: "/relatorios/centro-custo", rotulo: "Centro de custo" },
-      { href: "/relatorios/aging", rotulo: "Aging" },
-      { href: "/relatorios/despesas", rotulo: "Análise de despesas" },
-      { href: "/relatorios/ponto-equilibrio", rotulo: "Ponto de equilíbrio" },
-      { href: "/relatorios/comparativos", rotulo: "Comparativos" },
-    ],
-  },
-  {
-    rotulo: "Contas",
-    itens: [{ href: "/relatorios/contas-bancarias", rotulo: "Contas bancárias" }],
-  },
-] as const;
+import { GRUPOS_RELATORIOS as GRUPOS } from "./grupos";
 
 const TODOS_ITENS: { href: string; rotulo: string }[] = [];
 for (const grupo of GRUPOS) TODOS_ITENS.push(...grupo.itens);

@@ -23,6 +23,8 @@ import {
 } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { GRUPOS_CONFIGURACOES } from "@/app/(app)/configuracoes/grupos";
+import { GRUPOS_RELATORIOS } from "@/app/(app)/relatorios/grupos";
 
 type SubItemNav = { href: string; label: string };
 
@@ -35,29 +37,17 @@ type ItemNav = {
   subItens?: SubItemNav[];
 };
 
-const SUB_ITENS_RELATORIOS: SubItemNav[] = [
-  { href: "/relatorios/visao-geral", label: "Visão geral" },
-  { href: "/relatorios/dre", label: "DRE" },
-  { href: "/relatorios/dfc", label: "DFC" },
-  { href: "/relatorios/centro-custo", label: "Centro de custo" },
-  { href: "/relatorios/aging", label: "Aging" },
-  { href: "/relatorios/despesas", label: "Análise de despesas" },
-  { href: "/relatorios/ponto-equilibrio", label: "Ponto de equilíbrio" },
-  { href: "/relatorios/comparativos", label: "Comparativos" },
-  { href: "/relatorios/contas-bancarias", label: "Contas bancárias" },
-];
+// Derivados das mesmas fontes únicas que os hubs/sub-navs in-page já usam
+// (grupos.ts de cada seção) — antes eram listas hardcoded próprias deste
+// arquivo, e a de Configurações tinha ficado pra trás (9 de 12 itens reais:
+// faltavam Trilha de auditoria, Regras de categorização e Mapeamento de
+// colunas — telas existentes e funcionais, mas invisíveis no menu lateral
+// e na busca rápida Cmd+K, que deriva de TODOS_ITENS_FOLHA abaixo). Achado
+// em varredura de melhorias — mesma classe de risco pra qualquer seção que
+// mantenha duas listas separadas.
+const SUB_ITENS_RELATORIOS: SubItemNav[] = GRUPOS_RELATORIOS.flatMap((g) => g.itens.map((i) => ({ href: i.href, label: i.rotulo })));
 
-const SUB_ITENS_CONFIGURACOES: SubItemNav[] = [
-  { href: "/configuracoes/categorias", label: "Categorias" },
-  { href: "/configuracoes/plano-de-contas", label: "Plano de contas" },
-  { href: "/configuracoes/centros-custo", label: "Centros de custo" },
-  { href: "/configuracoes/formas-pagamento", label: "Formas de pagamento" },
-  { href: "/configuracoes/contas-financeiras", label: "Contas financeiras" },
-  { href: "/configuracoes/recorrencias", label: "Recorrências" },
-  { href: "/configuracoes/campos-personalizados", label: "Campos personalizados" },
-  { href: "/configuracoes/estrutura-dre", label: "Estrutura de DRE" },
-  { href: "/configuracoes/equipe", label: "Equipe" },
-];
+const SUB_ITENS_CONFIGURACOES: SubItemNav[] = GRUPOS_CONFIGURACOES.flatMap((g) => g.itens.map((i) => ({ href: i.href, label: i.rotulo })));
 
 const SUB_ITENS_PESSOAS: SubItemNav[] = [
   { href: "/clientes", label: "Clientes" },
