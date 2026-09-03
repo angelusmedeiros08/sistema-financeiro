@@ -7,6 +7,8 @@ import { definirValorPrevisionamentoAction, copiarValorParaRestoDoAnoAction } fr
 import { cn } from "@/lib/utils";
 import { TabelaMatriz, criarColunaMatriz } from "@/components/tabela/tabela-matriz";
 import { parseNumeroBR } from "@/lib/formatacao";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 const NOMES_MES = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 const IDS_MES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
@@ -38,6 +40,13 @@ export function GradePrevisionamento({ ano, linhas }: { ano: number; linhas: Lin
   );
   const [, iniciarTransicao] = useTransition();
   const [statusPorCategoria, setStatusPorCategoria] = useState<Map<string, "salvando" | "salvo" | "erro">>(new Map());
+  // Confirmação (Dialog do app, não window.confirm() nativo — achado em
+  // varredura de melhorias) só quando sobrescrever mês com valor — guarda
+  // qual categoria está pendente e quantos meses seriam sobrescritos, pro
+  // texto do modal. Um só por vez (nunca 2 categorias pedindo confirmação
+  // juntas), então um único Dialog no fim do componente serve desktop e
+  // mobile.
+  const [confirmacaoPendente, setConfirmacaoPendente] = useState<{ categoriaId: string; quantidade: number } | null>(null);
 
   function chave(categoriaId: string, mes: number) {
     return `${categoriaId}:${mes}`;
@@ -66,17 +75,8 @@ export function GradePrevisionamento({ ano, linhas }: { ano: number; linhas: Lin
     });
   }
 
-  function copiarParaRestoDoAno(categoriaId: string) {
+  function aplicarCopiaParaRestoDoAno(categoriaId: string) {
     const valorJaneiro = valores.get(chave(categoriaId, 1)) ?? 0;
-    const mesesComValor = Array.from({ length: 11 }, (_, i) => i + 2).filter((mes) => (valores.get(chave(categoriaId, mes)) ?? 0) > 0);
-
-    if (mesesComValor.length > 0) {
-      const confirmado = window.confirm(
-        `${mesesComValor.length} mês(es) já têm valor preenchido nesta categoria. Copiar Jan pro resto do ano vai sobrescrever tudo. Continuar?`,
-      );
-      if (!confirmado) return;
-    }
-
     setValores((atual) => {
       const proximo = new Map(atual);
       for (let mes = 2; mes <= 12; mes++) proximo.set(chave(categoriaId, mes), valorJaneiro);
@@ -87,6 +87,15 @@ export function GradePrevisionamento({ ano, linhas }: { ano: number; linhas: Lin
       const resultado = await copiarValorParaRestoDoAnoAction({ categoriaId, ano, mesOrigem: 1, valorPrevisto: valorJaneiro });
       marcarStatus(categoriaId, "erro" in resultado ? "erro" : "salvo");
     });
+  }
+
+  function copiarParaRestoDoAno(categoriaId: string) {
+    const mesesComValor = Array.from({ length: 11 }, (_, i) => i + 2).filter((mes) => (valores.get(chave(categoriaId, mes)) ?? 0) > 0);
+    if (mesesComValor.length > 0) {
+      setConfirmacaoPendente({ categoriaId, quantidade: mesesComValor.length });
+      return;
+    }
+    aplicarCopiaParaRestoDoAno(categoriaId);
   }
 
   function totalAno(categoriaId: string): number {
@@ -261,6 +270,33 @@ export function GradePrevisionamento({ ano, linhas }: { ano: number; linhas: Lin
         {renderGrupoMobile("RECEITA", "Receitas")}
         {renderGrupoMobile("DESPESA", "Despesas")}
       </div>
+
+      <Dialog open={confirmacaoPendente !== null} onOpenChange={(aberto) => !aberto && setConfirmacaoPendente(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Sobrescrever meses já preenchidos?</DialogTitle>
+            <DialogDescription>
+              {confirmacaoPendente?.quantidade} mês(es) já têm valor preenchido nesta categoria. Copiar Janeiro pro
+              resto do ano vai sobrescrever tudo.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setConfirmacaoPendente(null)}>
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={() => {
+                if (confirmacaoPendente) aplicarCopiaParaRestoDoAno(confirmacaoPendente.categoriaId);
+                setConfirmacaoPendente(null);
+              }}
+            >
+              Sobrescrever
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
