@@ -4,7 +4,7 @@
 // endpoint público de criação de customer precisa rejeitar antes de gastar uma
 // chamada à API do Asaas.
 
-function apenasDigitos(valor: string): string {
+export function apenasDigitos(valor: string): string {
   return valor.replace(/\D/g, "");
 }
 

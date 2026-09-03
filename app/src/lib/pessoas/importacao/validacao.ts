@@ -1,47 +1,17 @@
 import { normalizarTexto, parseDataPlanilha, parseValorPlanilha } from "@/lib/importacao/locale-br";
 import type { Database } from "@/utils/supabase/database.types";
 import type { CampoPersonalizadoDefinicao } from "@/lib/pessoas/buscar-pessoa";
+import { apenasDigitos, validarCpf, validarCnpj } from "@/lib/pagamentos/cpf-cnpj";
 import { resolverCorrespondenciaPessoa, type PessoaExistente } from "./correspondencia";
 import type { LinhaBrutaPessoa, LinhaValidadaPessoa, StatusLinha } from "./tipos";
 
 type PerfilPessoa = Database["public"]["Enums"]["perfil_pessoa"];
 type NaturezaPessoa = Database["public"]["Enums"]["natureza_pessoa"];
 
-function apenasDigitos(texto: string): string {
-  return texto.replace(/\D/g, "");
-}
-
-// Algoritmo padrão de dígito verificador — pega erro de digitação sem
-// depender de nenhuma constraint no banco (não existe uma pra documento).
-function validarCpf(digitos: string): boolean {
-  if (digitos.length !== 11 || /^(\d)\1{10}$/.test(digitos)) return false;
-  const calcularDigito = (base: string, pesoInicial: number) => {
-    let soma = 0;
-    for (let i = 0; i < base.length; i++) soma += Number(base[i]) * (pesoInicial - i);
-    const resto = soma % 11;
-    return resto < 2 ? 0 : 11 - resto;
-  };
-  const d1 = calcularDigito(digitos.slice(0, 9), 10);
-  const d2 = calcularDigito(digitos.slice(0, 10), 11);
-  return d1 === Number(digitos[9]) && d2 === Number(digitos[10]);
-}
-
-function validarCnpj(digitos: string): boolean {
-  if (digitos.length !== 14 || /^(\d)\1{13}$/.test(digitos)) return false;
-  const pesos1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
-  const pesos2 = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
-  const calcularDigito = (base: string, pesos: number[]) => {
-    let soma = 0;
-    for (let i = 0; i < base.length; i++) soma += Number(base[i]) * pesos[i];
-    const resto = soma % 11;
-    return resto < 2 ? 0 : 11 - resto;
-  };
-  const d1 = calcularDigito(digitos.slice(0, 12), pesos1);
-  const d2 = calcularDigito(digitos.slice(0, 13), pesos2);
-  return d1 === Number(digitos[12]) && d2 === Number(digitos[13]);
-}
-
 // null = documento vazio (não valida nada); true/false = resultado real.
+// Algoritmo de dígito verificador vem de lib/pagamentos/cpf-cnpj.ts — era
+// reimplementado aqui do zero (achado em varredura de melhorias: risco de
+// um bug de checksum ser corrigido num lugar e o outro ficar desatualizado).
 function validarDocumento(bruto: string): boolean | null {
   const digitos = apenasDigitos(bruto);
   if (!digitos) return null;
