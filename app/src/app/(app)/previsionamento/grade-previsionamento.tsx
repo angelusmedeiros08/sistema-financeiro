@@ -134,24 +134,28 @@ export function GradePrevisionamento({ ano, linhas }: { ano: number; linhas: Lin
                 </summary>
 
                 <div className="flex flex-col gap-2 border-t border-border px-4 py-3">
-                  {linha.celulas.map((celula) => (
-                    <div key={celula.mes} className="flex items-center gap-3">
-                      <span className="w-9 shrink-0 text-xs font-medium text-muted-foreground">{NOMES_MES[celula.mes - 1]}</span>
-                      <input
-                        type="text"
-                        inputMode="decimal"
-                        defaultValue={formatarEdicao(valores.get(chave(linha.categoriaId, celula.mes)) ?? 0)}
-                        placeholder="-"
-                        className="h-11 flex-1 rounded-lg border border-border bg-muted/40 px-3 text-right text-base tabular-nums text-foreground outline-none focus:border-primary focus:bg-card"
-                        onBlur={(e) => {
-                          const valor = parseValor(e.target.value);
-                          if (valor !== (valores.get(chave(linha.categoriaId, celula.mes)) ?? 0)) {
-                            salvarCelula(linha.categoriaId, celula.mes, valor);
-                          }
-                        }}
-                      />
-                    </div>
-                  ))}
+                  {linha.celulas.map((celula) => {
+                    const valorAtual = valores.get(chave(linha.categoriaId, celula.mes)) ?? 0;
+                    return (
+                      <div key={celula.mes} className="flex items-center gap-3">
+                        <span className="w-9 shrink-0 text-xs font-medium text-muted-foreground">{NOMES_MES[celula.mes - 1]}</span>
+                        <input
+                          key={valorAtual}
+                          type="text"
+                          inputMode="decimal"
+                          defaultValue={formatarEdicao(valorAtual)}
+                          placeholder="-"
+                          className="h-11 flex-1 rounded-lg border border-border bg-muted/40 px-3 text-right text-base tabular-nums text-foreground outline-none focus:border-primary focus:bg-card"
+                          onBlur={(e) => {
+                            const valor = parseValor(e.target.value);
+                            if (valor !== valorAtual) {
+                              salvarCelula(linha.categoriaId, celula.mes, valor);
+                            }
+                          }}
+                        />
+                      </div>
+                    );
+                  })}
                   <button
                     type="button"
                     onClick={() => copiarParaRestoDoAno(linha.categoriaId)}
@@ -202,16 +206,18 @@ export function GradePrevisionamento({ ano, linhas }: { ano: number; linhas: Lin
           cell: (info) => {
             const linha = info.row.original;
             const mes = i + 1;
+            const valorAtual = valores.get(chave(linha.categoriaId, mes)) ?? 0;
             return (
               <input
+                key={valorAtual}
                 type="text"
                 inputMode="decimal"
-                defaultValue={formatarEdicao(valores.get(chave(linha.categoriaId, mes)) ?? 0)}
+                defaultValue={formatarEdicao(valorAtual)}
                 placeholder="-"
                 className="w-full rounded-md border border-border/60 bg-muted/40 px-2 py-1.5 text-right tabular-nums text-foreground outline-none placeholder:text-muted-foreground/50 focus:border-primary focus:bg-card"
                 onBlur={(e) => {
                   const valor = parseValor(e.target.value);
-                  if (valor !== (valores.get(chave(linha.categoriaId, mes)) ?? 0)) {
+                  if (valor !== valorAtual) {
                     salvarCelula(linha.categoriaId, mes, valor);
                   }
                 }}
