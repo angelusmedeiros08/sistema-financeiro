@@ -201,16 +201,16 @@ export default async function PaginaPainel({
           </div>
           {!emApresentacao && (
             <div className="flex flex-wrap gap-2">
-              <Button asChild size="sm" className="rounded-full">
+              <Button asChild size="sm">
                 <Link href="/despesas">Nova despesa</Link>
               </Button>
-              <Button asChild size="sm" variant="outline" className="rounded-full">
+              <Button asChild size="sm" variant="outline">
                 <Link href="/receitas">Nova receita</Link>
               </Button>
-              <Button asChild size="sm" variant="outline" className="rounded-full">
+              <Button asChild size="sm" variant="outline">
                 <Link href="/clientes/novo">Novo cliente</Link>
               </Button>
-              <Button asChild size="sm" variant="outline" className="rounded-full">
+              <Button asChild size="sm" variant="outline">
                 <Link href="/vendas/nova">Nova venda</Link>
               </Button>
             </div>
@@ -252,7 +252,10 @@ export default async function PaginaPainel({
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        {/* xl (não lg): com a coluna lateral de 320px, 4 cards em lg (1024px)
+            sobravam ~145px cada, apertando o rótulo em maiúsculas até
+            quebrar linha (achado em varredura de design, 03/09/2026). */}
+        <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
           <MotionCard index={2}>
             <StatCard
               variant="teal"
@@ -340,17 +343,9 @@ export default async function PaginaPainel({
                     className="-mx-2 flex items-center gap-3 rounded-lg px-2 py-2.5 hover:bg-muted/40"
                   >
                     <span
-                      className={
-                        "flex size-8 shrink-0 items-center justify-center rounded-lg " +
-                        (evento.tipo === "RECEITA" ? "bg-positivo" : "bg-destructive")
-                      }
-                    >
-                      {evento.tipo === "RECEITA" ? (
-                        <HandCoins size={15} weight="bold" className="text-white" />
-                      ) : (
-                        <Wallet size={15} weight="bold" className="text-white" />
-                      )}
-                    </span>
+                      aria-hidden="true"
+                      className={cn("size-2 shrink-0 rounded-full", evento.tipo === "RECEITA" ? "bg-positivo" : "bg-destructive")}
+                    />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium text-foreground">{evento.descricao ?? "Sem descrição"}</p>
                       <p className="text-xs text-muted-foreground">
