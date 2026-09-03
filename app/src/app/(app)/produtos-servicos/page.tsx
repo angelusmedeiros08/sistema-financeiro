@@ -6,16 +6,22 @@ import { EstadoVazio } from "@/components/ui/estado-vazio";
 import { NovoProdutoServicoForm } from "./novo-produto-servico-form";
 import { TabelaProdutosServicos } from "./tabela-produtos-servicos";
 
-export default async function PaginaProdutosServicos() {
+const TAMANHO_PAGINA = 20;
+
+export default async function PaginaProdutosServicos({ searchParams }: { searchParams: Promise<{ pagina?: string }> }) {
   const contexto = await obterUsuarioETenantAtual();
   if ("erro" in contexto) redirect("/entrar");
 
+  const { pagina: paginaBruta } = await searchParams;
+  const pagina = Math.max(1, Number(paginaBruta) || 1);
+
   const supabase = await createClient();
-  const [produtosServicos, categoriasResultado] = await Promise.all([
-    listarProdutosServicos(supabase, contexto.tenantId),
+  const [{ itens: produtosServicos, total }, categoriasResultado] = await Promise.all([
+    listarProdutosServicos(supabase, contexto.tenantId, { pagina, tamanhoPagina: TAMANHO_PAGINA }),
     supabase.from("categorias_financeiras").select("id, nome").eq("tenant_id", contexto.tenantId).eq("tipo", "RECEITA").order("nome"),
   ]);
   const categoriasReceita = categoriasResultado.data ?? [];
+  const totalPaginas = Math.max(1, Math.ceil(total / TAMANHO_PAGINA));
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-6">
@@ -34,7 +40,11 @@ export default async function PaginaProdutosServicos() {
       </section>
 
       <section>
-        <TabelaProdutosServicos produtosServicos={produtosServicos} categoriasReceita={categoriasReceita} />
+        <TabelaProdutosServicos
+          produtosServicos={produtosServicos}
+          categoriasReceita={categoriasReceita}
+          paginacao={{ pagina, totalPaginas, totalRegistros: total, tamanhoPagina: TAMANHO_PAGINA, hrefBase: "/produtos-servicos" }}
+        />
       </section>
     </div>
   );

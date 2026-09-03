@@ -23,7 +23,7 @@ export default async function PaginaNovaVenda() {
       <VendaForm
         modo="criar"
         pessoas={pessoas}
-        produtosIniciais={produtos.map((p) => ({ id: p.id, nome: p.nome, precoVenda: p.precoVenda }))}
+        produtosIniciais={produtos.itens.map((p) => ({ id: p.id, nome: p.nome, precoVenda: p.precoVenda }))}
         formasPagamento={formasPagamentoResultado.data ?? []}
       />
     </div>

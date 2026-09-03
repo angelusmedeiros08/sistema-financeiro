@@ -18,18 +18,36 @@ export type ProdutoServico = {
   ativo: boolean;
 };
 
-export async function listarProdutosServicos(supabase: Cliente, tenantId: string, params?: { apenasAtivos?: boolean }): Promise<ProdutoServico[]> {
+// Paginação real no servidor quando `pagina` é informado (achado em
+// varredura de melhorias) — antes buscava o catálogo inteiro do tenant sem
+// `.range()`, mesma classe de exposição já corrigida em Vendas/Despesas/
+// Receitas/Importações. Os chamadores com `apenasAtivos` (comboboxes de
+// Vendas/Orçamentos) continuam sem paginar de propósito — precisam da lista
+// inteira pra busca client-side.
+export async function listarProdutosServicos(
+  supabase: Cliente,
+  tenantId: string,
+  params?: { apenasAtivos?: boolean; pagina?: number; tamanhoPagina?: number },
+): Promise<{ itens: ProdutoServico[]; total: number }> {
   let query = supabase
     .from("produtos_servicos")
-    .select("id, nome, descricao, tipo, preco_venda, categoria_financeira_id, unidade_medida, codigo_referencia, ativo, categorias_financeiras(nome)")
+    .select("id, nome, descricao, tipo, preco_venda, categoria_financeira_id, unidade_medida, codigo_referencia, ativo, categorias_financeiras(nome)", {
+      count: "exact",
+    })
     .eq("tenant_id", tenantId)
     .order("nome");
 
   if (params?.apenasAtivos) query = query.eq("ativo", true);
 
-  const { data } = await query;
+  if (params?.pagina) {
+    const tamanhoPagina = params.tamanhoPagina ?? 20;
+    const inicio = (Math.max(1, params.pagina) - 1) * tamanhoPagina;
+    query = query.range(inicio, inicio + tamanhoPagina - 1);
+  }
 
-  return (data ?? []).map((p) => ({
+  const { data, count } = await query;
+
+  const itens = (data ?? []).map((p) => ({
     id: p.id,
     nome: p.nome,
     descricao: p.descricao,
@@ -41,6 +59,8 @@ export async function listarProdutosServicos(supabase: Cliente, tenantId: string
     codigoReferencia: p.codigo_referencia,
     ativo: p.ativo,
   }));
+
+  return { itens, total: count ?? itens.length };
 }
 
 export async function criarProdutoServico(

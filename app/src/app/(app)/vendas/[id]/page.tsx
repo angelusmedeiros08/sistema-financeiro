@@ -43,7 +43,7 @@ export default async function PaginaVenda({ params }: { params: Promise<{ id: st
       supabase.from("formas_pagamento").select("id, nome").eq("tenant_id", contexto.tenantId).order("nome"),
     ]);
 
-    const produtosDisponiveis = new Map(produtos.map((p) => [p.id, { id: p.id, nome: p.nome, precoVenda: p.precoVenda }]));
+    const produtosDisponiveis = new Map(produtos.itens.map((p) => [p.id, { id: p.id, nome: p.nome, precoVenda: p.precoVenda }]));
     for (const item of venda.itens) {
       if (!produtosDisponiveis.has(item.produtoServicoId)) {
         produtosDisponiveis.set(item.produtoServicoId, { id: item.produtoServicoId, nome: item.descricao, precoVenda: item.precoUnitario });
