@@ -16,6 +16,8 @@ import { CommandPaletteBusca } from "./command-palette-busca";
 import { NovoRegistroMenu } from "./novo-registro-menu";
 import { IconeTransmitir } from "./icone-transmitir";
 import { NotificacoesMenu } from "./notificacoes-menu";
+import { ChatDuvidasMenu } from "./chat-duvidas-menu";
+import { StatusPlano } from "./status-plano";
 import type { NotificacaoItem } from "@/lib/notificacoes/notificacoes";
 import { sair } from "@/app/(auth)/actions";
 import { trocarTenantAtivo } from "@/lib/tenant/trocar-tenant-actions";
@@ -26,12 +28,16 @@ export function Topbar({
   tenantsDisponiveis,
   nome,
   notificacoes,
+  statusAssinatura,
+  trialTerminaEm,
 }: {
   tenantNome: string;
   tenantId: string;
   tenantsDisponiveis: { id: string; nome: string }[];
   nome: string;
   notificacoes: NotificacaoItem[];
+  statusAssinatura: "trial" | "ativo" | "inadimplente" | "cancelado" | null;
+  trialTerminaEm: string | null;
 }) {
   const outrosTenants = tenantsDisponiveis.filter((t) => t.id !== tenantId);
   return (
@@ -66,8 +72,10 @@ export function Topbar({
       </div>
 
       <div className="flex items-center gap-1.5">
+        <StatusPlano statusAssinatura={statusAssinatura} trialTerminaEm={trialTerminaEm} />
         <IconeTransmitir />
         <NovoRegistroMenu />
+        <ChatDuvidasMenu />
         <NotificacoesMenu notificacoes={notificacoes} />
         <ThemeToggle />
 

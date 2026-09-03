@@ -44,6 +44,8 @@ export default async function LayoutApp({ children }: { children: React.ReactNod
           tenantsDisponiveis={contexto.tenantsDisponiveis}
           nome={usuario?.nome ?? contexto.user.email ?? ""}
           notificacoes={notificacoes}
+          statusAssinatura={contexto.statusAssinatura}
+          trialTerminaEm={contexto.trialTerminaEm}
         />
       }
     >
