@@ -116,16 +116,20 @@ export function CommandPaletteBusca({ variante = "completo" }: { variante?: "com
           <MagnifyingGlass size={17} />
         </Button>
       ) : (
+        // Sem borda própria (achado em pesquisa de navbar, 03/09/2026): o
+        // gatilho de busca em Linear/Vercel/Raycast lê como um campo de
+        // busca "fantasma" — só o preenchimento sutil marca a área, nunca
+        // um contorno competindo com logo/ações ao lado. O chip do atalho
+        // perde a borda própria pelo mesmo motivo (duas bordas aninhadas
+        // era peso visual redundante).
         <button
           type="button"
           onClick={() => setAberto(true)}
-          className="flex h-9 w-full max-w-64 items-center gap-2 rounded-lg border border-border bg-secondary/60 px-3 text-sm text-muted-foreground transition-colors hover:bg-secondary"
+          className="flex h-9 w-full max-w-64 items-center gap-2 rounded-lg bg-muted/60 px-3 text-sm text-muted-foreground transition-colors hover:bg-muted"
         >
           <MagnifyingGlass size={15} />
           <span className="flex-1 text-left">Pesquisar</span>
-          <kbd className="rounded border border-border bg-card px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
-            Ctrl K
-          </kbd>
+          <kbd className="rounded bg-background px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">Ctrl K</kbd>
         </button>
       )}
 
