@@ -9,20 +9,12 @@ export function AuthShell({
 }) {
   return (
     <div className="flex min-h-screen">
-      <div className="relative hidden w-[42%] shrink-0 flex-col justify-between overflow-hidden bg-gradient-to-br from-[#14181A] to-[#0F2620] px-10 py-10 text-sidebar-foreground lg:flex">
+      <div className="relative hidden w-[42%] shrink-0 items-center justify-center overflow-hidden bg-gradient-to-br from-[#14181A] to-[#0F2620] px-10 py-10 text-sidebar-foreground lg:flex">
         <div
           aria-hidden
           className="pointer-events-none absolute -right-24 -top-24 size-96 rounded-full bg-gradient-to-br from-[#D8583A] to-[#A87C1F] opacity-20 blur-3xl"
         />
         <img src="/logo/completo-escuro.png" alt="Finanssi" className="relative w-64" />
-
-        <p className="relative max-w-sm font-heading text-2xl font-bold leading-snug tracking-tight text-white">
-          Cada lançamento gera partidas dobradas corretas, automaticamente.
-        </p>
-
-        <p className="relative text-sm text-white/50">
-          Finanssi · núcleo financeiro multi-tenant, construído sobre um livro-razão de verdade.
-        </p>
       </div>
 
       <div className="flex flex-1 items-center justify-center bg-background px-4 py-10">
