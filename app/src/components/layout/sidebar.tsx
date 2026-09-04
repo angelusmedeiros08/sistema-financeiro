@@ -168,6 +168,17 @@ export function SidebarConteudo({ emailUsuario, emSheet = false }: { emailUsuari
     if (timerFechar.current) clearTimeout(timerFechar.current);
   }
 
+  // Clique num destino de navegação (item de nível superior, favorito, ou
+  // subitem do flyout) fecha o painel na hora — antes só fechava quando o
+  // mouse saísse da área, o que deixava a sidebar aberta "pairando" por
+  // cima do conteúdo até o usuário mexer o mouse de novo (achado em
+  // feedback do usuário, 04/09/2026).
+  function fecharPainel() {
+    limparTimers();
+    setAberta(false);
+    setGrupoAberto(null);
+  }
+
   function agendarAbrir() {
     limparTimers();
     timerAbrir.current = setTimeout(() => setAberta(true), 100);
@@ -278,6 +289,7 @@ export function SidebarConteudo({ emailUsuario, emSheet = false }: { emailUsuari
                 <div key={fav.href} className="group/item flex items-center gap-1">
                   <Link
                     href={fav.href}
+                    onClick={emSheet ? undefined : fecharPainel}
                     className={cn(
                       "flex-1 rounded-lg px-2.5 py-2 text-sm font-semibold transition-colors",
                       ativo ? "bg-muted text-foreground" : "text-foreground/75 hover:bg-muted hover:text-foreground",
@@ -370,7 +382,7 @@ export function SidebarConteudo({ emailUsuario, emSheet = false }: { emailUsuari
                           <div key={sub.href} className="group/item flex items-center gap-1">
                             <Link
                               href={sub.href}
-                              onClick={() => setGrupoAberto(null)}
+                              onClick={fecharPainel}
                               className={cn(
                                 "flex-1 rounded-lg px-2.5 py-2 text-sm font-semibold transition-colors",
                                 subAtivo ? "bg-muted text-foreground" : "text-foreground/75 hover:bg-muted hover:text-foreground",
@@ -391,6 +403,7 @@ export function SidebarConteudo({ emailUsuario, emSheet = false }: { emailUsuari
                 <div key={item.href} className="group/item flex items-center gap-1">
                   <Link
                     href={item.href}
+                    onClick={emSheet ? undefined : fecharPainel}
                     className={cn(
                       "flex flex-1 items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-semibold transition-colors",
                       ativo ? "bg-muted text-foreground" : "text-foreground/75 hover:bg-muted hover:text-foreground",
