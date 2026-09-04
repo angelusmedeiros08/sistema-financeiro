@@ -176,8 +176,18 @@ export function SidebarConteudo({ emailUsuario, emSheet = false }: { emailUsuari
   function agendarFechar() {
     limparTimers();
     timerFechar.current = setTimeout(() => {
+      // Com um flyout aberto, não fecha por hover-timing nenhum — só um
+      // clique explícito (num link, fora, ou no próprio trigger de novo)
+      // ou Escape encerram. Tentar coordenar isso via onMouseEnter/
+      // onMouseLeave no PopoverContent (o flyout vive num Portal, fora da
+      // árvore DOM deste wrapper) tinha uma corrida real: o cursor cruza
+      // um vão de ~12px (sideOffset) entre o botão e o flyout sem estar
+      // "dentro" de nenhum dos dois por um instante — se o timer de 250ms
+      // disparasse nesse meio-tempo, fechava painel E flyout debaixo do
+      // clique que o usuário ainda estava fazendo (achado em uso real,
+      // 04/09/2026: clique num submódulo não navegava pra lugar nenhum).
+      if (grupoAberto) return;
       setAberta(false);
-      setGrupoAberto(null);
     }, 250);
   }
 
@@ -187,10 +197,13 @@ export function SidebarConteudo({ emailUsuario, emSheet = false }: { emailUsuari
   }
 
   function aoPerderFoco(e: React.FocusEvent<HTMLDivElement>) {
-    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+    // Mesmo motivo do guard em agendarFechar: o flyout vive num Portal,
+    // fora da árvore DOM deste wrapper — navegar por Tab até um link lá
+    // dentro conta como "perdeu o foco" daqui, mesmo estando logicamente
+    // dentro do mesmo menu.
+    if (!e.currentTarget.contains(e.relatedTarget as Node) && !grupoAberto) {
       limparTimers();
       setAberta(false);
-      setGrupoAberto(null);
     }
   }
 
@@ -346,16 +359,6 @@ export function SidebarConteudo({ emailUsuario, emSheet = false }: { emailUsuari
                       collisionPadding={12}
                       className="scroll-fino w-56 max-h-[var(--radix-popover-content-available-height)] flex-col gap-0.5 overflow-y-auto p-2"
                       onOpenAutoFocus={(e) => e.preventDefault()}
-                      // O flyout renderiza num Portal do Radix — fica fora da
-                      // árvore DOM do wrapper que tem onMouseEnter/onMouseLeave
-                      // (railRef). Sem isso, mover o mouse do botão pro flyout
-                      // "sai" da subárvore do wrapper aos olhos do navegador,
-                      // dispara o mouseleave dele, e os 250ms de agendarFechar
-                      // fecham painel E flyout juntos enquanto o usuário ainda
-                      // está tentando clicar num subitem lá dentro (achado em
-                      // uso real, 04/09/2026: "não tá entrando direito").
-                      onMouseEnter={limparTimers}
-                      onMouseLeave={agendarFechar}
                     >
                       <p className="sticky top-0 z-10 mb-1 border-b border-border bg-popover px-2 pb-1.5 text-[11px] font-bold uppercase tracking-wide text-foreground/80">
                         {item.label}
