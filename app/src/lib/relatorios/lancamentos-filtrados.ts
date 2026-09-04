@@ -169,15 +169,37 @@ const ROTULO_ATIVIDADE: Record<"OPERACIONAL" | "INVESTIMENTO" | "FINANCIAMENTO",
 // Categorias que compõem uma linha de DRE (via linha_dre_categorias) — o
 // nome vem da própria linha, nunca de "Outras categorias" genérico (uma
 // linha de DRE é um agrupamento nomeado deliberado, não um resto de top-N).
+//
+// FOLHA: as categorias são as dela mesma. SUBTOTAL/SUBTOTAL_ALTERNATIVO
+// (as barras "acumulado" da cascata — Margem de contribuição, Lucro Bruto,
+// EBITDA etc.): nenhum conjunto de categorias próprio existe por trás, o
+// valor é a soma de toda linha FOLHA anterior — mesma semântica de
+// `acumulado` em calcularCascata (lib/relatorios/dre.ts: nunca reseta,
+// soma tudo desde a primeira linha), replicada aqui pra que o clique num
+// checkpoint da cascata mostre exatamente os lançamentos que compõem
+// aquele total (achado em pedido do usuário, 04/09/2026: só a barra FOLHA
+// era clicável, a maioria da cascata — os checkpoints — ficava morta).
 async function categoriasDaLinhaDre(supabase: Cliente, tenantId: string, linhaId: string): Promise<{ ids: string[]; nome: string }> {
-  const { data } = await supabase
+  const { data: todas } = await supabase
     .from("linhas_dre")
-    .select("rotulo, linha_dre_categorias(categoria_id)")
+    .select("id, ordem, rotulo, tipo_calc, linha_dre_categorias(categoria_id)")
     .eq("tenant_id", tenantId)
-    .eq("id", linhaId)
-    .maybeSingle();
-  if (!data) return { ids: [], nome: "-" };
-  return { ids: data.linha_dre_categorias.map((c) => c.categoria_id), nome: data.rotulo };
+    .order("ordem");
+  if (!todas) return { ids: [], nome: "-" };
+
+  const alvo = todas.find((l) => l.id === linhaId);
+  if (!alvo) return { ids: [], nome: "-" };
+
+  if (alvo.tipo_calc === "FOLHA") {
+    return { ids: alvo.linha_dre_categorias.map((c) => c.categoria_id), nome: alvo.rotulo };
+  }
+
+  const ids: string[] = [];
+  for (const linha of todas) {
+    if (linha.ordem > alvo.ordem) break;
+    if (linha.tipo_calc === "FOLHA") ids.push(...linha.linha_dre_categorias.map((c) => c.categoria_id));
+  }
+  return { ids, nome: alvo.rotulo };
 }
 
 // Mesmo dobramento de NAO_OPERACIONAL_* dentro de OPERACIONAL que

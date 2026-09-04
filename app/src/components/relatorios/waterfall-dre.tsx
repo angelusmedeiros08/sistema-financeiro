@@ -16,8 +16,10 @@ type LinhaWaterfall = {
   rotulo: string;
   tipoCalc: Database["public"]["Enums"]["tipo_linha_dre"];
   valorDireto: number;
-  // Só linhas FOLHA (delta) têm — checkpoint/final são o acumulado de
-  // várias linhas juntas, sem um conjunto de categorias único por trás.
+  // FOLHA (delta) e os checkpoints acumulados (SUBTOTAL/SUBTOTAL_ALTERNATIVO)
+  // têm — resolvido no back-end pra soma de toda categoria FOLHA anterior
+  // (ver ehClicavel/categoriasDaLinhaDre). Só RESULTADO_NAO_OPERACIONAL não
+  // tem, mas essa nem chega a virar barra própria (ver montarBarras).
   href?: string | null;
 };
 
@@ -82,6 +84,7 @@ function montarBarras(linhas: LinhaWaterfall[]): BarraWaterfall[] {
       alto: Math.max(0, acumulado),
       valorMostrado: acumulado,
       nivel: acumulado,
+      href: linha.href,
     });
   });
 

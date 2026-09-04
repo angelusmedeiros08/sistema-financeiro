@@ -18,9 +18,9 @@ import { formatarNumeroCompacto } from "@/lib/formatacao";
 import type { LinhaDreMatriz } from "@/lib/relatorios/dre";
 import { TabelaMatriz, criarColunaMatriz, ValorMatriz, CelulaAV, type TipoLinhaMatriz } from "@/components/tabela/tabela-matriz";
 
-// Célula com link só quando a linha é FOLHA (`href` presente) — subtotal/
-// final não têm um conjunto de categorias único por trás (ver comentário em
-// lib/relatorios/dre.ts, LinhaDreMatriz.href*). Link por célula, não linha
+// Célula com link quando `href` vem preenchido — FOLHA e os checkpoints
+// acumulados (SUBTOTAL/SUBTOTAL_ALTERNATIVO) têm, RESULTADO_NAO_OPERACIONAL
+// não (ver ehClicavel em lib/relatorios/dre.ts). Link por célula, não linha
 // inteira (cada mês tem seu próprio período) — mesmo padrão de
 // centro-custo-tabela.tsx.
 function CelulaValor({ valor, href }: { valor: number; href: string | null }) {

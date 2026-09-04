@@ -17,11 +17,20 @@ export type LinhaDreResultado = {
   tipoCalc: TipoCalcLinhaDre;
   valorDireto: number;
   valorAcumulado: number;
-  // Só linhas FOLHA têm link — SUBTOTAL/RESULTADO_NAO_OPERACIONAL são o
-  // acumulado de várias linhas FOLHA juntas, sem um único conjunto de
-  // categorias (logo sem lista de lançamentos) que bata com esse valor.
+  // null só em RESULTADO_NAO_OPERACIONAL (ver ehClicavel) — FOLHA e os
+  // checkpoints acumulados (SUBTOTAL/SUBTOTAL_ALTERNATIVO) sempre têm link.
   href: string | null;
 };
+
+// FOLHA e os checkpoints acumulados (SUBTOTAL/SUBTOTAL_ALTERNATIVO — Margem
+// de contribuição, Lucro Bruto, EBITDA etc.) viram link; só
+// RESULTADO_NAO_OPERACIONAL fica de fora (soma um bloco reiniciado à parte,
+// somaBlocoAtual em calcularCascata — semântica diferente de `acumulado`,
+// resolver certo exigiria replicar aquele reset em categoriasDaLinhaDre
+// também, e essa linha nem aparece na cascata pra justificar o esforço).
+function ehClicavel(tipoCalc: TipoCalcLinhaDre): boolean {
+  return tipoCalc === "FOLHA" || tipoCalc === "SUBTOTAL" || tipoCalc === "SUBTOTAL_ALTERNATIVO";
+}
 
 type LinhaComCategorias = {
   id: string;
@@ -108,17 +117,16 @@ export async function buscarDRE(
       tipoCalc: linha.tipo_calc,
       valorDireto,
       valorAcumulado: acumulado,
-      href:
-        linha.tipo_calc === "FOLHA"
-          ? montarHrefLancamentos({
-              tipoEntidade: "linha_dre",
-              entidadeId: linha.id,
-              regime: params.regime,
-              periodoInicio: params.dataInicio,
-              periodoFim: params.dataFim,
-              origemHref: params.origemHref,
-            })
-          : null,
+      href: ehClicavel(linha.tipo_calc)
+        ? montarHrefLancamentos({
+            tipoEntidade: "linha_dre",
+            entidadeId: linha.id,
+            regime: params.regime,
+            periodoInicio: params.dataInicio,
+            periodoFim: params.dataFim,
+            origemHref: params.origemHref,
+          })
+        : null,
     };
   });
 }
@@ -132,8 +140,9 @@ export type LinhaDreMatriz = {
   meses: number[];
   total: number;
   avPercentual: number;
-  // Só linhas FOLHA — mesmo motivo de LinhaDreResultado.href. Um href por
-  // mês (período daquele mês específico) + um pro Total (ano inteiro).
+  // null só em RESULTADO_NAO_OPERACIONAL — mesmo critério de ehClicavel em
+  // LinhaDreResultado.href. Um href por mês (período daquele mês
+  // específico) + um pro Total (ano inteiro).
   hrefsPorMes: (string | null)[];
   hrefTotal: string | null;
 };
@@ -188,7 +197,7 @@ export async function buscarDREMatriz(
 
   return linhas.map((linha) => {
     const total = colunaTotal.get(linha.id) ?? 0;
-    const ehFolha = linha.tipo_calc === "FOLHA";
+    const clicavel = ehClicavel(linha.tipo_calc);
     const hrefPara = (periodoInicio: string, periodoFim: string) =>
       montarHrefLancamentos({
         tipoEntidade: "linha_dre",
@@ -207,8 +216,8 @@ export async function buscarDREMatriz(
       meses: colunasMensais.map((c) => c.get(linha.id) ?? 0),
       total,
       avPercentual: totalReceitasOperacionais !== 0 ? total / totalReceitasOperacionais : 0,
-      hrefsPorMes: ehFolha ? limitesDoMes.map((m) => hrefPara(m.inicio, m.fim)) : new Array(12).fill(null),
-      hrefTotal: ehFolha ? hrefPara(dataInicio, dataFim) : null,
+      hrefsPorMes: clicavel ? limitesDoMes.map((m) => hrefPara(m.inicio, m.fim)) : new Array(12).fill(null),
+      hrefTotal: clicavel ? hrefPara(dataInicio, dataFim) : null,
     };
   });
 }
