@@ -23,6 +23,7 @@ import {
 } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { GRUPOS_CONFIGURACOES } from "@/app/(app)/configuracoes/grupos";
 import { GRUPOS_RELATORIOS } from "@/app/(app)/relatorios/grupos";
 
@@ -126,7 +127,12 @@ function BotaoEstrela({ ativo, onToggle }: { ativo: boolean; onToggle: () => voi
 export function SidebarConteudo({ emailUsuario, emSheet = false }: { emailUsuario?: string; emSheet?: boolean }) {
   const pathname = usePathname();
 
-  const [grupoAberto, setGrupoAberto] = useState<string | null>(() => grupoPelaRota(pathname));
+  // No desktop o grupo some quando o painel fecha (vira flyout à parte, ver
+  // renderLista) — abrir já com um grupo pré-selecionado plantaria um
+  // flyout fantasma antes de qualquer clique. No Sheet mobile o grupo troca
+  // a tela inteira (padrão drill-down), então continua fazendo sentido abrir
+  // direto na seção da rota atual.
+  const [grupoAberto, setGrupoAberto] = useState<string | null>(() => (emSheet ? grupoPelaRota(pathname) : null));
   const [aberta, setAberta] = useState(false);
   const [favoritos, setFavoritos] = useState<string[]>([]);
   const favoritosHidratados = useRef(false);
@@ -169,7 +175,10 @@ export function SidebarConteudo({ emailUsuario, emSheet = false }: { emailUsuari
 
   function agendarFechar() {
     limparTimers();
-    timerFechar.current = setTimeout(() => setAberta(false), 250);
+    timerFechar.current = setTimeout(() => {
+      setAberta(false);
+      setGrupoAberto(null);
+    }, 250);
   }
 
   function aoFocar() {
@@ -181,6 +190,7 @@ export function SidebarConteudo({ emailUsuario, emSheet = false }: { emailUsuari
     if (!e.currentTarget.contains(e.relatedTarget as Node)) {
       limparTimers();
       setAberta(false);
+      setGrupoAberto(null);
     }
   }
 
@@ -203,7 +213,10 @@ export function SidebarConteudo({ emailUsuario, emSheet = false }: { emailUsuari
     .filter((i): i is SubItemNav => Boolean(i));
 
   function renderLista() {
-    if (itemDoGrupo?.subItens) {
+    // Só o Sheet mobile troca a tela inteira pelo grupo (drill-down, sem
+    // espaço pra flyout). No desktop cada grupo abre seu próprio flyout ao
+    // lado (ver abaixo) — a lista de nível superior nunca é substituída.
+    if (emSheet && itemDoGrupo?.subItens) {
       return (
         <nav className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto">
           <button
@@ -292,13 +305,12 @@ export function SidebarConteudo({ emailUsuario, emSheet = false }: { emailUsuari
               }
 
               if (item.subItens) {
-                return (
+                const botao = (
                   <button
-                    key={item.href}
                     type="button"
-                    onClick={() => setGrupoAberto(item.href)}
+                    onClick={emSheet ? () => setGrupoAberto(item.href) : undefined}
                     className={cn(
-                      "flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-semibold transition-colors",
+                      "flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-semibold transition-colors",
                       ativo ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground",
                     )}
                   >
@@ -306,6 +318,52 @@ export function SidebarConteudo({ emailUsuario, emSheet = false }: { emailUsuari
                     <span className="flex-1 text-left">{item.label}</span>
                     <CaretRight size={13} />
                   </button>
+                );
+
+                if (emSheet) {
+                  return (
+                    <div key={item.href}>{botao}</div>
+                  );
+                }
+
+                // Desktop: cada grupo abre um flyout do próprio tamanho ao
+                // lado, em vez de substituir a lista inteira pelo painel
+                // 100vh do grupo — Comercial (3 itens) e Relatórios (~9)
+                // deixavam de sobrar espaço vazio ou de comprimir a lista,
+                // igual ao padrão observado na Conta Azul (achado em
+                // feedback do usuário, 03/09/2026).
+                return (
+                  <Popover
+                    key={item.href}
+                    open={grupoAberto === item.href}
+                    onOpenChange={(open) => setGrupoAberto(open ? item.href : null)}
+                  >
+                    <PopoverTrigger asChild>{botao}</PopoverTrigger>
+                    <PopoverContent side="right" align="start" sideOffset={12} className="w-56 flex-col gap-0.5 p-2">
+                      <p className="mb-1 px-2 text-[10px] font-bold uppercase tracking-wide text-muted-foreground/70">
+                        {item.label}
+                      </p>
+                      {item.subItens.map((sub) => {
+                        const subAtivo = pathname === sub.href;
+                        const subFavoritado = favoritos.includes(sub.href);
+                        return (
+                          <div key={sub.href} className="group/item flex items-center gap-1">
+                            <Link
+                              href={sub.href}
+                              onClick={() => setGrupoAberto(null)}
+                              className={cn(
+                                "flex-1 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors",
+                                subAtivo ? "bg-muted font-semibold text-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                              )}
+                            >
+                              {sub.label}
+                            </Link>
+                            <BotaoEstrela ativo={subFavoritado} onToggle={() => alternarFavorito(sub.href, sub.label)} />
+                          </div>
+                        );
+                      })}
+                    </PopoverContent>
+                  </Popover>
                 );
               }
 
@@ -387,17 +445,23 @@ export function SidebarConteudo({ emailUsuario, emSheet = false }: { emailUsuari
 
             if (item.subItens) {
               return (
-                <div
+                <button
                   key={item.href}
+                  type="button"
                   title={item.label}
+                  onClick={() => {
+                    limparTimers();
+                    setAberta(true);
+                    setGrupoAberto(item.href);
+                  }}
                   className={cn(
                     "flex size-9 shrink-0 items-center justify-center rounded-lg transition-colors",
-                    ativo ? "bg-muted text-foreground" : "text-muted-foreground",
+                    ativo ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground",
                   )}
                 >
                   <span className="sr-only">{item.label}</span>
                   <Icon size={20} weight="bold" />
-                </div>
+                </button>
               );
             }
 
