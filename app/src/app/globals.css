@@ -171,3 +171,26 @@
     @apply font-heading;
   }
 }
+
+/* Scroll fino — troca a barra nativa (bloco cinza chapado, sempre clara
+   mesmo no tema escuro) por uma versão translúcida na cor do próprio texto
+   secundário, mesmo em Firefox (scrollbar-width/color) e WebKit/Blink
+   (pseudo-elementos). Achado em feedback de design na sidebar, 04/09/2026. */
+.scroll-fino {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--muted-foreground) 45%, transparent) transparent;
+}
+.scroll-fino::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.scroll-fino::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scroll-fino::-webkit-scrollbar-thumb {
+  background-color: color-mix(in srgb, var(--muted-foreground) 45%, transparent);
+  border-radius: 9999px;
+}
+.scroll-fino::-webkit-scrollbar-thumb:hover {
+  background-color: color-mix(in srgb, var(--muted-foreground) 75%, transparent);
+}
