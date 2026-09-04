@@ -371,6 +371,14 @@ export function SidebarConteudo({ emailUsuario, emSheet = false }: { emailUsuari
                       collisionPadding={12}
                       className="scroll-fino w-56 max-h-[var(--radix-popover-content-available-height)] flex-col gap-0.5 overflow-y-auto p-2"
                       onOpenAutoFocus={(e) => e.preventDefault()}
+                      // Ao fechar (grupoAberto vira null pelo clique num
+                      // subitem), o Radix por padrão devolve o foco pro
+                      // botão-gatilho ("Comercial" etc) — que está dentro da
+                      // área com onFocus={aoFocar}, reabrindo o painel um
+                      // instante depois de fecharPainel() tê-lo fechado
+                      // (achado em uso real, 04/09/2026: clique em Vendas
+                      // navegava mas o painel voltava a aparecer expandido).
+                      onCloseAutoFocus={(e) => e.preventDefault()}
                     >
                       <p className="sticky top-0 z-10 mb-1 border-b border-border bg-popover px-2 pb-1.5 text-[11px] font-bold uppercase tracking-wide text-foreground/80">
                         {item.label}
