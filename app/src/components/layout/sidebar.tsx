@@ -450,9 +450,17 @@ export function SidebarConteudo({ emailUsuario, emSheet = false }: { emailUsuari
                   type="button"
                   title={item.label}
                   onClick={() => {
+                    // Só abre o painel (igual ao hover) — NÃO pré-seleciona
+                    // o grupo aqui. Fazer isso mudava o `open` do Popover
+                    // do grupo a partir de um clique que, pro Radix, não
+                    // veio do próprio trigger dele — a checagem de "clique
+                    // fora" do Popover fechava o flyout no mesmo instante
+                    // em que abria (achado em uso real, 03/09/2026: clicar
+                    // no ícone não abria nada). O clique na própria linha
+                    // do painel (o PopoverTrigger de verdade) continua
+                    // funcionando normalmente.
                     limparTimers();
                     setAberta(true);
-                    setGrupoAberto(item.href);
                   }}
                   className={cn(
                     "flex size-9 shrink-0 items-center justify-center rounded-lg transition-colors",
@@ -482,7 +490,11 @@ export function SidebarConteudo({ emailUsuario, emSheet = false }: { emailUsuari
           })}
         </div>
 
-        {/* Overlay: some sobre o conteúdo ao passar o mouse/focar, nunca reflui o layout por baixo. */}
+        {/* Overlay: cobre o rail (volta a ser uma coluna só, sem o rail de
+            ícones ficando visível do lado — achado em feedback do usuário,
+            03/09/2026). O ícone do rail não seleciona mais grupo nenhum no
+            clique (só abre o painel, igual ao hover), então não corre mais
+            risco de o clique cair numa linha errada do painel por baixo. */}
         <div
           className={cn(
             "fixed inset-y-0 left-0 z-40 w-[260px] border-r border-border shadow-2xl transition-[opacity,transform] duration-150",
