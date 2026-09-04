@@ -11,7 +11,7 @@ const ROTULO: Record<NivelLiquidez, string> = {
 
 const COR: Record<NivelLiquidez, string> = {
   RISCO: "bg-destructive/12 text-destructive-foreground",
-  ATENCAO: "bg-[#C98A1F]/12 text-[#96690F]",
+  ATENCAO: "bg-[#C98A1F]/12 text-[#96690F] dark:bg-[#C98A1F]/20 dark:text-[#F0BB4E]",
   SAUDAVEL: "bg-positivo/12 text-positivo-foreground",
 };
 

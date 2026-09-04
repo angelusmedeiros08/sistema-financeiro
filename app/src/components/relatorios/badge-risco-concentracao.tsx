@@ -11,7 +11,7 @@ const ROTULO: Record<NivelRiscoConcentracao, string> = {
 
 const COR: Record<NivelRiscoConcentracao, string> = {
   ALTO: "bg-destructive/12 text-destructive-foreground",
-  MEDIO: "bg-[#C98A1F]/12 text-[#96690F]",
+  MEDIO: "bg-[#C98A1F]/12 text-[#96690F] dark:bg-[#C98A1F]/20 dark:text-[#F0BB4E]",
   BAIXO: "bg-positivo/12 text-positivo-foreground",
 };
 

@@ -75,7 +75,14 @@ export function ContaLinha({ conta, todasContas }: { conta: ContaContabilComNive
           </span>
         </TableCell>
         <TableCell>
-          <Badge className={cn("border-none font-semibold", conta.natureza === "DEVEDORA" ? "bg-[#7A8B5C]/12 text-[#4F5C3A]" : "bg-positivo/12 text-positivo-foreground")}>
+          <Badge
+            className={cn(
+              "border-none font-semibold",
+              conta.natureza === "DEVEDORA"
+                ? "bg-[#7A8B5C]/12 text-[#4F5C3A] dark:bg-[#7A8B5C]/25 dark:text-[#B7C99A]"
+                : "bg-positivo/12 text-positivo-foreground",
+            )}
+          >
             {conta.natureza === "DEVEDORA" ? "Devedora" : "Credora"}
           </Badge>
         </TableCell>

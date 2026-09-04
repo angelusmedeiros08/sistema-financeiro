@@ -41,7 +41,12 @@ function criarColunas(maior: number) {
       id: "tipo",
       header: "Tipo",
       cell: (info) => (
-        <Badge className={cn("border-none font-semibold", info.getValue() ? "bg-[#7A8B5C]/12 text-[#4F5C3A]" : "bg-muted text-muted-foreground")}>
+        <Badge
+          className={cn(
+            "border-none font-semibold",
+            info.getValue() ? "bg-[#7A8B5C]/12 text-[#4F5C3A] dark:bg-[#7A8B5C]/25 dark:text-[#B7C99A]" : "bg-muted text-muted-foreground",
+          )}
+        >
           {info.getValue() ? "Fixo" : "Variável"}
         </Badge>
       ),

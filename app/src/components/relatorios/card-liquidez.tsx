@@ -12,7 +12,7 @@ const COR_BARRA: Record<LiquidezAproximada["nivel"], string> = {
 
 const COR_TEXTO: Record<LiquidezAproximada["nivel"], string> = {
   RISCO: "text-destructive",
-  ATENCAO: "text-[#96690F]",
+  ATENCAO: "text-[#96690F] dark:text-[#F0BB4E]",
   SAUDAVEL: "text-positivo",
 };
 

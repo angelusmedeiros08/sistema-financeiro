@@ -30,9 +30,9 @@ const ROTULO_TIPO: Record<LinhaDreConfig["tipoCalc"], string> = {
 
 const CLASSE_BADGE_TIPO: Record<LinhaDreConfig["tipoCalc"], string> = {
   FOLHA: "bg-muted text-muted-foreground",
-  SUBTOTAL: "bg-[#7A8B5C]/12 text-[#4F5C3A]",
-  SUBTOTAL_ALTERNATIVO: "bg-[#7A8B5C]/12 text-[#4F5C3A]",
-  RESULTADO_NAO_OPERACIONAL: "bg-[#C98A1F]/12 text-[#8A5E14]",
+  SUBTOTAL: "bg-[#7A8B5C]/12 text-[#4F5C3A] dark:bg-[#7A8B5C]/25 dark:text-[#B7C99A]",
+  SUBTOTAL_ALTERNATIVO: "bg-[#7A8B5C]/12 text-[#4F5C3A] dark:bg-[#7A8B5C]/25 dark:text-[#B7C99A]",
+  RESULTADO_NAO_OPERACIONAL: "bg-[#C98A1F]/12 text-[#8A5E14] dark:bg-[#C98A1F]/20 dark:text-[#F0BB4E]",
 };
 
 export function LinhaDreItem({

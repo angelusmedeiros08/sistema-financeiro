@@ -69,7 +69,7 @@ type VarianteBadge = "positivo" | "pendente" | "negativo" | "neutro";
 
 const TONS_BADGE: Record<VarianteBadge, string> = {
   positivo: "bg-positivo/12 text-positivo-foreground",
-  pendente: "bg-[#C98A1F]/12 text-[#96690F]",
+  pendente: "bg-[#C98A1F]/12 text-[#96690F] dark:bg-[#C98A1F]/20 dark:text-[#F0BB4E]",
   negativo: "bg-destructive/12 text-destructive-foreground",
   neutro: "bg-muted text-muted-foreground",
 };
