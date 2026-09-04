@@ -346,6 +346,16 @@ export function SidebarConteudo({ emailUsuario, emSheet = false }: { emailUsuari
                       collisionPadding={12}
                       className="scroll-fino w-56 max-h-[var(--radix-popover-content-available-height)] flex-col gap-0.5 overflow-y-auto p-2"
                       onOpenAutoFocus={(e) => e.preventDefault()}
+                      // O flyout renderiza num Portal do Radix — fica fora da
+                      // árvore DOM do wrapper que tem onMouseEnter/onMouseLeave
+                      // (railRef). Sem isso, mover o mouse do botão pro flyout
+                      // "sai" da subárvore do wrapper aos olhos do navegador,
+                      // dispara o mouseleave dele, e os 250ms de agendarFechar
+                      // fecham painel E flyout juntos enquanto o usuário ainda
+                      // está tentando clicar num subitem lá dentro (achado em
+                      // uso real, 04/09/2026: "não tá entrando direito").
+                      onMouseEnter={limparTimers}
+                      onMouseLeave={agendarFechar}
                     >
                       <p className="sticky top-0 z-10 mb-1 border-b border-border bg-popover px-2 pb-1.5 text-[11px] font-bold uppercase tracking-wide text-foreground/80">
                         {item.label}
