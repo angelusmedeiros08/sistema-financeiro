@@ -339,7 +339,13 @@ export function SidebarConteudo({ emailUsuario, emSheet = false }: { emailUsuari
                     onOpenChange={(open) => setGrupoAberto(open ? item.href : null)}
                   >
                     <PopoverTrigger asChild>{botao}</PopoverTrigger>
-                    <PopoverContent side="right" align="start" sideOffset={12} className="w-56 flex-col gap-0.5 p-2">
+                    <PopoverContent
+                      side="right"
+                      align="start"
+                      sideOffset={12}
+                      className="w-56 flex-col gap-0.5 p-2"
+                      onOpenAutoFocus={(e) => e.preventDefault()}
+                    >
                       <p className="mb-1 px-2 text-[10px] font-bold uppercase tracking-wide text-muted-foreground/70">
                         {item.label}
                       </p>
