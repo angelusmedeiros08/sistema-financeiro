@@ -297,7 +297,6 @@ export function SidebarConteudo({ emailUsuario, emSheet = false }: { emailUsuari
                     key={item.href}
                     type="button"
                     onClick={() => setGrupoAberto(item.href)}
-                    onMouseEnter={() => setGrupoAberto(item.href)}
                     className={cn(
                       "flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-semibold transition-colors",
                       ativo ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground",
@@ -379,7 +378,6 @@ export function SidebarConteudo({ emailUsuario, emSheet = false }: { emailUsuari
                 <div
                   key={item.href}
                   title={`${item.label} (em breve)`}
-                  onMouseEnter={() => setGrupoAberto(null)}
                   className="flex size-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground/40"
                 >
                   <Icon size={20} weight="bold" />
@@ -392,7 +390,6 @@ export function SidebarConteudo({ emailUsuario, emSheet = false }: { emailUsuari
                 <div
                   key={item.href}
                   title={item.label}
-                  onMouseEnter={() => setGrupoAberto(item.href)}
                   className={cn(
                     "flex size-9 shrink-0 items-center justify-center rounded-lg transition-colors",
                     ativo ? "bg-muted text-foreground" : "text-muted-foreground",
@@ -409,7 +406,6 @@ export function SidebarConteudo({ emailUsuario, emSheet = false }: { emailUsuari
                 key={item.href}
                 href={item.href}
                 title={item.label}
-                onMouseEnter={() => setGrupoAberto(null)}
                 className={cn(
                   "flex size-9 shrink-0 items-center justify-center rounded-lg transition-colors",
                   ativo ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground",
