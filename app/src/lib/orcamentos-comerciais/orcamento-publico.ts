@@ -1,6 +1,7 @@
 import "server-only";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { hojeIsoBrasil } from "@/lib/data-brasil";
+import { acessoLiberado } from "@/lib/pagamentos/plano";
 import { aprovarOrcamento, recusarOrcamento } from "./orcamentos-comerciais";
 import type { Database } from "@/utils/supabase/database.types";
 
@@ -82,13 +83,22 @@ async function resolverOrcamentoPorToken(token: string): Promise<{ tenantId: str
   const supabase = createAdminClient();
   const { data: orcamento } = await supabase
     .from("orcamentos_comerciais")
-    .select("id, tenant_id, status, validade")
+    .select("id, tenant_id, status, validade, tenants(status_assinatura, trial_termina_em)")
     .eq("token_publico", token)
     .maybeSingle();
 
   if (!orcamento) return { erro: "Orçamento não encontrado." };
   const expirado = orcamento.status === "ENVIADO" && !!orcamento.validade && orcamento.validade < hojeIsoBrasil();
   if (orcamento.status !== "ENVIADO" || expirado) {
+    return { erro: "Esse orçamento já foi resolvido ou não está mais disponível." };
+  }
+  // Mesmo gate de assinatura de (app)/(portal) — achado de auditoria de
+  // segurança (05/09/2026): sem isso, um tenant inadimplente/cancelado
+  // continuava com links de orçamento já enviados gerando venda de
+  // verdade via createAdminClient, que não passa pelo gate de nenhum
+  // layout.
+  const statusAssinatura = (orcamento.tenants?.status_assinatura as "trial" | "ativo" | "inadimplente" | "cancelado" | undefined) ?? null;
+  if (!acessoLiberado(statusAssinatura, orcamento.tenants?.trial_termina_em ?? null)) {
     return { erro: "Esse orçamento já foi resolvido ou não está mais disponível." };
   }
   return { tenantId: orcamento.tenant_id, orcamentoId: orcamento.id };
