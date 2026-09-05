@@ -409,59 +409,72 @@ export async function desfazerImportacaoFinanceira(
   const itensParaReverter = params.incluirModificados ? [...previaAtual.aReverter, ...previaAtual.protegidosPorModificacao] : previaAtual.aReverter;
 
   const admin = createAdminClient();
-  let eventosRevertidos = 0;
   const eventosComErro: { evento_id: string; erro: string }[] = [];
 
-  for (const item of itensParaReverter) {
-    const resultado = await estornarEventoFinanceiro(supabase, {
-      tenant_id: params.tenant_id,
-      evento_id: item.evento_id,
-      motivo: "Importação desfeita",
-      criado_por: params.criado_por,
-      // Desfazer importação é reversão total por definição — quitado ou
-      // não, a baixa também precisa sumir do razão pra relatório e
-      // indicador pararem de contar um recebimento/pagamento cujo evento
-      // de origem não existe mais.
-      estornarBaixasAutomaticamente: true,
-    });
-    if ("erro" in resultado) {
-      eventosComErro.push({ evento_id: item.evento_id, erro: resultado.erro });
-      continue;
-    }
-    eventosRevertidos++;
+  // Cada item reverte um evento_financeiro_id diferente, sem estado
+  // compartilhado entre eles — igual ao cron de alertas (Promise.all entre
+  // tenants, achado P0 de escalabilidade de 25/08). Antes rodava um item
+  // por vez: uma importação de dezenas/centenas de linhas arriscava
+  // estourar o timeout da function no meio do desfazer, deixando a
+  // importação parcialmente desfeita (achado de auditoria de desempenho,
+  // 05/09/2026 — a prévia já tinha sido corrigida em 01/09, a execução não).
+  const revertidos = await Promise.all(
+    itensParaReverter.map(async (item) => {
+      const resultado = await estornarEventoFinanceiro(supabase, {
+        tenant_id: params.tenant_id,
+        evento_id: item.evento_id,
+        motivo: "Importação desfeita",
+        criado_por: params.criado_por,
+        // Desfazer importação é reversão total por definição — quitado ou
+        // não, a baixa também precisa sumir do razão pra relatório e
+        // indicador pararem de contar um recebimento/pagamento cujo evento
+        // de origem não existe mais.
+        estornarBaixasAutomaticamente: true,
+      });
+      if ("erro" in resultado) {
+        eventosComErro.push({ evento_id: item.evento_id, erro: resultado.erro });
+        return false;
+      }
 
-    // Item "puro" (sem baixa, sem modificação desde a criação): o efeito
-    // contábil já ficou permanentemente registrado no razão imutável
-    // (lançamento original + estorno) — o "stub" operacional (evento/parcela/
-    // rateio) pode ser apagado de verdade, o que também libera os cadastros
-    // criados só por ele. Item incluído por "incluir modificados" mantém o
-    // stub como registro auditável, porque alguém mexeu nele depois da importação.
-    let eventoFinanceiroIdFinal: string | null = item.evento_id;
-    if (idsPuros.has(item.item_id)) {
-      await supabase.from("importacoes_itens").update({ evento_financeiro_id: null }).eq("id", item.item_id);
-      const { error: erroExclusao } = await admin.from("eventos_financeiros").delete().eq("id", item.evento_id).eq("tenant_id", params.tenant_id);
-      eventoFinanceiroIdFinal = erroExclusao ? item.evento_id : null;
-    }
+      // Item "puro" (sem baixa, sem modificação desde a criação): o efeito
+      // contábil já ficou permanentemente registrado no razão imutável
+      // (lançamento original + estorno) — o "stub" operacional (evento/parcela/
+      // rateio) pode ser apagado de verdade, o que também libera os cadastros
+      // criados só por ele. Item incluído por "incluir modificados" mantém o
+      // stub como registro auditável, porque alguém mexeu nele depois da importação.
+      let eventoFinanceiroIdFinal: string | null = item.evento_id;
+      if (idsPuros.has(item.item_id)) {
+        await supabase.from("importacoes_itens").update({ evento_financeiro_id: null }).eq("id", item.item_id);
+        const { error: erroExclusao } = await admin.from("eventos_financeiros").delete().eq("id", item.evento_id).eq("tenant_id", params.tenant_id);
+        eventoFinanceiroIdFinal = erroExclusao ? item.evento_id : null;
+      }
 
-    await supabase
-      .from("importacoes_itens")
-      .update({ desfeito_em: new Date().toISOString(), desfeito_por: params.criado_por, evento_financeiro_id: eventoFinanceiroIdFinal })
-      .eq("id", item.item_id);
-  }
+      await supabase
+        .from("importacoes_itens")
+        .update({ desfeito_em: new Date().toISOString(), desfeito_por: params.criado_por, evento_financeiro_id: eventoFinanceiroIdFinal })
+        .eq("id", item.item_id);
+      return true;
+    }),
+  );
+  const eventosRevertidos = revertidos.filter(Boolean).length;
 
   // Entidades sem policy de DELETE de propósito (mesmo padrão de
   // desfazerImportacao de Pessoas) — admin client só pra este DELETE
   // estreito, guardado pela prévia recém-recalculada, não por uma policy geral.
-  let entidadesRemovidas = 0;
+  // Cada delete é uma linha independente por id — mesmo raciocínio de
+  // paralelização acima.
   const entidadesComErro: { tipo_entidade: TipoEntidade; nome: string; erro: string }[] = [];
-  for (const e of previaAtual.entidadesARemover) {
-    const { error } = await admin.from(TABELA_POR_TIPO_ENTIDADE[e.tipo_entidade]).delete().eq("id", e.entidade_id).eq("tenant_id", params.tenant_id);
-    if (error) {
-      entidadesComErro.push({ tipo_entidade: e.tipo_entidade, nome: e.nome, erro: error.message });
-    } else {
-      entidadesRemovidas++;
-    }
-  }
+  const entidadesResultado = await Promise.all(
+    previaAtual.entidadesARemover.map(async (e) => {
+      const { error } = await admin.from(TABELA_POR_TIPO_ENTIDADE[e.tipo_entidade]).delete().eq("id", e.entidade_id).eq("tenant_id", params.tenant_id);
+      if (error) {
+        entidadesComErro.push({ tipo_entidade: e.tipo_entidade, nome: e.nome, erro: error.message });
+        return false;
+      }
+      return true;
+    }),
+  );
+  const entidadesRemovidas = entidadesResultado.filter(Boolean).length;
 
   await finalizarImportacaoFinanceira(supabase, { importacao_id: params.importacao_id });
 

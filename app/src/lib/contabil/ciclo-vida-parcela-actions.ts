@@ -72,14 +72,19 @@ export async function cancelarParcelasEmLoteAction(
   if ("erro" in contexto) return { erro: contexto.erro };
 
   const supabase = await createClient();
-  let canceladas = 0;
   const falhas: { parcelaId: string; erro: string }[] = [];
 
-  for (const parcelaId of parcelaIds) {
-    const resultado = await cancelarParcela(supabase, { tenant_id: contexto.tenantId, parcela_id: parcelaId, motivo: motivoLimpo });
-    if ("erro" in resultado) falhas.push({ parcelaId, erro: resultado.erro });
-    else canceladas++;
-  }
+  // Cada parcela cancela independente das outras — rodava uma por vez;
+  // uma seleção de 100-200 parcelas (a própria feature convida a esse
+  // volume) virava 100-200 round-trips sequenciais numa única requisição
+  // (achado de auditoria de desempenho, 05/09/2026).
+  const resultados = await Promise.all(
+    parcelaIds.map((parcelaId) => cancelarParcela(supabase, { tenant_id: contexto.tenantId, parcela_id: parcelaId, motivo: motivoLimpo })),
+  );
+  resultados.forEach((resultado, i) => {
+    if ("erro" in resultado) falhas.push({ parcelaId: parcelaIds[i], erro: resultado.erro });
+  });
+  const canceladas = resultados.length - falhas.length;
 
   revalidarPaginasFinanceiras();
   return { canceladas, falhas };

@@ -410,7 +410,6 @@ export async function desfazerImportacaoPessoas(
     eventosPorPessoa.set(e.pessoa_id, lista);
   }
 
-  let eventosRevertidos = 0;
   const eventosComErro: { evento_id: string; erro: string }[] = [];
   // Pessoa some deste set só se TODOS os lançamentos dela reverteram —
   // parcial não remove nada, senão um evento continuaria vivo apontando
@@ -418,23 +417,37 @@ export async function desfazerImportacaoPessoas(
   // renegociada, que estornarEventoFinanceiro ainda barra).
   const pessoasComFalhaDeEvento = new Set<string>();
 
-  for (const [pessoaId, eventos] of eventosPorPessoa) {
-    for (const ev of eventos) {
-      const resultado = await estornarEventoFinanceiro(supabase, {
-        tenant_id: params.tenant_id,
-        evento_id: ev.evento_id,
-        motivo: "Importação de clientes/fornecedores desfeita",
-        criado_por: params.criado_por,
-        estornarBaixasAutomaticamente: true,
+  // Cada evento reverte um evento_financeiro_id diferente, sem estado
+  // compartilhado entre pessoas nem entre eventos da mesma pessoa — mesmo
+  // raciocínio do desfazer de importação financeira (achado de auditoria
+  // de desempenho, 05/09/2026: a versão sequencial arriscava estourar o
+  // timeout da function e deixar a importação parcialmente desfeita).
+  const contagens = await Promise.all(
+    Array.from(eventosPorPessoa.entries()).map(async ([pessoaId, eventos]) => {
+      const resultados = await Promise.all(
+        eventos.map((ev) =>
+          estornarEventoFinanceiro(supabase, {
+            tenant_id: params.tenant_id,
+            evento_id: ev.evento_id,
+            motivo: "Importação de clientes/fornecedores desfeita",
+            criado_por: params.criado_por,
+            estornarBaixasAutomaticamente: true,
+          }),
+        ),
+      );
+      let revertidos = 0;
+      resultados.forEach((resultado, i) => {
+        if ("erro" in resultado) {
+          eventosComErro.push({ evento_id: eventos[i].evento_id, erro: resultado.erro });
+          pessoasComFalhaDeEvento.add(pessoaId);
+        } else {
+          revertidos++;
+        }
       });
-      if ("erro" in resultado) {
-        eventosComErro.push({ evento_id: ev.evento_id, erro: resultado.erro });
-        pessoasComFalhaDeEvento.add(pessoaId);
-      } else {
-        eventosRevertidos++;
-      }
-    }
-  }
+      return revertidos;
+    }),
+  );
+  const eventosRevertidos = contagens.reduce((acc, n) => acc + n, 0);
 
   const pessoasRemoviveis = previaAtual.pessoasARemover.filter((p) => !pessoasComFalhaDeEvento.has(p.pessoa_id));
 
@@ -460,42 +473,46 @@ export async function desfazerImportacaoPessoas(
   }
 
   const admin = createAdminClient();
-  let removidas = 0;
   const idsRemovidosComSucesso: string[] = [];
   const pessoasComErroDeDelete: PessoaProtegida[] = [];
 
-  for (const p of pessoasRemoviveis) {
-    // Estornar o evento não apaga a linha (fica de propósito, ver
-    // comentário da função) — ela continua com pessoa_id apontando pra
-    // quem vamos remover, e a FK é NO ACTION, sem cascade nem set null.
-    // Sem desvincular aqui primeiro, o DELETE da pessoa quebra com erro de
-    // FK mesmo depois do lançamento já ter sido revertido com sucesso
-    // (achado testando ao vivo — a prévia prometia remover a pessoa, mas
-    // ela ficava presa mesmo com o lançamento já estornado). O lançamento
-    // em si continua intacto, só perde a referência de "quem" — condizente
-    // com o cadastro ter deixado de existir. Usa `eq pessoa_id` (não a
-    // lista de eventos revertidos agora) de propósito: pega também um
-    // evento que já tivesse sido estornado numa tentativa anterior desta
-    // mesma pessoa — esse nem aparece mais em eventosAReverter (a prévia só
-    // lista evento vivo), mas continua com o FK preso do jeito antigo.
-    const { error: erroDesvincular } = await admin
-      .from("eventos_financeiros")
-      .update({ pessoa_id: null })
-      .eq("pessoa_id", p.pessoa_id)
-      .eq("tenant_id", params.tenant_id);
-    if (erroDesvincular) {
-      pessoasComErroDeDelete.push({ pessoa_id: p.pessoa_id, nome: p.nome, motivo: erroDesvincular.message });
-      continue;
-    }
+  // Cada pessoa é uma linha independente — mesmo raciocínio de
+  // paralelização do loop de eventos acima (achado de auditoria de
+  // desempenho, 05/09/2026).
+  await Promise.all(
+    pessoasRemoviveis.map(async (p) => {
+      // Estornar o evento não apaga a linha (fica de propósito, ver
+      // comentário da função) — ela continua com pessoa_id apontando pra
+      // quem vamos remover, e a FK é NO ACTION, sem cascade nem set null.
+      // Sem desvincular aqui primeiro, o DELETE da pessoa quebra com erro de
+      // FK mesmo depois do lançamento já ter sido revertido com sucesso
+      // (achado testando ao vivo — a prévia prometia remover a pessoa, mas
+      // ela ficava presa mesmo com o lançamento já estornado). O lançamento
+      // em si continua intacto, só perde a referência de "quem" — condizente
+      // com o cadastro ter deixado de existir. Usa `eq pessoa_id` (não a
+      // lista de eventos revertidos agora) de propósito: pega também um
+      // evento que já tivesse sido estornado numa tentativa anterior desta
+      // mesma pessoa — esse nem aparece mais em eventosAReverter (a prévia só
+      // lista evento vivo), mas continua com o FK preso do jeito antigo.
+      const { error: erroDesvincular } = await admin
+        .from("eventos_financeiros")
+        .update({ pessoa_id: null })
+        .eq("pessoa_id", p.pessoa_id)
+        .eq("tenant_id", params.tenant_id);
+      if (erroDesvincular) {
+        pessoasComErroDeDelete.push({ pessoa_id: p.pessoa_id, nome: p.nome, motivo: erroDesvincular.message });
+        return;
+      }
 
-    const { error } = await admin.from("pessoas").delete().eq("id", p.pessoa_id).eq("tenant_id", params.tenant_id);
-    if (error) {
-      pessoasComErroDeDelete.push({ pessoa_id: p.pessoa_id, nome: p.nome, motivo: error.message });
-    } else {
-      removidas++;
-      idsRemovidosComSucesso.push(p.pessoa_id);
-    }
-  }
+      const { error } = await admin.from("pessoas").delete().eq("id", p.pessoa_id).eq("tenant_id", params.tenant_id);
+      if (error) {
+        pessoasComErroDeDelete.push({ pessoa_id: p.pessoa_id, nome: p.nome, motivo: error.message });
+      } else {
+        idsRemovidosComSucesso.push(p.pessoa_id);
+      }
+    }),
+  );
+  const removidas = idsRemovidosComSucesso.length;
 
   const itemIds = idsRemovidosComSucesso.map((id) => itemIdPorPessoa.get(id)).filter((id): id is string => !!id);
   if (itemIds.length > 0) {
