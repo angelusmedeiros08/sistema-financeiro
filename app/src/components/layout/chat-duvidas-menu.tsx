@@ -4,13 +4,13 @@ import { useState } from "react";
 import { ChatCircleDots } from "@phosphor-icons/react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { EstadoVazio } from "@/components/ui/estado-vazio";
+import { ChatPainel } from "./chat-painel";
 
-// Ponto de entrada visual pro chat de dúvidas (achado em pedido do usuário,
-// 03/09/2026 — pensando nos módulos futuros). O COMPORTAMENTO de verdade
-// (responder dúvida de uso do sistema + pergunta sobre os próprios dados do
-// tenant, com acesso seguro via RLS) fica pra um ciclo de brainstorm
-// dedicado — hoje só o botão + painel existem, com estado "em breve".
+// Ponto de entrada visual pro chat de dúvidas — comportamento real
+// implementado na Fatia 7 do plano do Chat IA (docs/superpowers/specs/
+// 2026-09-07-chat-ia-design.md). Painel mais largo que o antigo `max-w-md`:
+// cartão de proposta de ação e referência a valor precisam de mais espaço
+// que um "em breve" de uma linha só.
 export function ChatDuvidasMenu() {
   const [aberto, setAberto] = useState(false);
 
@@ -19,14 +19,12 @@ export function ChatDuvidasMenu() {
       <Button variant="ghost" size="icon" aria-label="Tirar dúvidas" title="Tirar dúvidas" onClick={() => setAberto(true)}>
         <ChatCircleDots size={19} weight="bold" />
       </Button>
-      <SheetContent side="right" className="w-full sm:max-w-md">
+      <SheetContent side="right" className="flex w-full flex-col sm:max-w-xl">
         <SheetHeader>
           <SheetTitle>Tirar dúvidas</SheetTitle>
           <SheetDescription>Pergunte sobre como usar o sistema ou sobre os seus próprios lançamentos.</SheetDescription>
         </SheetHeader>
-        <div className="flex flex-1 items-center justify-center px-4">
-          <EstadoVazio texto="Em breve." icon={ChatCircleDots} />
-        </div>
+        {aberto && <ChatPainel />}
       </SheetContent>
     </Sheet>
   );

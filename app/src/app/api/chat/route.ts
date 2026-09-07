@@ -1,9 +1,28 @@
 import { createClient } from "@/utils/supabase/server";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
 import { registrarTentativaChatIA } from "@/lib/chat-ia/rate-limit";
-import { criarConversa, buscarMensagens, gravarMensagem } from "@/lib/chat-ia/conversas";
+import { criarConversa, listarConversas, buscarMensagens, gravarMensagem } from "@/lib/chat-ia/conversas";
 import { executarLoopChat, type EventoLoopChat } from "@/lib/chat-ia/loop";
 import type Anthropic from "@anthropic-ai/sdk";
+
+// GET sem query: devolve a conversa mais recente do usuário (ou null, se
+// nunca conversou). GET ?conversaId=X: devolve as mensagens dela — RLS
+// garante que só volta algo se a conversa for do próprio usuário.
+export async function GET(request: Request) {
+  const contexto = await obterUsuarioETenantAtual();
+  if ("erro" in contexto) return Response.json({ erro: contexto.erro }, { status: 401 });
+
+  const supabase = await createClient();
+  const conversaId = new URL(request.url).searchParams.get("conversaId");
+
+  if (conversaId) {
+    const mensagens = await buscarMensagens(supabase, conversaId);
+    return Response.json({ mensagens });
+  }
+
+  const conversas = await listarConversas(supabase, contexto.user.id);
+  return Response.json({ conversaId: conversas[0]?.id ?? null });
+}
 
 // Primeira rota do projeto com streaming (Seção 6 da spec) — Route Handler
 // devolvendo um ReadableStream em text/event-stream, sem precedente a
