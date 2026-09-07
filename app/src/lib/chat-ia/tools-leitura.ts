@@ -17,7 +17,7 @@ import { buscarComposicaoFluxoCaixa } from "@/lib/relatorios/dfc";
 // servidor a partir da sessão autenticada (ContextoChat), o modelo não tem
 // como preenchê-lo nem sobrescrevê-lo.
 
-export type ToolLeitura = {
+export type DefinicaoTool = {
   definicao: Anthropic.Tool;
   executar: (supabase: Cliente, input: Record<string, unknown>, contexto: ContextoChat) => Promise<unknown>;
 };
@@ -50,7 +50,7 @@ function numeroObrigatorio(input: Record<string, unknown>, campo: string): numbe
   return valor;
 }
 
-export const TOOLS_LEITURA: ToolLeitura[] = [
+export const TOOLS_LEITURA: DefinicaoTool[] = [
   {
     definicao: {
       name: "consultar_dre",

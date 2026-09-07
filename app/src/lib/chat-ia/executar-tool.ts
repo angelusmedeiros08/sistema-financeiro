@@ -2,14 +2,15 @@ import "server-only";
 import type { Cliente } from "@/lib/relatorios/regime";
 import type { ContextoChat } from "./tipos";
 import { TOOLS_LEITURA } from "./tools-leitura";
+import { TOOLS_ACAO } from "./tools-acao";
 
 // Despachante único de tools — o nome vem do modelo, mas só é aceito se
-// bater com o catálogo fechado abaixo (nunca lookup dinâmico livre tipo
-// eval/require por nome). `contexto.tenantId` sempre vem da sessão
-// autenticada de quem chamou a rota, nunca do próprio modelo.
-// TOOLS_ACAO (propor_criar_lancamento etc., Fatia 5) entra nesta lista
-// quando existir — ainda não é código desta fatia.
-const TODAS_TOOLS = [...TOOLS_LEITURA];
+// bater com um dos dois catálogos fechados abaixo (nunca lookup dinâmico
+// livre tipo eval/require por nome). `contexto.tenantId` sempre vem da
+// sessão autenticada de quem chamou a rota, nunca do próprio modelo. As
+// tools de ação (TOOLS_ACAO) nunca escrevem no banco — só montam uma
+// proposta (Seção 3 da spec); a escrita real é a Fatia 6, fora deste loop.
+const TODAS_TOOLS = [...TOOLS_LEITURA, ...TOOLS_ACAO];
 
 export const DEFINICOES_TOOLS = TODAS_TOOLS.map((t) => t.definicao);
 
