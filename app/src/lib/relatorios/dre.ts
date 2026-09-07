@@ -38,8 +38,18 @@ type LinhaComCategorias = {
   rotulo: string;
   tipo_calc: TipoCalcLinhaDre;
   conceito_fixo: ConceitoFixoLinhaDre | null;
+  id_dfc: IdDfcLinhaDre | null;
   linha_dre_categorias: { categoria_id: string }[];
 };
+
+// Ajuste de baixa sem categoria (juros/multa/desconto/taxa — vw_
+// movimento_realizado gera essas linhas com categoria_id null) cai na
+// primeira linha FOLHA marcada NAO_OPERACIONAL_ENTRADA/SAIDA, por
+// convenção de idDfc (mesmo mecanismo que dfc.ts já usa pra classificar
+// atividade) — nunca por rótulo/ordem, que o usuário pode reescrever.
+// Achado real em auditoria: essas linhas nunca apareciam em nenhuma DRE,
+// mesmo tendo dinheiro de verdade.
+type AjustesSemCategoria = { receita: number; despesa: number };
 
 // Motor único da cascata do DRE — roda uma vez por "coluna" (um período
 // único, um mês da matriz, ou o total do ano). FOLHA soma direto as
@@ -52,14 +62,28 @@ type LinhaComCategorias = {
 // linha "Resultado não operacional" mostraria o mesmo número que "Lucro
 // antes dos impostos" logo depois dela — redundante e sem sentido de
 // leitura).
-function calcularCascata(linhas: LinhaComCategorias[], somaPorCategoria: Map<string, number>): Map<string, number> {
+function calcularCascata(
+  linhas: LinhaComCategorias[],
+  somaPorCategoria: Map<string, number>,
+  ajustesSemCategoria?: AjustesSemCategoria,
+): Map<string, number> {
   let acumulado = 0;
   let somaBlocoAtual = 0;
+  let ajusteReceitaAplicado = false;
+  let ajusteDespesaAplicado = false;
   const porLinha = new Map<string, number>();
 
   for (const linha of linhas) {
     if (linha.tipo_calc === "FOLHA") {
-      const valor = linha.linha_dre_categorias.reduce((soma, c) => soma + (somaPorCategoria.get(c.categoria_id) ?? 0), 0);
+      let valor = linha.linha_dre_categorias.reduce((soma, c) => soma + (somaPorCategoria.get(c.categoria_id) ?? 0), 0);
+      if (ajustesSemCategoria && linha.id_dfc === "NAO_OPERACIONAL_ENTRADA" && !ajusteReceitaAplicado) {
+        valor += ajustesSemCategoria.receita;
+        ajusteReceitaAplicado = true;
+      }
+      if (ajustesSemCategoria && linha.id_dfc === "NAO_OPERACIONAL_SAIDA" && !ajusteDespesaAplicado) {
+        valor += ajustesSemCategoria.despesa;
+        ajusteDespesaAplicado = true;
+      }
       acumulado += valor;
       somaBlocoAtual += valor;
       porLinha.set(linha.id, valor);
@@ -79,7 +103,7 @@ async function buscarLinhasEMovimento(supabase: Cliente, params: { tenantId: str
   const [{ data: linhas }, movimento] = await Promise.all([
     supabase
       .from("linhas_dre")
-      .select("id, ordem, rotulo, tipo_calc, conceito_fixo, linha_dre_categorias(categoria_id)")
+      .select("id, ordem, rotulo, tipo_calc, conceito_fixo, id_dfc, linha_dre_categorias(categoria_id)")
       .eq("tenant_id", params.tenantId)
       .order("ordem"),
     buscarMovimento(supabase, params),
@@ -94,12 +118,17 @@ export async function buscarDRE(
   const { linhas, movimento } = await buscarLinhasEMovimento(supabase, params);
 
   const somaPorCategoria = new Map<string, number>();
+  const ajustesSemCategoria: AjustesSemCategoria = { receita: 0, despesa: 0 };
   for (const linha of movimento) {
-    if (!linha.categoriaId) continue;
+    if (!linha.categoriaId) {
+      if (linha.tipo === "RECEITA") ajustesSemCategoria.receita += linha.valor;
+      else ajustesSemCategoria.despesa += linha.valor;
+      continue;
+    }
     somaPorCategoria.set(linha.categoriaId, (somaPorCategoria.get(linha.categoriaId) ?? 0) + valorComSinal(linha));
   }
 
-  const valorPorLinha = calcularCascata(linhas, somaPorCategoria);
+  const valorPorLinha = calcularCascata(linhas, somaPorCategoria, ajustesSemCategoria);
 
   // valorAcumulado é um segundo acumulador simples, só sobe com FOLHA — pra
   // SUBTOTAL/SUBTOTAL_ALTERNATIVO isso reproduz o mesmo número que
@@ -167,13 +196,21 @@ export async function buscarDREMatriz(
   const { linhas, movimento } = await buscarLinhasEMovimento(supabase, { tenantId: params.tenantId, regime: params.regime, dataInicio, dataFim });
 
   const somaPorCategoriaMes = new Map<string, number[]>();
+  const ajusteReceitaPorMes = new Array(12).fill(0);
+  const ajusteDespesaPorMes = new Array(12).fill(0);
   for (const linha of movimento) {
-    if (!linha.categoriaId) continue;
     const mesIndex = Number(linha.data.slice(5, 7)) - 1;
+    if (!linha.categoriaId) {
+      if (linha.tipo === "RECEITA") ajusteReceitaPorMes[mesIndex] += linha.valor;
+      else ajusteDespesaPorMes[mesIndex] += linha.valor;
+      continue;
+    }
     const atual = somaPorCategoriaMes.get(linha.categoriaId) ?? new Array(12).fill(0);
     atual[mesIndex] += valorComSinal(linha);
     somaPorCategoriaMes.set(linha.categoriaId, atual);
   }
+  const ajusteReceitaAno = ajusteReceitaPorMes.reduce((s: number, v: number) => s + v, 0);
+  const ajusteDespesaAno = ajusteDespesaPorMes.reduce((s: number, v: number) => s + v, 0);
 
   const somaPorCategoriaAno = new Map<string, number>();
   for (const [categoriaId, meses] of somaPorCategoriaMes) {
@@ -182,9 +219,9 @@ export async function buscarDREMatriz(
 
   const colunasMensais = Array.from({ length: 12 }, (_, mes) => {
     const somaDoMes = new Map([...somaPorCategoriaMes].map(([id, valores]) => [id, valores[mes]]));
-    return calcularCascata(linhas, somaDoMes);
+    return calcularCascata(linhas, somaDoMes, { receita: ajusteReceitaPorMes[mes], despesa: ajusteDespesaPorMes[mes] });
   });
-  const colunaTotal = calcularCascata(linhas, somaPorCategoriaAno);
+  const colunaTotal = calcularCascata(linhas, somaPorCategoriaAno, { receita: ajusteReceitaAno, despesa: ajusteDespesaAno });
 
   // Achada pelo papel semântico da linha (conceito_fixo), nunca por
   // posição (linhas[0]) — `ordem` é livremente reescrita pelas setas ↑/↓

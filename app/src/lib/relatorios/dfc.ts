@@ -77,11 +77,18 @@ export async function buscarDFCMatriz(supabase: Cliente, params: { tenantId: str
     FINANCIAMENTO: { previsto: new Array(12).fill(0), realizado: new Array(12).fill(0) },
   };
 
+  // Categoria sem vínculo a nenhuma linha de DRE (ou sem categoria
+  // nenhuma — as linhas sintéticas de juros/multa/desconto/taxa de uma
+  // baixa, que vêm com categoria_id null de vw_movimento_realizado) caem
+  // em OPERACIONAL por padrão, nunca são descartadas. Achado real em
+  // auditoria: excluir esses dois casos fazia "Geração de caixa" divergir
+  // da Composição do fluxo de caixa (que soma por categoria sem exigir
+  // vínculo de DRE) em exatamente o valor da categoria/ajuste esquecido —
+  // duas telas do mesmo módulo mostrando totais diferentes pro mesmo
+  // período, sem nenhuma explicação.
   function acumular(movimento: MovimentoLinha[], chave: "previsto" | "realizado") {
     for (const linha of movimento) {
-      if (!linha.categoriaId) continue;
-      const atividade = categoriaParaAtividade.get(linha.categoriaId);
-      if (!atividade) continue;
+      const atividade = (linha.categoriaId && categoriaParaAtividade.get(linha.categoriaId)) || "OPERACIONAL";
       const mesIndex = Number(linha.data.slice(5, 7)) - 1;
       somaPorAtividade[atividade][chave][mesIndex] += valorComSinal(linha);
     }
@@ -158,22 +165,39 @@ export async function buscarComposicaoFluxoCaixa(supabase: Cliente, params: { te
   const dataInicio = `${params.ano}-01-01`;
   const dataFim = `${params.ano}-12-31`;
 
-  const [receitas, despesas] = await Promise.all([
+  const [receitas, despesas, movimento] = await Promise.all([
     buscarAnaliseCategorias(supabase, { tenantId: params.tenantId, regime: "realizado", dataInicio, dataFim, tipo: "RECEITA", origemHref: params.origemHref }),
     buscarAnaliseCategorias(supabase, { tenantId: params.tenantId, regime: "realizado", dataInicio, dataFim, tipo: "DESPESA", origemHref: params.origemHref }),
+    buscarMovimento(supabase, { tenantId: params.tenantId, regime: "realizado", dataInicio, dataFim }),
   ]);
 
-  function agruparTopN(linhas: typeof receitas, rotuloResto: string): CategoriaFluxo[] {
+  function agruparTopN(linhas: typeof receitas, rotuloResto: string, ajuste: number): CategoriaFluxo[] {
     const ordenadas = [...linhas].filter((l) => l.total > 0).sort((a, b) => b.total - a.total);
     const principais = ordenadas.slice(0, MAX_CATEGORIAS_COMPOSICAO);
-    const resto = ordenadas.slice(MAX_CATEGORIAS_COMPOSICAO).reduce((soma, l) => soma + l.total, 0);
+    const resto = ordenadas.slice(MAX_CATEGORIAS_COMPOSICAO).reduce((soma, l) => soma + l.total, 0) + ajuste;
     const grupos: CategoriaFluxo[] = principais.map((l) => ({ nome: l.categoriaNome, valor: l.total, href: l.href }));
     if (resto > 0) grupos.push({ nome: rotuloResto, valor: resto, outros: true });
     return grupos;
   }
 
-  const gruposReceita = agruparTopN(receitas, "Outras receitas");
-  const gruposDespesa = agruparTopN(despesas, "Outras despesas");
+  // `buscarAnaliseCategorias` exige categoria real e descarta o resto —
+  // as linhas sintéticas de juros/multa/desconto/taxa de uma baixa (vw_
+  // movimento_realizado, categoria_id null) ficavam de fora da Composição
+  // inteira. Somadas aqui à parte e despejadas em "Outras receitas/
+  // despesas" (mesmo destino de qualquer categoria pequena de mais pra
+  // aparecer sozinha) — achado real em auditoria: dinheiro de verdade
+  // (juros, multa, desconto, taxa de uma baixa) nunca aparecia em nenhum
+  // relatório de DFC.
+  let ajusteReceita = 0;
+  let ajusteDespesa = 0;
+  for (const linha of movimento) {
+    if (linha.categoriaId) continue;
+    if (linha.tipo === "RECEITA") ajusteReceita += linha.valor;
+    else ajusteDespesa += linha.valor;
+  }
+
+  const gruposReceita = agruparTopN(receitas, "Outras receitas", ajusteReceita);
+  const gruposDespesa = agruparTopN(despesas, "Outras despesas", ajusteDespesa);
 
   return {
     receitas: gruposReceita,

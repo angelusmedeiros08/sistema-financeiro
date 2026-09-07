@@ -48,4 +48,15 @@ export const CATEGORIAS_PADRAO: CategoriaPadrao[] = [
   { nome: "Outras Despesas", tipo: "DESPESA", ehCustoFixo: false, paiNome: null, ordemDre: 16 },
   // Tributos sobre o lucro (ordem 19)
   { nome: "IRPJ e CSLL", tipo: "DESPESA", ehCustoFixo: false, paiNome: null, ordemDre: 19 },
+  // Investimentos em Imobilizado (ordem 21) / Empréstimos e Dívidas (ordem
+  // 22) / Retirada de Lucros (ordem 23) — sem categoria padrão nenhuma
+  // vinculada a essas 3 linhas, todo tenant novo tinha "Atividades de
+  // investimento"/"Atividades de financiamento" sempre zeradas na DFC,
+  // mesmo com empréstimo/compra de imobilizado/distribuição de lucro real
+  // acontecendo (achado em auditoria — só aparecia se o usuário criasse e
+  // vinculasse categoria manualmente, sem nenhum aviso disso na tela).
+  { nome: "Compra de Equipamentos e Imobilizado", tipo: "DESPESA", ehCustoFixo: false, paiNome: null, ordemDre: 21 },
+  { nome: "Empréstimos e Financiamentos Tomados", tipo: "RECEITA", ehCustoFixo: false, paiNome: null, ordemDre: 22 },
+  { nome: "Pagamento de Empréstimos e Financiamentos", tipo: "DESPESA", ehCustoFixo: false, paiNome: null, ordemDre: 22 },
+  { nome: "Retirada de Lucros e Distribuição de Dividendos", tipo: "DESPESA", ehCustoFixo: false, paiNome: null, ordemDre: 23 },
 ];
