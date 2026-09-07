@@ -1,12 +1,12 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { createClient } from "@/utils/supabase/server";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
 import { registrarBaixa, resolverFormaPagamentoIdSimples } from "./baixa";
 import { extrairAnexosDraftDoFormData, anexarDraftsAoDono } from "./anexos";
 import { hojeIsoBrasil } from "@/lib/data-brasil";
 import { parseNumeroBR } from "@/lib/formatacao";
+import { revalidarTelasFinanceiras } from "@/lib/relatorios/revalidacao-financeira";
 
 type ResultadoAcao = { erro: string } | { sucesso: true };
 
@@ -69,10 +69,6 @@ export async function darBaixa(formData: FormData): Promise<ResultadoAcao> {
     });
   }
 
-  revalidatePath("/contas-a-receber");
-  revalidatePath("/contas-a-pagar");
-  revalidatePath("/despesas");
-  revalidatePath("/receitas");
-  revalidatePath("/painel");
+  revalidarTelasFinanceiras();
   return { sucesso: true };
 }

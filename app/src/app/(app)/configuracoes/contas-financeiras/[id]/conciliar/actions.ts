@@ -8,6 +8,7 @@ import { criarEventoFinanceiro } from "@/lib/contabil/evento-financeiro";
 import { calcularChaveDedup, type TipoExtratoLinha } from "@/lib/conciliacao/parse";
 import { buscarCandidatosConciliacao, classificarCorrespondencia, type CandidatoConciliacao, type TipoCorrespondenciaConciliacao } from "@/lib/conciliacao/matching";
 import { buscarRegraPorDescricao, criarRegraSeNaoExiste } from "@/lib/conciliacao/regras";
+import { revalidarTelasFinanceiras } from "@/lib/relatorios/revalidacao-financeira";
 
 export type LinhaParaImportar = {
   data: string;
@@ -274,9 +275,5 @@ export async function ignorarLinhaExtratoAction(extratoLinhaId: string): Promise
 
 export async function revalidarPosConciliacaoAction(): Promise<void> {
   revalidatePath("/configuracoes/contas-financeiras");
-  revalidatePath("/despesas");
-  revalidatePath("/receitas");
-  revalidatePath("/contas-a-pagar");
-  revalidatePath("/contas-a-receber");
-  revalidatePath("/painel");
+  revalidarTelasFinanceiras();
 }

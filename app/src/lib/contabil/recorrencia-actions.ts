@@ -7,17 +7,19 @@ import { extrairLinhasCategoria, resolverPessoaId, resolverCentroCustoIdSimples,
 import { criarRegraRecorrencia, editarRegraRecorrencia, cancelarRegraRecorrencia } from "./recorrencia";
 import { extrairAnexosDraftDoFormData, anexarDraftsAoDono } from "./anexos";
 import { parseNumeroBR } from "@/lib/formatacao";
+import { revalidarTelasFinanceiras } from "@/lib/relatorios/revalidacao-financeira";
 import type { Database } from "@/utils/supabase/database.types";
 
 type ResultadoAcao = { erro: string } | { sucesso: true };
 type TipoCategoria = Database["public"]["Enums"]["tipo_categoria"];
 type UnidadeIntervalo = Database["public"]["Enums"]["unidade_intervalo"];
 
+// `criarRegraRecorrenciaAction` já gera a 1ª ocorrência na hora — faltava
+// `/painel` aqui (achado em auditoria de revalidação), única lacuna de
+// `revalidarTelasFinanceiras()` que não cobria antes de virar a fonte
+// única. `/configuracoes/recorrencias` é específico deste fluxo.
 function revalidarPaginasFinanceiras() {
-  revalidatePath("/contas-a-receber");
-  revalidatePath("/contas-a-pagar");
-  revalidatePath("/despesas");
-  revalidatePath("/receitas");
+  revalidarTelasFinanceiras();
   revalidatePath("/configuracoes/recorrencias");
 }
 

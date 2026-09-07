@@ -14,6 +14,7 @@ import {
 import { extrairAnexosDraftDoFormData, anexarDraftsAoDono } from "@/lib/contabil/anexos";
 import { criarRegraRecorrenciaAction } from "@/lib/contabil/recorrencia-actions";
 import { parseNumeroBR } from "@/lib/formatacao";
+import { revalidarTelasFinanceiras } from "@/lib/relatorios/revalidacao-financeira";
 
 type ResultadoAcao = { erro: string } | { sucesso: true };
 
@@ -87,9 +88,7 @@ export async function criarReceita(formData: FormData): Promise<ResultadoAcao> {
     });
   }
 
-  revalidatePath("/receitas");
-  revalidatePath("/contas-a-receber");
-  revalidatePath("/painel");
+  revalidarTelasFinanceiras();
   return { sucesso: true };
 }
 
@@ -140,9 +139,7 @@ export async function editarReceita(eventoId: string, formData: FormData): Promi
 
   if ("erro" in resultado) return { erro: resultado.erro };
 
-  revalidatePath("/receitas");
-  revalidatePath("/contas-a-receber");
-  revalidatePath("/painel");
+  revalidarTelasFinanceiras();
   revalidatePath(`/receitas/${eventoId}`);
   return { sucesso: true, evento_id: resultado.evento_id, recriado: resultado.recriado };
 }

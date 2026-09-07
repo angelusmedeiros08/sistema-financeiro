@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { PaperPlaneRight, CheckCircle, XCircle, WarningCircle } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -29,6 +30,7 @@ type Candidatos = { candidatos: { descricao?: string; valor?: number }[] };
 // tela do projeto consumindo isso, mesma decisão de "sem precedente, essa
 // é a convenção" já registrada na rota.
 export function ChatPainel() {
+  const router = useRouter();
   const [conversaId, setConversaId] = useState<string | null>(null);
   const [mensagens, setMensagens] = useState<MensagemChat[]>([]);
   const [carregandoHistorico, setCarregandoHistorico] = useState(true);
@@ -136,6 +138,13 @@ export function ChatPainel() {
       return;
     }
     if (conversaId) await recarregarMensagens(conversaId);
+    // A action real (criarReceita/criarDespesa/cancelarParcelaAction etc.)
+    // roda dentro de um Route Handler (/api/chat/confirmar), não como
+    // invocação nativa de Server Action — o `revalidatePath` interno dela
+    // não atualiza o cache de router desta aba sozinho (achado em auditoria
+    // de revalidação). Sem isso, confirmar uma proposta de lançamento não
+    // atualizava a tela atrás do painel de chat.
+    router.refresh();
   }
 
   if (carregandoHistorico) {

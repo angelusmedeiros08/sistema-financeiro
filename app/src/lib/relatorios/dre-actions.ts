@@ -20,7 +20,14 @@ type TipoLinhaDre = Database["public"]["Enums"]["tipo_linha_dre"];
 
 function revalidarDre() {
   revalidatePath("/relatorios");
+  // Faltava a própria DRE (achado em auditoria) — não existe layout.tsx em
+  // (app)/relatorios/, então `revalidatePath("/relatorios")` não cascateia
+  // pras subrotas. Mudar vínculo categoria->linha afeta classificação de
+  // atividade na DFC/indicadores também.
+  revalidatePath("/relatorios/dre");
   revalidatePath("/relatorios/dfc");
+  revalidatePath("/indicadores");
+  revalidatePath("/painel");
   revalidatePath("/configuracoes/estrutura-dre");
 }
 

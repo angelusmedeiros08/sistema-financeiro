@@ -18,6 +18,7 @@ import { enviarEmailOrcamento } from "./orcamento-email";
 import { formatarMoeda } from "@/lib/formatacao";
 import { formatarDataIsoParaBR } from "@/lib/importacao/locale-br";
 import { lerItensComerciaisJson, lerCabecalhoComercial, revalidarDocumentoComercial } from "@/lib/comercial/formulario-actions";
+import { revalidarTelasFinanceiras } from "@/lib/relatorios/revalidacao-financeira";
 
 type ResultadoAcao = { erro: string } | { sucesso: true };
 type Cliente = Awaited<ReturnType<typeof createClient>>;
@@ -151,7 +152,9 @@ export async function aprovarOrcamentoManualAction(orcamentoId: string): Promise
   if ("erro" in resultado) return resultado;
   revalidarOrcamento(orcamentoId);
   revalidatePath("/vendas");
-  revalidatePath("/contas-a-receber");
+  // gerar_venda_de_orcamento cria a venda E o lançamento financeiro na
+  // hora — faltavam Receitas/Painel/demais relatórios (achado em auditoria).
+  revalidarTelasFinanceiras();
   return { sucesso: true };
 }
 

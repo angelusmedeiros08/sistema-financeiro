@@ -1,19 +1,11 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { createClient } from "@/utils/supabase/server";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
 import { estornarBaixa, cancelarParcela, renegociarParcela } from "./ciclo-vida-parcela";
+import { revalidarTelasFinanceiras as revalidarPaginasFinanceiras } from "@/lib/relatorios/revalidacao-financeira";
 
 type ResultadoAcao = { erro: string } | { sucesso: true };
-
-function revalidarPaginasFinanceiras() {
-  revalidatePath("/contas-a-receber");
-  revalidatePath("/contas-a-pagar");
-  revalidatePath("/despesas");
-  revalidatePath("/receitas");
-  revalidatePath("/painel");
-}
 
 export async function estornarBaixaAction(formData: FormData): Promise<ResultadoAcao> {
   const baixaId = String(formData.get("baixa_id") ?? "");

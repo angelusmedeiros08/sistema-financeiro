@@ -1,11 +1,11 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
 import { criarVenda, editarCabecalhoVenda, recusarVenda, aprovarVenda } from "./vendas";
 import { lerItensComerciaisJson, lerCabecalhoComercial, revalidarDocumentoComercial } from "@/lib/comercial/formulario-actions";
+import { revalidarTelasFinanceiras } from "@/lib/relatorios/revalidacao-financeira";
 
 type ResultadoAcao = { erro: string } | { sucesso: true };
 
@@ -37,6 +37,10 @@ export async function criarVendaAction(formData: FormData): Promise<ResultadoAca
   if ("erro" in resultado) return resultado;
 
   revalidarVenda(resultado.id);
+  // acao "direto" chama aprovarVenda internamente (venda.ts) — gera o
+  // evento financeiro (RECEITA) na mesma chamada, achado real em auditoria:
+  // nem Contas a Receber, nem Receitas, nem Painel eram revalidados aqui.
+  if (acao === "direto") revalidarTelasFinanceiras();
   redirect(`/vendas/${resultado.id}`);
 }
 
@@ -65,7 +69,7 @@ export async function aprovarVendaAction(vendaId: string): Promise<ResultadoAcao
   const resultado = await aprovarVenda(supabase, { tenantId: contexto.tenantId, vendaId, criadoPor: contexto.user.id });
   if ("erro" in resultado) return resultado;
   revalidarVenda(vendaId);
-  revalidatePath("/contas-a-receber");
+  revalidarTelasFinanceiras();
   return { sucesso: true };
 }
 
