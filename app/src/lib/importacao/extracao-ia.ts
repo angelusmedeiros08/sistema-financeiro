@@ -82,7 +82,16 @@ export async function extrairLancamentosIA(
   try {
     resposta = await client.messages.parse({
       model: "claude-sonnet-5",
-      max_tokens: 8000,
+      // 8000 (valor original) truncava um extrato bancário real de
+      // centenas de movimentações no meio da geração — o JSON saía
+      // incompleto, e o parse (zodOutputFormat) quebrava numa exceção não
+      // tratada em vez de mensagem amigável (achado numa conversa sobre
+      // limites de IA: uma linha extraída gira em torno de ~100 tokens, e
+      // 8000 tokens de saída cabem só ~80 linhas — bem abaixo de "centenas
+      // de movimentações"). 16000 dá espaço pra ~160 linhas antes de
+      // precisar do aviso abaixo; o custo real só sobe se o texto de fato
+      // tiver esse volume, o teto em si não custa nada enquanto não é usado.
+      max_tokens: 16000,
       system: PROMPT_SISTEMA.replace("{{HOJE}}", hojeIso),
       messages: [{ role: "user", content: conteudo }],
       output_config: { format: zodOutputFormat(ExtracaoSchema) },
@@ -96,6 +105,14 @@ export async function extrairLancamentosIA(
 
   if (resposta.stop_reason === "refusal") {
     return { erro: "A IA não conseguiu processar esse conteúdo. Tente reformular o texto ou enviar outra imagem." };
+  }
+
+  // Corte por tamanho — precisa ser checado ANTES de tocar em
+  // parsed_output: com a saída cortada no meio, o JSON fica incompleto e o
+  // parse quebraria numa exceção não tratada, sem explicação nenhuma pra
+  // quem enviou um extrato grande demais pra caber numa chamada só.
+  if (resposta.stop_reason === "max_tokens") {
+    return { erro: "Esse documento tem lançamentos demais para processar de uma vez. Divida em partes menores (ex.: mês a mês) e tente novamente." };
   }
 
   const extraido = resposta.parsed_output;
