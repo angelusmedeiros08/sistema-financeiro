@@ -23,7 +23,7 @@ import { formatarMoeda, formatarPercentual, formatarIndice } from "@/lib/formata
 import { cn } from "@/lib/utils";
 import { emModoApresentacao } from "@/lib/apresentacao/sessao";
 import { FocoApresentacao } from "@/components/apresentacao/foco-apresentacao";
-import { hojeIsoBrasil } from "@/lib/data-brasil";
+import { hojeIsoBrasil, isoMenosMeses } from "@/lib/data-brasil";
 import { TituloPagina } from "@/components/layout/titulo-pagina";
 
 export default async function PaginaIndicadores({
@@ -43,10 +43,6 @@ export default async function PaginaIndicadores({
 
   const origemHref = "/indicadores";
   const hoje = hojeIsoBrasil();
-  const isoMenosMeses = (meses: number) => {
-    const [ano, mes, dia] = hoje.split("-").map(Number);
-    return new Date(Date.UTC(ano, mes - 1 - meses, dia)).toISOString().slice(0, 10);
-  };
 
   const [
     saldoProjetado,
@@ -132,7 +128,7 @@ export default async function PaginaIndicadores({
             dimensao="pessoa"
             regime="competencia"
             tipo="RECEITA"
-            periodoInicio={isoMenosMeses(12)}
+            periodoInicio={isoMenosMeses(hoje, 12)}
             periodoFim={hoje}
             origemHref={origemHref}
           />
@@ -153,7 +149,7 @@ export default async function PaginaIndicadores({
             dimensao="pessoa"
             regime="competencia"
             tipo="DESPESA"
-            periodoInicio={isoMenosMeses(12)}
+            periodoInicio={isoMenosMeses(hoje, 12)}
             periodoFim={hoje}
             origemHref={origemHref}
           />
@@ -203,7 +199,7 @@ export default async function PaginaIndicadores({
           linhas={donutFormaPagamento}
           dimensao="forma_pagamento"
           regime="realizado"
-          periodoInicio={isoMenosMeses(6)}
+          periodoInicio={isoMenosMeses(hoje, 6)}
           periodoFim={hoje}
           origemHref={origemHref}
         />

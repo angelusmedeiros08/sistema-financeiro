@@ -1,12 +1,7 @@
 import type { Cliente } from "./regime";
-import { hojeIsoBrasil } from "@/lib/data-brasil";
+import { hojeIsoBrasil, isoMenosMeses } from "@/lib/data-brasil";
 
 export type PrazoMedio = { dias: number; quantidadeBaixas: number };
-
-function isoMenosMeses(meses: number): string {
-  const [ano, mes, dia] = hojeIsoBrasil().split("-").map(Number);
-  return new Date(Date.UTC(ano, mes - 1 - meses, dia)).toISOString().slice(0, 10);
-}
 
 function diasEntre(dataVencimento: string, dataPagamento: string): number {
   const vencimento = new Date(dataVencimento + "T00:00:00Z");
@@ -19,7 +14,7 @@ function diasEntre(dataVencimento: string, dataPagamento: string): number {
 // uma baixa antes do vencimento entra negativa, "cliente paga adiantado" é
 // sinal real, não ruído.
 async function buscarPrazoMedio(supabase: Cliente, params: { tenantId: string; tipo: "RECEITA" | "DESPESA"; mesesJanela: number }): Promise<PrazoMedio> {
-  const dataInicio = isoMenosMeses(params.mesesJanela);
+  const dataInicio = isoMenosMeses(hojeIsoBrasil(), params.mesesJanela);
   const dataFim = hojeIsoBrasil();
 
   const { data } = await supabase

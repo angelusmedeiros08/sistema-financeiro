@@ -1,7 +1,7 @@
 import type { Cliente } from "./regime";
 import { buscarMovimento } from "./regime";
 import { montarHrefLancamentos } from "./drill-down";
-import { hojeIsoBrasil } from "@/lib/data-brasil";
+import { hojeIsoBrasil, isoMenosMeses } from "@/lib/data-brasil";
 import type { Database } from "@/utils/supabase/database.types";
 
 type TipoCategoria = Database["public"]["Enums"]["tipo_categoria"];
@@ -16,11 +16,6 @@ export type ConcentracaoEntidade = {
   nivelRisco: NivelRiscoConcentracao;
 };
 
-function isoMenosMeses(meses: number): string {
-  const [ano, mes, dia] = hojeIsoBrasil().split("-").map(Number);
-  return new Date(Date.UTC(ano, mes - 1 - meses, dia)).toISOString().slice(0, 10);
-}
-
 // "Quanto da minha receita/despesa depende de poucos clientes/fornecedores"
 // — nenhum concorrente pesquisado (docs/pesquisa-indicadores-financeiros-
 // comparativo-mercado.md) transforma isso num alerta de risco do lado da
@@ -33,7 +28,7 @@ export async function buscarConcentracao(
   params: { tenantId: string; tipo: TipoCategoria; mesesJanela?: number; origemHref: string },
 ): Promise<ConcentracaoEntidade> {
   const mesesJanela = params.mesesJanela ?? 12;
-  const dataInicio = isoMenosMeses(mesesJanela);
+  const dataInicio = isoMenosMeses(hojeIsoBrasil(), mesesJanela);
   const dataFim = hojeIsoBrasil();
 
   const [movimento, { data: pessoas }] = await Promise.all([

@@ -1,6 +1,6 @@
 import type { Cliente } from "./regime";
 import { montarHrefLancamentos } from "./drill-down";
-import { hojeIsoBrasil } from "@/lib/data-brasil";
+import { hojeIsoBrasil, isoMenosMeses } from "@/lib/data-brasil";
 
 export type LinhaDistribuicaoFormaPagamento = {
   formaPagamentoId: string | null;
@@ -10,11 +10,6 @@ export type LinhaDistribuicaoFormaPagamento = {
   atrasoMedioDias: number;
   href: string;
 };
-
-function isoMenosMeses(meses: number): string {
-  const [ano, mes, dia] = hojeIsoBrasil().split("-").map(Number);
-  return new Date(Date.UTC(ano, mes - 1 - meses, dia)).toISOString().slice(0, 10);
-}
 
 function diasEntre(dataVencimento: string, dataPagamento: string): number {
   const vencimento = new Date(dataVencimento + "T00:00:00Z");
@@ -32,7 +27,7 @@ export async function buscarDistribuicaoFormaPagamento(
   params: { tenantId: string; mesesJanela?: number; origemHref: string },
 ): Promise<LinhaDistribuicaoFormaPagamento[]> {
   const mesesJanela = params.mesesJanela ?? 6;
-  const dataInicio = isoMenosMeses(mesesJanela);
+  const dataInicio = isoMenosMeses(hojeIsoBrasil(), mesesJanela);
   const dataFim = hojeIsoBrasil();
 
   const { data } = await supabase
