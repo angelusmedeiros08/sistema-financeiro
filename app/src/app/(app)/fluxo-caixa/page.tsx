@@ -4,6 +4,7 @@ import { createClient } from "@/utils/supabase/server";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
 import { lerParametrosRelatorio } from "@/lib/relatorios/periodo";
 import { buscarFluxoCaixaGrade, buscarPrevistoRealizado } from "@/lib/relatorios/fluxo-caixa";
+import { buscarSaldoAntesDe } from "@/lib/relatorios/saldo-projetado";
 import { RelatoriosControles } from "../relatorios/controles";
 import { ComparativoBarras } from "@/components/relatorios/comparativo-barras";
 import { FluxoDiarioTabela, FluxoPrevistoRealizadoTabela } from "@/components/relatorios/fluxo-caixa-tabelas";
@@ -73,7 +74,12 @@ async function FluxoDiario({
   params: ReturnType<typeof lerParametrosRelatorio>;
   supabase: Awaited<ReturnType<typeof createClient>>;
 }) {
-  const pontos = await buscarFluxoCaixaGrade(supabase, { tenantId, ...params });
+  // "Saldo acumulado" só é saldo bancário de verdade em regime realizado —
+  // nos outros dois (competência/previsto) não existe "saldo antes do
+  // período" com esse mesmo sentido, então o acumulado continua partindo
+  // de zero (resultado do período, não saldo de caixa).
+  const saldoInicial = params.regime === "realizado" ? await buscarSaldoAntesDe(supabase, tenantId, params.dataInicio) : undefined;
+  const pontos = await buscarFluxoCaixaGrade(supabase, { tenantId, ...params, saldoInicial });
 
   return (
     <div className="flex flex-col gap-4">

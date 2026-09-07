@@ -4,7 +4,7 @@ import type { Cliente, Regime, Granularidade } from "@/lib/relatorios/regime";
 import type { ContextoChat } from "./tipos";
 import { buscarDRE, buscarDREIndicadores } from "@/lib/relatorios/dre";
 import { buscarFluxoCaixaGrade } from "@/lib/relatorios/fluxo-caixa";
-import { buscarSaldoProjetado } from "@/lib/relatorios/saldo-projetado";
+import { buscarSaldoProjetado, buscarSaldoAntesDe } from "@/lib/relatorios/saldo-projetado";
 import { buscarLiquidezAproximada } from "@/lib/relatorios/liquidez-aproximada";
 import { buscarAging, buscarResumoVencimentos } from "@/lib/relatorios/aging";
 import { buscarIndicadoresRealizacao } from "@/lib/relatorios/indicadores-gauge";
@@ -100,14 +100,21 @@ export const TOOLS_LEITURA: DefinicaoTool[] = [
         required: ["granularidade", "data_inicio", "data_fim"],
       },
     },
-    executar: (supabase, input, ctx) =>
-      buscarFluxoCaixaGrade(supabase, {
+    executar: async (supabase, input, ctx) => {
+      const regime = regimeOuPadrao(input);
+      const dataInicio = textoObrigatorio(input, "data_inicio");
+      // Saldo acumulado só é saldo bancário real em regime realizado — mesmo
+      // raciocínio de fluxo-caixa/page.tsx e visao-geral/page.tsx.
+      const saldoInicial = regime === "realizado" ? await buscarSaldoAntesDe(supabase, ctx.tenantId, dataInicio) : undefined;
+      return buscarFluxoCaixaGrade(supabase, {
         tenantId: ctx.tenantId,
-        regime: regimeOuPadrao(input),
+        regime,
         granularidade: textoObrigatorio(input, "granularidade") as Granularidade,
-        dataInicio: textoObrigatorio(input, "data_inicio"),
+        dataInicio,
         dataFim: textoObrigatorio(input, "data_fim"),
-      }),
+        saldoInicial,
+      });
+    },
   },
   {
     definicao: {

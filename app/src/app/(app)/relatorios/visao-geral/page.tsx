@@ -9,7 +9,7 @@ import { buscarAging, buscarResumoVencimentos } from "@/lib/relatorios/aging";
 import { buscarIndicadoresRealizacao, buscarSerieIndicadoresRealizacao, mesAtual } from "@/lib/relatorios/indicadores-gauge";
 import { buscarAnaliseCategorias } from "@/lib/relatorios/analise-despesas";
 import { buscarConcentracao } from "@/lib/relatorios/concentracao";
-import { buscarSaldoProjetado } from "@/lib/relatorios/saldo-projetado";
+import { buscarSaldoProjetado, buscarSaldoAntesDe } from "@/lib/relatorios/saldo-projetado";
 import { RelatoriosSubNav } from "../sub-nav";
 import { RelatoriosControles } from "../controles";
 import { StatCard } from "@/components/painel/stat-card";
@@ -50,10 +50,14 @@ export default async function PaginaRelatoriosVisaoGeral({
   const qsAtual = new URLSearchParams(Object.entries(spBrutos).filter((par): par is [string, string] => par[1] !== undefined)).toString();
   const origemHref = `/relatorios/visao-geral${qsAtual ? `?${qsAtual}` : ""}`;
 
+  // Mesmo raciocínio de fluxo-caixa/page.tsx: só faz sentido como saldo
+  // bancário real em regime realizado.
+  const saldoInicialFluxo = params.regime === "realizado" ? await buscarSaldoAntesDe(supabase, tenantId, params.dataInicio) : undefined;
+
   const [dre, fluxo, pontoEquilibrio, agingReceita, agingDespesa, resumoReceber, resumoPagar, indicadoresCAR, indicadoresCAP, serieCAR, serieCAP, topReceitas, topDespesas, concentracao, saldoProjetado] =
     await Promise.all([
       buscarDRE(supabase, { tenantId, ...params, origemHref }),
-      buscarFluxoCaixaGrade(supabase, { tenantId, ...params }),
+      buscarFluxoCaixaGrade(supabase, { tenantId, ...params, saldoInicial: saldoInicialFluxo }),
       buscarPontoEquilibrio(supabase, { tenantId, ...params }),
       buscarAging(supabase, { tenantId, tipo: "RECEITA" }),
       buscarAging(supabase, { tenantId, tipo: "DESPESA" }),

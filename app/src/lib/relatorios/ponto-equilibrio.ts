@@ -75,11 +75,30 @@ export async function buscarPontoEquilibrio(
   let gastosFixos = 0;
   let gastosVariaveis = 0;
 
+  // Achados reais em auditoria, os dois corrigidos aqui juntos porque são a
+  // mesma causa raiz (classificação por vínculo de categoria, não por
+  // "é o que sobra"):
+  // (1) `receitaOperacional` era "toda receita que não é dedução" — incluía
+  //     categoria de receita sem vínculo a NENHUMA linha de DRE (ordem 1/2/3),
+  //     inflando a base de MC% acima da Receita Líquida real da própria DRE
+  //     (medido: 33% de diferença num tenant real). Agora só conta categoria
+  //     de fato vinculada à linha 1 (Receitas operacionais).
+  // (2) A dedução (Devoluções/Tributos) só disparava se a categoria vinculada
+  //     fosse do tipo RECEITA — mas o modelo padrão de DRE marca essas 2
+  //     linhas como OPERACIONAL_SAIDA, o mesmo idDfc de toda linha de
+  //     despesa, sugerindo categoria DESPESA como o vínculo correto. Checar
+  //     o vínculo primeiro (`categoriasReceita.deducoes`), antes do `tipo` da
+  //     linha, cobre os dois casos — mesma convenção de soma com sinal que
+  //     calcularCascata (dre.ts) já usa: o que importa é a categoria vinculada
+  //     à linha, não o tipo bruto do lançamento.
   for (const linha of movimento) {
+    if (linha.categoriaId && categoriasReceita.deducoes.has(linha.categoriaId)) {
+      deducoesReceita += linha.valor;
+      continue;
+    }
     if (linha.tipo === "RECEITA") {
       receitaTotal += linha.valor;
-      if (linha.categoriaId && categoriasReceita.deducoes.has(linha.categoriaId)) deducoesReceita += linha.valor;
-      else receitaOperacional += linha.valor;
+      if (linha.categoriaId && categoriasReceita.operacional.has(linha.categoriaId)) receitaOperacional += linha.valor;
       continue;
     }
     if (linha.categoriaId && idsFixos.has(linha.categoriaId)) gastosFixos += linha.valor;

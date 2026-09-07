@@ -13,19 +13,24 @@ export function somarDias(dataIso: string, dias: number): string {
   return data.toISOString().slice(0, 10);
 }
 
-// Só parcelas ainda em aberto contam pra projeção — a mesma trinca de
-// status que buscarResumoVencimentos já usa pra "ainda vai acontecer".
-// Uma consulta por tipo (não uma só com os dois via join lido em memória)
-// segue o mesmo padrão de filtro server-side que o resto de lib/relatorios
-// já usa (aging.ts, indicadores-gauge.ts, prazos-medios.ts).
-async function buscarParcelasAbertas(supabase: Cliente, tenantId: string, tipo: "RECEITA" | "DESPESA", ateData: string, hojeIso: string) {
+// Toda parcela em aberto até `ateData` conta pra projeção — inclusive a já
+// vencida, mesma convenção de "pressiona o caixa até lá" que
+// liquidez-aproximada.ts já usa (buscarSaldoEmAberto, sem piso de data).
+// Achado real em auditoria: o `.gt(hojeIso)` daqui excluía TODO vencido de
+// TODOS os horizontes (D+7/D+30/D+60) — uma parcela vencida nunca some,
+// continua sendo dinheiro esperado até ser recebida/paga ou renegociada, e
+// os dois indicadores mostravam composições diferentes de "próximos 30
+// dias" pro mesmo tenant. Uma consulta por tipo (não uma só com os dois via
+// join lido em memória) segue o mesmo padrão de filtro server-side que o
+// resto de lib/relatorios já usa (aging.ts, indicadores-gauge.ts,
+// prazos-medios.ts).
+async function buscarParcelasAbertas(supabase: Cliente, tenantId: string, tipo: "RECEITA" | "DESPESA", ateData: string) {
   const { data } = await supabase
     .from("parcelas")
     .select("valor, data_vencimento, eventos_financeiros!inner(tipo), baixas(valor_pago, estornado_em)")
     .eq("tenant_id", tenantId)
     .eq("eventos_financeiros.tipo", tipo)
     .in("status", ["PENDENTE", "RECEBIDO_PARCIAL", "ATRASADO"])
-    .gt("data_vencimento", hojeIso)
     .lte("data_vencimento", ateData);
 
   return data ?? [];
@@ -51,8 +56,8 @@ export async function buscarSaldoProjetado(supabase: Cliente, tenantId: string):
     supabase.from("contas_financeiras").select("saldo_inicial").eq("tenant_id", tenantId).eq("ativo", true),
     supabase.from("tenants").select("limiar_saldo_minimo_alerta").eq("id", tenantId).single(),
     supabase.rpc("movimento_liquido_realizado", { p_tenant_id: tenantId, p_data_fim: hojeIso }),
-    buscarParcelasAbertas(supabase, tenantId, "RECEITA", limiteMax, hojeIso),
-    buscarParcelasAbertas(supabase, tenantId, "DESPESA", limiteMax, hojeIso),
+    buscarParcelasAbertas(supabase, tenantId, "RECEITA", limiteMax),
+    buscarParcelasAbertas(supabase, tenantId, "DESPESA", limiteMax),
   ]);
 
   // Saldo atual é sempre regime realizado (dinheiro que de fato entrou/saiu
@@ -74,6 +79,25 @@ export async function buscarSaldoProjetado(supabase: Cliente, tenantId: string):
   });
 
   return { saldoAtual, projecoes, limiar };
+}
+
+// Saldo de caixa real no fechamento do dia anterior a `dataIso` — usado como
+// saldo inicial de qualquer grade que precise que "saldo acumulado"
+// signifique saldo bancário de verdade, não "resultado acumulado a partir
+// de zero dentro do período filtrado". Achado real em auditoria: a coluna
+// "Saldo acumulado" do Fluxo de Caixa (fluxo-caixa.ts) nunca recebia esse
+// valor — sempre começava do zero no início do período filtrado (padrão:
+// últimos 6 meses), então mostrava o fluxo líquido do período, não o saldo
+// bancário real naquele ponto, pra qualquer tenant com histórico anterior
+// ao filtro.
+export async function buscarSaldoAntesDe(supabase: Cliente, tenantId: string, dataIso: string): Promise<number> {
+  const diaAnterior = somarDias(dataIso, -1);
+  const [contas, movimentoLiquido] = await Promise.all([
+    supabase.from("contas_financeiras").select("saldo_inicial").eq("tenant_id", tenantId).eq("ativo", true),
+    supabase.rpc("movimento_liquido_realizado", { p_tenant_id: tenantId, p_data_fim: diaAnterior }),
+  ]);
+  const saldoInicialTotal = (contas.data ?? []).reduce((soma, conta) => soma + Number(conta.saldo_inicial), 0);
+  return saldoInicialTotal + Number(movimentoLiquido.data ?? 0);
 }
 
 export type PontoSerieSaldo = { dias: number; realizado: number | null; projetado: number | null };
@@ -111,8 +135,8 @@ export async function buscarSerieSaldoProjetado(supabase: Cliente, tenantId: str
     supabase.from("tenants").select("limiar_saldo_minimo_alerta").eq("id", tenantId).single(),
     buscarMovimento(supabase, { tenantId, regime: "realizado", dataInicio: inicioHistorico, dataFim: hojeIso }),
     supabase.rpc("movimento_liquido_realizado", { p_tenant_id: tenantId, p_data_fim: hojeIso }),
-    buscarParcelasAbertas(supabase, tenantId, "RECEITA", fimProjecao, hojeIso),
-    buscarParcelasAbertas(supabase, tenantId, "DESPESA", fimProjecao, hojeIso),
+    buscarParcelasAbertas(supabase, tenantId, "RECEITA", fimProjecao),
+    buscarParcelasAbertas(supabase, tenantId, "DESPESA", fimProjecao),
   ]);
 
   const saldoInicialTotal = (contas.data ?? []).reduce((soma, conta) => soma + Number(conta.saldo_inicial), 0);
