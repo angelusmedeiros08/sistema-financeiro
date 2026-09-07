@@ -52,9 +52,21 @@ export async function buscarAnaliseComparativa(
   }
 
   if (params.tipo === "AH") {
-    return chaves.map((chave, i) => {
+    // Mês anterior por aritmética de calendário (mesmo padrão do ramo YOY
+    // abaixo), nunca por índice em `chaves` — achado em auditoria: `chaves`
+    // só lista meses COM movimento, então `chaves[i-1]` apontava pro último
+    // mês com dado (2-3 meses atrás) sempre que havia um mês parado no meio
+    // do período, rotulando um valor antigo como "mês anterior" sem avisar.
+    // Mês anterior sem nenhum movimento cai em `anterior=0` -> `null`
+    // (mesma semântica de "sem base de comparação" já usada no resto desta
+    // função), nunca num valor de outro mês.
+    return chaves.map((chave) => {
       const atual = porMes.get(chave)!;
-      const anterior = i > 0 ? porMes.get(chaves[i - 1])! : 0;
+      const [ano, mes] = chave.split("-").map(Number);
+      const anoMesAnterior = mes === 1 ? ano - 1 : ano;
+      const mesAnterior = mes === 1 ? 12 : mes - 1;
+      const chaveMesAnterior = `${anoMesAnterior}-${String(mesAnterior).padStart(2, "0")}`;
+      const anterior = porMes.get(chaveMesAnterior) ?? 0;
       return {
         chave,
         atual,

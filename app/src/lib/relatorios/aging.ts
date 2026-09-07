@@ -7,7 +7,11 @@ import { somarDias } from "./saldo-projetado";
 // de mesmo nome em Contas a Receber/Pagar (indicador clicável precisa
 // chegar exatamente nos registros que compuseram o total mostrado).
 export const STATUS_VENCIDO = ["PENDENTE", "RECEBIDO_PARCIAL", "ATRASADO"] as const;
-export const STATUS_VENCE_EM_30 = ["PENDENTE"] as const;
+// Achado em auditoria: faltava RECEBIDO_PARCIAL — uma parcela com baixa
+// parcial que ainda não venceu ficava fora de "Vence em 30 dias" (Painel e
+// filtro de Contas a Receber/Pagar), mesmo tendo saldo residual em aberto
+// dentro da janela.
+export const STATUS_VENCE_EM_30 = ["PENDENTE", "RECEBIDO_PARCIAL"] as const;
 
 export function limitesJanelaVencimento(diasLimite: number): { hojeIso: string; limiteIso: string } {
   const hojeIso = hojeIsoBrasil();

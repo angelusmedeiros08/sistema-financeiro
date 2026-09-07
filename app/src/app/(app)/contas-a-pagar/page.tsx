@@ -51,7 +51,12 @@ export default async function PaginaContasAPagar({
     )
     .eq("tenant_id", tenantId)
     .eq("eventos_financeiros.tipo", "DESPESA")
+    // `id` como desempate — achado em auditoria: sem 2ª coluna, empate de
+    // `data_vencimento` (comum, 30 parcelas na mesma data num tenant real)
+    // não garante ordem estável entre páginas buscadas em requests
+    // separadas, arriscando perder/repetir registro na paginação.
     .order("data_vencimento", { ascending: true })
+    .order("id", { ascending: true })
     .range(inicio, inicio + TAMANHO_PAGINA - 1);
 
   if (pessoa) query = query.eq("eventos_financeiros.pessoa_id", pessoa);
