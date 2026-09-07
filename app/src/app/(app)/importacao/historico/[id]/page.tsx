@@ -59,7 +59,7 @@ export default async function PaginaDetalheImportacao({ params }: { params: Prom
       <div>
         <div className="flex flex-wrap items-center gap-3">
           <TituloPagina>{importacao.nomeArquivo}</TituloPagina>
-          <BadgeStatusImportacao status={importacao.status} />
+          <BadgeStatusImportacao status={importacao.status} foiDesfeita={jaFoiDesfeita} />
         </div>
         <p className="mt-1 text-sm text-muted-foreground">
           {ROTULO_TIPO[importacao.tipo] ?? importacao.tipo} · importado por {importacao.criadoPorNome ?? "-"} em{" "}

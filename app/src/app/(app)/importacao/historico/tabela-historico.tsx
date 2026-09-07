@@ -13,6 +13,7 @@ export type LinhaImportacao = {
   erros: number;
   pendentes: number;
   status: string;
+  foiDesfeita: boolean;
 };
 
 const ROTULO_TIPO: Record<string, string> = {
@@ -61,7 +62,7 @@ const colunas = helper.columns([
   helper.accessor("status", {
     id: "status",
     header: "Status",
-    cell: (info) => <BadgeStatusImportacao status={info.getValue()} />,
+    cell: ({ row }) => <BadgeStatusImportacao status={row.original.status} foiDesfeita={row.original.foiDesfeita} />,
   }),
 ]);
 

@@ -2528,6 +2528,14 @@ export type Database = {
         Args: { p_criado_por?: string; p_tenant_id: string; p_venda_id: string }
         Returns: string
       }
+      contar_itens_criados_importacao: {
+        Args: { p_tenant_id: string }
+        Returns: {
+          criados_ativos: number
+          criados_sucesso: number
+          importacao_id: string
+        }[]
+      }
       contar_itens_importacao: {
         Args: { p_tenant_id: string }
         Returns: {

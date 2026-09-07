@@ -20,6 +20,11 @@ export type ResumoImportacao = {
   sucessos: number;
   erros: number;
   pendentes: number;
+  // Mesma definição de "importação inteira já desfeita" da tela de
+  // detalhe (contarItensAtivos): teve item criado com sucesso e nenhum
+  // continua ativo. Só pessoas/financeiro têm ação de desfazer — produtos
+  // nunca conta como desfeita aqui, por design (ver [id]/page.tsx).
+  foiDesfeita: boolean;
 };
 
 export type ItemImportacao = {
@@ -160,13 +165,14 @@ export async function finalizarImportacao(
 // TODAS voltavam a cada abertura da tela de histórico, só pra exibir 3
 // números por importação.
 export async function listarImportacoes(supabase: Cliente, tenant_id: string): Promise<ResumoImportacao[]> {
-  const [{ data }, { data: contagens }] = await Promise.all([
+  const [{ data }, { data: contagens }, { data: contagensCriados }] = await Promise.all([
     supabase
       .from("importacoes")
       .select("id, tipo, nome_arquivo, status, total_linhas, criado_em, usuarios(nome)")
       .eq("tenant_id", tenant_id)
       .order("criado_em", { ascending: false }),
     supabase.rpc("contar_itens_importacao", { p_tenant_id: tenant_id }),
+    supabase.rpc("contar_itens_criados_importacao", { p_tenant_id: tenant_id }),
   ]);
 
   const porImportacao = new Map<string, Record<StatusItemImportacao, number>>();
@@ -176,8 +182,20 @@ export async function listarImportacoes(supabase: Cliente, tenant_id: string): P
     porImportacao.set(c.importacao_id, atual);
   }
 
+  // Achado ao vivo: "TABELA ERICK.csv" (financeiro) aparecia sempre
+  // "Concluída" na lista mesmo depois de desfeita — só a tela de detalhe
+  // sabia disso (contarItensAtivos). A lista precisa da mesma noção pra
+  // não parecer que o lote continua valendo quando na verdade foi
+  // revertido inteiro.
+  const criadosPorImportacao = new Map<string, { sucesso: number; ativos: number }>();
+  for (const c of contagensCriados ?? []) {
+    criadosPorImportacao.set(c.importacao_id, { sucesso: Number(c.criados_sucesso), ativos: Number(c.criados_ativos) });
+  }
+
   return (data ?? []).map((i) => {
     const contagem = porImportacao.get(i.id) ?? { pendente: 0, sucesso: 0, erro: 0 };
+    const criados = criadosPorImportacao.get(i.id) ?? { sucesso: 0, ativos: 0 };
+    const podeDesfazer = i.tipo === "pessoas" || i.tipo === "financeiro";
     return {
       id: i.id,
       tipo: i.tipo,
@@ -189,6 +207,7 @@ export async function listarImportacoes(supabase: Cliente, tenant_id: string): P
       sucessos: contagem.sucesso,
       erros: contagem.erro,
       pendentes: contagem.pendente,
+      foiDesfeita: podeDesfazer && criados.sucesso > 0 && criados.ativos === 0,
     };
   });
 }
@@ -213,6 +232,9 @@ export async function buscarImportacao(
     .order("linha_numero");
 
   const listaItens = itens ?? [];
+  const criadosComSucesso = listaItens.filter((it) => it.acao === "criar" && it.status === "sucesso");
+  const criadosAtivos = criadosComSucesso.filter((it) => !it.desfeito_em);
+  const podeDesfazer = importacao.tipo === "pessoas" || importacao.tipo === "financeiro";
   return {
     importacao: {
       id: importacao.id,
@@ -225,6 +247,7 @@ export async function buscarImportacao(
       sucessos: listaItens.filter((it) => it.status === "sucesso").length,
       erros: listaItens.filter((it) => it.status === "erro").length,
       pendentes: listaItens.filter((it) => it.status === "pendente").length,
+      foiDesfeita: podeDesfazer && criadosComSucesso.length > 0 && criadosAtivos.length === 0,
     },
     itens: listaItens.map((it) => ({
       id: it.id,
