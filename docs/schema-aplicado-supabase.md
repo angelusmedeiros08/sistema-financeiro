@@ -141,6 +141,8 @@ Registro do que foi efetivamente implementado no banco (região São Paulo, `sa-
 
 87. `vw_trilha_auditoria` (03/09/2026) — achado na mesma varredura: `buscarTrilhaAuditoria` (Configurações → Auditoria) combina 2 fontes sem ordenação única no banco (`lancamentos` + `usuario_tenant`) fazendo `.range(0, inicio+tamanhoPagina-1)` nas duas a cada página — a página N sempre rebuscava as `N×tamanhoPagina` linhas anteriores de cada fonte só pra jogar fora depois do merge em JS, crescendo sem limite conforme o usuário avançava a paginação. View nova `vw_trilha_auditoria` (`UNION ALL` das duas fontes, `security_invoker=true`) permite um único `.range()` de verdade na consulta final — `buscarTrilhaAuditoria` reescrita pra uma query só. Migration rodada manualmente pelo usuário no dashboard do Supabase (mesmo motivo da entrada 86).
 
+88. `chat_ia_schema` (07/09/2026) — Fatia 1 do plano do Chat IA (`docs/superpowers/specs/2026-09-07-chat-ia-design.md`). `chat_conversas`/`chat_mensagens` (conversa é **pessoal**, não do tenant inteiro: RLS exige `tenant_id in private.tenants_do_usuario_atual()` **e** `usuario_id = auth.uid()` — ninguém, nem admin, lê a conversa de outro membro por essa via). `tentativas_chat_ia` (cota por tenant, mesmo padrão de `tentativas_auth`/`tentativas_assinatura`: RLS habilitada sem nenhuma policy, só `service_role` lê/escreve). `usuario_id` denormalizado em `chat_mensagens` (além do já denormalizado `tenant_id`) pelo mesmo motivo já registrado várias vezes neste documento — RLS sem `JOIN` contra `chat_conversas`.
+
 ## Verificação final
 
 - `get_advisors` (segurança): **0 alertas** (só o warning pré-existente e não relacionado `auth_leaked_password_protection`).

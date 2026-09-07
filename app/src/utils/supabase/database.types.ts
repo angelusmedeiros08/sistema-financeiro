@@ -454,6 +454,112 @@ export type Database = {
           },
         ]
       }
+      chat_conversas: {
+        Row: {
+          atualizado_em: string
+          criado_em: string
+          id: string
+          tenant_id: string
+          titulo: string | null
+          usuario_id: string
+        }
+        Insert: {
+          atualizado_em?: string
+          criado_em?: string
+          id?: string
+          tenant_id: string
+          titulo?: string | null
+          usuario_id: string
+        }
+        Update: {
+          atualizado_em?: string
+          criado_em?: string
+          id?: string
+          tenant_id?: string
+          titulo?: string | null
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_conversas_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_conversas_usuario_id_fkey"
+            columns: ["usuario_id"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_mensagens: {
+        Row: {
+          conteudo: string | null
+          conversa_id: string
+          criado_em: string
+          ferramenta_input: Json | null
+          ferramenta_nome: string | null
+          ferramenta_output: Json | null
+          id: string
+          papel: string
+          proposta_confirmada: boolean | null
+          tenant_id: string
+          usuario_id: string
+        }
+        Insert: {
+          conteudo?: string | null
+          conversa_id: string
+          criado_em?: string
+          ferramenta_input?: Json | null
+          ferramenta_nome?: string | null
+          ferramenta_output?: Json | null
+          id?: string
+          papel: string
+          proposta_confirmada?: boolean | null
+          tenant_id: string
+          usuario_id: string
+        }
+        Update: {
+          conteudo?: string | null
+          conversa_id?: string
+          criado_em?: string
+          ferramenta_input?: Json | null
+          ferramenta_nome?: string | null
+          ferramenta_output?: Json | null
+          id?: string
+          papel?: string
+          proposta_confirmada?: boolean | null
+          tenant_id?: string
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_mensagens_conversa_id_fkey"
+            columns: ["conversa_id"]
+            isOneToOne: false
+            referencedRelation: "chat_conversas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_mensagens_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_mensagens_usuario_id_fkey"
+            columns: ["usuario_id"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contas_contabeis: {
         Row: {
           codigo: string
@@ -2082,6 +2188,42 @@ export type Database = {
           ip?: string
         }
         Relationships: []
+      }
+      tentativas_chat_ia: {
+        Row: {
+          criado_em: string
+          id: number
+          tenant_id: string
+          usuario_id: string
+        }
+        Insert: {
+          criado_em?: string
+          id?: never
+          tenant_id: string
+          usuario_id: string
+        }
+        Update: {
+          criado_em?: string
+          id?: never
+          tenant_id?: string
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tentativas_chat_ia_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tentativas_chat_ia_usuario_id_fkey"
+            columns: ["usuario_id"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       usuario_tenant: {
         Row: {
