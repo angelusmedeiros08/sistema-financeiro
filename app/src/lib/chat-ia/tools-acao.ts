@@ -107,6 +107,7 @@ export const TOOLS_ACAO: DefinicaoTool[] = [
       return {
         acao: "editar_lancamento",
         eventoId: alvo.id,
+        tipo: alvo.tipo,
         descricaoAtual: alvo.descricao,
         valorAtual: Number(alvo.valor_total),
         novaDescricao: typeof input.nova_descricao === "string" ? input.nova_descricao : alvo.descricao,
