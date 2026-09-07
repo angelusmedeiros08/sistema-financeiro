@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/utils/supabase/database.types";
 import { CODIGO_CAIXA_E_BANCOS } from "@/lib/contabil/plano-padrao";
-import { buscarResumoVencimentos } from "@/lib/relatorios/aging";
+import { buscarResumoVencimentos, STATUS_VENCE_EM_30 } from "@/lib/relatorios/aging";
 import { buscarMovimento } from "@/lib/relatorios/regime";
 import { mesAtual } from "@/lib/relatorios/indicadores-gauge";
 import { hojeIsoBrasil } from "@/lib/data-brasil";
@@ -54,6 +54,10 @@ async function obterSaldoEmCaixa(supabase: Cliente, tenantId: string): Promise<n
   return Number(saldo ?? 0);
 }
 
+// Mesmo critério "vence em 30 dias" de STATUS_VENCE_EM_30 (aging.ts) — inclui
+// RECEBIDO_PARCIAL, então soma saldo residual (valor − baixas não
+// estornadas), não o valor cheio da parcela, senão a parte já paga de uma
+// baixa parcial seria contada de novo aqui.
 async function obterPendentesPorTipo(
   supabase: Cliente,
   tenantId: string,
@@ -62,9 +66,9 @@ async function obterPendentesPorTipo(
 ): Promise<{ total: number; quantidade: number }> {
   let query = supabase
     .from("parcelas")
-    .select("valor, eventos_financeiros!inner(tipo, pessoa_id)")
+    .select("valor, eventos_financeiros!inner(tipo, pessoa_id), baixas(valor_pago, estornado_em)")
     .eq("tenant_id", tenantId)
-    .eq("status", "PENDENTE")
+    .in("status", STATUS_VENCE_EM_30)
     .eq("eventos_financeiros.tipo", tipo)
     .gte("data_vencimento", isoHoje())
     .lte("data_vencimento", isoDaquiA(30));
@@ -76,7 +80,10 @@ async function obterPendentesPorTipo(
   if (!data) return { total: 0, quantidade: 0 };
 
   return {
-    total: data.reduce((acc, p) => acc + Number(p.valor), 0),
+    total: data.reduce((acc, p) => {
+      const pago = (p.baixas ?? []).filter((b) => !b.estornado_em).reduce((s, b) => s + Number(b.valor_pago), 0);
+      return acc + (Number(p.valor) - pago);
+    }, 0),
     quantidade: data.length,
   };
 }
@@ -179,6 +186,38 @@ async function obterFluxoUltimosMeses(
   }));
 }
 
+// Só pro sparkline de Saldo em caixa (`reconstruirSerieSaldo`) — regime
+// "realizado" (data_pagamento), nunca "competência". Achado real em
+// auditoria: reconstruir saldo passado a partir do resultado por
+// competência (a mesma série que alimenta o gráfico "Fluxo de caixa") só
+// bate com o caixa real quando toda receita/despesa é paga no mesmo mês do
+// vencimento — o que não é o caso comum. Medido ao vivo: até R$17.919,50
+// de diferença num único mês, com o sinal do erro invertendo entre meses.
+async function obterMovimentoRealizadoPorMes(
+  supabase: Cliente,
+  tenantId: string,
+  quantidadeMeses: number,
+  pessoaId?: string,
+): Promise<number[]> {
+  const dataInicio = inicioDoMes(-(quantidadeMeses - 1));
+  const dataFim = mesAtual().fim;
+  const movimento = await buscarMovimento(supabase, { tenantId, regime: "realizado", dataInicio, dataFim });
+  const filtrado = pessoaId ? movimento.filter((m) => m.pessoaId === pessoaId) : movimento;
+
+  const porMes = new Map<string, number>();
+  for (let i = quantidadeMeses - 1; i >= 0; i--) {
+    porMes.set(inicioDoMes(-i).slice(0, 7), 0);
+  }
+
+  for (const m of filtrado) {
+    const chave = m.data.slice(0, 7);
+    if (!porMes.has(chave)) continue;
+    porMes.set(chave, (porMes.get(chave) ?? 0) + (m.tipo === "RECEITA" ? m.valor : -m.valor));
+  }
+
+  return Array.from(porMes.values());
+}
+
 export type EventoRecente = {
   id: string;
   descricao: string | null;
@@ -188,24 +227,35 @@ export type EventoRecente = {
   dataCompetencia: string;
 };
 
+// Estornado (evento inteiro) fica de fora por filtro no banco; parcela
+// cancelada isoladamente (`cancelarParcela` cancela só a parcela, sem
+// estornar o evento — ver ciclo-vida-parcela.ts) só descarta o evento
+// inteiro quando TODAS as parcelas estão canceladas (nada de válido pra
+// mostrar) — por isso busca mais que 5 candidatos e filtra em memória, em
+// vez de tentar expressar "toda parcela cancelada" direto no `.select()`.
+// Achado real em auditoria: os 5 mais recentes por competência de um
+// tenant eram todos estornados, escondendo lançamentos válidos.
 async function obterEventosRecentes(supabase: Cliente, tenantId: string, pessoaId?: string): Promise<EventoRecente[]> {
   let query = supabase
     .from("eventos_financeiros")
     .select("id, descricao, tipo, valor_total, data_competencia, parcelas(status)")
     .eq("tenant_id", tenantId)
+    .is("estornado_em", null)
     .order("data_competencia", { ascending: false })
-    .limit(5);
+    .limit(20);
 
   if (pessoaId) query = query.eq("pessoa_id", pessoaId);
 
   const { data } = await query;
 
-  return (data ?? []).map((e) => ({
+  const validos = (data ?? []).filter((e) => (e.parcelas ?? []).some((p) => p.status !== "CANCELADO"));
+
+  return validos.slice(0, 5).map((e) => ({
     id: e.id,
     descricao: e.descricao,
     tipo: e.tipo,
     valor_total: Number(e.valor_total),
-    status: e.parcelas?.[0]?.status ?? null,
+    status: e.parcelas?.find((p) => p.status !== "CANCELADO")?.status ?? e.parcelas?.[0]?.status ?? null,
     dataCompetencia: e.data_competencia,
   }));
 }
@@ -215,15 +265,16 @@ async function obterEventosRecentes(supabase: Cliente, tenantId: string, pessoaI
 // caixa fica de fora do filtro de propósito: é uma dimensão do caixa da
 // empresa inteira, não tem "saldo em caixa de uma pessoa".
 // Reconstrói o saldo em caixa ao final de cada mês passado a partir do saldo
-// atual: saldo(mês i) = saldo atual - soma dos resultados dos meses depois
-// de i. Não é estimativa — é o mesmo número que o ledger daria se fosse
-// consultado naquela data, só que sem reabrir partidas mês a mês.
-function reconstruirSerieSaldo(saldoAtual: number, fluxo: PontoFluxo[]): number[] {
+// atual: saldo(mês i) = saldo atual - soma do movimento realizado dos meses
+// depois de i. `movimentoRealizadoPorMes` PRECISA vir de regime "realizado"
+// (obterMovimentoRealizadoPorMes) — usar o resultado por competência aqui
+// era o bug (ver comentário lá).
+function reconstruirSerieSaldo(saldoAtual: number, movimentoRealizadoPorMes: number[]): number[] {
   const serie: number[] = [];
   let acumulado = saldoAtual;
-  for (let i = fluxo.length - 1; i >= 0; i--) {
+  for (let i = movimentoRealizadoPorMes.length - 1; i >= 0; i--) {
     serie.unshift(acumulado);
-    acumulado -= fluxo[i].receitas - fluxo[i].despesas;
+    acumulado -= movimentoRealizadoPorMes[i];
   }
   return serie;
 }
@@ -279,12 +330,13 @@ export async function obterDadosPainel(
   opts?: { incluirSaldoEmCaixa?: boolean },
 ) {
   const incluirSaldoEmCaixa = opts?.incluirSaldoEmCaixa ?? true;
-  const [saldoEmCaixa, aReceber, aPagar, resultadoDoMes, fluxo, eventosRecentes, vencidosReceber, vencidosPagar, recebidoPago, primeirosPassos] = await Promise.all([
+  const [saldoEmCaixa, aReceber, aPagar, resultadoDoMes, fluxo, movimentoRealizadoPorMes, eventosRecentes, vencidosReceber, vencidosPagar, recebidoPago, primeirosPassos] = await Promise.all([
     incluirSaldoEmCaixa ? obterSaldoEmCaixa(supabase, tenantId) : Promise.resolve(0),
     obterPendentesPorTipo(supabase, tenantId, "RECEITA", pessoaId),
     obterPendentesPorTipo(supabase, tenantId, "DESPESA", pessoaId),
     obterResultadoDoMes(supabase, tenantId, pessoaId),
     obterFluxoUltimosMeses(supabase, tenantId, 6, pessoaId),
+    incluirSaldoEmCaixa ? obterMovimentoRealizadoPorMes(supabase, tenantId, 6, pessoaId) : Promise.resolve([]),
     obterEventosRecentes(supabase, tenantId, pessoaId),
     buscarResumoVencimentos(supabase, { tenantId, tipo: "RECEITA", pessoaId }),
     buscarResumoVencimentos(supabase, { tenantId, tipo: "DESPESA", pessoaId }),
@@ -306,7 +358,7 @@ export async function obterDadosPainel(
     vencidosPagar,
     recebidoDoMes: recebidoPago.recebido,
     pagoDoMes: recebidoPago.pago,
-    saldoSerieSeisMeses: incluirSaldoEmCaixa ? reconstruirSerieSaldo(saldoEmCaixa, fluxo) : [],
+    saldoSerieSeisMeses: incluirSaldoEmCaixa ? reconstruirSerieSaldo(saldoEmCaixa, movimentoRealizadoPorMes) : [],
     resultadoDeltaPercentual: resultadoMesAnterior !== undefined ? deltaPercentual(resultadoDoMes.liquido, resultadoMesAnterior) : undefined,
     primeirosPassos,
   };

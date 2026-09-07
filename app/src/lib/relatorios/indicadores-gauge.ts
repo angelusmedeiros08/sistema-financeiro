@@ -32,6 +32,7 @@ export async function buscarIndicadoresRealizacao(
     .select("valor, data_vencimento, eventos_financeiros!inner(tipo), baixas(valor_pago, data_pagamento, estornado_em)")
     .eq("tenant_id", params.tenantId)
     .eq("eventos_financeiros.tipo", params.tipo)
+    .neq("status", "CANCELADO")
     .gte("data_vencimento", params.mesInicio)
     .lte("data_vencimento", params.mesFim);
 
@@ -73,6 +74,7 @@ export async function buscarSerieIndicadoresRealizacao(
     .select("valor, data_vencimento, eventos_financeiros!inner(tipo), baixas(valor_pago, data_pagamento, estornado_em)")
     .eq("tenant_id", params.tenantId)
     .eq("eventos_financeiros.tipo", params.tipo)
+    .neq("status", "CANCELADO")
     .gte("data_vencimento", inicioJanela.toISOString().slice(0, 10))
     .lte("data_vencimento", fimJanela.toISOString().slice(0, 10));
 
