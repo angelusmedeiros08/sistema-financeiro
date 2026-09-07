@@ -6,13 +6,14 @@ import { createAdminClient } from "@/utils/supabase/admin";
 // trocado de e-mail/IP pra tenant_id, já que aqui é cota de uso/custo, não
 // proteção contra força bruta.
 //
-// VALOR PLACEHOLDER — política de estouro (o que acontece quando bate o
-// limite, e qual o número certo) fica em aberto de propósito (Seção 2/7 da
-// spec: "definiremos isso depois, mas deixe em aberto"). O mecanismo abaixo
-// já funciona; só o número precisa ser revisitado antes de abrir pra
-// usuários reais em produção.
+// Número decidido (não é mais placeholder): 30/dia dá espaço de sobra pra
+// uso ativo de verdade (alguém revisando o mês inteiro, pergunta atrás de
+// pergunta — uma sessão assim fica bem abaixo do teto) sem deixar a conta de
+// API exposta a um loop de frontend ou uso indevido. Uso real esperado fica
+// na casa de poucas mensagens por dia; 200/dia (valor anterior) dava 200x de
+// folga sobre isso, exposição de custo desproporcional ao uso normal.
 const JANELA_MS = 24 * 60 * 60 * 1000;
-const LIMITE_MENSAGENS_POR_TENANT_NA_JANELA = 200;
+const LIMITE_MENSAGENS_POR_TENANT_NA_JANELA = 30;
 
 export async function registrarTentativaChatIA(params: { tenantId: string; usuarioId: string }): Promise<{ permitido: boolean }> {
   const admin = createAdminClient();
