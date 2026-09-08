@@ -44,9 +44,18 @@ export function validarArquivo(file: File): string | null {
 // cellDates:true) sempre converte esse serial pro espaço UTC, então ler de
 // volta com getUTCFullYear/getUTCMonth/getUTCDate é o único jeito estável
 // (getFullYear/getMonth locais dependeriam do fuso do processo rodando o
-// import, podendo virar o dia errado). Célula numérica vira String()
-// direto (ponto decimal, nunca vírgula — quem interpreta locale é
-// parseValorPlanilha, não aqui).
+// import, podendo virar o dia errado).
+//
+// Célula numérica de verdade (não texto) — achado real em auditoria, com
+// teste reproduzindo o arquivo .xlsx de ponta a ponta: `String(1500.5)`
+// devolve "1500.5" (ponto decimal, convenção do JS), e como o produto é só
+// Brasil, esse texto sempre passa por parseValorPlanilha em formato BR, que
+// trata "." como separador de milhar e o REMOVE — "1500.5" virava "15005"
+// (10x maior), "1500.55" virava "150055" (100x maior). A maioria das
+// planilhas de verdade tem a coluna Valor formatada como Número no Excel,
+// não Texto, então isso não era um caso raro. Convertendo pra vírgula decimal
+// aqui (a mesma convenção que parseValorPlanilha espera) resolve na origem,
+// sem precisar que parseValorPlanilha saiba de onde a célula veio.
 function celulaParaTexto(valor: unknown): string {
   if (valor instanceof Date) {
     const ano = valor.getUTCFullYear();
@@ -54,7 +63,7 @@ function celulaParaTexto(valor: unknown): string {
     const dia = String(valor.getUTCDate()).padStart(2, "0");
     return `${ano}-${mes}-${dia}`;
   }
-  if (typeof valor === "number") return String(valor);
+  if (typeof valor === "number") return String(valor).replace(".", ",");
   // repararMojibake: cobre os dois caminhos (XLSX e CSV) num único ponto —
   // ambos convergem pra matrizParaColunas → celulaParaTexto antes de virar
   // coluna/linha (ver decisão na spec de importação: corrupção nasce no
