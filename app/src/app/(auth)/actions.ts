@@ -39,8 +39,14 @@ export async function cadastrar(formData: FormData): Promise<ResultadoAcao> {
     options: { data: { nome: nomeUsuario } },
   });
 
+  // Nunca ecoa erroAuth.message crú — achado em auditoria de segurança
+  // (08/09/2026): o Supabase pode incluir "User already registered" nesse
+  // texto, o que vazaria se um e-mail já tem conta (enumeração). Hoje essa
+  // rota está morta na prática (CADASTRO_PUBLICO_ATIVO=false), mas fica
+  // pronta pra vazar no dia que reabrirem cadastro público — mesmo
+  // cuidado que solicitarRecuperacaoSenha já toma de propósito.
   if (erroAuth) {
-    return { erro: erroAuth.message };
+    return { erro: "Não foi possível criar a conta com esses dados. Confira o e-mail e tente de novo." };
   }
   if (!authData.user) {
     return { erro: "Não foi possível criar o usuário." };
