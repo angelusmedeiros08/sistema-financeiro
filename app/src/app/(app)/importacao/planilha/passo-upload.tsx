@@ -6,12 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { parseArquivo, type ResultadoParse } from "@/lib/importacao/parse";
-import { gerarModeloCsv } from "@/lib/importacao/template";
-import { baixarArquivoTexto } from "@/lib/importacao/download";
+import { gerarModeloXlsx } from "@/lib/importacao/template";
+import { baixarArquivoBinario } from "@/lib/importacao/download";
 
 const VANTAGENS_MODELO = [
-  "Colunas já com o nome certo — pula direto a etapa de mapeamento",
+  "Colunas já com o nome certo, pula direto a etapa de mapeamento",
   "Categoria decide sozinha se é receita ou despesa, sem erro de reconhecimento",
+  "Cada coluna tem um comentário explicando o formato esperado",
   "Já vem com parcelamento, forma de pagamento, centro de custo e cliente/fornecedor",
 ];
 
@@ -62,7 +63,7 @@ export function PassoUpload({
             <Star size={18} weight="fill" />
           </span>
           <div>
-            <p className="text-sm font-semibold text-foreground">Use o nosso modelo — é o jeito ideal de importar</p>
+            <p className="text-sm font-semibold text-foreground">Use o nosso modelo: é o jeito ideal de importar</p>
             <ul className="mt-1.5 space-y-1">
               {VANTAGENS_MODELO.map((v) => (
                 <li key={v} className="flex items-start gap-1.5 text-xs text-muted-foreground">
@@ -77,15 +78,21 @@ export function PassoUpload({
           type="button"
           size="sm"
           className="shrink-0 gap-1.5 sm:self-center"
-          onClick={() => baixarArquivoTexto("modelo-importacao.csv", gerarModeloCsv())}
+          onClick={() =>
+            baixarArquivoBinario(
+              "modelo-importacao.xlsx",
+              gerarModeloXlsx(),
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            )
+          }
         >
           <DownloadSimple size={14} />
-          Baixar modelo
+          Baixar modelo (.xlsx)
         </Button>
       </div>
 
       <p className="text-xs text-muted-foreground">
-        Já tem uma planilha pronta em outro formato? Também funciona — na próxima etapa você diz o que é cada coluna. Nome com acento vindo de fontes
+        Já tem uma planilha pronta em outro formato? Também funciona: na próxima etapa você diz o que é cada coluna. Nome com acento vindo de fontes
         diferentes na mesma planilha (copiado e colado) é corrigido automaticamente, célula por célula.
       </p>
 

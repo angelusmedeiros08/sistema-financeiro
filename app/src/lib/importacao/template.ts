@@ -1,3 +1,4 @@
+import * as XLSX from "xlsx";
 import type { ColunaChave } from "./tipos";
 import { normalizarTexto } from "./locale-br";
 
@@ -69,6 +70,35 @@ export function gerarModeloCsv(): string {
   const cabecalho = COLUNAS_TEMPLATE.map((c) => c.rotulo).join(";");
   const linha = COLUNAS_TEMPLATE.map((c) => LINHA_EXEMPLO[c.chave]).join(";");
   return `${cabecalho}\n${linha}\n`;
+}
+
+// Modelo de verdade em .xlsx (não só um .csv de texto) — a estrutura real da
+// planilha vem de 2 coisas que só um arquivo binário permite: largura de
+// coluna calculada pelo próprio conteúdo (sem coluna espremida abrindo no
+// Excel) e um comentário no cabeçalho de cada coluna explicando formato e
+// se é obrigatória, sem precisar de nenhuma linha extra de exemplo pra
+// transmitir isso. O comentário é metadado da célula (propriedade `c`) —
+// nunca entra no valor lido por sheet_to_json (`.v`), então não interfere
+// em nada no reconhecimento automático de coluna feito por
+// sugerirMapeamentoColunas, que só olha o texto do cabeçalho.
+export function gerarModeloXlsx(): Uint8Array {
+  const cabecalho = COLUNAS_TEMPLATE.map((c) => c.rotulo);
+  const linha = COLUNAS_TEMPLATE.map((c) => LINHA_EXEMPLO[c.chave]);
+  const planilha = XLSX.utils.aoa_to_sheet([cabecalho, linha]);
+
+  planilha["!cols"] = COLUNAS_TEMPLATE.map((c) => ({ wch: Math.max(c.rotulo.length + 2, 16) }));
+
+  COLUNAS_TEMPLATE.forEach((c, i) => {
+    const ref = XLSX.utils.encode_cell({ r: 0, c: i });
+    const partes = [c.obrigatoria ? "Obrigatória." : "Opcional."];
+    if (c.ajuda) partes.push(c.ajuda.charAt(0).toUpperCase() + c.ajuda.slice(1) + ".");
+    if (c.sinonimos?.length) partes.push(`Também reconhecido como: ${c.sinonimos.join(", ")}.`);
+    XLSX.utils.cell_add_comment(planilha[ref], partes.join(" "), "Finanssi");
+  });
+
+  const pasta = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(pasta, planilha, "Modelo");
+  return XLSX.write(pasta, { type: "array", bookType: "xlsx" }) as Uint8Array;
 }
 
 // Compara o cabeçalho do arquivo enviado (em qualquer ordem) contra os

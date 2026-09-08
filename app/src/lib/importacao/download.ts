@@ -37,3 +37,22 @@ export function baixarArquivoTexto(nomeArquivo: string, conteudo: string, mime =
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
 }
+
+// Mesmo mecanismo de baixarArquivoTexto, mas pra conteúdo binário (ex.: o
+// modelo .xlsx gerado por gerarModeloXlsx) — sem BOM, que é coisa de texto.
+export function baixarArquivoBinario(nomeArquivo: string, conteudo: Uint8Array, mime: string): void {
+  // O cast pra BlobPart[] evita um falso-positivo do TS: Uint8Array aqui
+  // carrega o parâmetro genérico ArrayBufferLike (inclui SharedArrayBuffer),
+  // que o lib.dom.d.ts do BlobPart não aceita mesmo em runtime funcionando
+  // perfeitamente (o array que XLSX.write devolve é sempre um
+  // ArrayBuffer normal, nunca compartilhado).
+  const blob = new Blob([conteudo] as BlobPart[], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = nomeArquivo;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
