@@ -1,8 +1,8 @@
 "use server";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { revalidatePath } from "next/cache";
 import { createClient } from "@/utils/supabase/server";
+import { revalidarTelasFinanceiras } from "@/lib/relatorios/revalidacao-financeira";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
 import { buscarChavesDuplicatas } from "@/lib/importacao/duplicatas";
 import { LIMITE_LINHAS } from "@/lib/importacao/parse";
@@ -221,11 +221,13 @@ export async function retomarItemFinanceiroAction(itemId: string, dados: LinhaPa
 
 // Chamado uma vez no fim do wizard, depois que todas as linhas passaram
 // (com sucesso ou erro) por executarImportacaoFinanceiraAction — evita
-// revalidar a cada linha em arquivos grandes.
+// revalidar a cada linha em arquivos grandes. Usa a fonte única
+// (revalidarTelasFinanceiras) em vez de uma lista própria — achado em
+// auditoria de prontidão pro lançamento: esta ação tinha ficado de fora da
+// varredura anterior que consolidou as listas duplicadas, e revalidava só
+// 5 telas (faltavam Lançamentos, Indicadores e todos os Relatórios) —
+// depois de importar um lote, essas telas podiam continuar mostrando
+// número desatualizado até uma navegação completa.
 export async function revalidarPosImportacaoAction(): Promise<void> {
-  revalidatePath("/despesas");
-  revalidatePath("/receitas");
-  revalidatePath("/contas-a-pagar");
-  revalidatePath("/contas-a-receber");
-  revalidatePath("/painel");
+  revalidarTelasFinanceiras();
 }
