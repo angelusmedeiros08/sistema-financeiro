@@ -71,8 +71,13 @@ export function validarLinha(bruta: LinhaBruta, formato: FormatoNumerico, resolv
   if (bruta.dataPagamento.trim() && !dataPagamentoIso) erros.push("Data de pagamento inválida.");
 
   // Vazio = 1 (à vista) — mesmo limite de 1-360 já usado em toda criação
-  // manual de lançamento parcelado (criarReceita/criarDespesa).
-  const numeroParcelasTexto = bruta.numeroParcelas.trim();
+  // manual de lançamento parcelado (criarReceita/criarDespesa). Aceita um
+  // "x"/"X" solto no final ("3x", "12X", "3 x") antes de tentar converter —
+  // achado testando erro humano comum: é assim que praticamente todo
+  // brasileiro escreve parcelamento no dia a dia ("em 3x", "12x sem juros"),
+  // e sem isso a planilha rejeitava com uma mensagem que não deixava óbvio
+  // que bastava tirar o "x".
+  const numeroParcelasTexto = bruta.numeroParcelas.trim().replace(/\s*x$/i, "");
   let numeroParcelasNumero = 1;
   if (numeroParcelasTexto) {
     const n = Number(numeroParcelasTexto);

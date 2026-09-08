@@ -7,6 +7,25 @@ export function parseValorPlanilha(bruto: string, formato: FormatoNumerico = "BR
   const limpo = bruto.trim().replace(/^R\$\s*/i, "");
   if (!limpo) return null;
 
+  // Acusa o formato TROCADO por engano antes de normalizar — achado real
+  // testando erro humano comum: com BR ativo (o padrão, quase ninguém troca
+  // pra US), alguém digita/cola "1,500.00" (americano) pensando em mil e
+  // quinhentos. Sem esta checagem, o separador de milhar americano "," era
+  // tratado como decimal BR e todo dígito depois do "." era descartado por
+  // "." ser lido como milhar — "1,500.00" virava silenciosamente 1.5 (1000x
+  // menor), sem erro nenhum, linha aprovada como "ok". Não é a heurística de
+  // auto-detectar formato que a spec já descartou (ambígua pra "1.234"
+  // sozinho) — é só validar a ORDEM dos separadores quando os dois aparecem
+  // juntos, o que nunca é ambíguo: BR nunca tem "." depois da "," (o milhar
+  // sempre vem antes do decimal), e US nunca tem "," depois do ".". Mesmo
+  // bug simétrico existia com US ativo e alguém digitando estilo BR.
+  const posVirgula = limpo.indexOf(",");
+  const posPonto = limpo.indexOf(".");
+  if (posVirgula !== -1 && posPonto !== -1) {
+    const ordemInvalida = formato === "BR" ? posPonto > posVirgula : posVirgula > posPonto;
+    if (ordemInvalida) return null;
+  }
+
   const normalizado = formato === "BR" ? limpo.replace(/\./g, "").replace(",", ".") : limpo.replace(/,/g, "");
 
   const numero = Number(normalizado);
@@ -17,7 +36,14 @@ export function parseValorPlanilha(bruto: string, formato: FormatoNumerico = "BR
 // data do .xlsx, lida pelo SheetJS como string formatada) — o parser de
 // arquivo nunca decide isso, só repassa o texto da célula pra cá.
 export function parseDataPlanilha(bruto: string, formato: FormatoNumerico = "BR"): string | null {
-  const limpo = bruto.trim();
+  // Corta um horário colado no fim ("15/01/2026 10:30", "15/01/2026 10:30:00")
+  // antes de tudo — achado testando erro humano comum: extrato bancário e
+  // exportação de outros sistemas frequentemente trazem data e hora juntas
+  // na mesma célula, e a hora é irrelevante pra competência/vencimento
+  // (regex abaixo já exige o resto da string ser só dígitos e barra/traço,
+  // então só remove quando o formato é claramente "data + hora", nunca
+  // texto solto como "15 de janeiro de 2026", que continua rejeitado).
+  const limpo = bruto.trim().replace(/^(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})\s+\d{1,2}:\d{2}(:\d{2})?$/, "$1");
   if (!limpo) return null;
 
   const isoDireto = limpo.match(/^(\d{4})-(\d{2})-(\d{2})/);
