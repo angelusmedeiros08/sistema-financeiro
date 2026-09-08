@@ -41,6 +41,7 @@ export function montarLinhasBrutas(linhasTexto: string[][], mapeamento: Partial<
     documentoPessoa: coluna(celulas, "documento_pessoa"),
     centroCusto: coluna(celulas, "centro_custo"),
     formaPagamento: coluna(celulas, "forma_pagamento"),
+    numeroParcelas: coluna(celulas, "numero_parcelas"),
   }));
 }
 
@@ -69,9 +70,22 @@ export function validarLinha(bruta: LinhaBruta, formato: FormatoNumerico, resolv
   const dataPagamentoIso = bruta.dataPagamento.trim() ? parseDataPlanilha(bruta.dataPagamento, formato) : null;
   if (bruta.dataPagamento.trim() && !dataPagamentoIso) erros.push("Data de pagamento inválida.");
 
+  // Vazio = 1 (à vista) — mesmo limite de 1-360 já usado em toda criação
+  // manual de lançamento parcelado (criarReceita/criarDespesa).
+  const numeroParcelasTexto = bruta.numeroParcelas.trim();
+  let numeroParcelasNumero = 1;
+  if (numeroParcelasTexto) {
+    const n = Number(numeroParcelasTexto);
+    if (Number.isInteger(n) && n >= 1 && n <= 360) {
+      numeroParcelasNumero = n;
+    } else {
+      erros.push("Número de parcelas precisa ser um número inteiro entre 1 e 360.");
+    }
+  }
+
   const status: StatusLinha = erros.length > 0 ? "erro" : "ok";
 
-  return { ...bruta, dataCompetenciaIso, valorNumero, dataVencimentoIso, dataPagamentoIso, status, erros, avisos: [] };
+  return { ...bruta, dataCompetenciaIso, valorNumero, dataVencimentoIso, dataPagamentoIso, numeroParcelasNumero, status, erros, avisos: [] };
 }
 
 export function validarLinhas(brutas: LinhaBruta[], formato: FormatoNumerico, resolver: ResolvedorEntidade): LinhaValidada[] {

@@ -52,6 +52,7 @@ export function PassoResultado({
             data_competencia: item.linha.dataCompetenciaIso as string,
             data_vencimento: item.linha.dataVencimentoIso ?? (item.linha.dataCompetenciaIso as string),
             data_pagamento: item.linha.dataPagamentoIso,
+            numero_parcelas: item.linha.numeroParcelasNumero,
             tipo: item.tipo,
             categoria_id: item.categoriaId,
             pessoa_id: item.pessoaId,
@@ -99,6 +100,7 @@ export function PassoResultado({
         l.documentoPessoa,
         l.centroCusto,
         l.formaPagamento,
+        l.numeroParcelas,
         f.erro ?? "",
       ]);
     });

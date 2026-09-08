@@ -8,7 +8,8 @@ export type ColunaChave =
   | "pessoa"
   | "documento_pessoa"
   | "centro_custo"
-  | "forma_pagamento";
+  | "forma_pagamento"
+  | "numero_parcelas";
 
 export type TipoEntidadeImportacao = "categoria" | "centro_custo" | "pessoa" | "forma_pagamento";
 
@@ -28,6 +29,7 @@ export type LinhaBruta = {
   documentoPessoa: string;
   centroCusto: string;
   formaPagamento: string;
+  numeroParcelas: string;
 };
 
 // Só a Importação com IA popula isso — planilha/pessoas continuam
@@ -44,6 +46,9 @@ export type LinhaValidada = LinhaBruta & {
   valorNumero: number | null;
   dataVencimentoIso: string | null;
   dataPagamentoIso: string | null;
+  // Vazio na planilha = 1 (à vista) — nunca null, sempre um inteiro válido
+  // quando status !== "erro" (validarLinha rejeita antes de chegar aqui).
+  numeroParcelasNumero: number;
   status: StatusLinha;
   erros: string[];
   avisos: string[];

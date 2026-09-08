@@ -16,6 +16,7 @@ export type ParametrosCommitLinha = {
   data_competencia: string;
   data_vencimento: string;
   data_pagamento: string | null;
+  numero_parcelas: number;
   tipo: TipoCategoria;
   categoria_id: string;
   pessoa_id: string | null;
@@ -23,12 +24,17 @@ export type ParametrosCommitLinha = {
   forma_pagamento_id: string | null;
 };
 
-// Cada linha vira sempre 1 parcela à vista (Seção 2: parcelamento vindo da
-// planilha é escopo futuro). Se veio data de pagamento, dá baixa em seguida
-// — mas só quando a parcela ainda está pendente: um reimport com o mesmo
-// import_key faz o RPC devolver o evento já existente sem recriar nada, e
-// dar baixa de novo duplicaria o lançamento de baixa (registrarBaixa não é
-// idempotente por chave, só criarEventoFinanceiro é — Seção 3 da spec).
+// Vazio na planilha vira numero_parcelas=1 (à vista) — quando preenchido,
+// gera o parcelamento real (Seção 2 da spec original tratava isso como
+// "escopo futuro"; achado numa auditoria de ampliação: o RPC já suporta
+// N parcelas desde sempre, o único motivo de sempre mandar 1 aqui era a
+// planilha nunca ter tido a coluna). Se veio data de pagamento, dá baixa em
+// seguida — mas só na 1ª parcela (a única leitura sem ambiguidade de "qual
+// parcela já foi paga" quando a linha representa uma compra parcelada), e
+// só quando ela ainda está pendente: um reimport com o mesmo import_key faz
+// o RPC devolver o evento já existente sem recriar nada, e dar baixa de
+// novo duplicaria o lançamento de baixa (registrarBaixa não é idempotente
+// por chave, só criarEventoFinanceiro é — Seção 3 da spec).
 export async function commitarLinhaImportacao(supabase: Cliente, params: ParametrosCommitLinha): Promise<{ evento_id: string } | { erro: string }> {
   // pessoa_id vem da linha da planilha (resolvida na etapa de Cadastros do
   // wizard, mas ainda assim um valor externo chegando na Server Action) —
@@ -45,7 +51,7 @@ export async function commitarLinhaImportacao(supabase: Cliente, params: Paramet
     data_competencia: params.data_competencia,
     categorias: [{ categoria_id: params.categoria_id, valor: params.valor_total, centro_custo_id: params.centro_custo_id ?? undefined }],
     pessoa_id: pessoaId,
-    numero_parcelas: 1,
+    numero_parcelas: params.numero_parcelas,
     primeiro_vencimento: params.data_vencimento,
     criado_por: params.criado_por,
     import_key: params.import_key,
@@ -59,6 +65,7 @@ export async function commitarLinhaImportacao(supabase: Cliente, params: Paramet
       .select("id, status")
       .eq("evento_financeiro_id", resultadoEvento.evento_id)
       .eq("tenant_id", params.tenant_id)
+      .eq("numero", 1)
       .single();
 
     if (parcela && (parcela.status === "PENDENTE" || parcela.status === "ATRASADO")) {

@@ -225,6 +225,7 @@ export function PassoPreview({
               <TableHead>Valor</TableHead>
               <TableHead>Categoria</TableHead>
               <TableHead>Descrição</TableHead>
+              <TableHead>Parcelas</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -288,6 +289,9 @@ export function PassoPreview({
                     title={marcado("descricao") ? "IA teve baixa confiança neste campo — confira o valor" : undefined}
                   >
                     {l.descricao}
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground">
+                    {l.numeroParcelasNumero > 1 ? `${l.numeroParcelasNumero}x` : "à vista"}
                   </TableCell>
                 </TableRow>
               );

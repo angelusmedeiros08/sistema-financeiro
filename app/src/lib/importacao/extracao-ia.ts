@@ -123,6 +123,9 @@ export async function extrairLancamentosIA(
   const linhas: LinhaBrutaIA[] = extraido.linhas.map((linha, i) => ({
     linha: i + 1,
     importKey: `ia-${i}-${hashEstavel(JSON.stringify(linha))}`,
+    // Extração por IA não tenta detectar parcelamento — vazio = 1 (à vista),
+    // mesmo padrão de "campo que a planilha manual também deixaria vazio".
+    numeroParcelas: "",
     ...linha,
   }));
 

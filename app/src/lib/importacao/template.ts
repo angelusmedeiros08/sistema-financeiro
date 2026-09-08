@@ -24,6 +24,13 @@ export const COLUNAS_TEMPLATE: { chave: ColunaChave; rotulo: string; obrigatoria
   { chave: "documento_pessoa", rotulo: "CPF/CNPJ", obrigatoria: false, sinonimos: ["CNPJ/CPF", "Documento"] },
   { chave: "centro_custo", rotulo: "Centro de custo", obrigatoria: false, sinonimos: ["Centro Custo", "CC"] },
   { chave: "forma_pagamento", rotulo: "Forma de pagamento", obrigatoria: false, sinonimos: ["Forma Pagamento", "Meio de Pagamento"] },
+  {
+    chave: "numero_parcelas",
+    rotulo: "Número de parcelas",
+    obrigatoria: false,
+    ajuda: "vazio = 1 (à vista); se preenchido com Data de pagamento, a baixa vale só pra 1ª parcela",
+    sinonimos: ["Parcelas", "Qtd Parcelas", "Nº Parcelas"],
+  },
 ];
 
 // Nenhum sinônimo pode aparecer em dois campos ao mesmo tempo (ex.: "Pagamento"
@@ -55,6 +62,7 @@ const LINHA_EXEMPLO: Record<ColunaChave, string> = {
   documento_pessoa: "",
   centro_custo: "",
   forma_pagamento: "",
+  numero_parcelas: "",
 };
 
 export function gerarModeloCsv(): string {
