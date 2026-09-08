@@ -12,7 +12,7 @@ const SELECT_EVENTO = `
     categorias_financeiras (id, nome),
     rateio_centro_custo (centro_custo_id, centros_custo (id, nome))
   ),
-  parcelas (id, status, baixas (estornado_em))
+  parcelas (id, numero, valor, data_vencimento, status, baixas (estornado_em))
 `;
 
 // Busca e classifica um evento pra tela de edição — usada tanto por
@@ -62,6 +62,16 @@ export async function buscarEventoParaEdicao(
     estornado: Boolean(data.estornado_em),
     valorCategoriaEditavel: !data.estornado_em && motivoBloqueio === null,
     motivoBloqueio: data.estornado_em ? null : motivoBloqueio,
+    // Antes buscado só pra decidir motivoBloqueio e descartado — a tela de
+    // edição não linkava pra nenhuma ação de parcela (dar baixa, cancelar,
+    // renegociar, ver comprovante), forçando quem clicava numa despesa/
+    // receita a procurar a mesma parcela de novo em Contas a Pagar/Receber
+    // pra fazer qualquer coisa além de editar descrição/categoria (achado
+    // relatado ao vivo, 08/09/2026). Ordenado por número — mesma ordem que
+    // a importação por planilha gera as parcelas.
+    parcelas: parcelas
+      .map((p) => ({ id: p.id, numero: p.numero, valor: Number(p.valor), dataVencimento: p.data_vencimento, status: p.status }))
+      .sort((a, b) => a.numero - b.numero),
   };
 }
 

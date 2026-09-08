@@ -3,21 +3,25 @@
 import { useActionState, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CaretDown, WarningCircle } from "@phosphor-icons/react";
+import { CaretDown, WarningCircle, ArrowRight } from "@phosphor-icons/react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { PessoaCombobox } from "@/components/formularios/pessoa-combobox";
 import { CentroCustoCombobox } from "@/components/formularios/centro-custo-combobox";
 import { CategoriaCombobox } from "@/components/formularios/categoria-combobox";
 import { RateioCategorias } from "@/components/formularios/rateio-categorias";
-import { parseNumeroBR } from "@/lib/formatacao";
+import { parseNumeroBR, formatarMoeda } from "@/lib/formatacao";
 import { notificarResultado } from "@/lib/feedback/notificar-resultado";
+import { ROTULO_STATUS_PARCELA, COR_STATUS_PARCELA } from "@/lib/status-parcela";
+import { cn } from "@/lib/utils";
 
 type Categoria = { id: string; nome: string };
 type Pessoa = { id: string; nome: string };
 type CentroCusto = { id: string; nome: string };
 type ResultadoAcao = { erro: string } | { sucesso: true; evento_id: string; recriado: boolean };
+export type ParcelaDoEvento = { id: string; numero: number; valor: number; dataVencimento: string; status: string };
 
 const estadoInicial = { erro: "" };
 
@@ -39,6 +43,7 @@ export type DadosEventoParaEdicao = {
   // reconhecimento já é imutável.
   valorCategoriaEditavel: boolean;
   motivoBloqueio: string | null;
+  parcelas: ParcelaDoEvento[];
 };
 
 export function EditarEventoFinanceiro({
@@ -62,6 +67,10 @@ export function EditarEventoFinanceiro({
   const [rateioValido, setRateioValido] = useState(false);
   const [valorTexto, setValorTexto] = useState(evento.valorTotal.toFixed(2).replace(".", ","));
   const valorNumerico = parseNumeroBR(valorTexto);
+  // Onde vivem as ações de verdade da parcela (dar baixa, cancelar,
+  // renegociar, anexar comprovante, ver histórico) — nunca duplicadas aqui,
+  // só linkadas (ver DetalheParcela).
+  const caminhoBaseParcela = ehReceita ? "contas-a-receber" : "contas-a-pagar";
 
   const [, formAction, pendente] = useActionState(async (_: typeof estadoInicial, formData: FormData) => {
     const resultado = await acao(formData);
@@ -187,6 +196,38 @@ export function EditarEventoFinanceiro({
           </Button>
         </div>
       </form>
+
+      {!evento.estornado && (
+        <section className="rounded-2xl bg-card shadow-card p-5">
+          <h2 className="mb-1 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+            {evento.parcelas.length > 1 ? `Parcelas (${evento.parcelas.length})` : "Parcela"}
+          </h2>
+          <p className="mb-3 text-xs text-muted-foreground">Dar baixa, cancelar, renegociar ou anexar comprovante acontece na tela da parcela.</p>
+          <div className="divide-y divide-border overflow-hidden rounded-xl border border-border">
+            {evento.parcelas.map((p) => (
+              <Link
+                key={p.id}
+                href={`/${caminhoBaseParcela}/${p.id}`}
+                className="flex items-center justify-between gap-3 p-3 text-sm transition-colors hover:bg-muted/40"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-muted-foreground">
+                    {evento.parcelas.length > 1 ? `${p.numero}/${evento.parcelas.length}` : "Única"}
+                  </span>
+                  <span className="text-foreground">vence {new Date(p.dataVencimento + "T00:00:00").toLocaleDateString("pt-BR")}</span>
+                  <Badge className={cn("border-none font-semibold", COR_STATUS_PARCELA[p.status])}>
+                    {ROTULO_STATUS_PARCELA[p.status] ?? p.status}
+                  </Badge>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="font-medium tabular-nums text-foreground">{formatarMoeda(p.valor)}</span>
+                  <ArrowRight size={14} className="text-muted-foreground" />
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }
