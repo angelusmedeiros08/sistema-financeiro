@@ -115,3 +115,28 @@ export function aplicarAvisosDuplicata(linhas: LinhaValidada[], duplicatasConhec
     return { ...l, status: "aviso" as StatusLinha, avisos: [...l.avisos, "Possível duplicata: já existe um lançamento com a mesma data e valor."] };
   });
 }
+
+// Duplicata DENTRO do próprio arquivo (nunca comparada por aplicarAvisosDuplicata,
+// que só olha o banco) — achado testando erro humano real: colar o mesmo
+// bloco de linhas duas vezes na planilha (consolidando fontes, reenviando
+// por engano) cria 2 lançamentos reais idênticos, e nenhum dos dois já
+// existe no banco antes do import, então nenhum aviso aparecia. Marca TODAS
+// as linhas que compartilham a chave (não só a repetição), pra quem olha a
+// grade notar as duas, não só uma "linha extra suspeita". Recalculada a
+// partir do array atual a cada chamada (sem estado próprio) — assim uma
+// edição que muda data/valor de uma linha atualiza corretamente o aviso de
+// todas as linhas envolvidas, não só a editada.
+export function marcarDuplicatasNoArquivo(linhas: LinhaValidada[]): LinhaValidada[] {
+  const contagem = new Map<string, number>();
+  for (const l of linhas) {
+    if (l.status === "erro" || l.dataCompetenciaIso === null || l.valorNumero === null) continue;
+    const chave = chaveDuplicata(l.dataCompetenciaIso, l.valorNumero);
+    contagem.set(chave, (contagem.get(chave) ?? 0) + 1);
+  }
+  return linhas.map((l) => {
+    if (l.status === "erro" || l.dataCompetenciaIso === null || l.valorNumero === null) return l;
+    const chave = chaveDuplicata(l.dataCompetenciaIso, l.valorNumero);
+    if ((contagem.get(chave) ?? 0) < 2) return l;
+    return { ...l, status: "aviso" as StatusLinha, avisos: [...l.avisos, "Possível duplicata: outra linha deste mesmo arquivo tem a mesma data e valor."] };
+  });
+}

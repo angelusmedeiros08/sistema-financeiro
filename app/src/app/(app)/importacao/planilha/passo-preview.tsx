@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatarMoeda } from "@/lib/formatacao";
 import { normalizarTexto, type FormatoNumerico } from "@/lib/importacao/locale-br";
-import { validarLinhas, aplicarAvisosDuplicata, type ResolvedorEntidade } from "@/lib/importacao/validacao";
+import { validarLinhas, aplicarAvisosDuplicata, marcarDuplicatasNoArquivo, type ResolvedorEntidade } from "@/lib/importacao/validacao";
 import type { LinhaBruta, LinhaValidada, ResolucaoEntidade, TipoEntidadeImportacao } from "@/lib/importacao/tipos";
 import type { EntidadesExistentes } from "@/lib/importacao/resolucao";
 import type { Database } from "@/utils/supabase/database.types";
@@ -103,9 +103,15 @@ export function PassoPreview({
     });
   }
 
-  const prontas = linhas.filter((l) => l.status !== "erro" && incluidas.has(l.importKey));
-  const comErro = linhas.filter((l) => l.status === "erro");
-  const comAviso = linhas.filter((l) => l.status === "aviso");
+  // Camada derivada, recalculada a cada render a partir de `linhas` — nunca
+  // guardada em estado próprio, pra uma edição em qualquer linha atualizar
+  // corretamente o aviso de TODAS as linhas com a mesma data+valor, não só
+  // a que foi editada (ver marcarDuplicatasNoArquivo).
+  const linhasExibidas = useMemo(() => marcarDuplicatasNoArquivo(linhas), [linhas]);
+
+  const prontas = linhasExibidas.filter((l) => l.status !== "erro" && incluidas.has(l.importKey));
+  const comErro = linhasExibidas.filter((l) => l.status === "erro");
+  const comAviso = linhasExibidas.filter((l) => l.status === "aviso");
   // Único jeito de o operador conferir contra o total da planilha original
   // antes de importar — achado ao vivo com uma planilha real: a soma do
   // sistema saiu diferente da soma da planilha, e não existia lugar nenhum
@@ -229,7 +235,7 @@ export function PassoPreview({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {linhas.map((l) => {
+            {linhasExibidas.map((l) => {
               const baixaConfianca = camposBaixaConfiancaPorLinha?.get(l.importKey);
               const camposVisiveis: (keyof LinhaBruta)[] = ["dataCompetencia", "valor", "categoria", "descricao"];
               const outrosCamposIncertos = baixaConfianca ? [...baixaConfianca].filter((c) => !camposVisiveis.includes(c)) : [];
