@@ -79,6 +79,11 @@ export async function criarProdutoServico(
   if (!params.nome.trim()) return { erro: "Informe o nome do produto ou serviço." };
   if (!params.categoriaFinanceiraId) return { erro: "Selecione a categoria financeira de receita." };
   if (!Number.isFinite(params.precoVenda) || params.precoVenda < 0) return { erro: "Informe um preço de venda válido." };
+  // Achado em auditoria de segurança (08/09/2026): categoria_financeira_id
+  // nunca era validada contra o tenant — mesmo padrão de referência cruzada
+  // já corrigido em Vendas/Orçamentos, linha_dre_categorias e categorias.ts.
+  const { data: categoriaValida } = await supabase.from("categorias_financeiras").select("id").eq("id", params.categoriaFinanceiraId).eq("tenant_id", params.tenantId).maybeSingle();
+  if (!categoriaValida) return { erro: "Categoria financeira inválida para este tenant." };
 
   const { data, error } = await supabase
     .from("produtos_servicos")
@@ -117,6 +122,8 @@ export async function editarProdutoServico(
   if (!params.nome.trim()) return { erro: "Informe o nome do produto ou serviço." };
   if (!params.categoriaFinanceiraId) return { erro: "Selecione a categoria financeira de receita." };
   if (!Number.isFinite(params.precoVenda) || params.precoVenda < 0) return { erro: "Informe um preço de venda válido." };
+  const { data: categoriaValida } = await supabase.from("categorias_financeiras").select("id").eq("id", params.categoriaFinanceiraId).eq("tenant_id", params.tenantId).maybeSingle();
+  if (!categoriaValida) return { erro: "Categoria financeira inválida para este tenant." };
 
   const { error } = await supabase
     .from("produtos_servicos")

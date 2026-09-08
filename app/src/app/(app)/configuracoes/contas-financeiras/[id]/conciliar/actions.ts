@@ -144,12 +144,25 @@ export async function confirmarMatchAction(params: {
   const baixaIds: string[] = [];
   for (const candidato of params.candidatos) {
     if (candidato.origem === "baixa") {
+      // Confirma posse antes de vincular — achado em auditoria de segurança
+      // (08/09/2026): sem isso, um baixa_id de OUTRO tenant era aceito sem
+      // checagem nenhuma (nem FK, nem RLS de INSERT validam isso), mesmo
+      // padrão de IDOR já fechado em Vendas/Orçamentos e linha_dre_categorias.
+      const { data: baixaValida } = await supabase.from("baixas").select("id").eq("id", candidato.id).eq("tenant_id", contexto.tenantId).maybeSingle();
+      if (!baixaValida) return { erro: "Uma das baixas selecionadas é inválida para esta conta." };
       baixaIds.push(candidato.id);
       continue;
     }
 
     // Parcela pendente selecionada pra agrupamento: confirmar o match já
-    // registra a baixa de verdade, na conta sendo conciliada.
+    // registra a baixa de verdade, na conta sendo conciliada. Chave
+    // determinística (linha do extrato + parcela) — achado em auditoria de
+    // segurança (08/09/2026): duplo clique/retry de rede podia bater aqui
+    // duas vezes antes do status virar CONCILIADA, cada uma criando sua
+    // própria baixa (mesma classe de bug já corrigida pra baixa parcial
+    // manual, que usa uma chave gerada no formulário — aqui não existe
+    // formulário de sessão longa, então a chave é derivada dos próprios
+    // IDs envolvidos, estável entre retries do mesmo clique).
     const resultadoBaixa = await registrarBaixa(supabase, {
       tenant_id: contexto.tenantId,
       parcela_id: candidato.id,
@@ -157,14 +170,24 @@ export async function confirmarMatchAction(params: {
       valor_pago: candidato.valor,
       conta_financeira_id: params.contaFinanceiraId,
       criado_por: contexto.user.id,
+      idempotency_key: `conciliacao-${params.extratoLinhaId}-${candidato.id}`,
     });
     if ("erro" in resultadoBaixa) return { erro: `Baixa de uma das parcelas falhou: ${resultadoBaixa.erro}` };
     baixaIds.push(resultadoBaixa.baixa_id);
   }
 
+  // upsert + ignoreDuplicates (não .insert simples) — um INSERT com várias
+  // linhas falha por inteiro se QUALQUER uma colidir com a chave primária
+  // (extrato_linha_id, baixa_id), então um .insert() comum derrubaria até
+  // os links legítimos e novos do mesmo lote se um retry reencontrasse só
+  // 1 baixa já linkada. upsert trata cada linha por si (mesmo padrão já
+  // usado em importarExtratoAction, acima).
   const { error: erroLink } = await supabase
     .from("extrato_linha_baixas")
-    .insert(baixaIds.map((baixaId) => ({ extrato_linha_id: params.extratoLinhaId, baixa_id: baixaId, tenant_id: contexto.tenantId })));
+    .upsert(
+      baixaIds.map((baixaId) => ({ extrato_linha_id: params.extratoLinhaId, baixa_id: baixaId, tenant_id: contexto.tenantId })),
+      { onConflict: "extrato_linha_id,baixa_id", ignoreDuplicates: true },
+    );
   if (erroLink) return { erro: erroLink.message };
 
   const { error: erroStatus } = await supabase
@@ -201,6 +224,10 @@ export async function criarLancamentoSimplificadoAction(params: {
   const valorLinha = Number(linha.valor);
   const tipoEvento = linha.tipo === "CREDITO" ? "RECEITA" : "DESPESA";
 
+  // import_key determinística — mesma razão do idempotency_key em
+  // confirmarMatchAction: sem isso, duplo clique/retry de rede podia criar
+  // 2 lançamentos financeiros pra mesma linha do extrato antes do status
+  // virar CONCILIADA (achado em auditoria de segurança, 08/09/2026).
   const resultadoEvento = await criarEventoFinanceiro(supabase, {
     tenant_id: contexto.tenantId,
     tipo: tipoEvento,
@@ -212,6 +239,7 @@ export async function criarLancamentoSimplificadoAction(params: {
     numero_parcelas: 1,
     primeiro_vencimento: linha.data,
     criado_por: contexto.user.id,
+    import_key: `conciliacao-simplificado-${params.extratoLinhaId}`,
   });
   if ("erro" in resultadoEvento) return resultadoEvento;
 
@@ -230,12 +258,16 @@ export async function criarLancamentoSimplificadoAction(params: {
     valor_pago: valorLinha,
     conta_financeira_id: params.contaFinanceiraId,
     criado_por: contexto.user.id,
+    idempotency_key: `conciliacao-simplificado-${params.extratoLinhaId}`,
   });
   if ("erro" in resultadoBaixa) return { erro: `Lançamento criado, mas a baixa falhou: ${resultadoBaixa.erro}` };
 
   const { error: erroLink } = await supabase
     .from("extrato_linha_baixas")
-    .insert({ extrato_linha_id: params.extratoLinhaId, baixa_id: resultadoBaixa.baixa_id, tenant_id: contexto.tenantId });
+    .upsert(
+      { extrato_linha_id: params.extratoLinhaId, baixa_id: resultadoBaixa.baixa_id, tenant_id: contexto.tenantId },
+      { onConflict: "extrato_linha_id,baixa_id", ignoreDuplicates: true },
+    );
   if (erroLink) return { erro: erroLink.message };
 
   const { error: erroStatus } = await supabase

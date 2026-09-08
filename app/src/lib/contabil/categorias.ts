@@ -51,6 +51,19 @@ export async function listarCategorias(supabase: Cliente, params: { tenantId: st
   return resultado;
 }
 
+// Achado em auditoria de segurança (08/09/2026): nem criarCategoria nem
+// editarCategoria checavam que conta_contabil_id/categoria_pai_id
+// pertencem a este tenant — mesmo padrão de referência cruzada não
+// validada já corrigido em Vendas/Orçamentos e linha_dre_categorias.
+async function confirmarPosseContaContabil(supabase: Cliente, tenantId: string, contaContabilId: string): Promise<boolean> {
+  const { data } = await supabase.from("contas_contabeis").select("id").eq("id", contaContabilId).eq("tenant_id", tenantId).maybeSingle();
+  return !!data;
+}
+async function confirmarPosseCategoria(supabase: Cliente, tenantId: string, categoriaId: string): Promise<boolean> {
+  const { data } = await supabase.from("categorias_financeiras").select("id").eq("id", categoriaId).eq("tenant_id", tenantId).maybeSingle();
+  return !!data;
+}
+
 export async function criarCategoria(
   supabase: Cliente,
   params: {
@@ -64,6 +77,12 @@ export async function criarCategoria(
 ): Promise<{ id: string } | { erro: string }> {
   if (!params.nome.trim()) return { erro: "Informe o nome da categoria." };
   if (!params.contaContabilId) return { erro: "Selecione a conta contábil." };
+  if (!(await confirmarPosseContaContabil(supabase, params.tenantId, params.contaContabilId))) {
+    return { erro: "Conta contábil inválida para este tenant." };
+  }
+  if (params.categoriaPaiId && !(await confirmarPosseCategoria(supabase, params.tenantId, params.categoriaPaiId))) {
+    return { erro: "Categoria pai inválida para este tenant." };
+  }
 
   const { data, error } = await supabase
     .from("categorias_financeiras")
@@ -96,6 +115,12 @@ export async function editarCategoria(
   if (!params.nome.trim()) return { erro: "Informe o nome da categoria." };
   if (!params.contaContabilId) return { erro: "Selecione a conta contábil." };
   if (params.categoriaPaiId === params.categoriaId) return { erro: "Uma categoria não pode ser subcategoria dela mesma." };
+  if (!(await confirmarPosseContaContabil(supabase, params.tenantId, params.contaContabilId))) {
+    return { erro: "Conta contábil inválida para este tenant." };
+  }
+  if (params.categoriaPaiId && !(await confirmarPosseCategoria(supabase, params.tenantId, params.categoriaPaiId))) {
+    return { erro: "Categoria pai inválida para este tenant." };
+  }
 
   const { error } = await supabase
     .from("categorias_financeiras")

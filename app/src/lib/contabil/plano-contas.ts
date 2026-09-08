@@ -82,6 +82,13 @@ export async function criarContaContabil(
   if (!params.codigo.trim() || !params.nome.trim()) {
     return { erro: "Informe código e nome da conta." };
   }
+  // Achado em auditoria de segurança (08/09/2026): conta_pai_id nunca era
+  // validada contra o tenant — mesmo padrão de referência cruzada já
+  // corrigido em Vendas/Orçamentos, linha_dre_categorias e categorias.ts.
+  if (params.contaPaiId) {
+    const { data: paiValida } = await supabase.from("contas_contabeis").select("id").eq("id", params.contaPaiId).eq("tenant_id", params.tenantId).maybeSingle();
+    if (!paiValida) return { erro: "Conta pai inválida para este tenant." };
+  }
 
   const { error } = await supabase.from("contas_contabeis").insert({
     tenant_id: params.tenantId,
@@ -122,6 +129,10 @@ export async function editarContaContabil(
     .maybeSingle();
 
   if (!conta) return { erro: "Conta não encontrada." };
+  if (params.contaPaiId) {
+    const { data: paiValida } = await supabase.from("contas_contabeis").select("id").eq("id", params.contaPaiId).eq("tenant_id", params.tenantId).maybeSingle();
+    if (!paiValida) return { erro: "Conta pai inválida para este tenant." };
+  }
 
   type AtualizacaoConta = Database["public"]["Tables"]["contas_contabeis"]["Update"];
   const atualizacao: AtualizacaoConta = {
