@@ -1,13 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { DownloadSimple, FileXls, Spinner, UploadSimple } from "@phosphor-icons/react";
+import { CheckCircle, DownloadSimple, FileXls, Spinner, Star, UploadSimple } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { parseArquivo, type ResultadoParse } from "@/lib/importacao/parse";
 import { gerarModeloCsv } from "@/lib/importacao/template";
 import { baixarArquivoTexto } from "@/lib/importacao/download";
+
+const VANTAGENS_MODELO = [
+  "Colunas já com o nome certo — pula direto a etapa de mapeamento",
+  "Categoria decide sozinha se é receita ou despesa, sem erro de reconhecimento",
+  "Já vem com parcelamento, forma de pagamento, centro de custo e cliente/fornecedor",
+];
 
 type ContaFinanceira = { id: string; nome: string };
 
@@ -45,27 +51,43 @@ export function PassoUpload({
 
   return (
     <div className="flex flex-col gap-6 rounded-2xl bg-card shadow-card p-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h2 className="text-sm font-bold text-foreground">1. Envie sua planilha</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Aceita .csv e .xlsx, até 10MB e 500 linhas. Baixe o modelo se quiser garantir que as colunas batem certinho.
-          </p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Nome com acento vindo de fontes diferentes na mesma planilha (copiado e colado) é corrigido automaticamente, célula por célula.
-          </p>
+      <div>
+        <h2 className="text-sm font-bold text-foreground">1. Envie sua planilha</h2>
+        <p className="mt-1 text-sm text-muted-foreground">Aceita .csv e .xlsx, até 10MB e 500 linhas.</p>
+      </div>
+
+      <div className="flex flex-col gap-3 rounded-2xl border border-primary/30 bg-primary/5 p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex gap-3">
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <Star size={18} weight="fill" />
+          </span>
+          <div>
+            <p className="text-sm font-semibold text-foreground">Use o nosso modelo — é o jeito ideal de importar</p>
+            <ul className="mt-1.5 space-y-1">
+              {VANTAGENS_MODELO.map((v) => (
+                <li key={v} className="flex items-start gap-1.5 text-xs text-muted-foreground">
+                  <CheckCircle size={13} weight="fill" className="mt-0.5 shrink-0 text-primary" />
+                  {v}
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
         <Button
           type="button"
-          variant="outline"
           size="sm"
-          className="shrink-0 gap-1.5"
+          className="shrink-0 gap-1.5 sm:self-center"
           onClick={() => baixarArquivoTexto("modelo-importacao.csv", gerarModeloCsv())}
         >
           <DownloadSimple size={14} />
           Baixar modelo
         </Button>
       </div>
+
+      <p className="text-xs text-muted-foreground">
+        Já tem uma planilha pronta em outro formato? Também funciona — na próxima etapa você diz o que é cada coluna. Nome com acento vindo de fontes
+        diferentes na mesma planilha (copiado e colado) é corrigido automaticamente, célula por célula.
+      </p>
 
       <div className="space-y-1.5">
         <Label htmlFor="conta_financeira_import">Conta financeira</Label>
