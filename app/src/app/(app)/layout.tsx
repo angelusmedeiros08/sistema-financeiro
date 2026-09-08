@@ -8,7 +8,7 @@ import { AppChromeShell } from "@/components/layout/app-chrome-shell";
 import { buscarNotificacoes } from "@/lib/notificacoes/notificacoes";
 
 export default async function LayoutApp({ children }: { children: React.ReactNode }) {
-  const contexto = await obterUsuarioETenantAtual();
+  const contexto = await obterUsuarioETenantAtual(true);
   if ("erro" in contexto) {
     redirect("/entrar");
   }

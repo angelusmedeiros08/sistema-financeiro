@@ -4,7 +4,7 @@ import { acessoLiberado } from "@/lib/pagamentos/plano";
 import { PortalTopbar } from "@/components/layout/portal-topbar";
 
 export default async function LayoutPortal({ children }: { children: React.ReactNode }) {
-  const contexto = await obterUsuarioETenantAtual();
+  const contexto = await obterUsuarioETenantAtual(true);
   if ("erro" in contexto) redirect("/entrar");
 
   // Mesmo gate de assinatura de (app)/layout.tsx — o cliente do portal

@@ -24,7 +24,7 @@ const MENSAGEM_POR_STATUS: Record<string, string> = {
 // Sem self-service de reativação ainda (não existe portal de cobrança do
 // Asaas integrado) — o caminho é contato direto até isso existir.
 export default async function PaginaAssinaturaPendente() {
-  const contexto = await obterUsuarioETenantAtual();
+  const contexto = await obterUsuarioETenantAtual(true);
   if ("erro" in contexto) redirect("/entrar");
 
   // Se o acesso já está liberado (ex.: pagamento acabou de confirmar e o
