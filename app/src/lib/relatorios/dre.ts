@@ -415,6 +415,20 @@ export async function vincularCategoriaDre(
     .maybeSingle();
   if (!linha) return { erro: "Linha de DRE não encontrada." };
 
+  // Mesma confirmação pro outro lado do vínculo — a policy de INSERT só
+  // checava a linha, nunca a categoria (achado em auditoria de segurança,
+  // 08/09/2026): sem isso, dava pra inserir linha_dre_id (legítima) →
+  // categoria_id de outro tenant. Impacto prático era baixo (o agregado do
+  // DRE só soma categoria do próprio tenant), mas é inconsistência de
+  // autorização que vale fechar.
+  const { data: categoria } = await supabase
+    .from("categorias_financeiras")
+    .select("id")
+    .eq("id", params.categoriaId)
+    .eq("tenant_id", params.tenantId)
+    .maybeSingle();
+  if (!categoria) return { erro: "Categoria não encontrada." };
+
   const { error } = await supabase.from("linha_dre_categorias").insert({ linha_dre_id: params.linhaId, categoria_id: params.categoriaId });
   if (error) return { erro: error.message };
   return { sucesso: true };

@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/utils/supabase/database.types";
 import { validarItensComerciais, type ItemComercialEntrada } from "@/lib/comercial/itens";
+import { confirmarPosseDePessoa } from "@/lib/contabil/evento-financeiro";
 
 type Cliente = SupabaseClient<Database>;
 type StatusVenda = Database["public"]["Enums"]["status_venda"];
@@ -225,6 +226,20 @@ export async function editarCabecalhoVenda(
   if (!Number.isFinite(params.numeroParcelas) || params.numeroParcelas < 1) return { erro: "Número de parcelas precisa ser pelo menos 1." };
   const erroItens = validarItensComerciais(params.itens);
   if (erroItens) return { erro: erroItens };
+
+  // Diferente de criarVenda (que passa por criar_venda_com_itens, já
+  // validado no banco), esta função sempre foi um .update() direto na
+  // tabela — nunca validava que pessoa_id/forma_pagamento_id pertencem a
+  // este tenant (achado em auditoria de segurança, 08/09/2026: um UUID de
+  // cliente de outro tenant era aceito sem checagem nenhuma, em nenhuma
+  // camada). Mesma função que despesas/receitas já usam pra isso.
+  const pessoaValida = await confirmarPosseDePessoa(supabase, params.tenantId, params.pessoaId);
+  if (!pessoaValida) return { erro: "Cliente inválido para este tenant." };
+
+  if (params.formaPagamentoId) {
+    const { data: formaValida } = await supabase.from("formas_pagamento").select("id").eq("id", params.formaPagamentoId).eq("tenant_id", params.tenantId).maybeSingle();
+    if (!formaValida) return { erro: "Forma de pagamento inválida para este tenant." };
+  }
 
   const { error } = await supabase
     .from("vendas")
