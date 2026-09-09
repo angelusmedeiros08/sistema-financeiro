@@ -255,7 +255,14 @@ function IndicadorUsoChatIA({ uso }: { uso: UsoChatIA }) {
 function Bolha({ papel, children }: { papel: "usuario" | "assistente"; children: React.ReactNode }) {
   return (
     <div className={cn("flex", papel === "usuario" ? "justify-end" : "justify-start")}>
-      <div className={cn("max-w-[85%] rounded-xl px-3 py-2 text-sm whitespace-pre-wrap", papel === "usuario" ? "bg-primary text-primary-foreground" : "bg-muted text-foreground")}>{children}</div>
+      <div
+        className={cn(
+          "max-w-[85%] min-w-0 rounded-xl px-3 py-2 text-sm whitespace-pre-wrap break-words",
+          papel === "usuario" ? "bg-primary text-primary-foreground" : "bg-muted text-foreground",
+        )}
+      >
+        {children}
+      </div>
     </div>
   );
 }
