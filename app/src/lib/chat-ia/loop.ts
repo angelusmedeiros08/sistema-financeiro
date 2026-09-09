@@ -9,6 +9,26 @@ const MODELO = "claude-sonnet-5";
 const MAX_TOKENS = 4096;
 const MAX_ITERACOES_TOOL_USE = 8; // trava contra loop infinito de tool use (modelo insistindo numa ferramenta)
 
+// Cache de prompt (achado em cálculo de custo, 08/09/2026): system prompt +
+// as 13 definições de ferramenta são idênticos em toda chamada, de todo
+// tenant — nunca mudam por sessão nem por usuário. Sem cache, esse bloco
+// fixo (~2.500 tokens) é recobrado inteiro a US$2/MTok a cada uma das até
+// 8 iterações do loop, em toda mensagem. Marcando o breakpoint no ÚLTIMO
+// item do array de ferramentas, tudo que vem antes dele (system + todas as
+// ferramentas) vira um único bloco cacheável — as chamadas seguintes (desta
+// mesma iteração, da próxima mensagem, ou de OUTRO tenant, já que o
+// conteúdo é idêntico) pagam US$0,20/MTok de leitura em vez de US$2/MTok
+// cru, contanto que caiam dentro da janela de 5 min do cache efêmero — o
+// que cobre a maior parte do tráfego real do sistema, com muitos tenants
+// conversando ao longo do dia.
+const SYSTEM_COM_CACHE = (texto: string): Anthropic.TextBlockParam[] => [{ type: "text", text: texto, cache_control: { type: "ephemeral" } }];
+
+function toolsComCache(tools: Anthropic.Tool[]): Anthropic.Tool[] {
+  if (tools.length === 0) return tools;
+  const ultimo = tools[tools.length - 1];
+  return [...tools.slice(0, -1), { ...ultimo, cache_control: { type: "ephemeral" } }];
+}
+
 export type EventoLoopChat =
   | { tipo: "texto"; delta: string }
   | { tipo: "ferramenta_chamada"; nome: string; input: unknown }
@@ -36,6 +56,8 @@ export async function executarLoopChat(params: {
   const mensagens: Anthropic.MessageParam[] = [...params.historico];
   const ferramentasExecutadas: FerramentaExecutada[] = [];
   let textoFinalAcumulado = "";
+  const systemComCache = SYSTEM_COM_CACHE(montarPromptSistema());
+  const toolsComCacheAtivo = toolsComCache(DEFINICOES_TOOLS);
 
   for (let iteracao = 0; iteracao < MAX_ITERACOES_TOOL_USE; iteracao++) {
     let mensagemFinal: Anthropic.Message;
@@ -43,9 +65,9 @@ export async function executarLoopChat(params: {
       const stream = client.messages.stream({
         model: MODELO,
         max_tokens: MAX_TOKENS,
-        system: montarPromptSistema(),
+        system: systemComCache,
         messages: mensagens,
-        tools: DEFINICOES_TOOLS,
+        tools: toolsComCacheAtivo,
       });
 
       stream.on("text", (delta) => {

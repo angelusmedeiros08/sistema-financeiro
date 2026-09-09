@@ -92,7 +92,13 @@ export async function extrairLancamentosIA(
       // precisar do aviso abaixo; o custo real só sobe se o texto de fato
       // tiver esse volume, o teto em si não custa nada enquanto não é usado.
       max_tokens: 16000,
-      system: PROMPT_SISTEMA.replace("{{HOJE}}", hojeIso),
+      // Cache de prompt (achado em cálculo de custo, 08/09/2026): o texto
+      // fixo do prompt (só a data muda, uma vez por dia) é recobrado por
+      // completo a US$2/MTok em toda extração, de todo tenant — marcando
+      // o bloco como cacheável, chamadas dentro da janela de 5 min (o
+      // volume normal de uso do sistema ao longo do dia) pagam US$0,20/MTok
+      // de leitura em vez do preço cru.
+      system: [{ type: "text", text: PROMPT_SISTEMA.replace("{{HOJE}}", hojeIso), cache_control: { type: "ephemeral" } }],
       messages: [{ role: "user", content: conteudo }],
       output_config: { format: zodOutputFormat(ExtracaoSchema) },
     });
