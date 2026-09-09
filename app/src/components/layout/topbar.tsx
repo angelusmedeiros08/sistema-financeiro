@@ -62,12 +62,17 @@ export function Topbar({
         <img src="/logo/texto-escuro.png" alt="Finanssi" className="hidden h-7 w-auto dark:block" />
       </div>
 
+      {/* key={tenantId}: mesma classe de bug do ChatDuvidasMenu abaixo — a
+          busca global guarda seus próprios resultados no estado do cliente
+          (buscarGlobal já escopado por tenant), e sem remontar ao trocar de
+          empresa eles ficam visíveis até a próxima letra digitada
+          (achado real, 09/09/2026). */}
       <div className="hidden min-w-0 flex-1 justify-center lg:flex">
-        <CommandPaletteBusca />
+        <CommandPaletteBusca key={tenantId} />
       </div>
 
       <div className="flex min-w-0 flex-1 items-center gap-1.5 lg:hidden">
-        <CommandPaletteBusca variante="icone" />
+        <CommandPaletteBusca key={tenantId} variante="icone" />
         <p className="truncate text-sm font-semibold text-foreground">{tenantNome}</p>
       </div>
 

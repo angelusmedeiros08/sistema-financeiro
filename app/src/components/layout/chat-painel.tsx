@@ -22,7 +22,6 @@ type MensagemChat = {
 type PropostaCriar = { acao: "criar_lancamento"; tipo: "RECEITA" | "DESPESA"; descricao: string; valor: number; data: string; categoria: { nome: string; categoriaNova: boolean }; pessoa: { nome: string; pessoaNova: boolean } | null };
 type PropostaEditar = { acao: "editar_lancamento"; descricaoAtual: string; valorAtual: number; novaDescricao: string; novoValor: number };
 type PropostaCancelar = { acao: "cancelar_parcela"; descricao: string; valor: number; motivo: string };
-type Candidatos = { candidatos: { descricao?: string; valor?: number }[] };
 type UsoChatIA = { usado: number; limite: number };
 
 // Painel do Chat IA — evolui o antigo placeholder "Em breve" do
@@ -41,7 +40,13 @@ export function ChatPainel() {
   const [statusFerramenta, setStatusFerramenta] = useState<string | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [uso, setUso] = useState<UsoChatIA | null>(null);
+  const [propostasEmAndamento, setPropostasEmAndamento] = useState<Set<string>>(new Set());
   const fimDaListaRef = useRef<HTMLDivElement>(null);
+  // Guarda síncrona contra clique duplo/Enter duplo: `enviando` é estado
+  // React, que não muda de valor sincronamente (dois Enters rápidos podem
+  // ler enviando === false os dois antes do primeiro setEnviando(true)
+  // surtir efeito). Ref muda na hora, sem esperar re-render.
+  const enviandoRef = useRef(false);
 
   useEffect(() => {
     (async () => {
@@ -71,7 +76,8 @@ export function ChatPainel() {
 
   async function enviarMensagem() {
     const mensagem = texto.trim();
-    if (!mensagem || enviando) return;
+    if (!mensagem || enviandoRef.current) return;
+    enviandoRef.current = true;
 
     setTexto("");
     setErro(null);
@@ -79,7 +85,8 @@ export function ChatPainel() {
     setStreamParcial("");
     setStatusFerramenta(null);
     // Otimista: mostra a mensagem do usuário na hora, sem esperar o servidor.
-    setMensagens((atual) => [...atual, { id: `temp-${Date.now()}`, papel: "usuario", conteudo: mensagem, ferramentaNome: null, ferramentaOutput: null, propostaConfirmada: null }]);
+    const idTemporario = `temp-${Date.now()}`;
+    setMensagens((atual) => [...atual, { id: idTemporario, papel: "usuario", conteudo: mensagem, ferramentaNome: null, ferramentaOutput: null, propostaConfirmada: null }]);
 
     try {
       const resp = await fetch("/api/chat", {
@@ -92,7 +99,10 @@ export function ChatPainel() {
         const dados = await resp.json().catch(() => ({}));
         if (dados.uso) setUso(dados.uso);
         setErro(dados.erro ?? "Falha ao conversar com a IA.");
-        setEnviando(false);
+        // A mensagem otimista nunca chegou a ser persistida — tira da tela
+        // em vez de deixá-la parecendo enviada até o próximo refresh
+        // silenciosamente apagar ela (achado real, 09/09/2026).
+        setMensagens((atual) => atual.filter((m) => m.id !== idTemporario));
         return;
       }
 
@@ -110,12 +120,22 @@ export function ChatPainel() {
         bufer = partes.pop() ?? "";
         for (const parte of partes) {
           if (!parte.startsWith("data: ")) continue;
-          const evento = JSON.parse(parte.slice(6));
-          if (evento.tipo === "inicio") conversaIdDoStream = evento.conversaId;
-          else if (evento.tipo === "uso") setUso({ usado: evento.usado, limite: evento.limite });
-          else if (evento.tipo === "texto") setStreamParcial((atual) => atual + evento.delta);
-          else if (evento.tipo === "ferramenta_chamada") setStatusFerramenta(`Consultando ${evento.nome}…`);
-          else if (evento.tipo === "erro") setErro(evento.mensagem);
+          // Um chunk SSE malformado (proxy reescrevendo, frame cortado) não
+          // pode derrubar o loop inteiro — sem o try/catch local, um
+          // JSON.parse ruim pulava direto pro catch de fora, que mostra
+          // "Falha de conexão" e nunca chega no recarregarMensagens final,
+          // deixando a tela sem as mensagens que o servidor já salvou
+          // (achado real, 09/09/2026).
+          try {
+            const evento = JSON.parse(parte.slice(6));
+            if (evento.tipo === "inicio") conversaIdDoStream = evento.conversaId;
+            else if (evento.tipo === "uso") setUso({ usado: evento.usado, limite: evento.limite });
+            else if (evento.tipo === "texto") setStreamParcial((atual) => atual + evento.delta);
+            else if (evento.tipo === "ferramenta_chamada") setStatusFerramenta(`Consultando ${evento.nome}…`);
+            else if (evento.tipo === "erro") setErro(evento.mensagem);
+          } catch {
+            continue;
+          }
         }
       }
 
@@ -123,33 +143,49 @@ export function ChatPainel() {
       if (conversaIdDoStream) await recarregarMensagens(conversaIdDoStream);
     } catch {
       setErro("Falha de conexão — tente de novo.");
+      setMensagens((atual) => atual.filter((m) => m.id !== idTemporario));
     } finally {
       setStreamParcial("");
       setStatusFerramenta(null);
       setEnviando(false);
+      enviandoRef.current = false;
     }
   }
 
   async function responderProposta(mensagemId: string, acao: "confirmar" | "descartar") {
+    // Trava local contra clique duplo (o backend também reivindica a
+    // proposta de forma atômica — ver /api/chat/confirmar — mas travar aqui
+    // já evita o segundo request na maioria dos casos, sem depender só do
+    // 409 de volta).
+    if (propostasEmAndamento.has(mensagemId)) return;
+    setPropostasEmAndamento((atual) => new Set(atual).add(mensagemId));
     setErro(null);
-    const resp = await fetch("/api/chat/confirmar", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ mensagemId, acao }),
-    });
-    const dados = await resp.json();
-    if (!resp.ok) {
-      setErro(dados.erro ?? "Falha ao processar a proposta.");
-      return;
+    try {
+      const resp = await fetch("/api/chat/confirmar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mensagemId, acao }),
+      });
+      const dados = await resp.json();
+      if (!resp.ok) {
+        setErro(dados.erro ?? "Falha ao processar a proposta.");
+        return;
+      }
+      if (conversaId) await recarregarMensagens(conversaId);
+      // A action real (criarReceita/criarDespesa/cancelarParcelaAction etc.)
+      // roda dentro de um Route Handler (/api/chat/confirmar), não como
+      // invocação nativa de Server Action — o `revalidatePath` interno dela
+      // não atualiza o cache de router desta aba sozinho (achado em auditoria
+      // de revalidação). Sem isso, confirmar uma proposta de lançamento não
+      // atualizava a tela atrás do painel de chat.
+      router.refresh();
+    } finally {
+      setPropostasEmAndamento((atual) => {
+        const novo = new Set(atual);
+        novo.delete(mensagemId);
+        return novo;
+      });
     }
-    if (conversaId) await recarregarMensagens(conversaId);
-    // A action real (criarReceita/criarDespesa/cancelarParcelaAction etc.)
-    // roda dentro de um Route Handler (/api/chat/confirmar), não como
-    // invocação nativa de Server Action — o `revalidatePath` interno dela
-    // não atualiza o cache de router desta aba sozinho (achado em auditoria
-    // de revalidação). Sem isso, confirmar uma proposta de lançamento não
-    // atualizava a tela atrás do painel de chat.
-    router.refresh();
   }
 
   if (carregandoHistorico) {
@@ -170,7 +206,7 @@ export function ChatPainel() {
         ) : (
           <div className="flex flex-col gap-3">
             {mensagens.map((m) => (
-              <BolhaMensagem key={m.id} mensagem={m} aoResponderProposta={responderProposta} />
+              <BolhaMensagem key={m.id} mensagem={m} aoResponderProposta={responderProposta} emAndamento={propostasEmAndamento.has(m.id)} />
             ))}
             {streamParcial && <Bolha papel="assistente">{streamParcial}</Bolha>}
             {statusFerramenta && <p className="px-1 text-xs text-muted-foreground italic">{statusFerramenta}</p>}
@@ -267,15 +303,45 @@ function Bolha({ papel, children }: { papel: "usuario" | "assistente"; children:
   );
 }
 
-function BolhaMensagem({ mensagem, aoResponderProposta }: { mensagem: MensagemChat; aoResponderProposta: (id: string, acao: "confirmar" | "descartar") => void }) {
+// Checagem de forma de verdade, não um cast cego — protege a UI de um
+// ferramenta_output malformado (ou de um formato futuro que a IA passe a
+// gerar sem o card correspondente ter sido atualizado ainda).
+function pareceProposta(valor: unknown): PropostaCriar | PropostaEditar | PropostaCancelar | null {
+  if (!valor || typeof valor !== "object") return null;
+  const v = valor as Record<string, unknown>;
+
+  if (v.acao === "criar_lancamento" && typeof v.descricao === "string" && typeof v.valor === "number" && (v.tipo === "RECEITA" || v.tipo === "DESPESA")) {
+    return valor as PropostaCriar;
+  }
+  if (v.acao === "editar_lancamento" && typeof v.novaDescricao === "string" && typeof v.novoValor === "number") {
+    return valor as PropostaEditar;
+  }
+  if (v.acao === "cancelar_parcela" && typeof v.descricao === "string" && typeof v.valor === "number") {
+    return valor as PropostaCancelar;
+  }
+  return null;
+}
+
+function BolhaMensagem({
+  mensagem,
+  aoResponderProposta,
+  emAndamento,
+}: {
+  mensagem: MensagemChat;
+  aoResponderProposta: (id: string, acao: "confirmar" | "descartar") => void;
+  emAndamento: boolean;
+}) {
   if (mensagem.papel === "usuario") return <Bolha papel="usuario">{mensagem.conteudo}</Bolha>;
   if (mensagem.papel === "assistente") return mensagem.conteudo ? <Bolha papel="assistente">{mensagem.conteudo}</Bolha> : null;
 
   // papel === "ferramenta": só vira UI visível quando é uma proposta de
-  // ação de verdade (acao definida no output) — consulta de leitura pura
-  // fica invisível, o texto do assistente já resume o que importa.
-  const saida = mensagem.ferramentaOutput as (PropostaCriar | PropostaEditar | PropostaCancelar | Candidatos | { erro: string }) | null;
-  if (!saida || typeof saida !== "object" || !("acao" in saida)) return null;
+  // ação de verdade e com o formato que DescricaoProposta espera — nunca
+  // um cast cego. Sem essa checagem de verdade (em vez de só "'acao' in
+  // saida"), um ferramenta_output com forma inesperada caía sempre no
+  // último ramo de DescricaoProposta (else = cancelar_parcela) e tentava
+  // ler campos que não existiam ali (achado real, 09/09/2026).
+  const saida = pareceProposta(mensagem.ferramentaOutput);
+  if (!saida) return null;
 
   return (
     <div className="flex justify-start">
@@ -283,10 +349,10 @@ function BolhaMensagem({ mensagem, aoResponderProposta }: { mensagem: MensagemCh
         <DescricaoProposta proposta={saida} />
         {mensagem.propostaConfirmada === null && (
           <div className="mt-3 flex gap-2">
-            <Button size="sm" onClick={() => aoResponderProposta(mensagem.id, "confirmar")}>
-              <CheckCircle size={14} weight="bold" /> Confirmar
+            <Button size="sm" disabled={emAndamento} onClick={() => aoResponderProposta(mensagem.id, "confirmar")}>
+              {emAndamento ? <Spinner size={14} className="animate-spin" /> : <CheckCircle size={14} weight="bold" />} Confirmar
             </Button>
-            <Button size="sm" variant="outline" onClick={() => aoResponderProposta(mensagem.id, "descartar")}>
+            <Button size="sm" variant="outline" disabled={emAndamento} onClick={() => aoResponderProposta(mensagem.id, "descartar")}>
               <XCircle size={14} weight="bold" /> Descartar
             </Button>
           </div>

@@ -4,7 +4,26 @@ import { z } from "zod";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { hojeIsoBrasil } from "@/lib/data-brasil";
 import { hashEstavel } from "./validacao";
+import { ASSINATURAS } from "@/lib/contabil/anexos";
 import type { LinhaBrutaIA } from "./tipos";
+
+// Mesma defesa em profundidade de lib/contabil/anexos.ts: o media_type
+// declarado pela chamada (imagemMediaType) é só o que o cliente escolheu
+// mandar — a action 'use server' que expõe esta função aceita esse campo
+// de qualquer chamador autenticado, não só do formulário com o preview em
+// <canvas> que sempre gera JPEG de verdade. Sem checar os bytes de
+// verdade, um base64 arbitrário rotulado "image/png" seguiria direto pra
+// API da Anthropic (achado real, 09/09/2026).
+function conteudoBateComMediaType(base64: string, mediaType: string): boolean {
+  const verificar = ASSINATURAS[mediaType];
+  if (!verificar) return false;
+  try {
+    const cabecalho = Buffer.from(base64.slice(0, 24), "base64");
+    return verificar(new Uint8Array(cabecalho));
+  } catch {
+    return false;
+  }
+}
 
 const CAMPOS_LINHA_BRUTA = [
   "dataCompetencia",
@@ -65,6 +84,10 @@ export async function extrairLancamentosIA(
   // Mesmo padrão de validação explícita que criarTransportadorBrevo() já usa.
   if (!process.env.ANTHROPIC_API_KEY) {
     return { erro: "IA não configurada (ANTHROPIC_API_KEY ausente no ambiente)." };
+  }
+
+  if ("imagemBase64" in entrada && !conteudoBateComMediaType(entrada.imagemBase64, entrada.imagemMediaType)) {
+    return { erro: "Arquivo de imagem inválido ou corrompido." };
   }
 
   const client = new Anthropic();

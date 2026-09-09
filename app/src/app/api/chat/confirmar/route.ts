@@ -32,7 +32,7 @@ type PropostaEditarLancamento = {
 };
 type PropostaCancelarParcela = { acao: "cancelar_parcela"; parcelaId: string; motivo: string };
 
-async function executarProposta(proposta: unknown): Promise<{ erro: string } | { sucesso: true; mensagem: string }> {
+async function executarProposta(proposta: unknown, mensagemId: string): Promise<{ erro: string } | { sucesso: true; mensagem: string }> {
   if (!proposta || typeof proposta !== "object" || !("acao" in proposta)) return { erro: "Proposta inválida." };
   const p = proposta as { acao: string };
 
@@ -43,6 +43,10 @@ async function executarProposta(proposta: unknown): Promise<{ erro: string } | {
     fd.set("valor", valorParaFormData(c.valor));
     fd.set("data_vencimento", c.data);
     fd.set("numero_parcelas", "1");
+    // mensagemId é único por proposta e estável entre tentativas — mesma
+    // defesa de idempotência que o formulário manual usa (import_key em
+    // criarEventoFinanceiro), agora também no caminho do chat.
+    fd.set("idempotency_key", `chat-${mensagemId}`);
     if (c.categoria.id) fd.set("categoria_id", c.categoria.id);
     else if (c.categoria.categoriaNova) fd.set("categoria_nome_novo", c.categoria.nome);
     if (c.pessoa?.id) fd.set("pessoa_id", c.pessoa.id);
@@ -113,21 +117,45 @@ export async function POST(request: Request) {
     return Response.json({ erro: "Essa proposta já foi confirmada ou descartada antes." }, { status: 409 });
   }
 
+  // Reivindicação atômica: o UPDATE só afeta a linha se proposta_confirmada
+  // ainda for null (.is(...)) — o Postgres serializa dois UPDATEs
+  // concorrentes na mesma linha, então só um dos dois de fato muda o valor
+  // e volta com dado em `data`; o outro não encontra nenhuma linha pra
+  // atualizar (proposta_confirmada já não é mais null quando ele roda) e
+  // volta null. Sem isso, o check acima (linha 112) é só leitura — dois
+  // cliques rápidos, ou duas abas, liam proposta_confirmada === null antes
+  // de qualquer UPDATE acontecer e os dois disparavam a escrita financeira
+  // de verdade (achado real, 09/09/2026: sem essa trava, "Confirmar"
+  // clicado duas vezes cria o lançamento duas vezes).
+  const valorReivindicado = acao === "confirmar";
+  const { data: reivindicado } = await supabase
+    .from("chat_mensagens")
+    .update({ proposta_confirmada: valorReivindicado })
+    .eq("id", mensagemId)
+    .eq("tenant_id", contexto.tenantId)
+    .is("proposta_confirmada", null)
+    .select("id")
+    .maybeSingle();
+
+  if (!reivindicado) {
+    return Response.json({ erro: "Essa proposta já foi confirmada ou descartada antes." }, { status: 409 });
+  }
+
   if (acao === "descartar") {
-    await supabase.from("chat_mensagens").update({ proposta_confirmada: false }).eq("id", mensagemId).eq("tenant_id", contexto.tenantId);
     return Response.json({ sucesso: true });
   }
 
-  const resultado = await executarProposta(msg.ferramenta_output);
+  const resultado = await executarProposta(msg.ferramenta_output, mensagemId);
 
   if ("erro" in resultado) {
-    // Erro de validação (ex.: valor inválido) fica com proposta_confirmada
-    // ainda null de propósito — a pessoa pode corrigir e tentar de novo, o
-    // cartão não morre por causa de um erro que a tela normal também
-    // mostraria e deixaria tentar de novo.
+    // Erro de validação (ex.: valor inválido) devolve proposta_confirmada
+    // pra null — a pessoa pode corrigir e tentar de novo, o cartão não
+    // morre por causa de um erro que a tela normal também mostraria e
+    // deixaria tentar de novo. A reivindicação acima já bloqueou qualquer
+    // tentativa concorrente enquanto isso executava.
+    await supabase.from("chat_mensagens").update({ proposta_confirmada: null }).eq("id", mensagemId).eq("tenant_id", contexto.tenantId);
     return Response.json({ erro: resultado.erro }, { status: 400 });
   }
 
-  await supabase.from("chat_mensagens").update({ proposta_confirmada: true }).eq("id", mensagemId).eq("tenant_id", contexto.tenantId);
   return Response.json(resultado);
 }

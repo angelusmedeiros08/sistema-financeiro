@@ -40,6 +40,13 @@ export async function POST(request: Request) {
   }
 
   const mensagemUsuario = (corpo as { mensagem: string }).mensagem.trim();
+  // Sem teto, uma colagem gigante conta como "1 de 15" na cota diária mas
+  // custa muito mais que a média usada pra calcular esse limite (ver
+  // rate-limit.ts) — 8000 caracteres já cobre folgado qualquer pergunta ou
+  // descrição de lançamento real (achado real, 09/09/2026).
+  if (mensagemUsuario.length > 8000) {
+    return new Response(JSON.stringify({ erro: "Mensagem muito longa (máximo 8000 caracteres)." }), { status: 400, headers: { "Content-Type": "application/json" } });
+  }
   const conversaIdRecebido = typeof (corpo as { conversaId?: unknown }).conversaId === "string" ? (corpo as { conversaId: string }).conversaId : undefined;
 
   const { permitido, usado, limite } = await registrarTentativaChatIA({ tenantId: contexto.tenantId, usuarioId: contexto.user.id });
@@ -70,10 +77,31 @@ export async function POST(request: Request) {
   // sem risco de montar um par tool_use/tool_result inconsistente ao
   // reidratar de linhas do banco.
   const mensagensSalvas = await buscarMensagens(supabase, contexto.tenantId, conversaId);
-  const historico: Anthropic.MessageParam[] = mensagensSalvas
-    .filter((m) => m.papel === "usuario" || m.papel === "assistente")
-    .map((m) => ({ role: m.papel === "usuario" ? "user" : "assistant", content: m.conteudo ?? "" }));
-  historico.push({ role: "user", content: mensagemUsuario });
+  const turnosBrutos: Anthropic.MessageParam[] = [
+    ...mensagensSalvas
+      .filter((m) => m.papel === "usuario" || m.papel === "assistente")
+      .map((m): Anthropic.MessageParam => ({ role: m.papel === "usuario" ? "user" : "assistant", content: m.conteudo ?? "" })),
+    { role: "user", content: mensagemUsuario },
+  ];
+  // A API exige alternância estrita entre "user" e "assistant". Se uma
+  // rodada anterior falhou antes de gerar texto (erro da IA, ou o loop
+  // bateu no teto de iterações sem responder — ver loop.ts), a mensagem do
+  // usuário daquela vez fica salva sem par de resposta: sem esta fusão, a
+  // rodada de agora empilharia dois turnos "user" seguidos e a Anthropic
+  // devolveria 400 pra sempre nesta conversa, travando o chat
+  // permanentemente sem nenhuma forma de recuperação na tela (achado real,
+  // 09/09/2026). Fundir turnos consecutivos do mesmo papel corrige o
+  // histórico de qualquer quantidade de rodadas órfãs acumuladas, não só a
+  // mais recente.
+  const historico: Anthropic.MessageParam[] = [];
+  for (const turno of turnosBrutos) {
+    const ultimo = historico[historico.length - 1];
+    if (ultimo && ultimo.role === turno.role) {
+      ultimo.content = `${ultimo.content as string}\n\n${turno.content as string}`;
+    } else {
+      historico.push({ ...turno });
+    }
+  }
 
   await gravarMensagem(supabase, { conversaId, tenantId: contexto.tenantId, usuarioId: contexto.user.id, papel: "usuario", conteudo: mensagemUsuario });
 
