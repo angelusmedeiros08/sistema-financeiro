@@ -1,7 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
 import { registrarTentativaChatIA, obterUsoChatIA } from "@/lib/chat-ia/rate-limit";
-import { criarConversa, listarConversas, buscarMensagens, gravarMensagem } from "@/lib/chat-ia/conversas";
+import { criarConversa, listarConversas, buscarMensagens, gravarMensagem, conversaPertenceAoTenant } from "@/lib/chat-ia/conversas";
 import { executarLoopChat, type EventoLoopChat } from "@/lib/chat-ia/loop";
 import type Anthropic from "@anthropic-ai/sdk";
 
@@ -16,11 +16,11 @@ export async function GET(request: Request) {
   const conversaId = new URL(request.url).searchParams.get("conversaId");
 
   if (conversaId) {
-    const mensagens = await buscarMensagens(supabase, conversaId);
+    const mensagens = await buscarMensagens(supabase, contexto.tenantId, conversaId);
     return Response.json({ mensagens });
   }
 
-  const [conversas, uso] = await Promise.all([listarConversas(supabase, contexto.user.id), obterUsoChatIA(contexto.tenantId)]);
+  const [conversas, uso] = await Promise.all([listarConversas(supabase, contexto.tenantId, contexto.user.id), obterUsoChatIA(contexto.tenantId)]);
   return Response.json({ conversaId: conversas[0]?.id ?? null, uso });
 }
 
@@ -44,12 +44,18 @@ export async function POST(request: Request) {
 
   const { permitido, usado, limite } = await registrarTentativaChatIA({ tenantId: contexto.tenantId, usuarioId: contexto.user.id });
   if (!permitido) {
-    return new Response(JSON.stringify({ erro: "Limite de uso do Chat IA atingido — tente de novo mais tarde.", uso: { usado, limite } }), { status: 429, headers: { "Content-Type": "application/json" } });
+    return new Response(JSON.stringify({ erro: "Limite de uso do Chat IA atingido. Tente de novo mais tarde.", uso: { usado, limite } }), { status: 429, headers: { "Content-Type": "application/json" } });
   }
 
   const supabase = await createClient();
 
-  let conversaId = conversaIdRecebido;
+  // Nunca reaproveita o conversaId do corpo sem confirmar que é do tenant
+  // ativo: o painel no cliente é um componente que pode continuar montado
+  // depois de uma troca de empresa, com o conversaId de antes da troca
+  // ainda em memória. Sem esta checagem, a mensagem nova entraria com
+  // tenant_id certo mas presa a uma conversa de outra empresa (achado
+  // real, 09/09/2026).
+  let conversaId = conversaIdRecebido && (await conversaPertenceAoTenant(supabase, contexto.tenantId, conversaIdRecebido)) ? conversaIdRecebido : undefined;
   if (!conversaId) {
     const nova = await criarConversa(supabase, { tenantId: contexto.tenantId, usuarioId: contexto.user.id });
     if ("erro" in nova) return new Response(JSON.stringify({ erro: nova.erro }), { status: 500, headers: { "Content-Type": "application/json" } });
@@ -63,7 +69,7 @@ export async function POST(request: Request) {
   // dado fresco pelas próprias ferramentas quando precisa, mais simples e
   // sem risco de montar um par tool_use/tool_result inconsistente ao
   // reidratar de linhas do banco.
-  const mensagensSalvas = await buscarMensagens(supabase, conversaId);
+  const mensagensSalvas = await buscarMensagens(supabase, contexto.tenantId, conversaId);
   const historico: Anthropic.MessageParam[] = mensagensSalvas
     .filter((m) => m.papel === "usuario" || m.papel === "assistente")
     .map((m) => ({ role: m.papel === "usuario" ? "user" : "assistant", content: m.conteudo ?? "" }));

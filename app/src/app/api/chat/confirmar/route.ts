@@ -91,9 +91,20 @@ export async function POST(request: Request) {
 
   const supabase = await createClient();
 
-  // RLS garante que só volta a linha se pertencer ao próprio usuário/tenant
-  // — sem isso, um mensagemId de outra conversa simplesmente não aparece.
-  const { data: msg } = await supabase.from("chat_mensagens").select("id, papel, ferramenta_output, proposta_confirmada").eq("id", mensagemId).maybeSingle();
+  // tenant_id filtrado explicitamente, não só o id — RLS permite qualquer
+  // tenant que o usuário tenha vínculo (plural), não só o tenant ativo.
+  // Sem este filtro, uma proposta de OUTRA empresa do mesmo usuário (cartão
+  // de ação que ficou na tela depois de trocar de empresa no topbar, já que
+  // o painel do chat não é remontado nessa troca) seria confirmada aqui e
+  // executada contra o tenant ATIVO — criaria/editaria lançamento na
+  // empresa errada com o valor/categoria/pessoa da proposta de outra
+  // empresa (achado real, 09/09/2026).
+  const { data: msg } = await supabase
+    .from("chat_mensagens")
+    .select("id, papel, ferramenta_output, proposta_confirmada")
+    .eq("id", mensagemId)
+    .eq("tenant_id", contexto.tenantId)
+    .maybeSingle();
 
   if (!msg || msg.papel !== "ferramenta" || !msg.ferramenta_output) {
     return Response.json({ erro: "Proposta não encontrada." }, { status: 404 });
@@ -103,7 +114,7 @@ export async function POST(request: Request) {
   }
 
   if (acao === "descartar") {
-    await supabase.from("chat_mensagens").update({ proposta_confirmada: false }).eq("id", mensagemId);
+    await supabase.from("chat_mensagens").update({ proposta_confirmada: false }).eq("id", mensagemId).eq("tenant_id", contexto.tenantId);
     return Response.json({ sucesso: true });
   }
 
@@ -117,6 +128,6 @@ export async function POST(request: Request) {
     return Response.json({ erro: resultado.erro }, { status: 400 });
   }
 
-  await supabase.from("chat_mensagens").update({ proposta_confirmada: true }).eq("id", mensagemId);
+  await supabase.from("chat_mensagens").update({ proposta_confirmada: true }).eq("id", mensagemId).eq("tenant_id", contexto.tenantId);
   return Response.json(resultado);
 }

@@ -75,7 +75,13 @@ export function Topbar({
         <StatusPlano statusAssinatura={statusAssinatura} trialTerminaEm={trialTerminaEm} />
         <IconeTransmitir />
         <NovoRegistroMenu />
-        <ChatDuvidasMenu />
+        {/* key={tenantId}: força remontar o painel ao trocar de empresa no
+            dropdown abaixo — sem isso o componente cliente continua com o
+            conversaId/mensagens/cartões de proposta da empresa anterior em
+            memória, já que trocarTenantAtivo só redireciona dentro do mesmo
+            layout (achado real, 09/09/2026: usuário trocou de empresa e o
+            chat continuou mostrando a conversa de antes). */}
+        <ChatDuvidasMenu key={tenantId} />
         <NotificacoesMenu notificacoes={notificacoes} />
         <ThemeToggle />
 

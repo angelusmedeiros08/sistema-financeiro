@@ -13,16 +13,34 @@ export async function criarConversa(supabase: Cliente, params: { tenantId: strin
   return { conversaId: data.id };
 }
 
-export async function listarConversas(supabase: Cliente, usuarioId: string): Promise<Conversa[]> {
-  const { data } = await supabase.from("chat_conversas").select("id, titulo, criado_em, atualizado_em").eq("usuario_id", usuarioId).order("atualizado_em", { ascending: false }).limit(30);
+// tenant_id filtrado explicitamente, não só usuario_id — a RLS permite
+// qualquer tenant que o usuário tenha vínculo (private.tenants_do_usuario_
+// atual(), plural), não só o tenant ativo no momento. Sem este filtro, um
+// usuário com acesso a mais de uma empresa via a mesma conta (troca de
+// tenant no topbar) via a conversa da OUTRA empresa aqui (achado real,
+// 09/09/2026: usuário trocou de empresa e o chat continuou mostrando a
+// conversa de antes).
+export async function listarConversas(supabase: Cliente, tenantId: string, usuarioId: string): Promise<Conversa[]> {
+  const { data } = await supabase
+    .from("chat_conversas")
+    .select("id, titulo, criado_em, atualizado_em")
+    .eq("tenant_id", tenantId)
+    .eq("usuario_id", usuarioId)
+    .order("atualizado_em", { ascending: false })
+    .limit(30);
 
   return (data ?? []).map((c) => ({ id: c.id, titulo: c.titulo, criadoEm: c.criado_em, atualizadoEm: c.atualizado_em }));
 }
 
-export async function buscarMensagens(supabase: Cliente, conversaId: string): Promise<MensagemChat[]> {
+// Mesmo motivo do filtro em listarConversas: sem o tenant_id aqui, um
+// conversaId de outra empresa do mesmo usuário (vindo de estado antigo no
+// cliente, ou até de query string manual) devolveria mensagens da empresa
+// errada em vez de vir vazio.
+export async function buscarMensagens(supabase: Cliente, tenantId: string, conversaId: string): Promise<MensagemChat[]> {
   const { data } = await supabase
     .from("chat_mensagens")
     .select("id, conversa_id, papel, conteudo, ferramenta_nome, ferramenta_input, ferramenta_output, proposta_confirmada, criado_em")
+    .eq("tenant_id", tenantId)
     .eq("conversa_id", conversaId)
     .order("criado_em", { ascending: true });
 
@@ -37,6 +55,15 @@ export async function buscarMensagens(supabase: Cliente, conversaId: string): Pr
     propostaConfirmada: m.proposta_confirmada,
     criadoEm: m.criado_em,
   }));
+}
+
+// Usada no POST antes de reaproveitar um conversaId vindo do cliente
+// (estado do painel pode estar desatualizado se o usuário trocou de
+// empresa com o painel aberto) — nunca reaproveita um id sem confirmar que
+// pertence ao tenant ativo.
+export async function conversaPertenceAoTenant(supabase: Cliente, tenantId: string, conversaId: string): Promise<boolean> {
+  const { data } = await supabase.from("chat_conversas").select("id").eq("id", conversaId).eq("tenant_id", tenantId).maybeSingle();
+  return data !== null;
 }
 
 export async function gravarMensagem(

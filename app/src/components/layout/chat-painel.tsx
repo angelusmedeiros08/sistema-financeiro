@@ -204,7 +204,7 @@ export function ChatPainel() {
               enviarMensagem();
             }
           }}
-          placeholder={limiteAtingido ? "Limite diário atingido — tente de novo mais tarde." : "Pergunte algo ou descreva um lançamento…"}
+          placeholder={limiteAtingido ? "Limite diário atingido. Tente de novo mais tarde." : "Pergunte algo ou descreva um lançamento…"}
           className="min-h-10 flex-1 resize-none"
           rows={1}
           disabled={enviando || limiteAtingido}
@@ -218,16 +218,18 @@ export function ChatPainel() {
 }
 
 // Mesma lógica do Claude.ai/Claude Code: mostra o consumo antes de bloquear,
-// não só um erro seco quando bate o teto. "24h" e não "hoje" porque a janela
-// é deslizante (lib/chat-ia/rate-limit.ts), não reseta à meia-noite — dizer
-// "hoje" seria impreciso.
+// não só um erro seco quando bate o teto. Porcentagem em vez de contagem
+// bruta (mais fácil de captar de relance); a contagem exata (ex.: 8 de 15)
+// fica só no title, pra quem passar o mouse. "24h" e não "hoje" no title
+// porque a janela é deslizante (lib/chat-ia/rate-limit.ts), não reseta à
+// meia-noite: dizer "hoje" seria impreciso.
 function IndicadorUsoChatIA({ uso }: { uso: UsoChatIA }) {
   const pct = Math.min(100, Math.round((uso.usado / uso.limite) * 100));
   const atingiu = uso.usado >= uso.limite;
   const alerta = !atingiu && pct >= 80;
 
   return (
-    <div className="mx-4 mb-2 flex items-center gap-2">
+    <div className="mx-4 mb-2 flex items-center gap-2" title={`${uso.usado} de ${uso.limite} mensagens usadas nas últimas 24h`}>
       <div className="h-1 flex-1 overflow-hidden rounded-full bg-muted">
         <div
           className={cn(
@@ -244,7 +246,7 @@ function IndicadorUsoChatIA({ uso }: { uso: UsoChatIA }) {
           alerta && "font-medium text-[#96690F] dark:text-[#F0BB4E]",
         )}
       >
-        {uso.usado}/{uso.limite} · 24h
+        {pct}%
       </span>
     </div>
   );

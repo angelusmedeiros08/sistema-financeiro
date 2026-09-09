@@ -1,17 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Image as ImageIcon, Spinner, TextAa, UploadSimple } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { extrairLancamentosIAAction } from "./actions";
+import { extrairLancamentosIAAction, obterUsoImportacaoIAAction } from "./actions";
 import type { LinhaBrutaIA } from "@/lib/importacao/tipos";
 
 type ContaFinanceira = { id: string; nome: string };
 type Modo = "texto" | "imagem";
+type UsoImportacaoIA = { usado: number; limite: number };
 
 // Normaliza qualquer imagem aceita pelo navegador (incluindo HEIC de iPhone,
 // quando o navegador consegue decodificar) pra JPEG antes do envio — a API
@@ -48,6 +49,14 @@ export function PassoEntradaIA({
   const [imagemPreviewUrl, setImagemPreviewUrl] = useState("");
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState("");
+  const [uso, setUso] = useState<UsoImportacaoIA | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      const resultado = await obterUsoImportacaoIAAction();
+      if (!("erro" in resultado)) setUso(resultado);
+    })();
+  }, []);
 
   function selecionarImagem(e: React.ChangeEvent<HTMLInputElement>) {
     const arquivo = e.target.files?.[0];
@@ -58,7 +67,8 @@ export function PassoEntradaIA({
     setImagemPreviewUrl(URL.createObjectURL(arquivo));
   }
 
-  const pronto = contaFinanceiraId && (modo === "texto" ? texto.trim().length > 0 : imagemArquivo !== null);
+  const limiteAtingido = uso !== null && uso.usado >= uso.limite;
+  const pronto = contaFinanceiraId && (modo === "texto" ? texto.trim().length > 0 : imagemArquivo !== null) && !limiteAtingido;
 
   async function extrair() {
     if (!pronto) return;
@@ -82,6 +92,7 @@ export function PassoEntradaIA({
 
     const resultado = await extrairLancamentosIAAction(entrada);
     setCarregando(false);
+    if (resultado.uso) setUso(resultado.uso);
 
     if ("erro" in resultado) {
       setErro(resultado.erro);
@@ -169,13 +180,48 @@ export function PassoEntradaIA({
 
       {!contaFinanceiraId && <p className="text-sm text-destructive">Selecione a conta financeira antes de continuar.</p>}
       {erro && <p className="text-sm text-destructive">{erro}</p>}
+      {limiteAtingido && <p className="text-sm text-destructive">Limite diário de extrações por IA atingido. Tente de novo mais tarde.</p>}
 
-      <div className="flex justify-end">
-        <Button type="button" disabled={!pronto || carregando} onClick={extrair} className="gap-1.5">
+      <div className="flex items-center justify-between gap-4">
+        {uso && <IndicadorUsoImportacaoIA uso={uso} />}
+        <Button type="button" disabled={!pronto || carregando} onClick={extrair} className="ml-auto gap-1.5">
           {carregando && <Spinner size={14} className="animate-spin" />}
           {carregando ? "Extraindo..." : "Extrair lançamentos"}
         </Button>
       </div>
+    </div>
+  );
+}
+
+// Mesmo padrão do Chat IA (chat-painel.tsx): mostra o consumo antes de
+// bloquear, não só um erro seco ao bater o teto. Porcentagem em vez de
+// contagem bruta; a contagem exata fica no title. Janela deslizante de 24h
+// (lib/importacao/rate-limit-ia.ts), não reseta à meia-noite.
+function IndicadorUsoImportacaoIA({ uso }: { uso: UsoImportacaoIA }) {
+  const pct = Math.min(100, Math.round((uso.usado / uso.limite) * 100));
+  const atingiu = uso.usado >= uso.limite;
+  const alerta = !atingiu && pct >= 80;
+
+  return (
+    <div className="flex w-32 items-center gap-2" title={`${uso.usado} de ${uso.limite} extrações usadas nas últimas 24h`}>
+      <div className="h-1 flex-1 overflow-hidden rounded-full bg-muted">
+        <div
+          className={cn(
+            "h-full rounded-full transition-[width]",
+            atingiu ? "bg-destructive" : alerta ? "bg-[#C98A1F] dark:bg-[#F0BB4E]" : "bg-primary/50",
+          )}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <span
+        className={cn(
+          "shrink-0 text-[11px] tabular-nums text-muted-foreground",
+          atingiu && "font-medium text-destructive",
+          alerta && "font-medium text-[#96690F] dark:text-[#F0BB4E]",
+        )}
+      >
+        {pct}%
+      </span>
     </div>
   );
 }
