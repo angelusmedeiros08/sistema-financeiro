@@ -23,6 +23,7 @@ type PropostaCriar = { acao: "criar_lancamento"; tipo: "RECEITA" | "DESPESA"; de
 type PropostaEditar = { acao: "editar_lancamento"; descricaoAtual: string; valorAtual: number; novaDescricao: string; novoValor: number };
 type PropostaCancelar = { acao: "cancelar_parcela"; descricao: string; valor: number; motivo: string };
 type Candidatos = { candidatos: { descricao?: string; valor?: number }[] };
+type UsoChatIA = { usado: number; limite: number };
 
 // Painel do Chat IA — evolui o antigo placeholder "Em breve" do
 // ChatDuvidasMenu (Fatia 7 do plano). Streaming consumido manualmente via
@@ -39,6 +40,7 @@ export function ChatPainel() {
   const [streamParcial, setStreamParcial] = useState("");
   const [statusFerramenta, setStatusFerramenta] = useState<string | null>(null);
   const [erro, setErro] = useState<string | null>(null);
+  const [uso, setUso] = useState<UsoChatIA | null>(null);
   const fimDaListaRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -46,6 +48,7 @@ export function ChatPainel() {
       try {
         const resp = await fetch("/api/chat");
         const dados = await resp.json();
+        if (dados.uso) setUso(dados.uso);
         if (dados.conversaId) {
           setConversaId(dados.conversaId);
           await recarregarMensagens(dados.conversaId);
@@ -87,6 +90,7 @@ export function ChatPainel() {
 
       if (!resp.ok || !resp.body) {
         const dados = await resp.json().catch(() => ({}));
+        if (dados.uso) setUso(dados.uso);
         setErro(dados.erro ?? "Falha ao conversar com a IA.");
         setEnviando(false);
         return;
@@ -108,6 +112,7 @@ export function ChatPainel() {
           if (!parte.startsWith("data: ")) continue;
           const evento = JSON.parse(parte.slice(6));
           if (evento.tipo === "inicio") conversaIdDoStream = evento.conversaId;
+          else if (evento.tipo === "uso") setUso({ usado: evento.usado, limite: evento.limite });
           else if (evento.tipo === "texto") setStreamParcial((atual) => atual + evento.delta);
           else if (evento.tipo === "ferramenta_chamada") setStatusFerramenta(`Consultando ${evento.nome}…`);
           else if (evento.tipo === "erro") setErro(evento.mensagem);
@@ -155,6 +160,8 @@ export function ChatPainel() {
     );
   }
 
+  const limiteAtingido = uso !== null && uso.usado >= uso.limite;
+
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex-1 overflow-y-auto px-4 py-3">
@@ -179,6 +186,8 @@ export function ChatPainel() {
         </div>
       )}
 
+      {uso && <IndicadorUsoChatIA uso={uso} />}
+
       <form
         className="flex items-end gap-2 border-t border-border p-3"
         onSubmit={(e) => {
@@ -195,15 +204,48 @@ export function ChatPainel() {
               enviarMensagem();
             }
           }}
-          placeholder="Pergunte algo ou descreva um lançamento…"
+          placeholder={limiteAtingido ? "Limite diário atingido — tente de novo mais tarde." : "Pergunte algo ou descreva um lançamento…"}
           className="min-h-10 flex-1 resize-none"
           rows={1}
-          disabled={enviando}
+          disabled={enviando || limiteAtingido}
         />
-        <Button type="submit" size="icon" disabled={enviando || !texto.trim()} aria-label="Enviar">
+        <Button type="submit" size="icon" disabled={enviando || limiteAtingido || !texto.trim()} aria-label="Enviar">
           {enviando ? <Spinner size={16} className="animate-spin" /> : <PaperPlaneRight size={16} weight="bold" />}
         </Button>
       </form>
+    </div>
+  );
+}
+
+// Mesma lógica do Claude.ai/Claude Code: mostra o consumo antes de bloquear,
+// não só um erro seco quando bate o teto. "24h" e não "hoje" porque a janela
+// é deslizante (lib/chat-ia/rate-limit.ts), não reseta à meia-noite — dizer
+// "hoje" seria impreciso.
+function IndicadorUsoChatIA({ uso }: { uso: UsoChatIA }) {
+  const pct = Math.min(100, Math.round((uso.usado / uso.limite) * 100));
+  const atingiu = uso.usado >= uso.limite;
+  const alerta = !atingiu && pct >= 80;
+
+  return (
+    <div className="mx-4 mb-2 flex items-center gap-2">
+      <div className="h-1 flex-1 overflow-hidden rounded-full bg-muted">
+        <div
+          className={cn(
+            "h-full rounded-full transition-[width]",
+            atingiu ? "bg-destructive" : alerta ? "bg-[#C98A1F] dark:bg-[#F0BB4E]" : "bg-primary/50",
+          )}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <span
+        className={cn(
+          "shrink-0 text-[11px] tabular-nums text-muted-foreground",
+          atingiu && "font-medium text-destructive",
+          alerta && "font-medium text-[#96690F] dark:text-[#F0BB4E]",
+        )}
+      >
+        {uso.usado}/{uso.limite} · 24h
+      </span>
     </div>
   );
 }

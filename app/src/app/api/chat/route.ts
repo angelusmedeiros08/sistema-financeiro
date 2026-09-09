@@ -1,6 +1,6 @@
 import { createClient } from "@/utils/supabase/server";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
-import { registrarTentativaChatIA } from "@/lib/chat-ia/rate-limit";
+import { registrarTentativaChatIA, obterUsoChatIA } from "@/lib/chat-ia/rate-limit";
 import { criarConversa, listarConversas, buscarMensagens, gravarMensagem } from "@/lib/chat-ia/conversas";
 import { executarLoopChat, type EventoLoopChat } from "@/lib/chat-ia/loop";
 import type Anthropic from "@anthropic-ai/sdk";
@@ -20,8 +20,8 @@ export async function GET(request: Request) {
     return Response.json({ mensagens });
   }
 
-  const conversas = await listarConversas(supabase, contexto.user.id);
-  return Response.json({ conversaId: conversas[0]?.id ?? null });
+  const [conversas, uso] = await Promise.all([listarConversas(supabase, contexto.user.id), obterUsoChatIA(contexto.tenantId)]);
+  return Response.json({ conversaId: conversas[0]?.id ?? null, uso });
 }
 
 // Primeira rota do projeto com streaming (Seção 6 da spec) — Route Handler
@@ -42,9 +42,9 @@ export async function POST(request: Request) {
   const mensagemUsuario = (corpo as { mensagem: string }).mensagem.trim();
   const conversaIdRecebido = typeof (corpo as { conversaId?: unknown }).conversaId === "string" ? (corpo as { conversaId: string }).conversaId : undefined;
 
-  const { permitido } = await registrarTentativaChatIA({ tenantId: contexto.tenantId, usuarioId: contexto.user.id });
+  const { permitido, usado, limite } = await registrarTentativaChatIA({ tenantId: contexto.tenantId, usuarioId: contexto.user.id });
   if (!permitido) {
-    return new Response(JSON.stringify({ erro: "Limite de uso do Chat IA atingido — tente de novo mais tarde." }), { status: 429, headers: { "Content-Type": "application/json" } });
+    return new Response(JSON.stringify({ erro: "Limite de uso do Chat IA atingido — tente de novo mais tarde.", uso: { usado, limite } }), { status: 429, headers: { "Content-Type": "application/json" } });
   }
 
   const supabase = await createClient();
@@ -81,6 +81,7 @@ export async function POST(request: Request) {
       }
 
       enviar({ tipo: "inicio", conversaId: conversaIdFinal });
+      enviar({ tipo: "uso", usado, limite });
 
       const resultado = await executarLoopChat({
         historico,
