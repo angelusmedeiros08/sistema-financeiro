@@ -48,6 +48,7 @@ export const TOOLS_ACAO: DefinicaoTool[] = [
           pessoa_sugerida: { type: "string", description: "Nome de quem pagou/recebeu, se identificável. Omitir se não houver." },
         },
         required: ["tipo", "descricao", "valor", "data", "categoria_sugerida"],
+        additionalProperties: false,
       },
     },
     executar: async (supabase: Cliente, input, ctx: ContextoChat) => {
@@ -84,6 +85,7 @@ export const TOOLS_ACAO: DefinicaoTool[] = [
           novo_valor: { type: "number" },
         },
         required: ["termo_busca"],
+        additionalProperties: false,
       },
     },
     executar: async (supabase: Cliente, input, ctx: ContextoChat) => {
@@ -128,6 +130,7 @@ export const TOOLS_ACAO: DefinicaoTool[] = [
           motivo: { type: "string", description: "Motivo do cancelamento." },
         },
         required: ["termo_busca", "motivo"],
+        additionalProperties: false,
       },
     },
     executar: async (supabase: Cliente, input, ctx: ContextoChat) => {
