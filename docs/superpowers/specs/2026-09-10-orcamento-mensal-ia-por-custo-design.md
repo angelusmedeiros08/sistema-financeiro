@@ -1,4 +1,4 @@
-# Orçamento diário de IA por custo real (não por contagem de mensagem)
+# Orçamento mensal de IA por custo real (não por contagem de mensagem)
 
 ## Contexto
 
@@ -9,19 +9,43 @@ mensagens/dia no Chat IA, 10 usos/dia na Importação, cada tentativa vale
 "1" independente do tamanho. Achado do usuário (09/09/2026): isso não é
 preciso nem justo — um "oi" e uma mensagem de 8.000 caracteres (o teto
 já existente por mensagem) consomem a mesma fatia da cota, mesmo custando
-ordens de grandeza diferentes de verdade.
+ordens de grandeza diferentes de verdade. Uma importação também pode
+extrair dezenas ou centenas de lançamentos de uma vez — o custo real de
+uma chamada varia muito mais do que "1 tentativa" capta.
 
 Decisão do usuário: manter a proteção de margem em **R$30/mês por
 tenant**, mas trocar o critério de contagem de mensagem pra **custo real
-em token**, dividido numa cota diária (R$30 ÷ 30 = ~R$1/dia), com Chat IA
-e Importação com IA **compartilhando o mesmo orçamento** (não dois tetos
-separados). O valor em si mostrado no indicador já existente não muda de
-forma (continua uma porcentagem) — só o que ela mede.
+em token** (`usage` que a própria API da Anthropic devolve em toda
+resposta), com Chat IA e Importação com IA **compartilhando o mesmo
+orçamento** (não dois tetos separados).
+
+**Janela mensal, não diária.** Cheguei a desenhar isso como um teto
+diário (R$30 ÷ 30 = ~R$1/dia) numa primeira passada, mas o próprio
+usuário revisou: dividir por dia bloquearia um tenant que fizesse uma
+importação grande de uma vez (natural pra esse recurso — um extrato
+inteiro do mês, não um pouco por dia) até o dia seguinte, mesmo ele tendo
+saldo sobrando no mês. Teto único de R$30, janela deslizante de **30
+dias** — o tenant gasta como quiser dentro do mês, sem "recomeço" diário
+forçado. Trade-off aceito conscientemente: dá pra gastar o mês inteiro
+num único dia; não muda a proteção de margem (o total ainda é R$30), só
+a distribuição de quando isso pode acontecer.
+
+O indicador já existente não muda de forma (continua uma porcentagem) —
+só o que ela mede.
+
+**Uso é responsabilidade do tenant gerenciar** (palavras do usuário) —
+o sistema não tenta "ajudar" a espalhar o consumo ao longo do mês, só
+bloqueia quando o teto é atingido.
 
 Fora de escopo desta leva, mencionado pelo usuário como direção futura,
-não decisão de agora: sistema de créditos, ou upgrade de plano pra mais
-uso de IA — fica pra quando a capitalização do negócio permitir pensar
-nisso.
+não decisão de agora:
+- **Esquema de recarga** — comprar mais orçamento quando os R$30
+  acabarem, mesmo modelo que Claude/ChatGPT usam (cota incluída no plano
+  + top-up pago). Ideia boa, mas depende de decisão de preço/plano junto
+  dos sócios.
+- Sistema de créditos, ou upgrade de plano pra mais uso de IA em geral —
+  mesma razão, fica pra quando a capitalização do negócio permitir
+  pensar nisso.
 
 ## Cálculo de custo real
 
@@ -53,26 +77,27 @@ export function calcularCustoUsd(usage: Anthropic.Usage): number {
 Preço fica só neste arquivo — se o modelo mudar (Sonnet 6, outro
 provedor) ou a Anthropic reajustar preço, é o único lugar a atualizar.
 
-## Orçamento diário combinado
+## Orçamento mensal combinado
 
-Novo módulo `lib/ia/orcamento-diario.ts`, substitui
+Novo módulo `lib/ia/orcamento-ia.ts`, substitui
 `limitador-uso-diario.ts` (esse fica sem uso depois desta migração —
 apagar, não deixar código morto).
 
 ```ts
-// R$30/mês (decisão do usuário, 10/09/2026) ÷ 30 dias, convertido em
-// dólar pela cotação de referência do momento (~R$5,10/US$1, 10/09/2026 —
-// aproximação documentada, revisar se o câmbio se mover muito;
-// arredondado pra cima, US$0,196 → US$0,20, levemente mais generoso que
-// R$1,00 exato).
-export const TETO_DIARIO_IA_USD = 0.2;
+// R$30/mês (decisão do usuário, 10/09/2026), convertido em dólar pela
+// cotação de referência do momento (~R$5,10/US$1, 10/09/2026 —
+// aproximação documentada, revisar se o câmbio se mover muito).
+// Arredondado pra cima (US$5,88 → US$5,90), levemente mais generoso que
+// R$30,00 exato.
+export const TETO_MENSAL_IA_USD = 5.9;
+const JANELA_MS = 30 * 24 * 60 * 60 * 1000;
 
 // Checagem PRÉVIA — só lê, nunca escreve. Diferente do mecanismo antigo
 // (que incrementava contagem antes da chamada), aqui não dá pra saber o
 // custo de uma chamada antes dela acontecer, então a única coisa que dá
 // pra checar de antemão é se o tenant JÁ estourou o orçamento com
 // chamadas anteriores.
-export async function verificarOrcamentoDiario(tenantId: string): Promise<{ permitido: boolean; usadoUsd: number; limiteUsd: number }> { ... }
+export async function verificarOrcamento(tenantId: string): Promise<{ permitido: boolean; usadoUsd: number; limiteUsd: number }> { ... }
 
 // Registro PÓS-chamada — sempre grava o custo real, mesmo que isso
 // estoure o orçamento (a chamada já aconteceu e já foi paga pra Anthropic
@@ -98,17 +123,17 @@ create table uso_ia (
 ```
 
 RLS habilitada, sem nenhuma policy — mesmo padrão das tabelas que
-substitui (só `service_role` lê/escreve). `verificarOrcamentoDiario`
-soma `custo_usd` de **ambos** os recursos juntos (`SUM(custo_usd) WHERE
-tenant_id = X AND criado_em > now() - 24h`, sem filtrar `recurso`) — é
-isso que implementa o orçamento combinado.
+substitui (só `service_role` lê/escreve). `verificarOrcamento` soma
+`custo_usd` de **ambos** os recursos juntos (`SUM(custo_usd) WHERE
+tenant_id = X AND criado_em > now() - 30 dias`, sem filtrar `recurso`) —
+é isso que implementa o orçamento combinado.
 
 ## Onde entra em cada fluxo
 
 **Chat IA** (`lib/chat-ia/loop.ts` + `api/chat/route.ts`):
 - `route.ts` troca `registrarTentativaChatIA` (que bloqueava E já contava
-  de antemão) por `verificarOrcamentoDiario` antes de montar o stream —
-  só checa, não registra nada ainda.
+  de antemão) por `verificarOrcamento` antes de montar o stream — só
+  checa, não registra nada ainda.
 - `loop.ts` acumula `usage` de cada iteração do loop (pode ser até 8
   chamadas por turno) e devolve o total pro chamador junto do resultado,
   em vez de só `textoFinal`/`mensagens`/`ferramentasExecutadas`.
@@ -122,21 +147,21 @@ isso que implementa o orçamento combinado.
 
 **Importação com IA** (`lib/importacao/extracao-ia.ts` +
 `app/(app)/importacao/ia/actions.ts`): mesmo padrão — `actions.ts` troca
-`registrarTentativaImportacaoIA` por `verificarOrcamentoDiario` (mesma
-função do Chat IA, é o MESMO orçamento) antes de chamar
-`extrairLancamentosIA`; `extracao-ia.ts` devolve o `usage` da resposta
-junto do resultado; `actions.ts` chama `registrarCustoIA` com
-`recurso: "importacao"` depois.
+`registrarTentativaImportacaoIA` por `verificarOrcamento` (mesma função
+do Chat IA, é o MESMO orçamento) antes de chamar `extrairLancamentosIA`;
+`extracao-ia.ts` devolve o `usage` da resposta junto do resultado;
+`actions.ts` chama `registrarCustoIA` com `recurso: "importacao"` depois.
 
 ## UI
 
 Os dois indicadores já construídos (`IndicadorUsoChatIA` dentro do painel
 de Chat IA, `IndicadorUsoImportacaoIA` na tela de Importação) continuam
-mostrando uma porcentagem — não
-precisam de redesenho. A mudança real: como o orçamento agora é
-**compartilhado**, usar a Importação também move o ponteiro do indicador
-do Chat IA, e vice-versa. Vale um texto pequeno deixando isso explícito
-(“inclui Chat IA + Importação”) pra não parecer bug quando o tenant usar
+mostrando uma porcentagem — não precisam de redesenho. A mudança real:
+como o orçamento agora é **compartilhado e mensal**, usar a Importação
+também move o ponteiro do indicador do Chat IA, e vice-versa, e o texto
+de contexto (hoje "24h", ver `chat-painel.tsx`) passa a dizer "mês" —
+vale um texto pequeno deixando explícito que inclui os dois recursos
+(“inclui Chat IA + Importação”), pra não parecer bug quando o tenant usar
 os dois e notar os dois indicadores mudando juntos.
 
 ## Precisão aceita, não escondida
