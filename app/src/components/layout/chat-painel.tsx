@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { PaperPlaneRight, CheckCircle, XCircle, WarningCircle } from "@phosphor-icons/react";
+import { PaperPlaneRight, CheckCircle, XCircle, WarningCircle, Plus } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { EstadoVazio } from "@/components/ui/estado-vazio";
@@ -189,6 +189,23 @@ export function ChatPainel() {
     }
   }
 
+  // Reseta só o estado local — a próxima mensagem enviada com conversaId
+  // nulo já cria uma conversa nova sozinha (mesma lógica de route.ts que
+  // trata um conversaId ausente/de outro tenant). Existe porque, sem isso,
+  // reabrir o painel sempre retoma a mesma conversa pra sempre: ela cresce
+  // sem teto de tempo (só o teto de 100 mensagens em buscarMensagens), e
+  // cada mensagem nova reenvia esse histórico inteiro como tokens de
+  // entrada — uma conversa longa custa mais por mensagem que uma nova,
+  // ainda que dentro do mesmo orçamento mensal (achado ao responder dúvida
+  // do usuário, 10/09/2026).
+  function novaConversa() {
+    setConversaId(null);
+    setMensagens([]);
+    setStreamParcial("");
+    setStatusFerramenta(null);
+    setErro(null);
+  }
+
   if (carregandoHistorico) {
     return (
       <div className="flex flex-1 items-center justify-center">
@@ -201,6 +218,13 @@ export function ChatPainel() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
+      {(mensagens.length > 0 || streamParcial) && (
+        <div className="flex items-center justify-end border-b border-border px-3 py-1.5">
+          <Button type="button" variant="ghost" size="sm" className="h-7 gap-1.5 px-2 text-xs text-muted-foreground" onClick={novaConversa} disabled={enviando}>
+            <Plus size={14} weight="bold" /> Nova conversa
+          </Button>
+        </div>
+      )}
       <div className="flex-1 overflow-y-auto px-4 py-3">
         {mensagens.length === 0 && !streamParcial ? (
           <EstadoVazio texto="Pergunte sobre seus lançamentos, peça um resumo, ou diga o que você pagou/recebeu." icon={ChatCircleDots} />
