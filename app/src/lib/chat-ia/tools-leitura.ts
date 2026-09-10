@@ -81,7 +81,6 @@ export const TOOLS_LEITURA: DefinicaoTool[] = [
     definicao: {
       name: "consultar_dre",
       description: "Consulta a Demonstração de Resultado (DRE) do tenant num período — receitas, custos, subtotais, resultado final.",
-      strict: true,
       input_schema: {
         type: "object",
         properties: { regime: PROPRIEDADE_REGIME, data_inicio: PROPRIEDADE_DATA, data_fim: PROPRIEDADE_DATA },
@@ -102,7 +101,6 @@ export const TOOLS_LEITURA: DefinicaoTool[] = [
     definicao: {
       name: "consultar_indicadores_dre",
       description: "Consulta indicadores mensais derivados da DRE num ano: margem de contribuição, margem bruta, EBITDA, margem líquida.",
-      strict: true,
       input_schema: {
         type: "object",
         properties: { regime: PROPRIEDADE_REGIME, ano: { type: "integer", description: "Ano (ex.: 2026)." } },
@@ -116,7 +114,6 @@ export const TOOLS_LEITURA: DefinicaoTool[] = [
     definicao: {
       name: "consultar_fluxo_caixa",
       description: "Consulta a série de fluxo de caixa (entradas/saídas por ponto no tempo) num período e granularidade.",
-      strict: true,
       input_schema: {
         type: "object",
         properties: {
@@ -149,7 +146,6 @@ export const TOOLS_LEITURA: DefinicaoTool[] = [
     definicao: {
       name: "consultar_saldo_projetado",
       description: "Consulta o saldo em caixa atual e a projeção de saldo pros próximos dias, incluindo risco de ruptura.",
-      strict: true,
       input_schema: { type: "object", properties: {}, additionalProperties: false },
     },
     executar: (supabase, _input, ctx) => buscarSaldoProjetado(supabase, ctx.tenantId),
@@ -158,7 +154,6 @@ export const TOOLS_LEITURA: DefinicaoTool[] = [
     definicao: {
       name: "consultar_liquidez",
       description: "Consulta o nível de liquidez aproximada do tenant (RISCO, ATENCAO ou SAUDAVEL) considerando os próximos 30 dias.",
-      strict: true,
       input_schema: { type: "object", properties: {}, additionalProperties: false },
     },
     executar: (supabase, _input, ctx) => buscarLiquidezAproximada(supabase, ctx.tenantId),
@@ -167,7 +162,6 @@ export const TOOLS_LEITURA: DefinicaoTool[] = [
     definicao: {
       name: "consultar_aging",
       description: "Consulta contas a receber ou a pagar em aberto, agrupadas por faixa de vencimento (aging).",
-      strict: true,
       input_schema: { type: "object", properties: { tipo: PROPRIEDADE_TIPO }, required: ["tipo"], additionalProperties: false },
     },
     executar: (supabase, input, ctx) => buscarAging(supabase, { tenantId: ctx.tenantId, tipo: tipoObrigatorio(input) }),
@@ -176,7 +170,6 @@ export const TOOLS_LEITURA: DefinicaoTool[] = [
     definicao: {
       name: "consultar_vencimentos",
       description: "Consulta o resumo de vencidos e a vencer (contas a receber ou a pagar), opcionalmente filtrado por uma pessoa/cliente específico.",
-      strict: true,
       input_schema: {
         type: "object",
         properties: { tipo: PROPRIEDADE_TIPO, pessoa_id: { type: "string", description: "UUID da pessoa/cliente, se a pergunta for sobre alguém específico." } },
@@ -191,7 +184,6 @@ export const TOOLS_LEITURA: DefinicaoTool[] = [
     definicao: {
       name: "consultar_realizado_vs_previsto",
       description: "Consulta quanto do que venceu num período já foi de fato pago/recebido (%Realizado) e quanto disso foi em atraso.",
-      strict: true,
       input_schema: {
         type: "object",
         properties: { tipo: PROPRIEDADE_TIPO, mes_inicio: PROPRIEDADE_DATA, mes_fim: PROPRIEDADE_DATA },
@@ -206,7 +198,6 @@ export const TOOLS_LEITURA: DefinicaoTool[] = [
     definicao: {
       name: "consultar_ponto_equilibrio",
       description: "Consulta o ponto de equilíbrio (faturamento mínimo pra cobrir os gastos fixos) num período.",
-      strict: true,
       input_schema: {
         type: "object",
         properties: {
@@ -232,7 +223,6 @@ export const TOOLS_LEITURA: DefinicaoTool[] = [
     definicao: {
       name: "consultar_composicao_fluxo",
       description: "Consulta a composição de entradas e saídas de caixa por categoria, num ano.",
-      strict: true,
       input_schema: { type: "object", properties: { ano: { type: "integer", description: "Ano (ex.: 2026)." } }, required: ["ano"], additionalProperties: false },
     },
     executar: (supabase, input, ctx) => buscarComposicaoFluxoCaixa(supabase, { tenantId: ctx.tenantId, ano: numeroObrigatorio(input, "ano"), origemHref: "" }),
@@ -246,7 +236,6 @@ export const TOOLS_LEITURA: DefinicaoTool[] = [
     definicao: {
       name: "consultar_analise_categorias",
       description: "Consulta receitas ou despesas somadas por categoria num período, ordenadas do maior pro menor valor (curva ABC), com % de participação e % acumulado.",
-      strict: true,
       input_schema: {
         type: "object",
         properties: { tipo: PROPRIEDADE_TIPO, regime: PROPRIEDADE_REGIME, data_inicio: PROPRIEDADE_DATA, data_fim: PROPRIEDADE_DATA },
@@ -268,7 +257,6 @@ export const TOOLS_LEITURA: DefinicaoTool[] = [
     definicao: {
       name: "consultar_comparativo_periodos",
       description: "Compara o movimento financeiro mês a mês: contra o mês anterior (AH), contra o mesmo mês do ano anterior (YOY), ou acumulado no ano (YTD).",
-      strict: true,
       input_schema: {
         type: "object",
         properties: {
@@ -294,7 +282,6 @@ export const TOOLS_LEITURA: DefinicaoTool[] = [
     definicao: {
       name: "consultar_concentracao",
       description: "Consulta o quanto a receita ou despesa depende de poucos clientes/fornecedores (risco de concentração: ALTO, MEDIO ou BAIXO) numa janela de meses.",
-      strict: true,
       input_schema: {
         type: "object",
         properties: { tipo: PROPRIEDADE_TIPO, meses_janela: { type: "integer", description: "Janela em meses pra trás. Padrão: 12." } },
@@ -314,7 +301,6 @@ export const TOOLS_LEITURA: DefinicaoTool[] = [
     definicao: {
       name: "consultar_variacao_categorias",
       description: "Consulta quais categorias de receita ou despesa tiveram a maior variação entre o mês atual e o mês anterior, ordenado pelo maior desvio.",
-      strict: true,
       input_schema: { type: "object", properties: { tipo: PROPRIEDADE_TIPO }, required: ["tipo"], additionalProperties: false },
     },
     executar: (supabase, input, ctx) => buscarVariacaoCategorias(supabase, { tenantId: ctx.tenantId, tipo: tipoObrigatorio(input) }),
@@ -323,7 +309,6 @@ export const TOOLS_LEITURA: DefinicaoTool[] = [
     definicao: {
       name: "consultar_prazos_medios",
       description: "Consulta o prazo médio de recebimento (PMR) e de pagamento (PMP) em dias, e o ciclo de conversão de caixa (PMR - PMP) numa janela de meses.",
-      strict: true,
       input_schema: { type: "object", properties: { meses_janela: { type: "integer", description: "Janela em meses pra trás. Padrão: 6." } }, additionalProperties: false },
     },
     executar: async (supabase, input, ctx) => {
@@ -342,7 +327,6 @@ export const TOOLS_LEITURA: DefinicaoTool[] = [
     definicao: {
       name: "consultar_forma_pagamento",
       description: "Consulta a distribuição de recebimentos/pagamentos por forma de pagamento (Pix, boleto, cartão etc.) numa janela de meses, com o atraso médio de cada uma.",
-      strict: true,
       input_schema: { type: "object", properties: { meses_janela: { type: "integer", description: "Janela em meses pra trás. Padrão: 6." } }, additionalProperties: false },
     },
     executar: (supabase, input, ctx) =>
@@ -352,7 +336,6 @@ export const TOOLS_LEITURA: DefinicaoTool[] = [
     definicao: {
       name: "consultar_historico_saldo",
       description: "Consulta a série histórica de saldo em caixa: últimos 28 dias realizados mais a projeção até 60 dias à frente.",
-      strict: true,
       input_schema: { type: "object", properties: {}, additionalProperties: false },
     },
     executar: (supabase, _input, ctx) => buscarSerieSaldoProjetado(supabase, ctx.tenantId),
@@ -361,7 +344,6 @@ export const TOOLS_LEITURA: DefinicaoTool[] = [
     definicao: {
       name: "consultar_centro_custo",
       description: "Consulta entradas, saídas, saldo e margem por centro de custo, num período.",
-      strict: true,
       input_schema: {
         type: "object",
         properties: { regime: PROPRIEDADE_REGIME, data_inicio: PROPRIEDADE_DATA, data_fim: PROPRIEDADE_DATA },
@@ -382,7 +364,6 @@ export const TOOLS_LEITURA: DefinicaoTool[] = [
     definicao: {
       name: "consultar_contas_bancarias",
       description: "Consulta o extrato gerencial por conta financeira/bancária: crédito, débito e saldo do período, e o saldo acumulado.",
-      strict: true,
       input_schema: {
         type: "object",
         properties: { regime: PROPRIEDADE_REGIME, data_inicio: PROPRIEDADE_DATA, data_fim: PROPRIEDADE_DATA },
@@ -403,7 +384,6 @@ export const TOOLS_LEITURA: DefinicaoTool[] = [
     definicao: {
       name: "consultar_dfc_matriz",
       description: "Consulta o fluxo de caixa mês a mês (Jan-Dez) agrupado por atividade (operacional, investimento, financiamento), previsto e realizado, num ano.",
-      strict: true,
       input_schema: { type: "object", properties: { ano: { type: "integer", description: "Ano (ex.: 2026)." } }, required: ["ano"], additionalProperties: false },
     },
     executar: (supabase, input, ctx) => buscarDFCMatriz(supabase, { tenantId: ctx.tenantId, ano: numeroObrigatorio(input, "ano"), origemHref: "" }),
@@ -412,7 +392,6 @@ export const TOOLS_LEITURA: DefinicaoTool[] = [
     definicao: {
       name: "consultar_dre_matriz",
       description: "Consulta a DRE completa mês a mês (Jan-Dez), com total do ano e análise vertical (%), num regime e ano.",
-      strict: true,
       input_schema: {
         type: "object",
         properties: { regime: PROPRIEDADE_REGIME, ano: { type: "integer", description: "Ano (ex.: 2026)." } },
@@ -426,7 +405,6 @@ export const TOOLS_LEITURA: DefinicaoTool[] = [
     definicao: {
       name: "consultar_evolucao_ponto_equilibrio",
       description: "Consulta como o ponto de equilíbrio, a receita e a margem de contribuição evoluíram mês a mês ao longo de um ano.",
-      strict: true,
       input_schema: {
         type: "object",
         properties: {
@@ -450,7 +428,6 @@ export const TOOLS_LEITURA: DefinicaoTool[] = [
     definicao: {
       name: "consultar_historico_realizado_vs_previsto",
       description: "Consulta a série histórica de %Realizado e %Pago em atraso ao longo dos últimos N meses (mesmo indicador de consultar_realizado_vs_previsto, mas em série temporal).",
-      strict: true,
       input_schema: {
         type: "object",
         properties: { tipo: PROPRIEDADE_TIPO, meses: { type: "integer", description: "Quantidade de meses pra trás. Padrão: 6." } },
@@ -465,7 +442,6 @@ export const TOOLS_LEITURA: DefinicaoTool[] = [
     definicao: {
       name: "consultar_previsto_vs_realizado_fluxo",
       description: "Consulta o fluxo de caixa total (não por categoria) comparando previsto (vencimento) contra realizado (pagamento), por período.",
-      strict: true,
       input_schema: {
         type: "object",
         properties: {
@@ -489,7 +465,6 @@ export const TOOLS_LEITURA: DefinicaoTool[] = [
     definicao: {
       name: "consultar_orcado_vs_realizado",
       description: "Consulta a meta orçada (Previsionamento) contra o que foi de fato realizado, por categoria, num ano — mostra o desvio percentual de cada categoria.",
-      strict: true,
       input_schema: {
         type: "object",
         properties: { regime: PROPRIEDADE_REGIME, ano: { type: "integer", description: "Ano (ex.: 2026)." } },
@@ -503,7 +478,6 @@ export const TOOLS_LEITURA: DefinicaoTool[] = [
     definicao: {
       name: "consultar_aging_por_participante",
       description: "Consulta contas a receber ou a pagar em aberto agrupadas por cliente/fornecedor, com o total em aberto e o maior atraso de cada um.",
-      strict: true,
       input_schema: { type: "object", properties: { tipo: PROPRIEDADE_TIPO }, required: ["tipo"], additionalProperties: false },
     },
     executar: (supabase, input, ctx) => buscarAgingPorParticipante(supabase, { tenantId: ctx.tenantId, tipo: tipoObrigatorio(input) }),
@@ -513,7 +487,6 @@ export const TOOLS_LEITURA: DefinicaoTool[] = [
       name: "consultar_lancamentos",
       description:
         "Busca lançamentos (receitas/despesas) individuais por palavra-chave da descrição e/ou tipo, num período — devolve até 25 lançamentos, do mais recente pro mais antigo, com descrição, valor, tipo, data, pessoa vinculada e status das parcelas. Use pra responder perguntas como 'quais lançamentos de X', 'liste os pagamentos recentes', 'o que eu registrei essa semana'. Período padrão: últimos 6 meses, se não informado.",
-      strict: true,
       input_schema: {
         type: "object",
         properties: {

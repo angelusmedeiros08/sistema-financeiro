@@ -36,7 +36,6 @@ export const TOOLS_ACAO: DefinicaoTool[] = [
       name: "propor_criar_lancamento",
       description:
         "Monta uma PROPOSTA de criar um lançamento (receita ou despesa) — não cria nada de verdade, só monta um cartão que a pessoa precisa confirmar manualmente. Use quando a pessoa descrever algo que pagou ou recebeu.",
-      strict: true,
       input_schema: {
         type: "object",
         properties: {
@@ -76,7 +75,6 @@ export const TOOLS_ACAO: DefinicaoTool[] = [
       name: "propor_editar_lancamento",
       description:
         "Busca um lançamento existente por um termo de busca (ex.: 'Uber') e, se achar exatamente um, monta uma PROPOSTA de edição — não edita nada de verdade. Se achar mais de um candidato, devolve a lista pra você perguntar qual antes de propor.",
-      strict: true,
       input_schema: {
         type: "object",
         properties: {
@@ -122,7 +120,6 @@ export const TOOLS_ACAO: DefinicaoTool[] = [
       name: "propor_cancelar_parcela",
       description:
         "Busca uma parcela em aberto por um termo de busca na descrição do lançamento e, se achar exatamente uma, monta uma PROPOSTA de cancelamento — não cancela nada de verdade. Se achar mais de uma, devolve a lista pra você perguntar qual.",
-      strict: true,
       input_schema: {
         type: "object",
         properties: {
