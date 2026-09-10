@@ -11,7 +11,8 @@ const MAX_TOKENS = 4096;
 const MAX_ITERACOES_TOOL_USE = 8; // trava contra loop infinito de tool use (modelo insistindo numa ferramenta)
 
 // Cache de prompt (achado em cálculo de custo, 08/09/2026): system prompt +
-// as 13 definições de ferramenta são idênticos em toda chamada, de todo
+// as definições de ferramenta (25 de leitura + 3 de ação, ver
+// tools-leitura.ts/tools-acao.ts) são idênticas em toda chamada, de todo
 // tenant — nunca mudam por sessão nem por usuário. Sem cache, esse bloco
 // fixo (~2.500 tokens) é recobrado inteiro a US$2/MTok a cada uma das até
 // 8 iterações do loop, em toda mensagem. Marcando o breakpoint no ÚLTIMO
