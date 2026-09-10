@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/utils/supabase/server";
 import type { Database } from "@/utils/supabase/database.types";
-import { acessoLiberado } from "@/lib/pagamentos/plano";
+import { acessoLiberado, type StatusAssinatura } from "@/lib/pagamentos/plano";
 
 export const COOKIE_TENANT_ATIVO = "tenant_ativo";
 
@@ -22,8 +22,14 @@ type ResultadoTenant =
       // 29/08/2026): cada layout (app/portal) decide o que fazer com isso —
       // esta função só resolve o vínculo, não redireciona por si só, mesmo
       // padrão já usado pra `papel`.
-      statusAssinatura: "trial" | "ativo" | "inadimplente" | "cancelado" | null;
+      statusAssinatura: StatusAssinatura | null;
       trialTerminaEm: string | null;
+      acessoAte: string | null;
+      // Autoatendimento de assinatura (spec 2026-09-09): pagar fatura,
+      // reativar e gerenciar assinatura precisam desses ids do Asaas — sem
+      // eles cada tela teria que buscar o tenant de novo só pra isso.
+      asaasCustomerId: string | null;
+      asaasSubscriptionId: string | null;
     };
 
 // Um usuário pode ter vínculo ativo com mais de um tenant (ex.: sócio com
@@ -68,7 +74,7 @@ export const obterUsuarioETenantAtual = cache(async (ignorarGateAssinatura = fal
 
   const { data: vinculos, error } = await supabase
     .from("usuario_tenant")
-    .select("tenant_id, papel, pessoa_id, tenants(nome, status_assinatura, trial_termina_em)")
+    .select("tenant_id, papel, pessoa_id, tenants(nome, status_assinatura, trial_termina_em, acesso_ate, asaas_customer_id, asaas_subscription_id)")
     .eq("usuario_id", user.id)
     .eq("ativo", true)
     .order("convidado_em");
@@ -81,10 +87,11 @@ export const obterUsuarioETenantAtual = cache(async (ignorarGateAssinatura = fal
   const tenantIdPreferido = cookieStore.get(COOKIE_TENANT_ATIVO)?.value;
   const vinculoEscolhido = (tenantIdPreferido && vinculos.find((v) => v.tenant_id === tenantIdPreferido)) || vinculos[0];
 
-  const statusAssinatura = (vinculoEscolhido.tenants?.status_assinatura as "trial" | "ativo" | "inadimplente" | "cancelado" | undefined) ?? null;
+  const statusAssinatura = (vinculoEscolhido.tenants?.status_assinatura as StatusAssinatura | undefined) ?? null;
   const trialTerminaEm = vinculoEscolhido.tenants?.trial_termina_em ?? null;
+  const acessoAte = vinculoEscolhido.tenants?.acesso_ate ?? null;
 
-  if (!ignorarGateAssinatura && !acessoLiberado(statusAssinatura, trialTerminaEm)) {
+  if (!ignorarGateAssinatura && !acessoLiberado(statusAssinatura, trialTerminaEm, acessoAte)) {
     return { erro: "Assinatura inativa ou período de teste encerrado. Regularize o pagamento para continuar." };
   }
 
@@ -97,5 +104,8 @@ export const obterUsuarioETenantAtual = cache(async (ignorarGateAssinatura = fal
     tenantsDisponiveis: vinculos.map((v) => ({ id: v.tenant_id, nome: v.tenants?.nome ?? "" })),
     statusAssinatura,
     trialTerminaEm,
+    acessoAte,
+    asaasCustomerId: vinculoEscolhido.tenants?.asaas_customer_id ?? null,
+    asaasSubscriptionId: vinculoEscolhido.tenants?.asaas_subscription_id ?? null,
   };
 });

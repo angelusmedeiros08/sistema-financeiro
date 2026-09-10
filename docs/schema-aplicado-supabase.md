@@ -151,6 +151,8 @@ Registro do que foi efetivamente implementado no banco (região São Paulo, `sa-
 
 92. `linha_dre_categorias_insert_valida_categoria_tenant` (08/09/2026) — achado na mesma auditoria (severidade baixa): a policy de INSERT de `linha_dre_categorias` validava só `linha_dre_id`, nunca `categoria_id` — dava pra vincular uma linha de DRE legítima do próprio tenant a uma `categoria_financeira` de outro tenant. Impacto prático baixo (o agregado do DRE só soma categoria do próprio tenant, o vínculo cruzado nunca aparecia no relatório), mas fecha a inconsistência de autorização. `vincularCategoriaDre` (`dre.ts`) ganhou a mesma checagem em app, espelhando o padrão já usado pra `linha_dre_id`.
 
+93. `autoatendimento_assinatura_cancelamento_agendado` (09/09/2026) — spec `docs/superpowers/specs/2026-09-09-autoatendimento-assinatura-design.md`. Coluna nova `tenants.acesso_ate` (timestamptz, nullable) e `status_assinatura` ganha o valor `cancelamento_agendado` no `CHECK` (`tenants_status_assinatura_check`, recriado). Separa cancelamento voluntário (mantém acesso até `acesso_ate`, fim do período já pago) de cancelamento por inadimplência (bloqueio imediato, regra já existente desde a auditoria de 29/08, inalterada). `acessoLiberado()` (`lib/pagamentos/plano.ts`) ganha o terceiro ramo comparando `acesso_ate` com `now()`, mesmo mecanismo já usado por `trial_termina_em` — nenhum cron necessário pra "expirar" o estado.
+
 ## Verificação final
 
 - `get_advisors` (segurança): **0 alertas** (só o warning pré-existente e não relacionado `auth_leaked_password_protection`).

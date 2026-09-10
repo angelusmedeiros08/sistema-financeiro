@@ -21,6 +21,7 @@ import { StatusPlano } from "./status-plano";
 import type { NotificacaoItem } from "@/lib/notificacoes/notificacoes";
 import { sair } from "@/app/(auth)/actions";
 import { trocarTenantAtivo } from "@/lib/tenant/trocar-tenant-actions";
+import type { StatusAssinatura } from "@/lib/pagamentos/plano";
 
 export function Topbar({
   tenantNome,
@@ -30,14 +31,16 @@ export function Topbar({
   notificacoes,
   statusAssinatura,
   trialTerminaEm,
+  acessoAte,
 }: {
   tenantNome: string;
   tenantId: string;
   tenantsDisponiveis: { id: string; nome: string }[];
   nome: string;
   notificacoes: NotificacaoItem[];
-  statusAssinatura: "trial" | "ativo" | "inadimplente" | "cancelado" | null;
+  statusAssinatura: StatusAssinatura | null;
   trialTerminaEm: string | null;
+  acessoAte: string | null;
 }) {
   const outrosTenants = tenantsDisponiveis.filter((t) => t.id !== tenantId);
   return (
@@ -77,7 +80,7 @@ export function Topbar({
       </div>
 
       <div className="flex items-center gap-1.5">
-        <StatusPlano statusAssinatura={statusAssinatura} trialTerminaEm={trialTerminaEm} />
+        <StatusPlano statusAssinatura={statusAssinatura} trialTerminaEm={trialTerminaEm} acessoAte={acessoAte} />
         <IconeTransmitir />
         <NovoRegistroMenu />
         {/* key={tenantId}: força remontar o painel ao trocar de empresa no

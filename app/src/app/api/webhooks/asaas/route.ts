@@ -62,7 +62,20 @@ export async function POST(request: Request) {
     } else if (evento.tipo === "pagamento_atrasado") {
       await admin.from("tenants").update({ status_assinatura: "inadimplente" }).eq("asaas_subscription_id", evento.assinaturaExternaId);
     } else if (evento.tipo === "assinatura_cancelada") {
-      await admin.from("tenants").update({ status_assinatura: "cancelado" }).eq("asaas_subscription_id", evento.assinaturaExternaId);
+      // Autoatendimento de assinatura (spec 2026-09-09): quando o próprio
+      // tenant cancela pela tela de gerenciar assinatura, nós mesmos já
+      // chamamos a API de cancelamento e já gravamos
+      // cancelamento_agendado + acesso_ate ANTES deste webhook chegar (é
+      // uma confirmação do que já fizemos, não uma notícia nova). Sem o
+      // .neq abaixo, este UPDATE sobrescreveria de volta pra "cancelado"
+      // na hora, matando a carência que acabamos de conceder. Cancelamento
+      // por inadimplência (iniciado pelo Asaas, nunca passou por
+      // cancelamento_agendado) continua bloqueando na hora, sem mudança.
+      await admin
+        .from("tenants")
+        .update({ status_assinatura: "cancelado" })
+        .eq("asaas_subscription_id", evento.assinaturaExternaId)
+        .neq("status_assinatura", "cancelamento_agendado");
     }
   } catch (erro) {
     // Nunca vazar detalhe interno (stack trace, mensagem de SDK) na
@@ -79,21 +92,25 @@ export async function POST(request: Request) {
   return NextResponse.json({ ok: true });
 }
 
-// Cria o tenant + usuário admin a partir de uma assinatura recém-paga.
+// Cria o tenant + usuário admin a partir de uma assinatura recém-paga — OU,
+// se o checkout foi gerado pelo autoatendimento de assinatura (reativação
+// de tenant cancelado, ou upgrade de trial), atualiza o tenant que já
+// existe em vez de provisionar um novo. As duas situações passam pelo
+// mesmo evento (CHECKOUT_PAID); a diferença é só o formato de
+// externalReference — ver lib/pagamentos/autoatendimento-actions.ts.
+//
 // Busca cliente/assinatura direto na API do Asaas (nunca confia em campo
 // do payload do webhook pra dado usado em provisionamento) — mais simples
 // de auditar um formato de resposta conhecido do que validar todo campo
 // que um payload de evento poderia conter.
-//
-// Sempre provisiona como "trial" (nunca "ativo" direto): pro caminho
-// cartão, CHECKOUT_PAID pode significar só "cartão validado/tokenizado",
-// não necessariamente uma cobrança de verdade — a cobrança real só
-// acontece no primeiro vencimento (até 7 dias depois). O evento
-// PAYMENT_CONFIRMED subsequente (que chega pros dois caminhos, cartão e
-// Pix) corrige pra "ativo" assim que a cobrança de fato confirmar — nunca
-// concede acesso permanente sem essa confirmação later.
 async function processarCheckoutPago(admin: ReturnType<typeof createAdminClient>, assinaturaExternaId: string) {
   const assinatura = await buscarAssinaturaAsaas(assinaturaExternaId);
+
+  const tenantExistenteId = assinatura.externalReference?.startsWith("tenant:") ? assinatura.externalReference.slice("tenant:".length) : null;
+  if (tenantExistenteId) {
+    return atualizarTenantExistente(admin, tenantExistenteId, assinaturaExternaId);
+  }
+
   const cliente = await buscarClienteAsaas(assinatura.customer);
   const nomeEmpresa = assinatura.externalReference || cliente.name;
 
@@ -110,6 +127,13 @@ async function processarCheckoutPago(admin: ReturnType<typeof createAdminClient>
     throw new Error(erroConvite?.message ?? "Falha ao criar usuário a partir do pagamento confirmado.");
   }
 
+  // Sempre provisiona como "trial" (nunca "ativo" direto): pro caminho
+  // cartão, CHECKOUT_PAID pode significar só "cartão validado/tokenizado",
+  // não necessariamente uma cobrança de verdade — a cobrança real só
+  // acontece no primeiro vencimento (até 7 dias depois). O evento
+  // PAYMENT_CONFIRMED (mais abaixo em POST) corrige pra "ativo" assim que a
+  // cobrança de fato confirmar — nunca concede acesso permanente sem essa
+  // confirmação.
   const resultado = await provisionarTenantNovo({
     nome: nomeEmpresa,
     usuarioId: convite.user.id,
@@ -131,4 +155,18 @@ async function processarCheckoutPago(admin: ReturnType<typeof createAdminClient>
     // manualmente se precisar.
     console.error("[webhook-asaas] tenant provisionado mas e-mail de boas-vindas falhou:", resultadoEmail.erro);
   }
+}
+
+// Reativação (tenant cancelado) ou upgrade de trial — o tenant/usuário já
+// existem, só a assinatura no Asaas é nova. Grava o `asaas_subscription_id`
+// novo e zera `acesso_ate`, mas NÃO mexe em `status_assinatura` aqui:
+// reaproveitar "trial" pareceria natural (mesmo raciocínio do
+// provisionamento novo acima), mas carrega semântica própria no resto do
+// produto (badge "Trial · 7 dias" na topbar) que não faz sentido pra quem
+// acabou de pagar. O tenant permanece no status atual até
+// PAYMENT_CONFIRMED chegar e confirmar "ativo" de verdade — mesma janela de
+// espera entre os dois webhooks que o provisionamento novo já tem hoje.
+async function atualizarTenantExistente(admin: ReturnType<typeof createAdminClient>, tenantId: string, assinaturaExternaId: string) {
+  const { error } = await admin.from("tenants").update({ asaas_subscription_id: assinaturaExternaId, acesso_ate: null }).eq("id", tenantId);
+  if (error) throw new Error(error.message);
 }

@@ -10,7 +10,7 @@ export default async function LayoutPortal({ children }: { children: React.React
   // Mesmo gate de assinatura de (app)/layout.tsx — o cliente do portal
   // perde acesso junto quando o tenant (o escritório que paga a
   // assinatura) fica inadimplente/cancelado, é o mesmo serviço.
-  if (!acessoLiberado(contexto.statusAssinatura, contexto.trialTerminaEm)) {
+  if (!acessoLiberado(contexto.statusAssinatura, contexto.trialTerminaEm, contexto.acessoAte)) {
     redirect("/assinatura-pendente");
   }
 

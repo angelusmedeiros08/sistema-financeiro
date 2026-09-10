@@ -6,6 +6,12 @@ export const VALOR_PLANO_MENSAL = 197;
 export const DESCRICAO_PLANO = "Assinatura Finanssi — mensal";
 export const TRIAL_DIAS = 7;
 
+// Fonte única do tipo — antes repetido como literal em 6 arquivos
+// diferentes, risco real de esquecer de atualizar algum ao adicionar
+// `cancelamento_agendado` (achado ao implementar autoatendimento de
+// assinatura, spec 2026-09-09).
+export type StatusAssinatura = "trial" | "ativo" | "inadimplente" | "cancelado" | "cancelamento_agendado";
+
 // Fonte única do gate de acesso — achado CRÍTICO em auditoria de segurança
 // (29/08/2026): nenhuma camada verificava assinatura/trial antes disso,
 // então um tenant com trial vencido ou assinatura cancelada tinha acesso
@@ -14,11 +20,14 @@ export const TRIAL_DIAS = 7;
 // Bloqueio é imediato (sem carência) pra inadimplente/cancelado, por
 // decisão explícita do usuário — dados nunca são apagados, só ficam
 // inacessíveis até regularizar.
-export function acessoLiberado(
-  statusAssinatura: "trial" | "ativo" | "inadimplente" | "cancelado" | null,
-  trialTerminaEm: string | null,
-): boolean {
+//
+// `cancelamento_agendado` (autoatendimento de assinatura, 09/09/2026) é
+// diferente: o tenant já pagou o ciclo atual e pediu pra não renovar, então
+// mantém acesso até `acessoAte` (fim do período já pago) — mesmo mecanismo
+// de `trialTerminaEm`, sem precisar de cron pra "expirar" o estado.
+export function acessoLiberado(statusAssinatura: StatusAssinatura | null, trialTerminaEm: string | null, acessoAte?: string | null): boolean {
   if (statusAssinatura === "ativo") return true;
   if (statusAssinatura === "trial") return !trialTerminaEm || new Date(trialTerminaEm) > new Date();
+  if (statusAssinatura === "cancelamento_agendado") return !!acessoAte && new Date(acessoAte) > new Date();
   return false;
 }

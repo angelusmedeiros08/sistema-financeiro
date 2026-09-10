@@ -25,25 +25,32 @@ export async function criarCheckoutAssinatura(params: {
   valor: number;
   descricaoItem: string;
   proximoVencimento: string; // "YYYY-MM-DD"
-  formaPagamento: "CREDIT_CARD" | "PIX";
+  // Array pra permitir o autoatendimento de assinatura oferecer os dois
+  // métodos juntos na página hospedada do Asaas (sem trial em jogo pra
+  // reativação/upgrade, não há motivo pra forçar escolha antes) — o
+  // cadastro novo em /assinar continua passando só um (ver assinatura-
+  // actions.ts: trial de 7 dias é exclusivo do caminho cartão).
+  formasPagamento: ("CREDIT_CARD" | "PIX")[];
   // Nome da empresa escolhido no formulário de /assinar — nada é provisionado
   // ainda nesse ponto (Fatia 4), então não há tenant pra guardar isso. Vai e
   // volta pelo próprio Asaas: o webhook de pagamento confirmado (Fatia 6) lê
   // de volta esse valor pra saber com que nome criar o tenant.
   nomeEmpresa: string;
   ciclo?: CicloAssinatura;
+  // Autoatendimento de assinatura (spec 2026-09-09): reativação/upgrade de
+  // trial geram um checkout novo pra um tenant que JÁ existe — o webhook
+  // precisa distinguir isso do cadastro novo (que usa nomeEmpresa acima) pra
+  // não tentar provisionar um tenant duplicado. Convenção: `tenant:{id}`.
+  // Quando presente, substitui nomeEmpresa como externalReference.
+  externalReferenceOverride?: string;
 }): Promise<CheckoutAssinatura> {
   const resposta = await chamarAsaas<RespostaCheckout>("/v3/checkouts", {
     method: "POST",
     body: JSON.stringify({
-      // Uma única forma de pagamento por checkout, nunca as duas juntas —
-      // trial de 7 dias só existe no caminho cartão (Pix cobra na hora), e
-      // pra aplicar isso certo no nextDueDate é preciso já saber qual delas
-      // antes de montar a chamada (decidido na tela de /assinar).
-      billingTypes: [params.formaPagamento],
+      billingTypes: params.formasPagamento,
       chargeTypes: ["RECURRENT"],
       minutesToExpire: 60,
-      externalReference: params.nomeEmpresa,
+      externalReference: params.externalReferenceOverride ?? params.nomeEmpresa,
       callback: {
         successUrl: params.callbackUrlSucesso,
         cancelUrl: params.callbackUrlCancelado,

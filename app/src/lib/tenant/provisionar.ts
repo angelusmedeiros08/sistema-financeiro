@@ -3,8 +3,7 @@ import { createAdminClient } from "@/utils/supabase/admin";
 import { GRUPOS_CONTAS_PADRAO, CONTAS_CONTABEIS_PADRAO, CODIGO_CAIXA_E_BANCOS, CODIGO_RECEITAS_GERAL, CODIGO_DESPESAS_GERAL } from "@/lib/contabil/plano-padrao";
 import { CATEGORIAS_PADRAO } from "@/lib/contabil/categorias-padrao";
 import { MODELO_COMPLETO_DRE } from "@/lib/relatorios/dre";
-
-type StatusAssinatura = "trial" | "ativo" | "inadimplente" | "cancelado";
+import type { StatusAssinatura } from "@/lib/pagamentos/plano";
 
 type ResultadoProvisionamento = { erro: string } | { tenantId: string };
 

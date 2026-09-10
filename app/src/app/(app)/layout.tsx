@@ -18,7 +18,7 @@ export default async function LayoutApp({ children }: { children: React.ReactNod
   // nenhuma camada, então cobrança nunca tinha efeito real sobre o acesso.
   // Roda antes do redirect de papel abaixo — vale igual pra staff e
   // cliente_portal, é o mesmo serviço sendo pago pelo tenant.
-  if (!acessoLiberado(contexto.statusAssinatura, contexto.trialTerminaEm)) {
+  if (!acessoLiberado(contexto.statusAssinatura, contexto.trialTerminaEm, contexto.acessoAte)) {
     redirect("/assinatura-pendente");
   }
 
@@ -46,6 +46,7 @@ export default async function LayoutApp({ children }: { children: React.ReactNod
           notificacoes={notificacoes}
           statusAssinatura={contexto.statusAssinatura}
           trialTerminaEm={contexto.trialTerminaEm}
+          acessoAte={contexto.acessoAte}
         />
       }
     >

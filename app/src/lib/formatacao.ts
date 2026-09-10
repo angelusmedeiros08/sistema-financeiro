@@ -122,3 +122,17 @@ export function formatarDataHoraBrasil(isoDatetime: string): string {
     minute: "2-digit",
   });
 }
+
+// Mesmo motivo de formatarDataHoraBrasil (timeZone explícito, nunca o fuso
+// do processo Node) mas sem hora — pra timestamp de verdade (`acesso_ate`,
+// `trial_termina_em`) onde só o dia importa. Nunca usar formatarDataComAno
+// aqui: ela espera uma data corrida "AAAA-MM-DD" e concatena "T00:00:00" —
+// com um timestamptz de verdade isso gera uma string inválida.
+export function formatarDataBrasil(isoDatetime: string): string {
+  return new Date(isoDatetime).toLocaleDateString("pt-BR", {
+    timeZone: FUSO_BRASIL,
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}

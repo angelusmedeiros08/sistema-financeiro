@@ -2107,6 +2107,7 @@ export type Database = {
       }
       tenants: {
         Row: {
+          acesso_ate: string | null
           asaas_customer_id: string | null
           asaas_subscription_id: string | null
           cnpj: string | null
@@ -2119,6 +2120,7 @@ export type Database = {
           trial_termina_em: string | null
         }
         Insert: {
+          acesso_ate?: string | null
           asaas_customer_id?: string | null
           asaas_subscription_id?: string | null
           cnpj?: string | null
@@ -2131,6 +2133,7 @@ export type Database = {
           trial_termina_em?: string | null
         }
         Update: {
+          acesso_ate?: string | null
           asaas_customer_id?: string | null
           asaas_subscription_id?: string | null
           cnpj?: string | null

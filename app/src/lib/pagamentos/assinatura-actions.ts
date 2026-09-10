@@ -65,7 +65,7 @@ export async function assinar(formData: FormData): Promise<ResultadoAssinar | ne
       // primeira janela disponível (spec: trial é benefício exclusivo do
       // caminho cartão).
       proximoVencimento: formaPagamento === "CREDIT_CARD" ? dataISO(TRIAL_DIAS) : dataISO(0),
-      formaPagamento,
+      formasPagamento: [formaPagamento],
       nomeEmpresa,
     });
   } catch (erro) {
