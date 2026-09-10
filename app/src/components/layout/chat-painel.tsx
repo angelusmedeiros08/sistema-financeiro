@@ -258,11 +258,14 @@ export function ChatPainel() {
 // não só um erro seco quando bate o teto. Orçamento COMPARTILHADO com a
 // Importação com IA (spec 2026-09-10, orçamento por custo real em vez de
 // contagem de mensagem) — usar a Importação também move este indicador.
-// Valor e legenda sempre visíveis (não só num title de hover, que some no
-// toque em celular e ninguém descobre por acaso) — pedido do usuário
-// 10/09/2026. Janela mensal (30 dias deslizantes, não reseta no dia 1),
-// escolhida de propósito pra não bloquear uma importação grande no meio do
-// mês só por causa de um teto diário artificial.
+// Porcentagem, nunca o valor em reais: mostrar "R$X de R$30" expõe um teto
+// que parece baixo e assusta o cliente sem necessidade (achado do usuário,
+// 10/09/2026) — a % comunica o mesmo progresso sem revelar o número.
+// Legenda sempre visível (não só num title de hover, que some no toque em
+// celular e ninguém descobre por acaso). Janela mensal (30 dias
+// deslizantes, não reseta no dia 1), escolhida de propósito pra não
+// bloquear uma importação grande no meio do mês só por causa de um teto
+// diário artificial.
 function IndicadorUsoChatIA({ uso }: { uso: UsoIA }) {
   const pct = Math.min(100, Math.round((uso.usadoUsd / uso.limiteUsd) * 100));
   const atingiu = uso.usadoUsd >= uso.limiteUsd;
@@ -278,7 +281,7 @@ function IndicadorUsoChatIA({ uso }: { uso: UsoIA }) {
             atingiu ? "text-destructive" : alerta ? "text-[#96690F] dark:text-[#F0BB4E]" : "text-foreground",
           )}
         >
-          {formatarMoeda(uso.usadoBrl)} de {formatarMoeda(uso.limiteBrl)}
+          {pct}% usado
         </span>
       </div>
       <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted">

@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { formatarMoeda } from "@/lib/formatacao";
 import { cn } from "@/lib/utils";
 import { extrairLancamentosIAAction, obterUsoImportacaoIAAction } from "./actions";
 import type { LinhaBrutaIA } from "@/lib/importacao/tipos";
@@ -199,8 +198,11 @@ export function PassoEntradaIA({
 // bloquear, não só um erro seco ao bater o teto. Orçamento COMPARTILHADO
 // com o Chat IA (spec 2026-09-10) — usar o Chat IA também move este
 // indicador, por isso a legenda deixa isso explícito (sempre visível, não
-// só num title de hover — pedido do usuário 10/09/2026). Janela mensal (30
-// dias deslizantes), escolhida de propósito pra não bloquear uma importação
+// só num title de hover — pedido do usuário 10/09/2026). Porcentagem, nunca
+// o valor em reais: mostrar "R$X de R$30" expõe um teto que parece baixo e
+// assusta o cliente sem necessidade (achado do usuário, 10/09/2026) — a %
+// comunica o mesmo progresso sem revelar o número. Janela mensal (30 dias
+// deslizantes), escolhida de propósito pra não bloquear uma importação
 // grande no meio do mês só por causa de um teto diário artificial.
 function IndicadorUsoImportacaoIA({ uso }: { uso: UsoIA }) {
   const pct = Math.min(100, Math.round((uso.usadoUsd / uso.limiteUsd) * 100));
@@ -217,7 +219,7 @@ function IndicadorUsoImportacaoIA({ uso }: { uso: UsoIA }) {
             atingiu ? "text-destructive" : alerta ? "text-[#96690F] dark:text-[#F0BB4E]" : "text-foreground",
           )}
         >
-          {formatarMoeda(uso.usadoBrl)} de {formatarMoeda(uso.limiteBrl)}
+          {pct}% usado
         </span>
       </div>
       <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted">
