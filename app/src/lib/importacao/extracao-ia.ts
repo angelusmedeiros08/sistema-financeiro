@@ -5,6 +5,7 @@ import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { hojeIsoBrasil } from "@/lib/data-brasil";
 import { hashEstavel } from "./validacao";
 import { ASSINATURAS } from "@/lib/contabil/anexos";
+import type { UsageParaCusto } from "@/lib/ia/precos-anthropic";
 import type { LinhaBrutaIA } from "./tipos";
 
 // Mesma defesa em profundidade de lib/contabil/anexos.ts: o media_type
@@ -73,9 +74,13 @@ Regras rígidas, sem exceção:
 
 Data de hoje: {{HOJE}}`;
 
+export type ResultadoExtracaoIA = ({ linhas: LinhaBrutaIA[] } | { erro: string }) & { usage: UsageParaCusto };
+
+const USAGE_ZERO: UsageParaCusto = { input_tokens: 0, output_tokens: 0, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 };
+
 export async function extrairLancamentosIA(
   entrada: { texto: string } | { imagemBase64: string; imagemMediaType: "image/jpeg" | "image/png" | "image/webp" },
-): Promise<{ linhas: LinhaBrutaIA[] } | { erro: string }> {
+): Promise<ResultadoExtracaoIA> {
   // Checado explícito ANTES de chamar a API — sem isso, a ausência da chave
   // vira uma exceção síncrona do SDK (lançada montando os headers, antes de
   // qualquer request de verdade) que não é nenhuma das classes de erro
@@ -83,11 +88,11 @@ export async function extrairLancamentosIA(
   // amigável (achado testando com ANTHROPIC_API_KEY ainda não configurada).
   // Mesmo padrão de validação explícita que criarTransportadorBrevo() já usa.
   if (!process.env.ANTHROPIC_API_KEY) {
-    return { erro: "IA não configurada (ANTHROPIC_API_KEY ausente no ambiente)." };
+    return { erro: "IA não configurada (ANTHROPIC_API_KEY ausente no ambiente).", usage: USAGE_ZERO };
   }
 
   if ("imagemBase64" in entrada && !conteudoBateComMediaType(entrada.imagemBase64, entrada.imagemMediaType)) {
-    return { erro: "Arquivo de imagem inválido ou corrompido." };
+    return { erro: "Arquivo de imagem inválido ou corrompido.", usage: USAGE_ZERO };
   }
 
   const client = new Anthropic();
@@ -126,14 +131,27 @@ export async function extrairLancamentosIA(
       output_config: { format: zodOutputFormat(ExtracaoSchema) },
     });
   } catch (erro) {
-    if (erro instanceof Anthropic.AuthenticationError) return { erro: "IA não configurada (chave de API ausente ou inválida)." };
-    if (erro instanceof Anthropic.RateLimitError) return { erro: "IA temporariamente sobrecarregada — tente de novo em instantes." };
-    if (erro instanceof Anthropic.APIError) return { erro: `Falha ao consultar a IA: ${erro.message}` };
+    // Nenhum destes 3 tipos chega a consumir token de verdade — a
+    // requisição é rejeitada antes de processar (chave inválida, limite
+    // de taxa, erro de validação do request em si).
+    if (erro instanceof Anthropic.AuthenticationError) return { erro: "IA não configurada (chave de API ausente ou inválida).", usage: USAGE_ZERO };
+    if (erro instanceof Anthropic.RateLimitError) return { erro: "IA temporariamente sobrecarregada — tente de novo em instantes.", usage: USAGE_ZERO };
+    if (erro instanceof Anthropic.APIError) return { erro: `Falha ao consultar a IA: ${erro.message}`, usage: USAGE_ZERO };
     throw erro;
   }
 
+  // A partir daqui a chamada já aconteceu de verdade e já foi cobrada —
+  // todo retorno abaixo carrega o usage real, mesmo quando o resultado é
+  // um erro de conteúdo (recusa, corte por tamanho, zero lançamentos).
+  const usage: UsageParaCusto = {
+    input_tokens: resposta.usage.input_tokens,
+    output_tokens: resposta.usage.output_tokens,
+    cache_creation_input_tokens: resposta.usage.cache_creation_input_tokens ?? 0,
+    cache_read_input_tokens: resposta.usage.cache_read_input_tokens ?? 0,
+  };
+
   if (resposta.stop_reason === "refusal") {
-    return { erro: "A IA não conseguiu processar esse conteúdo. Tente reformular o texto ou enviar outra imagem." };
+    return { erro: "A IA não conseguiu processar esse conteúdo. Tente reformular o texto ou enviar outra imagem.", usage };
   }
 
   // Corte por tamanho — precisa ser checado ANTES de tocar em
@@ -141,12 +159,12 @@ export async function extrairLancamentosIA(
   // parse quebraria numa exceção não tratada, sem explicação nenhuma pra
   // quem enviou um extrato grande demais pra caber numa chamada só.
   if (resposta.stop_reason === "max_tokens") {
-    return { erro: "Esse documento tem lançamentos demais para processar de uma vez. Divida em partes menores (ex.: mês a mês) e tente novamente." };
+    return { erro: "Esse documento tem lançamentos demais para processar de uma vez. Divida em partes menores (ex.: mês a mês) e tente novamente.", usage };
   }
 
   const extraido = resposta.parsed_output;
   if (!extraido || extraido.linhas.length === 0) {
-    return { erro: "Não consegui identificar nenhum lançamento nesse texto/imagem. Tente reformular ou enviar uma imagem mais nítida." };
+    return { erro: "Não consegui identificar nenhum lançamento nesse texto/imagem. Tente reformular ou enviar uma imagem mais nítida.", usage };
   }
 
   const linhas: LinhaBrutaIA[] = extraido.linhas.map((linha, i) => ({
@@ -158,5 +176,5 @@ export async function extrairLancamentosIA(
     ...linha,
   }));
 
-  return { linhas };
+  return { linhas, usage };
 }

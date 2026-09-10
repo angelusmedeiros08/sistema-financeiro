@@ -22,7 +22,7 @@ type MensagemChat = {
 type PropostaCriar = { acao: "criar_lancamento"; tipo: "RECEITA" | "DESPESA"; descricao: string; valor: number; data: string; categoria: { nome: string; categoriaNova: boolean }; pessoa: { nome: string; pessoaNova: boolean } | null };
 type PropostaEditar = { acao: "editar_lancamento"; descricaoAtual: string; valorAtual: number; novaDescricao: string; novoValor: number };
 type PropostaCancelar = { acao: "cancelar_parcela"; descricao: string; valor: number; motivo: string };
-type UsoChatIA = { usado: number; limite: number };
+type UsoIA = { usadoUsd: number; limiteUsd: number };
 
 // Painel do Chat IA — evolui o antigo placeholder "Em breve" do
 // ChatDuvidasMenu (Fatia 7 do plano). Streaming consumido manualmente via
@@ -39,7 +39,7 @@ export function ChatPainel() {
   const [streamParcial, setStreamParcial] = useState("");
   const [statusFerramenta, setStatusFerramenta] = useState<string | null>(null);
   const [erro, setErro] = useState<string | null>(null);
-  const [uso, setUso] = useState<UsoChatIA | null>(null);
+  const [uso, setUso] = useState<UsoIA | null>(null);
   const [propostasEmAndamento, setPropostasEmAndamento] = useState<Set<string>>(new Set());
   const fimDaListaRef = useRef<HTMLDivElement>(null);
   // Guarda síncrona contra clique duplo/Enter duplo: `enviando` é estado
@@ -129,7 +129,7 @@ export function ChatPainel() {
           try {
             const evento = JSON.parse(parte.slice(6));
             if (evento.tipo === "inicio") conversaIdDoStream = evento.conversaId;
-            else if (evento.tipo === "uso") setUso({ usado: evento.usado, limite: evento.limite });
+            else if (evento.tipo === "uso") setUso({ usadoUsd: evento.usadoUsd, limiteUsd: evento.limiteUsd });
             else if (evento.tipo === "texto") setStreamParcial((atual) => atual + evento.delta);
             else if (evento.tipo === "ferramenta_chamada") setStatusFerramenta(`Consultando ${evento.nome}…`);
             else if (evento.tipo === "erro") setErro(evento.mensagem);
@@ -196,7 +196,7 @@ export function ChatPainel() {
     );
   }
 
-  const limiteAtingido = uso !== null && uso.usado >= uso.limite;
+  const limiteAtingido = uso !== null && uso.usadoUsd >= uso.limiteUsd;
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -240,7 +240,7 @@ export function ChatPainel() {
               enviarMensagem();
             }
           }}
-          placeholder={limiteAtingido ? "Limite diário atingido. Tente de novo mais tarde." : "Pergunte algo ou descreva um lançamento…"}
+          placeholder={limiteAtingido ? "Limite de uso de IA do mês atingido. Tente de novo mais tarde." : "Pergunte algo ou descreva um lançamento…"}
           className="min-h-10 flex-1 resize-none"
           rows={1}
           disabled={enviando || limiteAtingido}
@@ -254,18 +254,20 @@ export function ChatPainel() {
 }
 
 // Mesma lógica do Claude.ai/Claude Code: mostra o consumo antes de bloquear,
-// não só um erro seco quando bate o teto. Porcentagem em vez de contagem
-// bruta (mais fácil de captar de relance); a contagem exata (ex.: 8 de 15)
-// fica só no title, pra quem passar o mouse. "24h" e não "hoje" no title
-// porque a janela é deslizante (lib/chat-ia/rate-limit.ts), não reseta à
-// meia-noite: dizer "hoje" seria impreciso.
-function IndicadorUsoChatIA({ uso }: { uso: UsoChatIA }) {
-  const pct = Math.min(100, Math.round((uso.usado / uso.limite) * 100));
-  const atingiu = uso.usado >= uso.limite;
+// não só um erro seco quando bate o teto. Orçamento COMPARTILHADO com a
+// Importação com IA (spec 2026-09-10, orçamento por custo real em vez de
+// contagem de mensagem) — usar a Importação também move este indicador,
+// por isso o title deixa isso explícito. Janela mensal (30 dias
+// deslizantes, não reseta no dia 1), escolhida de propósito pra não
+// bloquear uma importação grande no meio do mês só por causa de um teto
+// diário artificial.
+function IndicadorUsoChatIA({ uso }: { uso: UsoIA }) {
+  const pct = Math.min(100, Math.round((uso.usadoUsd / uso.limiteUsd) * 100));
+  const atingiu = uso.usadoUsd >= uso.limiteUsd;
   const alerta = !atingiu && pct >= 80;
 
   return (
-    <div className="mx-4 mb-2 flex items-center gap-2" title={`${uso.usado} de ${uso.limite} mensagens usadas nas últimas 24h`}>
+    <div className="mx-4 mb-2 flex items-center gap-2" title="Orçamento de IA do mês (inclui Chat IA e Importação com IA juntos)">
       <div className="h-1 flex-1 overflow-hidden rounded-full bg-muted">
         <div
           className={cn(

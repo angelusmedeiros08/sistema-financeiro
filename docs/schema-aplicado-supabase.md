@@ -153,6 +153,8 @@ Registro do que foi efetivamente implementado no banco (região São Paulo, `sa-
 
 93. `autoatendimento_assinatura_cancelamento_agendado` (09/09/2026) — spec `docs/superpowers/specs/2026-09-09-autoatendimento-assinatura-design.md`. Coluna nova `tenants.acesso_ate` (timestamptz, nullable) e `status_assinatura` ganha o valor `cancelamento_agendado` no `CHECK` (`tenants_status_assinatura_check`, recriado). Separa cancelamento voluntário (mantém acesso até `acesso_ate`, fim do período já pago) de cancelamento por inadimplência (bloqueio imediato, regra já existente desde a auditoria de 29/08, inalterada). `acessoLiberado()` (`lib/pagamentos/plano.ts`) ganha o terceiro ramo comparando `acesso_ate` com `now()`, mesmo mecanismo já usado por `trial_termina_em` — nenhum cron necessário pra "expirar" o estado.
 
+94. `orcamento_mensal_ia_por_custo` (10/09/2026) — spec `docs/superpowers/specs/2026-09-10-orcamento-mensal-ia-por-custo-design.md`. Tabela nova `uso_ia` (tenant_id, usuario_id, recurso `chat`/`importacao`, `custo_usd`, `criado_em`) substitui `tentativas_chat_ia`/`tentativas_importacao_ia` (as duas dropadas nesta mesma migration). Troca o rate-limit de IA de contagem de tentativas (15/dia chat, 10/dia importação, cada uma valendo "1" independente do tamanho) pra custo real medido via `usage` da API da Anthropic, num orçamento único compartilhado entre os dois recursos, R$30/mês (~US$5,90), janela deslizante de 30 dias. RLS habilitada sem nenhuma policy, mesmo padrão das tabelas que substitui.
+
 ## Verificação final
 
 - `get_advisors` (segurança): **0 alertas** (só o warning pré-existente e não relacionado `auth_leaked_password_protection`).

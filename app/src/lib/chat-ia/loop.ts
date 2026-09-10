@@ -4,6 +4,7 @@ import type { Cliente } from "@/lib/relatorios/regime";
 import type { ContextoChat } from "./tipos";
 import { DEFINICOES_TOOLS, executarTool } from "./executar-tool";
 import { montarPromptSistema } from "./prompt";
+import type { UsageParaCusto } from "@/lib/ia/precos-anthropic";
 
 const MODELO = "claude-sonnet-5";
 const MAX_TOKENS = 4096;
@@ -46,10 +47,22 @@ export async function executarLoopChat(params: {
   contexto: ContextoChat;
   supabase: Cliente;
   aoEmitir: (evento: EventoLoopChat) => void;
-}): Promise<{ textoFinal: string; mensagens: Anthropic.MessageParam[]; ferramentasExecutadas: FerramentaExecutada[] }> {
+}): Promise<{ textoFinal: string; mensagens: Anthropic.MessageParam[]; ferramentasExecutadas: FerramentaExecutada[]; usageTotal: UsageParaCusto }> {
+  // Acumula usage de TODAS as iterações do loop (pode ser até 8 chamadas
+  // por turno) — o custo real do turno inteiro, não só da última chamada.
+  // Zerado em vez de null: mesmo se a primeira chamada falhar antes de
+  // qualquer resposta, o chamador sempre recebe um objeto somável.
+  const usageTotal: UsageParaCusto = { input_tokens: 0, output_tokens: 0, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 };
+  function acumularUsage(usage: Anthropic.Usage) {
+    usageTotal.input_tokens += usage.input_tokens;
+    usageTotal.output_tokens += usage.output_tokens;
+    usageTotal.cache_creation_input_tokens += usage.cache_creation_input_tokens ?? 0;
+    usageTotal.cache_read_input_tokens += usage.cache_read_input_tokens ?? 0;
+  }
+
   if (!process.env.ANTHROPIC_API_KEY) {
     params.aoEmitir({ tipo: "erro", mensagem: "IA não configurada (ANTHROPIC_API_KEY ausente no ambiente)." });
-    return { textoFinal: "", mensagens: [], ferramentasExecutadas: [] };
+    return { textoFinal: "", mensagens: [], ferramentasExecutadas: [], usageTotal };
   }
 
   const client = new Anthropic();
@@ -76,6 +89,7 @@ export async function executarLoopChat(params: {
       });
 
       mensagemFinal = await stream.finalMessage();
+      acumularUsage(mensagemFinal.usage);
     } catch (erro) {
       const mensagemErro =
         erro instanceof Anthropic.RateLimitError
@@ -84,13 +98,13 @@ export async function executarLoopChat(params: {
             ? `Falha ao consultar a IA: ${erro.message}`
             : "Falha inesperada ao consultar a IA.";
       params.aoEmitir({ tipo: "erro", mensagem: mensagemErro });
-      return { textoFinal: textoFinalAcumulado, mensagens, ferramentasExecutadas };
+      return { textoFinal: textoFinalAcumulado, mensagens, ferramentasExecutadas, usageTotal };
     }
 
     mensagens.push({ role: "assistant", content: mensagemFinal.content });
 
     if (mensagemFinal.stop_reason !== "tool_use") {
-      return { textoFinal: textoFinalAcumulado, mensagens, ferramentasExecutadas };
+      return { textoFinal: textoFinalAcumulado, mensagens, ferramentasExecutadas, usageTotal };
     }
 
     const chamadasTool = mensagemFinal.content.filter((bloco): bloco is Anthropic.ToolUseBlock => bloco.type === "tool_use");
@@ -116,5 +130,5 @@ export async function executarLoopChat(params: {
   }
 
   params.aoEmitir({ tipo: "erro", mensagem: "A conversa exigiu chamadas demais em sequência — tente reformular a pergunta." });
-  return { textoFinal: textoFinalAcumulado, mensagens, ferramentasExecutadas };
+  return { textoFinal: textoFinalAcumulado, mensagens, ferramentasExecutadas, usageTotal };
 }

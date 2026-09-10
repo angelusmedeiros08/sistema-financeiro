@@ -2192,71 +2192,41 @@ export type Database = {
         }
         Relationships: []
       }
-      tentativas_chat_ia: {
+      uso_ia: {
         Row: {
           criado_em: string
-          id: number
+          custo_usd: number
+          id: string
+          recurso: string
           tenant_id: string
           usuario_id: string
         }
         Insert: {
           criado_em?: string
-          id?: never
+          custo_usd: number
+          id?: string
+          recurso: string
           tenant_id: string
           usuario_id: string
         }
         Update: {
           criado_em?: string
-          id?: never
+          custo_usd?: number
+          id?: string
+          recurso?: string
           tenant_id?: string
           usuario_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "tentativas_chat_ia_tenant_id_fkey"
+            foreignKeyName: "uso_ia_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "tentativas_chat_ia_usuario_id_fkey"
-            columns: ["usuario_id"]
-            isOneToOne: false
-            referencedRelation: "usuarios"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      tentativas_importacao_ia: {
-        Row: {
-          criado_em: string
-          id: number
-          tenant_id: string
-          usuario_id: string
-        }
-        Insert: {
-          criado_em?: string
-          id?: never
-          tenant_id: string
-          usuario_id: string
-        }
-        Update: {
-          criado_em?: string
-          id?: never
-          tenant_id?: string
-          usuario_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "tentativas_importacao_ia_tenant_id_fkey"
-            columns: ["tenant_id"]
-            isOneToOne: false
-            referencedRelation: "tenants"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "tentativas_importacao_ia_usuario_id_fkey"
+            foreignKeyName: "uso_ia_usuario_id_fkey"
             columns: ["usuario_id"]
             isOneToOne: false
             referencedRelation: "usuarios"

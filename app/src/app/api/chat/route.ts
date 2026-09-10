@@ -1,6 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { obterUsuarioETenantAtual } from "@/lib/tenant/atual";
-import { registrarTentativaChatIA, obterUsoChatIA } from "@/lib/chat-ia/rate-limit";
+import { verificarOrcamento, registrarCustoIA, obterUso } from "@/lib/ia/orcamento-ia";
+import { calcularCustoUsd } from "@/lib/ia/precos-anthropic";
 import { criarConversa, listarConversas, buscarMensagens, gravarMensagem, conversaPertenceAoTenant } from "@/lib/chat-ia/conversas";
 import { executarLoopChat, type EventoLoopChat } from "@/lib/chat-ia/loop";
 import type Anthropic from "@anthropic-ai/sdk";
@@ -20,7 +21,7 @@ export async function GET(request: Request) {
     return Response.json({ mensagens });
   }
 
-  const [conversas, uso] = await Promise.all([listarConversas(supabase, contexto.tenantId, contexto.user.id), obterUsoChatIA(contexto.tenantId)]);
+  const [conversas, uso] = await Promise.all([listarConversas(supabase, contexto.tenantId, contexto.user.id), obterUso(contexto.tenantId)]);
   return Response.json({ conversaId: conversas[0]?.id ?? null, uso });
 }
 
@@ -40,18 +41,24 @@ export async function POST(request: Request) {
   }
 
   const mensagemUsuario = (corpo as { mensagem: string }).mensagem.trim();
-  // Sem teto, uma colagem gigante conta como "1 de 15" na cota diária mas
-  // custa muito mais que a média usada pra calcular esse limite (ver
-  // rate-limit.ts) — 8000 caracteres já cobre folgado qualquer pergunta ou
-  // descrição de lançamento real (achado real, 09/09/2026).
+  // Sem teto, uma colagem gigante custaria muito mais que o normal numa
+  // única mensagem — 8000 caracteres já cobre folgado qualquer pergunta ou
+  // descrição de lançamento real (achado real, 09/09/2026). O orçamento
+  // por custo real (ver lib/ia/orcamento-ia.ts) já protege a margem no
+  // agregado, mas esse teto evita uma mensagem isolada anormal.
   if (mensagemUsuario.length > 8000) {
     return new Response(JSON.stringify({ erro: "Mensagem muito longa (máximo 8000 caracteres)." }), { status: 400, headers: { "Content-Type": "application/json" } });
   }
   const conversaIdRecebido = typeof (corpo as { conversaId?: unknown }).conversaId === "string" ? (corpo as { conversaId: string }).conversaId : undefined;
 
-  const { permitido, usado, limite } = await registrarTentativaChatIA({ tenantId: contexto.tenantId, usuarioId: contexto.user.id });
+  // Checagem prévia por custo real (spec 2026-09-10) — só lê, não registra
+  // nada ainda. Orçamento compartilhado com a Importação com IA.
+  const { permitido, usadoUsd, limiteUsd } = await verificarOrcamento(contexto.tenantId);
   if (!permitido) {
-    return new Response(JSON.stringify({ erro: "Limite de uso do Chat IA atingido. Tente de novo mais tarde.", uso: { usado, limite } }), { status: 429, headers: { "Content-Type": "application/json" } });
+    return new Response(
+      JSON.stringify({ erro: "Limite de uso de IA do mês atingido. Tente de novo mais tarde ou contate o suporte.", uso: { usadoUsd, limiteUsd } }),
+      { status: 429, headers: { "Content-Type": "application/json" } },
+    );
   }
 
   const supabase = await createClient();
@@ -115,7 +122,6 @@ export async function POST(request: Request) {
       }
 
       enviar({ tipo: "inicio", conversaId: conversaIdFinal });
-      enviar({ tipo: "uso", usado, limite });
 
       const resultado = await executarLoopChat({
         historico,
@@ -123,6 +129,15 @@ export async function POST(request: Request) {
         supabase,
         aoEmitir: (evento: EventoLoopChat) => enviar(evento),
       });
+
+      // Registrado DEPOIS do loop, com o custo de verdade (soma de todas
+      // as iterações) — antes da resposta voltar não tem como saber
+      // quanto essa mensagem vai custar. Mesmo uma chamada que falhou no
+      // meio pode ter gasto token em iterações anteriores, por isso
+      // sempre registra, erro ou não.
+      const custoUsd = calcularCustoUsd(resultado.usageTotal);
+      await registrarCustoIA({ tenantId: contexto.tenantId, usuarioId: contexto.user.id, recurso: "chat", custoUsd });
+      enviar({ tipo: "uso", usadoUsd: Math.min(usadoUsd + custoUsd, limiteUsd), limiteUsd });
 
       if (resultado.textoFinal) {
         await gravarMensagem(supabase, { conversaId: conversaIdFinal, tenantId: contexto.tenantId, usuarioId: contexto.user.id, papel: "assistente", conteudo: resultado.textoFinal });
