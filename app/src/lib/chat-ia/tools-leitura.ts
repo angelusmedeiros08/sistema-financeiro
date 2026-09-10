@@ -2,6 +2,7 @@ import "server-only";
 import type Anthropic from "@anthropic-ai/sdk";
 import type { Cliente, Regime, Granularidade } from "@/lib/relatorios/regime";
 import type { ContextoChat } from "./tipos";
+import { hojeIsoBrasil, isoMenosMeses } from "@/lib/data-brasil";
 import { buscarDRE, buscarDREIndicadores, buscarDREMatriz } from "@/lib/relatorios/dre";
 import { buscarFluxoCaixaGrade, buscarPrevistoRealizado as buscarPrevistoRealizadoFluxo } from "@/lib/relatorios/fluxo-caixa";
 import { buscarSaldoProjetado, buscarSaldoAntesDe, buscarSerieSaldoProjetado } from "@/lib/relatorios/saldo-projetado";
@@ -506,5 +507,52 @@ export const TOOLS_LEITURA: DefinicaoTool[] = [
       input_schema: { type: "object", properties: { tipo: PROPRIEDADE_TIPO }, required: ["tipo"], additionalProperties: false },
     },
     executar: (supabase, input, ctx) => buscarAgingPorParticipante(supabase, { tenantId: ctx.tenantId, tipo: tipoObrigatorio(input) }),
+  },
+  {
+    definicao: {
+      name: "consultar_lancamentos",
+      description:
+        "Busca lançamentos (receitas/despesas) individuais por palavra-chave da descrição e/ou tipo, num período — devolve até 25 lançamentos, do mais recente pro mais antigo, com descrição, valor, tipo, data, pessoa vinculada e status das parcelas. Use pra responder perguntas como 'quais lançamentos de X', 'liste os pagamentos recentes', 'o que eu registrei essa semana'. Período padrão: últimos 6 meses, se não informado.",
+      strict: true,
+      input_schema: {
+        type: "object",
+        properties: {
+          termo_busca: { type: "string", description: "Palavra-chave da descrição do lançamento, se a pergunta mencionar algo específico." },
+          tipo: PROPRIEDADE_TIPO,
+          data_inicio: PROPRIEDADE_DATA,
+          data_fim: PROPRIEDADE_DATA,
+        },
+        additionalProperties: false,
+      },
+    },
+    executar: async (supabase, input, ctx) => {
+      const dataFim = typeof input.data_fim === "string" ? input.data_fim : hojeIsoBrasil();
+      const dataInicio = typeof input.data_inicio === "string" ? input.data_inicio : isoMenosMeses(dataFim, 6);
+
+      let query = supabase
+        .from("eventos_financeiros")
+        .select("id, descricao, valor_total, tipo, data_competencia, pessoas(nome), parcelas(status, data_vencimento)")
+        .eq("tenant_id", ctx.tenantId)
+        .is("estornado_em", null)
+        .gte("data_competencia", dataInicio)
+        .lte("data_competencia", dataFim)
+        .order("data_competencia", { ascending: false })
+        .limit(25);
+
+      if (input.tipo === "RECEITA" || input.tipo === "DESPESA") query = query.eq("tipo", input.tipo);
+      const termo = typeof input.termo_busca === "string" ? input.termo_busca.trim() : "";
+      if (termo) query = query.ilike("descricao", `%${termo}%`);
+
+      const { data } = await query;
+      return (data ?? []).map((e) => ({
+        id: e.id,
+        descricao: e.descricao,
+        valor: Number(e.valor_total),
+        tipo: e.tipo,
+        data: e.data_competencia,
+        pessoa: e.pessoas?.nome ?? null,
+        statusParcelas: (e.parcelas ?? []).map((p) => p.status),
+      }));
+    },
   },
 ];
