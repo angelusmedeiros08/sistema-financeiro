@@ -116,6 +116,15 @@ export async function provisionarTenantNovo(params: {
         tipo_calc: linha.tipoCalc,
         waterfall_papel: linha.waterfallPapel,
         id_dfc: linha.idDfc,
+        // Achado ao investigar o provisionamento (10/09/2026): faltava aqui —
+        // sem conceito_fixo, buscarDREIndicadores/buscarDREMatriz (dre.ts)
+        // nunca acham as 6 linhas-âncora (Receita líquida, Margem de
+        // contribuição, EBITDA etc.) por papel semântico, e os indicadores/
+        // AV% do tenant ficam sempre zerados. Os 6 tenants hoje em produção
+        // têm o campo populado (confirmado direto no banco) apesar deste
+        // insert não setar — só não pegou ainda porque nenhum tenant novo
+        // foi provisionado desde que isso regrediu.
+        conceito_fixo: linha.conceitoFixo,
       })),
     )
     .select("id, ordem");
