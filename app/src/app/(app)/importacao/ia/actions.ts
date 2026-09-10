@@ -18,8 +18,10 @@ export async function extrairLancamentosIAAction(
 
   // Checagem prévia por custo real (spec 2026-09-10) — orçamento
   // compartilhado com o Chat IA, mesmo mecanismo, mesma tabela.
-  const { permitido, usadoUsd, limiteUsd } = await verificarOrcamento(contexto.tenantId);
-  if (!permitido) return { erro: "Limite de uso de IA do mês atingido. Tente de novo mais tarde ou contate o suporte.", uso: { usadoUsd, limiteUsd } };
+  const previa = await verificarOrcamento(contexto.tenantId);
+  if (!previa.permitido) {
+    return { erro: "Limite de uso de IA do mês atingido. Tente de novo mais tarde ou contate o suporte.", uso: previa };
+  }
 
   const resultado = await extrairLancamentosIA(entrada);
 
@@ -30,7 +32,10 @@ export async function extrairLancamentosIAAction(
   const custoUsd = calcularCustoUsd(resultado.usage);
   await registrarCustoIA({ tenantId: contexto.tenantId, usuarioId: contexto.user.id, recurso: "importacao", custoUsd });
 
-  const uso: UsoIA = { usadoUsd: Math.min(usadoUsd + custoUsd, limiteUsd), limiteUsd };
+  // Relida do banco (em vez de recalcular em USD e converter aqui) —
+  // orcamento-ia.ts é o único lugar que conhece a taxa de câmbio de
+  // referência, evita duplicar a conta.
+  const uso = await obterUso(contexto.tenantId);
   if ("erro" in resultado) return { erro: resultado.erro, uso };
   return { linhas: resultado.linhas, uso };
 }

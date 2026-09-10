@@ -22,7 +22,7 @@ type MensagemChat = {
 type PropostaCriar = { acao: "criar_lancamento"; tipo: "RECEITA" | "DESPESA"; descricao: string; valor: number; data: string; categoria: { nome: string; categoriaNova: boolean }; pessoa: { nome: string; pessoaNova: boolean } | null };
 type PropostaEditar = { acao: "editar_lancamento"; descricaoAtual: string; valorAtual: number; novaDescricao: string; novoValor: number };
 type PropostaCancelar = { acao: "cancelar_parcela"; descricao: string; valor: number; motivo: string };
-type UsoIA = { usadoUsd: number; limiteUsd: number };
+type UsoIA = { usadoUsd: number; limiteUsd: number; usadoBrl: number; limiteBrl: number };
 
 // Painel do Chat IA — evolui o antigo placeholder "Em breve" do
 // ChatDuvidasMenu (Fatia 7 do plano). Streaming consumido manualmente via
@@ -129,7 +129,8 @@ export function ChatPainel() {
           try {
             const evento = JSON.parse(parte.slice(6));
             if (evento.tipo === "inicio") conversaIdDoStream = evento.conversaId;
-            else if (evento.tipo === "uso") setUso({ usadoUsd: evento.usadoUsd, limiteUsd: evento.limiteUsd });
+            else if (evento.tipo === "uso")
+              setUso({ usadoUsd: evento.usadoUsd, limiteUsd: evento.limiteUsd, usadoBrl: evento.usadoBrl, limiteBrl: evento.limiteBrl });
             else if (evento.tipo === "texto") setStreamParcial((atual) => atual + evento.delta);
             else if (evento.tipo === "ferramenta_chamada") setStatusFerramenta(`Consultando ${evento.nome}…`);
             else if (evento.tipo === "erro") setErro(evento.mensagem);
@@ -256,36 +257,40 @@ export function ChatPainel() {
 // Mesma lógica do Claude.ai/Claude Code: mostra o consumo antes de bloquear,
 // não só um erro seco quando bate o teto. Orçamento COMPARTILHADO com a
 // Importação com IA (spec 2026-09-10, orçamento por custo real em vez de
-// contagem de mensagem) — usar a Importação também move este indicador,
-// por isso o title deixa isso explícito. Janela mensal (30 dias
-// deslizantes, não reseta no dia 1), escolhida de propósito pra não
-// bloquear uma importação grande no meio do mês só por causa de um teto
-// diário artificial.
+// contagem de mensagem) — usar a Importação também move este indicador.
+// Valor e legenda sempre visíveis (não só num title de hover, que some no
+// toque em celular e ninguém descobre por acaso) — pedido do usuário
+// 10/09/2026. Janela mensal (30 dias deslizantes, não reseta no dia 1),
+// escolhida de propósito pra não bloquear uma importação grande no meio do
+// mês só por causa de um teto diário artificial.
 function IndicadorUsoChatIA({ uso }: { uso: UsoIA }) {
   const pct = Math.min(100, Math.round((uso.usadoUsd / uso.limiteUsd) * 100));
   const atingiu = uso.usadoUsd >= uso.limiteUsd;
   const alerta = !atingiu && pct >= 80;
 
   return (
-    <div className="mx-4 mb-2 flex items-center gap-2" title="Orçamento de IA do mês (inclui Chat IA e Importação com IA juntos)">
-      <div className="h-1 flex-1 overflow-hidden rounded-full bg-muted">
+    <div className="mx-4 mb-3 rounded-xl border border-border bg-muted/40 px-3.5 py-2.5">
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="text-xs font-medium text-foreground">Cota mensal de IA</span>
+        <span
+          className={cn(
+            "shrink-0 text-xs font-semibold tabular-nums",
+            atingiu ? "text-destructive" : alerta ? "text-[#96690F] dark:text-[#F0BB4E]" : "text-foreground",
+          )}
+        >
+          {formatarMoeda(uso.usadoBrl)} de {formatarMoeda(uso.limiteBrl)}
+        </span>
+      </div>
+      <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted">
         <div
           className={cn(
             "h-full rounded-full transition-[width]",
-            atingiu ? "bg-destructive" : alerta ? "bg-[#C98A1F] dark:bg-[#F0BB4E]" : "bg-primary/50",
+            atingiu ? "bg-destructive" : alerta ? "bg-[#C98A1F] dark:bg-[#F0BB4E]" : "bg-primary/60",
           )}
           style={{ width: `${pct}%` }}
         />
       </div>
-      <span
-        className={cn(
-          "shrink-0 text-[11px] tabular-nums text-muted-foreground",
-          atingiu && "font-medium text-destructive",
-          alerta && "font-medium text-[#96690F] dark:text-[#F0BB4E]",
-        )}
-      >
-        {pct}%
-      </span>
+      <p className="mt-1.5 text-[11px] text-muted-foreground">Cota compartilhada entre o Chat IA e a Importação com IA.</p>
     </div>
   );
 }

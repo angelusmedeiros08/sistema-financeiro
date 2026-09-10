@@ -53,10 +53,10 @@ export async function POST(request: Request) {
 
   // Checagem prévia por custo real (spec 2026-09-10) — só lê, não registra
   // nada ainda. Orçamento compartilhado com a Importação com IA.
-  const { permitido, usadoUsd, limiteUsd } = await verificarOrcamento(contexto.tenantId);
+  const { permitido, usadoUsd, limiteUsd, usadoBrl, limiteBrl } = await verificarOrcamento(contexto.tenantId);
   if (!permitido) {
     return new Response(
-      JSON.stringify({ erro: "Limite de uso de IA do mês atingido. Tente de novo mais tarde ou contate o suporte.", uso: { usadoUsd, limiteUsd } }),
+      JSON.stringify({ erro: "Limite de uso de IA do mês atingido. Tente de novo mais tarde ou contate o suporte.", uso: { usadoUsd, limiteUsd, usadoBrl, limiteBrl } }),
       { status: 429, headers: { "Content-Type": "application/json" } },
     );
   }
@@ -137,7 +137,10 @@ export async function POST(request: Request) {
       // sempre registra, erro ou não.
       const custoUsd = calcularCustoUsd(resultado.usageTotal);
       await registrarCustoIA({ tenantId: contexto.tenantId, usuarioId: contexto.user.id, recurso: "chat", custoUsd });
-      enviar({ tipo: "uso", usadoUsd: Math.min(usadoUsd + custoUsd, limiteUsd), limiteUsd });
+      // Relida do banco (em vez de recalcular em USD e converter aqui) —
+      // orcamento-ia.ts é o único lugar que conhece a taxa de câmbio de
+      // referência, evita duplicar a conta.
+      enviar({ tipo: "uso", ...(await obterUso(contexto.tenantId)) });
 
       if (resultado.textoFinal) {
         await gravarMensagem(supabase, { conversaId: conversaIdFinal, tenantId: contexto.tenantId, usuarioId: contexto.user.id, papel: "assistente", conteudo: resultado.textoFinal });

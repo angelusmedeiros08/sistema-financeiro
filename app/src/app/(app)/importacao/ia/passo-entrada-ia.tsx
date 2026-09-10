@@ -6,13 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { formatarMoeda } from "@/lib/formatacao";
 import { cn } from "@/lib/utils";
 import { extrairLancamentosIAAction, obterUsoImportacaoIAAction } from "./actions";
 import type { LinhaBrutaIA } from "@/lib/importacao/tipos";
 
 type ContaFinanceira = { id: string; nome: string };
 type Modo = "texto" | "imagem";
-type UsoIA = { usadoUsd: number; limiteUsd: number };
+type UsoIA = { usadoUsd: number; limiteUsd: number; usadoBrl: number; limiteBrl: number };
 
 // Normaliza qualquer imagem aceita pelo navegador (incluindo HEIC de iPhone,
 // quando o navegador consegue decodificar) pra JPEG antes do envio — a API
@@ -182,9 +183,10 @@ export function PassoEntradaIA({
       {erro && <p className="text-sm text-destructive">{erro}</p>}
       {limiteAtingido && <p className="text-sm text-destructive">Limite de uso de IA do mês atingido. Tente de novo mais tarde.</p>}
 
-      <div className="flex items-center justify-between gap-4">
-        {uso && <IndicadorUsoImportacaoIA uso={uso} />}
-        <Button type="button" disabled={!pronto || carregando} onClick={extrair} className="ml-auto gap-1.5">
+      {uso && <IndicadorUsoImportacaoIA uso={uso} />}
+
+      <div className="flex items-center justify-end">
+        <Button type="button" disabled={!pronto || carregando} onClick={extrair} className="gap-1.5">
           {carregando && <Spinner size={14} className="animate-spin" />}
           {carregando ? "Extraindo..." : "Extrair lançamentos"}
         </Button>
@@ -196,34 +198,38 @@ export function PassoEntradaIA({
 // Mesmo padrão do Chat IA (chat-painel.tsx): mostra o consumo antes de
 // bloquear, não só um erro seco ao bater o teto. Orçamento COMPARTILHADO
 // com o Chat IA (spec 2026-09-10) — usar o Chat IA também move este
-// indicador. Janela mensal (30 dias deslizantes), escolhida de propósito
-// pra não bloquear uma importação grande no meio do mês só por causa de
-// um teto diário artificial.
+// indicador, por isso a legenda deixa isso explícito (sempre visível, não
+// só num title de hover — pedido do usuário 10/09/2026). Janela mensal (30
+// dias deslizantes), escolhida de propósito pra não bloquear uma importação
+// grande no meio do mês só por causa de um teto diário artificial.
 function IndicadorUsoImportacaoIA({ uso }: { uso: UsoIA }) {
   const pct = Math.min(100, Math.round((uso.usadoUsd / uso.limiteUsd) * 100));
   const atingiu = uso.usadoUsd >= uso.limiteUsd;
   const alerta = !atingiu && pct >= 80;
 
   return (
-    <div className="flex w-32 items-center gap-2" title="Orçamento de IA do mês (inclui Chat IA e Importação com IA juntos)">
-      <div className="h-1 flex-1 overflow-hidden rounded-full bg-muted">
+    <div className="rounded-xl border border-border bg-muted/40 px-3.5 py-2.5">
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="text-xs font-medium text-foreground">Cota mensal de IA</span>
+        <span
+          className={cn(
+            "shrink-0 text-xs font-semibold tabular-nums",
+            atingiu ? "text-destructive" : alerta ? "text-[#96690F] dark:text-[#F0BB4E]" : "text-foreground",
+          )}
+        >
+          {formatarMoeda(uso.usadoBrl)} de {formatarMoeda(uso.limiteBrl)}
+        </span>
+      </div>
+      <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted">
         <div
           className={cn(
             "h-full rounded-full transition-[width]",
-            atingiu ? "bg-destructive" : alerta ? "bg-[#C98A1F] dark:bg-[#F0BB4E]" : "bg-primary/50",
+            atingiu ? "bg-destructive" : alerta ? "bg-[#C98A1F] dark:bg-[#F0BB4E]" : "bg-primary/60",
           )}
           style={{ width: `${pct}%` }}
         />
       </div>
-      <span
-        className={cn(
-          "shrink-0 text-[11px] tabular-nums text-muted-foreground",
-          atingiu && "font-medium text-destructive",
-          alerta && "font-medium text-[#96690F] dark:text-[#F0BB4E]",
-        )}
-      >
-        {pct}%
-      </span>
+      <p className="mt-1.5 text-[11px] text-muted-foreground">Cota compartilhada entre o Chat IA e a Importação com IA.</p>
     </div>
   );
 }

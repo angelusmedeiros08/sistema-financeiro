@@ -15,6 +15,14 @@ import { createAdminClient } from "@/utils/supabase/admin";
 // R$30,00 exato.
 export const TETO_MENSAL_IA_USD = 5.9;
 
+// Só pra EXIBIÇÃO — o teto de verdade (o que decide bloquear ou não) é
+// sempre TETO_MENSAL_IA_USD, calculado em cima do custo real que a
+// Anthropic cobra em dólar. R$30 aqui é só a tradução pro que o
+// tenant/operador entende de cabeça, mesma taxa de referência do
+// comentário acima. Nunca usar TETO_MENSAL_IA_BRL pra decidir nada.
+const TAXA_CAMBIO_REFERENCIA_USD_BRL = 5.1;
+export const TETO_MENSAL_IA_BRL = 30;
+
 // Janela deslizante de 30 dias, não um "reset" no dia 1 do mês — mesmo
 // mecanismo das outras janelas deslizantes do projeto (trial, cota
 // antiga). Escolhida como MENSAL (não diária) de propósito: um teto
@@ -25,7 +33,10 @@ export const TETO_MENSAL_IA_USD = 5.9;
 // atingido de verdade, não tenta espalhar o consumo.
 const JANELA_MS = 30 * 24 * 60 * 60 * 1000;
 
-export type UsoIA = { usadoUsd: number; limiteUsd: number };
+// usadoUsd/limiteUsd: base real, usada pra decidir bloquear e pra calcular
+// a porcentagem (a razão é a mesma em qualquer moeda, não precisa converter
+// só pra isso). usadoBrl/limiteBrl: só pro texto que o operador lê.
+export type UsoIA = { usadoUsd: number; limiteUsd: number; usadoBrl: number; limiteBrl: number };
 export type RecursoIA = "chat" | "importacao";
 
 // Checagem PRÉVIA — só lê, nunca escreve. Diferente do mecanismo antigo
@@ -60,6 +71,6 @@ export async function obterUso(tenantId: string): Promise<UsoIA> {
 
   const { data } = await admin.from("uso_ia").select("custo_usd").eq("tenant_id", tenantId).gte("criado_em", desde);
 
-  const usadoUsd = (data ?? []).reduce((soma, linha) => soma + Number(linha.custo_usd), 0);
-  return { usadoUsd: Math.min(usadoUsd, TETO_MENSAL_IA_USD), limiteUsd: TETO_MENSAL_IA_USD };
+  const usadoUsd = Math.min((data ?? []).reduce((soma, linha) => soma + Number(linha.custo_usd), 0), TETO_MENSAL_IA_USD);
+  return { usadoUsd, limiteUsd: TETO_MENSAL_IA_USD, usadoBrl: usadoUsd * TAXA_CAMBIO_REFERENCIA_USD_BRL, limiteBrl: TETO_MENSAL_IA_BRL };
 }
