@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import Link from "next/link";
 import { assinar } from "@/lib/pagamentos/assinatura-actions";
+import { TRIAL_DIAS } from "@/lib/pagamentos/plano";
 import { AuthShell } from "@/components/layout/auth-shell";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,7 +22,7 @@ export default function PaginaAssinar() {
   }, estadoInicial);
 
   return (
-    <AuthShell titulo="Assinar o Finanssi" subtitulo="7 dias grátis no cartão. Sem cartão salvo, sem cobrança surpresa.">
+    <AuthShell titulo="Assinar o Finanssi" subtitulo={`${TRIAL_DIAS} dias grátis no cartão. Sem cartão salvo, sem cobrança surpresa.`}>
       <form action={formAction} className="space-y-4">
         <div className="space-y-1.5">
           <Label htmlFor="nome_empresa">Nome da empresa</Label>
@@ -55,14 +56,14 @@ export default function PaginaAssinar() {
               <RadioGroupItem value="CREDIT_CARD" id="forma_cartao" className="mt-0.5" />
               <span>
                 <span className="block font-medium text-foreground">Cartão de crédito</span>
-                <span className="block text-muted-foreground">7 dias grátis, primeira cobrança só depois do trial.</span>
+                <span className="block text-muted-foreground">{TRIAL_DIAS} dias grátis, primeira cobrança só depois do trial.</span>
               </span>
             </label>
             <label className="flex cursor-pointer items-start gap-2 rounded-xl border border-border p-3 text-sm has-[[data-checked]]:border-primary">
               <RadioGroupItem value="PIX" id="forma_pix" className="mt-0.5" />
               <span>
                 <span className="block font-medium text-foreground">Pix</span>
-                <span className="block text-muted-foreground">Sem trial — a primeira mensalidade é cobrada na hora.</span>
+                <span className="block text-muted-foreground">Sem trial, a primeira mensalidade é cobrada na hora.</span>
               </span>
             </label>
           </RadioGroup>

@@ -71,7 +71,7 @@ export function StatusPlano({
     return (
       <Link
         href="/configuracoes/assinatura"
-        title="Assinatura cancelada — clique pra ver os detalhes ou reativar"
+        title="Assinatura cancelada. Clique pra ver os detalhes ou reativar."
         className="hidden items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary lg:flex"
       >
         Acesso até {formatarDataBrasil(acessoAte)}

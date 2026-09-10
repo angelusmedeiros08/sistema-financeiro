@@ -58,7 +58,7 @@ export default async function PaginaAssinatura({
       {retorno === "confirmando" && (
         <div className="flex items-start gap-2.5 rounded-xl border border-primary/25 bg-primary/5 p-3 text-sm text-foreground">
           <CheckCircle size={18} weight="fill" className="mt-0.5 shrink-0 text-primary" />
-          <p>Estamos confirmando seu pagamento com o Asaas — isso costuma levar só alguns instantes. Atualize a página em instantes.</p>
+          <p>Estamos confirmando seu pagamento com o Asaas. Isso costuma levar só alguns instantes, atualize a página em instantes.</p>
         </div>
       )}
 
@@ -77,8 +77,8 @@ export default async function PaginaAssinatura({
           <div className="flex items-start gap-2.5 rounded-xl border border-[#C98A1F]/30 bg-[#C98A1F]/8 p-3 text-sm dark:border-[#C98A1F]/25 dark:bg-[#C98A1F]/12">
             <WarningCircle size={18} weight="fill" className="mt-0.5 shrink-0 text-[#96690F] dark:text-[#F0BB4E]" />
             <p className="text-foreground">
-              Sua assinatura foi cancelada. O acesso continua normal até <strong>{formatarDataBrasil(contexto.acessoAte)}</strong> — depois
-              disso o sistema fica bloqueado, até você reativar.
+              Sua assinatura foi cancelada. O acesso continua normal até <strong>{formatarDataBrasil(contexto.acessoAte)}</strong>, depois
+              disso o sistema fica bloqueado até você reativar.
             </p>
           </div>
         )}

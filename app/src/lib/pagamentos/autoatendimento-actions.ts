@@ -22,7 +22,7 @@ async function gerarCheckoutParaTenantAtual(params: { ignorarGateAssinatura: boo
   const contexto = await obterUsuarioETenantAtual(params.ignorarGateAssinatura);
   if ("erro" in contexto) return { erro: contexto.erro };
   if (contexto.papel !== "admin") return { erro: "Só o administrador da empresa pode gerenciar a assinatura." };
-  if (!contexto.asaasCustomerId) return { erro: "Assinatura sem cadastro no Asaas — contate o suporte." };
+  if (!contexto.asaasCustomerId) return { erro: "Assinatura sem cadastro no Asaas. Contate o suporte." };
 
   let cliente;
   try {
@@ -104,7 +104,7 @@ export async function cancelarAssinaturaAction(): Promise<Resultado | { sucesso:
   const admin = createAdminClient();
   const { error } = await admin.from("tenants").update({ status_assinatura: "cancelamento_agendado", acesso_ate: acessoAte }).eq("id", contexto.tenantId);
   if (error) {
-    return { erro: "A assinatura foi cancelada no Asaas, mas houve uma falha ao atualizar o sistema — contate o suporte." };
+    return { erro: "A assinatura foi cancelada no Asaas, mas houve uma falha ao atualizar o sistema. Contate o suporte." };
   }
 
   revalidatePath("/configuracoes/assinatura");

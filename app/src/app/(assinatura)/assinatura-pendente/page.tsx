@@ -17,9 +17,9 @@ const TITULO_POR_STATUS: Record<string, string> = {
 };
 
 const MENSAGEM_POR_STATUS: Record<string, string> = {
-  trial: "O período de teste gratuito da sua empresa chegou ao fim. Assine pra continuar usando o Finanssi — seus dados continuam guardados, nada foi apagado.",
-  inadimplente: "Não conseguimos confirmar o pagamento mais recente da sua assinatura. Regularize pra recuperar o acesso — seus dados continuam guardados, nada foi apagado.",
-  cancelado: "A assinatura da sua empresa foi cancelada. Reative pra voltar a acessar o sistema — seus dados continuam guardados, nada foi apagado.",
+  trial: "O período de teste gratuito da sua empresa chegou ao fim. Assine pra continuar usando o Finanssi. Seus dados continuam guardados, nada foi apagado.",
+  inadimplente: "Não conseguimos confirmar o pagamento mais recente da sua assinatura. Regularize pra recuperar o acesso. Seus dados continuam guardados, nada foi apagado.",
+  cancelado: "A assinatura da sua empresa foi cancelada. Reative pra voltar a acessar o sistema. Seus dados continuam guardados, nada foi apagado.",
 };
 
 // Único ponto de saída de quem cai aqui redirecionado pelo gate de
@@ -74,7 +74,7 @@ export default async function PaginaAssinaturaPendente({
         {retorno === "confirmando" && (
           <div className="flex items-start gap-2.5 rounded-xl border border-primary/25 bg-primary/5 p-3 text-sm text-foreground">
             <CheckCircle size={18} weight="fill" className="mt-0.5 shrink-0 text-primary" />
-            <p>Estamos confirmando seu pagamento com o Asaas — isso costuma levar só alguns instantes. Atualize a página em instantes.</p>
+            <p>Estamos confirmando seu pagamento com o Asaas. Isso costuma levar só alguns instantes, atualize a página em instantes.</p>
           </div>
         )}
 
@@ -94,13 +94,13 @@ export default async function PaginaAssinaturaPendente({
 
         {!ehAdmin && (
           <p className="rounded-xl border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
-            Peça pra quem administra sua empresa no Finanssi regularizar o pagamento — só o administrador pode fazer isso.
+            Peça pra quem administra sua empresa no Finanssi regularizar o pagamento. Só o administrador pode fazer isso.
           </p>
         )}
 
         {emailContato && (
           <Button asChild variant={ehAdmin ? "ghost" : "default"} className="w-full">
-            <a href={`mailto:${emailContato}?subject=${encodeURIComponent(`Regularizar assinatura — ${contexto.tenantNome}`)}`}>
+            <a href={`mailto:${emailContato}?subject=${encodeURIComponent(`Regularizar assinatura: ${contexto.tenantNome}`)}`}>
               Falar com o suporte
             </a>
           </Button>

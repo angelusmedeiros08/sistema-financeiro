@@ -4,7 +4,9 @@
 // dinheiro de verdade (mesmo sandbox usa esse valor no Checkout gerado).
 export const VALOR_PLANO_MENSAL = 197;
 export const DESCRICAO_PLANO = "Assinatura Finanssi — mensal";
-export const TRIAL_DIAS = 7;
+// 4 dias, decisão provisória do usuário (09/09/2026) — revisitar com os
+// sócios depois, não é definitivo.
+export const TRIAL_DIAS = 4;
 
 // Fonte única do tipo — antes repetido como literal em 6 arquivos
 // diferentes, risco real de esquecer de atualizar algum ao adicionar

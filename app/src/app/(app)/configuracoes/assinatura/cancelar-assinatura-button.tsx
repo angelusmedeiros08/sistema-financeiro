@@ -17,7 +17,7 @@ export function CancelarAssinaturaButton({ proximoVencimento }: { proximoVencime
   function acionar() {
     const dataCorte = proximoVencimento ? formatarDataBrasil(proximoVencimento) : "o fim do período atual";
     const confirmado = confirm(
-      `Cancelar sua assinatura do Finanssi? Você continua com acesso normal até ${dataCorte} — depois disso o sistema fica bloqueado até reativar. Seus dados nunca são apagados.`,
+      `Cancelar sua assinatura do Finanssi? Você continua com acesso normal até ${dataCorte}. Depois disso o sistema fica bloqueado até reativar. Seus dados nunca são apagados.`,
     );
     if (!confirmado) return;
 
