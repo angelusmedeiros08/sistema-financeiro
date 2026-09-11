@@ -16,6 +16,7 @@ import type { CorrespondenciaPessoa } from "@/lib/pessoas/importacao/tipos";
 import type { Database } from "@/utils/supabase/database.types";
 
 type CategoriaNova = { id: string; nome: string; tipo: Database["public"]["Enums"]["tipo_categoria"] };
+type PerfilPessoa = Database["public"]["Enums"]["perfil_pessoa"];
 
 type SecaoConfig = { tipo: TipoEntidadeImportacao; titulo: string; campo: keyof LinhaBruta; obrigatoria: boolean };
 
@@ -275,6 +276,36 @@ export function PassoEntidades({
 
   const todasResolvidas = totalPendencias === 0;
 
+  // Tipo (RECEITA/DESPESA) por trás de um texto de categoria da planilha —
+  // olha a decisão que o operador já tomou pra essa categoria na seção
+  // acima (categoria existente usada -> tipo dela; categoria nova -> o
+  // Despesa/Receita que ele escolheu ali). Nunca fica sem resposta quando
+  // chamado dentro de avancar(): "Continuar" só libera com todasResolvidas,
+  // ou seja, toda categoria citada já tem decisão completa nesse ponto.
+  function tipoDaCategoria(categoriaTexto: string): "RECEITA" | "DESPESA" | undefined {
+    const d = decisoes[chaveDecisao("categoria", categoriaTexto)];
+    if (!d) return undefined;
+    if (d.acao === "criar_novo") return d.tipoCategoriaNova;
+    return d.entidadeId ? tipoCategoriaExistentePorId.get(d.entidadeId) : undefined;
+  }
+
+  // Cliente numa linha de receita, fornecedor numa de despesa, os dois se a
+  // mesma pessoa aparecer nas duas — mesmo raciocínio que despesas/receitas
+  // actions e o Chat IA já usam (resolverPessoaId), agora replicado aqui.
+  // Achado real 11/09/2026: antes toda pessoa nova criada nesta tela nascia
+  // com os dois perfis sempre, sem olhar pro tipo da linha — mesmo quando
+  // era claramente só uma receita ou só uma despesa (a Importação com IA
+  // herda esse cálculo, já que reaproveita este mesmo componente).
+  function perfisDaPessoa(nomePessoa: string): PerfilPessoa[] {
+    const tipos = new Set(
+      linhasBrutas.filter((l) => normalizarTexto(l.pessoa) === normalizarTexto(nomePessoa)).map((l) => tipoDaCategoria(l.categoria)),
+    );
+    const perfis: PerfilPessoa[] = [];
+    if (tipos.has("RECEITA")) perfis.push("CLIENTE");
+    if (tipos.has("DESPESA")) perfis.push("FORNECEDOR");
+    return perfis;
+  }
+
   async function avancar() {
     setErro("");
 
@@ -283,7 +314,7 @@ export function PassoEntidades({
     // herda o CPF/CNPJ da primeira linha do arquivo que citar esse nome e
     // trouxer o documento preenchido (Seção 5 da spec original: coluna só é
     // usada quando Cliente/Fornecedor também vem preenchido nessa linha).
-    const paraCriar: { tipo: TipoEntidadeImportacao; nome: string; tipoCategoria?: "RECEITA" | "DESPESA"; documento?: string }[] = [];
+    const paraCriar: { tipo: TipoEntidadeImportacao; nome: string; tipoCategoria?: "RECEITA" | "DESPESA"; documento?: string; perfis?: PerfilPessoa[] }[] = [];
     for (const secao of secoes) {
       for (const valor of secao.valores) {
         const d = decisoes[chaveDecisao(secao.tipo, valor)];
@@ -296,7 +327,7 @@ export function PassoEntidades({
       const d = decisoesPessoa[valor];
       if (d?.acao === "criar_novo") {
         const documento = linhasBrutas.find((l) => normalizarTexto(l.pessoa) === normalizarTexto(valor) && l.documentoPessoa.trim())?.documentoPessoa;
-        paraCriar.push({ tipo: "pessoa", nome: valor, documento });
+        paraCriar.push({ tipo: "pessoa", nome: valor, documento, perfis: perfisDaPessoa(valor) });
       }
     }
 
@@ -522,6 +553,7 @@ export function PassoEntidades({
                 existentes={entidadesExistentes.pessoas}
                 decisao={decisoesPessoa[c.valorOriginal] ?? null}
                 onMudar={(d) => definirDecisaoPessoa(c.valorOriginal, d)}
+                perfisDetectados={perfisDaPessoa(c.valorOriginal)}
               />
             ))}
           </div>
@@ -827,12 +859,14 @@ function LinhaEntidadePessoa({
   existentes,
   decisao,
   onMudar,
+  perfisDetectados,
 }: {
   valorOriginal: string;
   correspondencia: CorrespondenciaPessoa;
   existentes: PessoaExistente[];
   decisao: ResolucaoEntidade;
   onMudar: (decisao: ResolucaoEntidade) => void;
+  perfisDetectados: PerfilPessoa[];
 }) {
   function converterEChamar(valor: ValorComboboxEntidade) {
     if (!valor) return;
@@ -855,6 +889,7 @@ function LinhaEntidadePessoa({
       <div className="min-w-32 flex-1">
         <p className="text-sm font-medium text-foreground">{valorOriginal}</p>
         <BadgeCorrespondenciaPessoa correspondencia={correspondencia} />
+        <BadgePerfilDetectado perfis={perfisDetectados} />
       </div>
 
       <ComboboxEntidade
@@ -866,6 +901,23 @@ function LinhaEntidadePessoa({
         rotuloAcessivel={`Ação para "${valorOriginal}"`}
       />
     </div>
+  );
+}
+
+// Torna visível o que perfisDaPessoa() já decide por baixo dos panos —
+// pedido explícito do usuário (11/09/2026): "tentar identificar na nota
+// quem é cliente e quem é fornecedor". Detectado a partir do tipo
+// (RECEITA/DESPESA) das linhas da planilha em que esse nome aparece, não
+// depende da decisão de usar existente vs criar novo — mostra a mesma
+// informação nos dois casos, pra dar contexto mesmo quando o operador
+// escolhe reaproveitar um cadastro já existente.
+function BadgePerfilDetectado({ perfis }: { perfis: PerfilPessoa[] }) {
+  if (perfis.length === 0) return null;
+  const rotulo = perfis.length === 2 ? "Cliente e fornecedor" : perfis[0] === "CLIENTE" ? "Cliente" : "Fornecedor";
+  return (
+    <Badge variant="outline" className="mt-1 ml-1 border-none bg-muted text-muted-foreground">
+      Detectado na planilha: {rotulo}
+    </Badge>
   );
 }
 

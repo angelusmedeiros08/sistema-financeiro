@@ -7,6 +7,7 @@ import type { PessoaExistente } from "@/lib/pessoas/importacao/correspondencia";
 
 type Cliente = SupabaseClient<Database>;
 type TipoCategoria = Database["public"]["Enums"]["tipo_categoria"];
+type PerfilPessoa = Database["public"]["Enums"]["perfil_pessoa"];
 
 export type EntidadesExistentes = {
   categorias: (EntidadeExistente & { tipo: TipoCategoria })[];
@@ -38,13 +39,19 @@ export async function buscarEntidadesExistentes(supabase: Cliente, tenantId: str
   };
 }
 
-export type EntidadeNova = { tipo: TipoEntidadeImportacao; nome: string; tipoCategoria?: TipoCategoria; documento?: string };
+export type EntidadeNova = { tipo: TipoEntidadeImportacao; nome: string; tipoCategoria?: TipoCategoria; documento?: string; perfis?: PerfilPessoa[] };
 
 // Cria os poucos registros novos aprovados na tela de revisão (Seção 6/8 —
-// volume baixo, sequencial, sem RPC atômica própria). Pessoa nova nasce com
-// os dois perfis: a planilha não distingue cliente de fornecedor por linha
-// (o tipo vem só da categoria), e uma mesma pessoa pode legitimamente
-// aparecer em ambos os papéis ao longo do histórico importado.
+// volume baixo, sequencial, sem RPC atômica própria). Pessoa nova recebe o
+// perfil que quem chama já inferiu a partir do tipo (RECEITA/DESPESA) das
+// linhas em que ela aparece na planilha — cliente numa linha de receita,
+// fornecedor numa de despesa, os dois se aparecer nas duas (mesmo raciocínio
+// que despesas/receitas actions e o Chat IA já usam via resolverPessoaId,
+// achado real 11/09/2026: antes gravava os dois perfis sempre, sem olhar
+// pra isso, e toda pessoa nova criada aqui — inclusive pela Importação com
+// IA, que reaproveita esta mesma função — nascia em /clientes E
+// /fornecedores ao mesmo tempo). `?? ["CLIENTE", "FORNECEDOR"]` fica só como
+// rede de segurança pra um chamador que não resolveu o perfil.
 export async function criarEntidadeAprovada(supabase: Cliente, tenantId: string, entidade: EntidadeNova): Promise<{ id: string } | { erro: string }> {
   switch (entidade.tipo) {
     case "categoria": {
@@ -59,9 +66,10 @@ export async function criarEntidadeAprovada(supabase: Cliente, tenantId: string,
       return { id: data.id };
     }
     case "pessoa": {
+      const perfis = entidade.perfis && entidade.perfis.length > 0 ? entidade.perfis : (["CLIENTE", "FORNECEDOR"] as PerfilPessoa[]);
       const { data, error } = await supabase
         .from("pessoas")
-        .insert({ tenant_id: tenantId, nome: entidade.nome, documento: entidade.documento?.trim() || null, perfis: ["CLIENTE", "FORNECEDOR"] })
+        .insert({ tenant_id: tenantId, nome: entidade.nome, documento: entidade.documento?.trim() || null, perfis })
         .select("id")
         .single();
       if (error || !data) return { erro: error?.message ?? "Falha ao criar pessoa." };
