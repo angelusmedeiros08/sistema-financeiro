@@ -6,10 +6,11 @@ import { verificarOrcamento, registrarCustoIA, obterUso, type UsoIA } from "@/li
 import { calcularCustoUsd } from "@/lib/ia/precos-anthropic";
 import type { LinhaBrutaIA } from "@/lib/importacao/tipos";
 
-// Não recebe nenhum dado do tenant além do que o próprio usuário colou/subiu
-// nesta tela — a extração em si não consulta o banco (ver
-// lib/importacao/extracao-ia.ts), só precisa do contexto autenticado pra
-// não expor esse endpoint a quem não está logado.
+// A extração em si não consulta o banco (ver lib/importacao/extracao-ia.ts)
+// além do nome do próprio tenant — passado pro prompt pra IA saber quem é
+// "nós" e não confundir a própria empresa com a contraparte do lançamento
+// (achado real, 11/09/2026: um recibo "recebi do (sr) a [nome do tenant]"
+// virava cliente nosso em vez de despesa com o fornecedor real).
 export async function extrairLancamentosIAAction(
   entrada: { texto: string } | { imagemBase64: string; imagemMediaType: "image/jpeg" | "image/png" | "image/webp" },
 ): Promise<({ linhas: LinhaBrutaIA[] } | { erro: string }) & { uso?: UsoIA }> {
@@ -23,7 +24,7 @@ export async function extrairLancamentosIAAction(
     return { erro: "Limite de uso de IA do mês atingido. Tente de novo mais tarde ou contate o suporte.", uso: previa };
   }
 
-  const resultado = await extrairLancamentosIA(entrada);
+  const resultado = await extrairLancamentosIA(entrada, contexto.tenantNome);
 
   // Registrado DEPOIS da chamada, com o custo de verdade — antes da
   // resposta voltar não tem como saber quanto uma extração vai custar

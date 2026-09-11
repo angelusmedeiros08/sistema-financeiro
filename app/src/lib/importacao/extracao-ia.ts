@@ -50,7 +50,11 @@ const LinhaExtraidaSchema = z.object({
   descricao: z.string().describe("Descrição curta do lançamento."),
   dataVencimento: z.string().describe("Data de vencimento, AAAA-MM-DD. Vazio se não determinável ou se igual à de competência."),
   dataPagamento: z.string().describe("Data em que foi efetivamente pago/recebido, AAAA-MM-DD. Vazio se ainda em aberto ou não determinável."),
-  pessoa: z.string().describe("Nome de quem pagou ou recebeu, se identificável. Vazio se não houver."),
+  pessoa: z
+    .string()
+    .describe(
+      "Nome da CONTRAPARTE da transação — quem recebeu o pagamento numa despesa (o fornecedor/prestador), ou quem pagou numa receita (o cliente). NUNCA o nome da própria empresa que está usando o sistema. Vazio se não houver.",
+    ),
   documentoPessoa: z.string().describe("CPF/CNPJ da pessoa, se aparecer explicitamente. Quase sempre vazio."),
   centroCusto: z.string().describe("Centro de custo, só se explicitamente mencionado. Quase sempre vazio."),
   formaPagamento: z.string().describe("Forma de pagamento (Pix, Cartão, Dinheiro, Boleto, Transferência), se identificável. Vazio se não."),
@@ -63,7 +67,15 @@ const ExtracaoSchema = z.object({
   linhas: z.array(LinhaExtraidaSchema),
 });
 
-const PROMPT_SISTEMA = `Você extrai lançamentos financeiros (receitas e despesas) de texto livre ou de uma imagem (recibo, comprovante, print de fatura ou extrato) para um sistema financeiro brasileiro.
+// {{TENANT}} — achado real, 11/09/2026: sem saber o nome da própria empresa,
+// a IA não tinha como perceber quando o nome mais óbvio no documento era o
+// nosso próprio (ex.: um recibo "recebi do (sr) a [nome do tenant]" —
+// exatamente o formato de recibo manuscrito brasileiro), e extraía a própria
+// empresa como se fosse a pessoa/contraparte do lançamento (um recibo de
+// COMPRA virou um cliente nosso, de cabeça pra baixo). Regra de direção
+// (quem pagou vs quem recebeu) só é possível de explicar sabendo quem é
+// "nós" no documento.
+const PROMPT_SISTEMA = `Você extrai lançamentos financeiros (receitas e despesas) de texto livre ou de uma imagem (recibo, comprovante, print de fatura ou extrato) para o sistema financeiro da empresa "{{TENANT}}" — é essa empresa quem usa o sistema, "nós" nas regras abaixo.
 
 Regras rígidas, sem exceção:
 - NUNCA invente um valor, data ou nome que não esteja no texto/imagem. Se um campo não está claro, deixe-o como string vazia "" e/ou marque em camposBaixaConfianca — nunca "chute com confiança".
@@ -71,6 +83,8 @@ Regras rígidas, sem exceção:
 - Se não conseguir identificar NENHUM lançamento de verdade (texto sem nada financeiro, imagem ilegível), devolva uma lista vazia — nunca invente uma linha só para preencher.
 - Datas relativas ("ontem", "hoje", "dia 15") são resolvidas contra a data de hoje informada abaixo.
 - categoria, pessoa, centroCusto e formaPagamento são só sugestões em texto livre — não precisam bater com nenhum cadastro existente, outra etapa do sistema resolve isso depois.
+- O campo pessoa é sempre a CONTRAPARTE da transação, nunca a própria empresa "{{TENANT}}". Um recibo que diz "recebi do (sr./sra.) [nome]" está identificando QUEM PAGOU: se esse nome for a própria "{{TENANT}}", o lançamento é uma DESPESA nossa, e o campo pessoa deve ser quem emitiu o recibo/recebeu o pagamento (o vendedor, prestador, revendedor — normalmente no rodapé do documento, junto do CNPJ) — nunca o nome da própria empresa. Se esse nome for de outra pessoa ou empresa (não "{{TENANT}}"), o lançamento é uma RECEITA nossa, e o campo pessoa é esse nome (o cliente que pagou).
+- A categoria sugerida também precisa refletir essa direção (ex.: "Compra de material" para uma despesa, nunca "Venda de material" quando quem pagou fomos nós).
 
 Data de hoje: {{HOJE}}`;
 
@@ -80,6 +94,7 @@ const USAGE_ZERO: UsageParaCusto = { input_tokens: 0, output_tokens: 0, cache_cr
 
 export async function extrairLancamentosIA(
   entrada: { texto: string } | { imagemBase64: string; imagemMediaType: "image/jpeg" | "image/png" | "image/webp" },
+  nomeTenant: string,
 ): Promise<ResultadoExtracaoIA> {
   // Checado explícito ANTES de chamar a API — sem isso, a ausência da chave
   // vira uma exceção síncrona do SDK (lançada montando os headers, antes de
@@ -120,13 +135,17 @@ export async function extrairLancamentosIA(
       // precisar do aviso abaixo; o custo real só sobe se o texto de fato
       // tiver esse volume, o teto em si não custa nada enquanto não é usado.
       max_tokens: 16000,
-      // Cache de prompt (achado em cálculo de custo, 08/09/2026): o texto
-      // fixo do prompt (só a data muda, uma vez por dia) é recobrado por
-      // completo a US$2/MTok em toda extração, de todo tenant — marcando
-      // o bloco como cacheável, chamadas dentro da janela de 5 min (o
-      // volume normal de uso do sistema ao longo do dia) pagam US$0,20/MTok
-      // de leitura em vez do preço cru.
-      system: [{ type: "text", text: PROMPT_SISTEMA.replace("{{HOJE}}", hojeIso), cache_control: { type: "ephemeral" } }],
+      // Cache de prompt (achado em cálculo de custo, 08/09/2026): o texto do
+      // prompt (nome do tenant + data, ambos fixos dentro de uma sessão de
+      // uso) é recobrado por completo a US$2/MTok em toda extração — marcando
+      // o bloco como cacheável, chamadas dentro da janela de 5 min pagam
+      // US$0,20/MTok de leitura em vez do preço cru. Cache agora é por
+      // tenant (não mais compartilhado entre todos, como antes de 11/09/2026
+      // — precisou incluir o nome do tenant no prompt pra corrigir um achado
+      // real: sem saber quem é "nós", a IA confundia a própria empresa com
+      // a contraparte do lançamento), ainda vale a pena porque um mesmo
+      // tenant tipicamente faz várias extrações seguidas na mesma sessão.
+      system: [{ type: "text", text: PROMPT_SISTEMA.replaceAll("{{TENANT}}", nomeTenant).replace("{{HOJE}}", hojeIso), cache_control: { type: "ephemeral" } }],
       messages: [{ role: "user", content: conteudo }],
       output_config: { format: zodOutputFormat(ExtracaoSchema) },
     });
