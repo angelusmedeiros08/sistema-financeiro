@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 import { extrairValoresUnicos, resolverTodasCorrespondencias } from "@/lib/importacao/fuzzy";
 import { normalizarTexto, type FormatoNumerico } from "@/lib/importacao/locale-br";
 import { resolverCorrespondenciaPessoa, type PessoaExistente } from "@/lib/pessoas/importacao/correspondencia";
-import { criarEntidadesAprovadasAction, iniciarImportacaoFinanceiraAction } from "./actions";
+import { criarEntidadesAprovadasAction, iniciarImportacaoFinanceiraAction, atualizarPerfisPessoaAction } from "./actions";
 import type { EntidadesExistentes } from "@/lib/importacao/resolucao";
 import type { LinhaBruta, ResolucaoEntidade, TipoEntidadeImportacao } from "@/lib/importacao/tipos";
 import type { CorrespondenciaPessoa } from "@/lib/pessoas/importacao/tipos";
@@ -289,6 +289,26 @@ export function PassoEntidades({
     return d.entidadeId ? tipoCategoriaExistentePorId.get(d.entidadeId) : undefined;
   }
 
+  // Índice pessoa normalizada -> tipos das linhas em que ela aparece,
+  // montado uma vez (não uma vez por pessoa) — achado em revisão de
+  // eficiência, 12/09/2026: a versão anterior varria `linhasBrutas` inteiro
+  // dentro de `perfisDaPessoa`, chamada uma vez por pessoa única a cada
+  // render (O(linhas × pessoas), refeito a cada decisão tomada na tela) —
+  // perceptível numa planilha grande (extrato bancário real de centenas de
+  // linhas, o cenário que este wizard já foi testado com). Agora é O(linhas)
+  // uma vez, e cada `perfisDaPessoa` é um lookup O(1).
+  const tiposPorPessoaNormalizada = useMemo(() => {
+    const mapa = new Map<string, Set<"RECEITA" | "DESPESA" | undefined>>();
+    for (const l of linhasBrutas) {
+      const chave = normalizarTexto(l.pessoa);
+      const atual = mapa.get(chave) ?? new Set();
+      atual.add(tipoDaCategoria(l.categoria));
+      mapa.set(chave, atual);
+    }
+    return mapa;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [linhasBrutas, decisoes, tipoCategoriaExistentePorId]);
+
   // Cliente numa linha de receita, fornecedor numa de despesa, os dois se a
   // mesma pessoa aparecer nas duas — mesmo raciocínio que despesas/receitas
   // actions e o Chat IA já usam (resolverPessoaId), agora replicado aqui.
@@ -297,9 +317,7 @@ export function PassoEntidades({
   // era claramente só uma receita ou só uma despesa (a Importação com IA
   // herda esse cálculo, já que reaproveita este mesmo componente).
   function perfisDaPessoa(nomePessoa: string): PerfilPessoa[] {
-    const tipos = new Set(
-      linhasBrutas.filter((l) => normalizarTexto(l.pessoa) === normalizarTexto(nomePessoa)).map((l) => tipoDaCategoria(l.categoria)),
-    );
+    const tipos = tiposPorPessoaNormalizada.get(normalizarTexto(nomePessoa)) ?? new Set();
     const perfis: PerfilPessoa[] = [];
     if (tipos.has("RECEITA")) perfis.push("CLIENTE");
     if (tipos.has("DESPESA")) perfis.push("FORNECEDOR");
@@ -328,6 +346,24 @@ export function PassoEntidades({
       if (d?.acao === "criar_novo") {
         const documento = linhasBrutas.find((l) => normalizarTexto(l.pessoa) === normalizarTexto(valor) && l.documentoPessoa.trim())?.documentoPessoa;
         paraCriar.push({ tipo: "pessoa", nome: valor, documento, perfis: perfisDaPessoa(valor) });
+      }
+    }
+
+    // Perfil detectado (Cliente/Fornecedor) também precisa chegar num
+    // cadastro REAPROVEITADO, não só num criado agora — achado em revisão,
+    // 12/09/2026: sem isso o selo "Detectado na planilha" não tinha efeito
+    // nenhum quando a decisão era "usar cadastro existente", e um fornecedor
+    // legítimo reaproveitado de um cadastro só-cliente sumia depois de telas
+    // que filtram por perfil (ex.: /despesas). União nunca sobrescreve (mesmo
+    // princípio de unirPerfis em lib/pessoas/importacao/commit.ts), só soma
+    // perfil novo — e só chama a action quando há de fato algo novo pra somar.
+    for (const valor of valoresPessoa) {
+      const d = decisoesPessoa[valor];
+      if (d?.acao !== "usar_existente" || !d.entidadeId) continue;
+      const perfisDetectados = perfisDaPessoa(valor);
+      const perfisAtuais = entidadesExistentes.pessoas.find((p) => p.id === d.entidadeId)?.perfis ?? [];
+      if (perfisDetectados.some((p) => !perfisAtuais.includes(p))) {
+        await atualizarPerfisPessoaAction(d.entidadeId, perfisDetectados);
       }
     }
 

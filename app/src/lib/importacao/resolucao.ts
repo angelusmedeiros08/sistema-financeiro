@@ -3,6 +3,7 @@ import type { Database } from "@/utils/supabase/database.types";
 import type { EntidadeExistente, TipoEntidadeImportacao } from "./tipos";
 import { criarCategoria } from "@/lib/contabil/categorias";
 import { buscarContaGenericaPorTipo } from "@/lib/contabil/plano-contas";
+import { validarCpfCnpj } from "@/lib/pagamentos/cpf-cnpj";
 import type { PessoaExistente } from "@/lib/pessoas/importacao/correspondencia";
 
 type Cliente = SupabaseClient<Database>;
@@ -67,11 +68,18 @@ export async function criarEntidadeAprovada(supabase: Cliente, tenantId: string,
     }
     case "pessoa": {
       const perfis = entidade.perfis && entidade.perfis.length > 0 ? entidade.perfis : (["CLIENTE", "FORNECEDOR"] as PerfilPessoa[]);
-      const { data, error } = await supabase
-        .from("pessoas")
-        .insert({ tenant_id: tenantId, nome: entidade.nome, documento: entidade.documento?.trim() || null, perfis })
-        .select("id")
-        .single();
+      const documentoBruto = entidade.documento?.trim() || null;
+      // Achado em revisão, 12/09/2026: este caminho (Importação por planilha
+      // e por IA) gravava documento sem NENHUMA validação de dígito
+      // verificador, diferente do wizard dedicado de Pessoas (validarDocumento
+      // em lib/pessoas/importacao/validacao.ts, mesmo algoritmo reaproveitado
+      // aqui). Um CPF/CNPJ mal lido pela IA (dígito trocado por falha de
+      // OCR/visão) nascia permanente no cadastro sem aviso — nunca bloqueia o
+      // import por isso (documento é campo secundário aqui, diferente do
+      // wizard de Pessoas onde é obrigatório), só descarta o valor claramente
+      // errado em vez de persistir um documento inválido.
+      const documento = documentoBruto && validarCpfCnpj(documentoBruto) ? documentoBruto : null;
+      const { data, error } = await supabase.from("pessoas").insert({ tenant_id: tenantId, nome: entidade.nome, documento, perfis }).select("id").single();
       if (error || !data) return { erro: error?.message ?? "Falha ao criar pessoa." };
       return { id: data.id };
     }

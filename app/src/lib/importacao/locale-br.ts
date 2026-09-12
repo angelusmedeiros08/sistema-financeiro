@@ -26,10 +26,36 @@ export function parseValorPlanilha(bruto: string, formato: FormatoNumerico = "BR
     if (ordemInvalida) return null;
   }
 
-  const normalizado = formato === "BR" ? limpo.replace(/\./g, "").replace(",", ".") : limpo.replace(/,/g, "");
+  const normalizado = formato === "BR" ? normalizarValorBR(limpo) : limpo.replace(/,/g, "");
 
   const numero = Number(normalizado);
   return Number.isFinite(numero) ? numero : null;
+}
+
+// Sem vírgula nenhuma, um "." pode ser separador de milhar de verdade OU um
+// decimal digitado por engano em formato americano (achado real, 12/09/2026:
+// a Importação com IA às vezes extrai valor com ponto decimal em vez de
+// vírgula — "45.50" — e o código antigo removia esse ponto como se fosse
+// milhar, virando "4550": R$45,50 corrompido pra R$4.550,00, 100x maior, sem
+// erro nenhum, linha aprovada como "ok"). O agrupamento de milhar brasileiro
+// é SEMPRE em blocos de exatamente 3 dígitos — um "." seguido de qualquer
+// contagem diferente de 3 dígitos nunca é um separador de milhar válido, só
+// pode ser decimal. Só o ÚLTIMO ponto é candidato a decimal; um "." seguido
+// de exatamente 3 dígitos continua ambíguo de propósito (ex.: "1.234" sozinho
+// — a spec já descartou tentar auto-detectar esse caso) e continua tratado
+// como milhar, como sempre foi.
+function normalizarValorBR(limpo: string): string {
+  if (limpo.includes(",")) return limpo.replace(/\./g, "").replace(",", ".");
+
+  const posUltimoPonto = limpo.lastIndexOf(".");
+  if (posUltimoPonto === -1) return limpo;
+
+  const digitosApos = limpo.length - posUltimoPonto - 1;
+  if (digitosApos === 3) return limpo.replace(/\./g, "");
+
+  const antes = limpo.slice(0, posUltimoPonto).replace(/\./g, "");
+  const depois = limpo.slice(posUltimoPonto + 1);
+  return `${antes}.${depois}`;
 }
 
 // Aceita tanto DD/MM/AAAA (texto de CSV) quanto um ISO já pronto (célula de

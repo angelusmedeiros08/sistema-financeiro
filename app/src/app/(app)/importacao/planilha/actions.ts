@@ -8,6 +8,7 @@ import { buscarChavesDuplicatas } from "@/lib/importacao/duplicatas";
 import { LIMITE_LINHAS } from "@/lib/importacao/parse";
 import { criarEntidadeAprovada, type EntidadeNova } from "@/lib/importacao/resolucao";
 import { commitarLinhaImportacao, type ParametrosCommitLinha } from "@/lib/importacao/commit";
+import { atualizarPessoa } from "@/lib/pessoas/pessoas";
 import { reivindicarProcessamento } from "@/lib/importacoes/importacoes";
 import {
   iniciarImportacaoFinanceira,
@@ -102,6 +103,33 @@ export async function criarEntidadesAprovadasAction(
   }
 
   return { resultados };
+}
+
+// Achado em revisão, 12/09/2026: quando o operador escolhe "usar cadastro
+// existente" pra uma pessoa, o perfil (CLIENTE/FORNECEDOR) detectado pela
+// planilha/IA nunca era aplicado ao cadastro — só pessoa NOVA passava pelo
+// perfil certo (ver criarEntidadeAprovada). O selo "Detectado na planilha: X"
+// aparecia mesmo nesse caminho sem nenhum efeito real: um fornecedor
+// reaproveitado que hoje só tem perfil CLIENTE continuava sem FORNECEDOR
+// depois do import, sumindo de telas que filtram por esse perfil (ex.:
+// /despesas). Soma o perfil detectado ao cadastro (união, nunca substitui —
+// mesmo princípio de unirPerfis em lib/pessoas/importacao/commit.ts), só
+// grava quando há perfil novo de fato pra não gerar UPDATE à toa.
+export async function atualizarPerfisPessoaAction(pessoaId: string, perfisDetectados: Database["public"]["Enums"]["perfil_pessoa"][]): Promise<{ sucesso: true } | { erro: string }> {
+  const contexto = await obterUsuarioETenantAtual();
+  if ("erro" in contexto) return { erro: contexto.erro };
+  if (perfisDetectados.length === 0) return { sucesso: true };
+
+  const supabase = await createClient();
+  const { data: pessoa, error: erroLeitura } = await supabase.from("pessoas").select("perfis").eq("id", pessoaId).eq("tenant_id", contexto.tenantId).maybeSingle();
+  if (erroLeitura || !pessoa) return { erro: erroLeitura?.message ?? "Pessoa não encontrada." };
+
+  const perfisUnidos = [...new Set([...pessoa.perfis, ...perfisDetectados])];
+  if (perfisUnidos.length === pessoa.perfis.length) return { sucesso: true };
+
+  const resultado = await atualizarPessoa(supabase, { tenant_id: contexto.tenantId, pessoa_id: pessoaId, perfis: perfisUnidos });
+  if ("erro" in resultado) return resultado;
+  return { sucesso: true };
 }
 
 export type LinhaParaImportar = Omit<ParametrosCommitLinha, "tenant_id" | "criado_por"> & { linhaNumero: number };
