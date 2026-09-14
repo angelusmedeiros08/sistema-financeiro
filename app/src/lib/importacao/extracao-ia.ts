@@ -200,7 +200,13 @@ export async function extrairLancamentosIA(
         },
       ],
       messages: [{ role: "user", content: conteudo }],
-      output_config: { format: zodOutputFormat(ExtracaoSchema) },
+      // effort "medium" (achado em pesquisa de custo, 12/09/2026, dado real
+      // da Anthropic): sem este campo o modelo roda no padrão "high", o mais
+      // caro — extração estruturada (ler um documento e preencher campos
+      // fixos) é o tipo de tarefa onde "medium" costuma bater a mesma
+      // qualidade do padrão por uma fração do custo. Reverter é apagar esta
+      // linha, se a qualidade de extração cair na prática.
+      output_config: { format: zodOutputFormat(ExtracaoSchema), effort: "medium" },
     });
   } catch (erro) {
     // Nenhum destes 3 tipos chega a consumir token de verdade — a

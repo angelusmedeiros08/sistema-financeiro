@@ -31,7 +31,7 @@ export async function extrairLancamentosIAAction(
   // (varia muito com o tamanho do texto/imagem e a quantidade de
   // lançamentos extraídos).
   const custoUsd = calcularCustoUsd(resultado.usage);
-  await registrarCustoIA({ tenantId: contexto.tenantId, usuarioId: contexto.user.id, recurso: "importacao", custoUsd });
+  await registrarCustoIA({ tenantId: contexto.tenantId, usuarioId: contexto.user.id, recurso: "importacao", custoUsd, usage: resultado.usage });
 
   // Relida do banco (em vez de recalcular em USD e converter aqui) —
   // orcamento-ia.ts é o único lugar que conhece a taxa de câmbio de

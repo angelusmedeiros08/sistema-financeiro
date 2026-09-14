@@ -155,6 +155,8 @@ Registro do que foi efetivamente implementado no banco (região São Paulo, `sa-
 
 94. `orcamento_mensal_ia_por_custo` (10/09/2026) — spec `docs/superpowers/specs/2026-09-10-orcamento-mensal-ia-por-custo-design.md`. Tabela nova `uso_ia` (tenant_id, usuario_id, recurso `chat`/`importacao`, `custo_usd`, `criado_em`) substitui `tentativas_chat_ia`/`tentativas_importacao_ia` (as duas dropadas nesta mesma migration). Troca o rate-limit de IA de contagem de tentativas (15/dia chat, 10/dia importação, cada uma valendo "1" independente do tamanho) pra custo real medido via `usage` da API da Anthropic, num orçamento único compartilhado entre os dois recursos, R$30/mês (~US$5,90), janela deslizante de 30 dias. RLS habilitada sem nenhuma policy, mesmo padrão das tabelas que substitui.
 
+95. `uso_ia_log_tokens_brutos` (12/09/2026) — pedido do usuário ("realmente pesquise o teto de tokens, o gasto, como otimizar o máximo"). `uso_ia` ganha 4 colunas nullable (`input_tokens`, `output_tokens`, `cache_creation_input_tokens`, `cache_read_input_tokens`) com o `usage` bruto que a Anthropic devolve em cada chamada — antes só `custo_usd` (já derivado) era gravado, sem como auditar depois se o cache de prompt está de fato acertando (deveria dominar `cache_read_input_tokens` sobre `input_tokens` numa sessão aquecida) nem calcular o custo real de cada componente separado. Nullable porque linhas anteriores a esta migration não têm esse detalhe.
+
 ## Verificação final
 
 - `get_advisors` (segurança): **0 alertas** (só o warning pré-existente e não relacionado `auth_leaked_password_protection`).

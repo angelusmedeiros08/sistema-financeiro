@@ -2194,25 +2194,37 @@ export type Database = {
       }
       uso_ia: {
         Row: {
+          cache_creation_input_tokens: number | null
+          cache_read_input_tokens: number | null
           criado_em: string
           custo_usd: number
           id: string
+          input_tokens: number | null
+          output_tokens: number | null
           recurso: string
           tenant_id: string
           usuario_id: string
         }
         Insert: {
+          cache_creation_input_tokens?: number | null
+          cache_read_input_tokens?: number | null
           criado_em?: string
           custo_usd: number
           id?: string
+          input_tokens?: number | null
+          output_tokens?: number | null
           recurso: string
           tenant_id: string
           usuario_id: string
         }
         Update: {
+          cache_creation_input_tokens?: number | null
+          cache_read_input_tokens?: number | null
           criado_em?: string
           custo_usd?: number
           id?: string
+          input_tokens?: number | null
+          output_tokens?: number | null
           recurso?: string
           tenant_id?: string
           usuario_id?: string

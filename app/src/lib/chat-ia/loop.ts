@@ -82,6 +82,14 @@ export async function executarLoopChat(params: {
         system: systemComCache,
         messages: mensagens,
         tools: toolsComCacheAtivo,
+        // effort "medium" (achado em pesquisa de custo, 12/09/2026, dado
+        // real da Anthropic): sem este campo o modelo roda no padrão "high",
+        // o mais caro — pra pergunta/resposta com tool use (não raciocínio
+        // de longo horizonte), "medium" costuma bater a mesma qualidade do
+        // padrão por 70-85% do custo. Reduz o gasto de toda mensagem do
+        // Chat IA sem trocar de modelo nem cortar funcionalidade — reverter
+        // é apagar esta linha, se a qualidade cair na prática.
+        output_config: { effort: "medium" },
       });
 
       stream.on("text", (delta) => {

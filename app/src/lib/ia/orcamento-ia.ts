@@ -1,5 +1,6 @@
 import "server-only";
 import { createAdminClient } from "@/utils/supabase/admin";
+import type { UsageParaCusto } from "./precos-anthropic";
 
 // Substitui limitador-uso-diario.ts (spec 2026-09-10): antes contava
 // tentativas (15/dia chat, 10/dia importação, cada uma valendo "1"
@@ -57,9 +58,25 @@ export async function verificarOrcamento(tenantId: string): Promise<{ permitido:
 // nesse momento; não tem como "não cobrar" depois). Chamar mesmo quando a
 // chamada à IA falhou no meio de um loop de tool use — iterações
 // anteriores àquela que falhou já consumiram token de verdade.
-export async function registrarCustoIA(params: { tenantId: string; usuarioId: string; recurso: RecursoIA; custoUsd: number }): Promise<void> {
+export async function registrarCustoIA(params: { tenantId: string; usuarioId: string; recurso: RecursoIA; custoUsd: number; usage?: UsageParaCusto }): Promise<void> {
   const admin = createAdminClient();
-  await admin.from("uso_ia").insert({ tenant_id: params.tenantId, usuario_id: params.usuarioId, recurso: params.recurso, custo_usd: params.custoUsd });
+  await admin.from("uso_ia").insert({
+    tenant_id: params.tenantId,
+    usuario_id: params.usuarioId,
+    recurso: params.recurso,
+    custo_usd: params.custoUsd,
+    // Guardado além do custo já calculado — achado em pesquisa de custo,
+    // 12/09/2026: sem os 4 números brutos não dava pra auditar depois se o
+    // cache de prompt está de fato acertando (cache_read_input_tokens
+    // deveria dominar sobre input_tokens numa sessão aquecida) nem separar
+    // quanto do gasto é entrada nova vs saída vs cache. `usage` é opcional
+    // só por segurança de tipo — todo chamador real (loop.ts, extracao-ia.ts)
+    // sempre tem o usage de verdade nesse ponto, a chamada já aconteceu.
+    input_tokens: params.usage?.input_tokens ?? null,
+    output_tokens: params.usage?.output_tokens ?? null,
+    cache_creation_input_tokens: params.usage?.cache_creation_input_tokens ?? null,
+    cache_read_input_tokens: params.usage?.cache_read_input_tokens ?? null,
+  });
 }
 
 // Leitura pura — soma os dois recursos juntos (é isso que implementa o

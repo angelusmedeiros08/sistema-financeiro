@@ -136,7 +136,7 @@ export async function POST(request: Request) {
       // meio pode ter gasto token em iterações anteriores, por isso
       // sempre registra, erro ou não.
       const custoUsd = calcularCustoUsd(resultado.usageTotal);
-      await registrarCustoIA({ tenantId: contexto.tenantId, usuarioId: contexto.user.id, recurso: "chat", custoUsd });
+      await registrarCustoIA({ tenantId: contexto.tenantId, usuarioId: contexto.user.id, recurso: "chat", custoUsd, usage: resultado.usageTotal });
       // Relida do banco (em vez de recalcular em USD e converter aqui) —
       // orcamento-ia.ts é o único lugar que conhece a taxa de câmbio de
       // referência, evita duplicar a conta.
