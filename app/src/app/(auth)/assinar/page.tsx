@@ -9,11 +9,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const estadoInicial = { erro: "" };
 
 export default function PaginaAssinar() {
   const [formaPagamento, setFormaPagamento] = useState<"CREDIT_CARD" | "PIX">("CREDIT_CARD");
+  const [aceitouTermos, setAceitouTermos] = useState(false);
   const [estado, formAction, pendente] = useActionState(async (_: typeof estadoInicial, formData: FormData) => {
     const resultado = await assinar(formData);
     // assinar() só retorna quando dá erro — o caminho de sucesso é um
@@ -69,9 +71,29 @@ export default function PaginaAssinar() {
           </RadioGroup>
         </div>
 
+        <label className="flex cursor-pointer items-start gap-2 text-sm">
+          <Checkbox
+            name="aceite_termos"
+            checked={aceitouTermos}
+            onCheckedChange={(v) => setAceitouTermos(v === true)}
+            className="mt-0.5"
+          />
+          <span className="text-muted-foreground">
+            Li e aceito os{" "}
+            <Link href="/termos" target="_blank" className="font-medium text-foreground underline underline-offset-4">
+              Termos de Uso
+            </Link>{" "}
+            e a{" "}
+            <Link href="/privacidade" target="_blank" className="font-medium text-foreground underline underline-offset-4">
+              Política de Privacidade
+            </Link>
+            .
+          </span>
+        </label>
+
         {estado.erro && <p className="text-sm text-destructive">{estado.erro}</p>}
 
-        <Button type="submit" disabled={pendente} className="w-full">
+        <Button type="submit" disabled={pendente || !aceitouTermos} className="w-full">
           {pendente ? "Abrindo checkout..." : "Continuar para o pagamento"}
         </Button>
 

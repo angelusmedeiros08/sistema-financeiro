@@ -9,6 +9,8 @@ import { registrarTentativaAssinatura } from "./rate-limit";
 import { VALOR_PLANO_MENSAL, DESCRICAO_PLANO, TRIAL_DIAS } from "./plano";
 import { hojeIsoBrasil } from "@/lib/data-brasil";
 import { somarDias } from "@/lib/relatorios/saldo-projetado";
+import { TERMOS_VERSAO } from "@/lib/legal/termos";
+import { createAdminClient } from "@/utils/supabase/admin";
 
 type ResultadoAssinar = { erro: string };
 
@@ -30,6 +32,10 @@ export async function assinar(formData: FormData): Promise<ResultadoAssinar | ne
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const cpfCnpj = String(formData.get("cpf_cnpj") ?? "").trim();
   const formaPagamento = String(formData.get("forma_pagamento") ?? "");
+  // Checkbox HTML só manda o campo no FormData quando marcado — desmarcado,
+  // a chave nem existe. `Checkbox` do Radix injeta um input nativo oculto
+  // sincronizado com `checked`, então isso reflete o estado real do form.
+  const aceitouTermos = formData.get("aceite_termos") !== null;
 
   if (!nomeEmpresa || !nomeResponsavel || !email) {
     return { erro: "Preencha todos os campos." };
@@ -40,6 +46,9 @@ export async function assinar(formData: FormData): Promise<ResultadoAssinar | ne
   if (!validarCpfCnpj(cpfCnpj)) {
     return { erro: "CPF ou CNPJ inválido." };
   }
+  if (!aceitouTermos) {
+    return { erro: "É preciso aceitar os Termos de Uso e a Política de Privacidade." };
+  }
 
   const cabecalhos = await headers();
   const ip = obterIpDaRequisicao(cabecalhos);
@@ -48,6 +57,14 @@ export async function assinar(formData: FormData): Promise<ResultadoAssinar | ne
   if (!permitido) {
     return { erro: "Muitas tentativas em pouco tempo. Aguarde um pouco e tente de novo." };
   }
+
+  // Gravado aqui, não em provisionarTenantNovo — esse só roda dias depois,
+  // disparado pelo webhook do Asaas confirmando pagamento, sem nenhum canal
+  // pra saber se o checkbox foi marcado. O aceite é o que aconteceu agora,
+  // no clique, então prova por e-mail/CPF-CNPJ, independente do
+  // provisionamento do tenant ter sucesso depois.
+  const admin = createAdminClient();
+  await admin.from("aceites_termos").insert({ email, cpf_cnpj: cpfCnpj, termos_versao: TERMOS_VERSAO, ip });
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 

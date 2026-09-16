@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      aceites_termos: {
+        Row: {
+          aceito_em: string
+          cpf_cnpj: string
+          email: string
+          id: string
+          ip: string
+          termos_versao: string
+        }
+        Insert: {
+          aceito_em?: string
+          cpf_cnpj: string
+          email: string
+          id?: string
+          ip: string
+          termos_versao: string
+        }
+        Update: {
+          aceito_em?: string
+          cpf_cnpj?: string
+          email?: string
+          id?: string
+          ip?: string
+          termos_versao?: string
+        }
+        Relationships: []
+      }
       alertas_enviados: {
         Row: {
           destinatario_id: string
