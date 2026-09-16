@@ -24,7 +24,7 @@ export default function PaginaAssinar() {
   }, estadoInicial);
 
   return (
-    <AuthShell titulo="Assinar o Finanssi" subtitulo={`${TRIAL_DIAS} dias grátis no cartão. Sem cartão salvo, sem cobrança surpresa.`}>
+    <AuthShell titulo="Assinar o Finanssi" subtitulo={`${TRIAL_DIAS} dias grátis no cartão. Cobrança só depois do trial.`}>
       <form action={formAction} className="space-y-4">
         <div className="space-y-1.5">
           <Label htmlFor="nome_empresa">Nome da empresa</Label>

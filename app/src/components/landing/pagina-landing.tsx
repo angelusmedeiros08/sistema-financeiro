@@ -52,21 +52,29 @@ export function PaginaLanding() {
   );
 }
 
+function Logo({ className }: { className?: string }) {
+  return (
+    <>
+      <img src="/logo/completo-claro.png" alt="Finanssi" className={`${className} dark:hidden`} />
+      <img src="/logo/completo-escuro.png" alt="Finanssi" className={`hidden ${className} dark:block`} />
+    </>
+  );
+}
+
 function Cabecalho() {
   return (
-    <header className="absolute inset-x-0 top-0 z-20">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
-        <span className="font-heading text-lg font-bold tracking-tight text-white">Finanssi</span>
+    <header className="sticky top-0 z-20 border-b border-border bg-background/90 backdrop-blur">
+      <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+        <Link href="/">
+          <Logo className="h-8 w-auto" />
+        </Link>
         <nav className="flex items-center gap-2">
-          <Link href="/entrar" className="rounded-control px-3 py-1.5 text-sm font-medium text-white/70 transition-colors hover:text-white">
+          <Link href="/entrar" className="rounded-control px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
             Entrar
           </Link>
-          <Link
-            href="/assinar"
-            className="rounded-control bg-white px-3.5 py-1.5 text-sm font-semibold text-[#14181A] transition-opacity hover:opacity-90"
-          >
-            Assinar
-          </Link>
+          <Button asChild size="sm">
+            <Link href="/assinar">Assinar</Link>
+          </Button>
         </nav>
       </div>
     </header>
@@ -75,37 +83,28 @@ function Cabecalho() {
 
 function Hero() {
   return (
-    <section className="relative overflow-hidden bg-gradient-to-br from-[#14181A] to-[#0F2620] pt-28 pb-20 sm:pt-36 sm:pb-28">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -right-32 -top-32 size-[32rem] rounded-full bg-gradient-to-br from-[#D8583A] to-[#A87C1F] opacity-20 blur-3xl"
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -bottom-40 left-1/3 size-96 rounded-full bg-[#0FA37E] opacity-[0.08] blur-3xl"
-      />
-
-      <div className="relative mx-auto grid grid-cols-1 max-w-6xl gap-14 px-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+    <section className="border-b border-border py-20 sm:py-28">
+      <div className="mx-auto grid grid-cols-1 max-w-6xl gap-14 px-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
         <div>
-          <p className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/15 px-3 py-1 text-xs font-medium text-white/70">
+          <p className="mb-5 inline-flex items-center gap-2 rounded-full border border-border px-3 py-1 text-xs font-medium text-muted-foreground">
             ERP financeiro multi-empresa
           </p>
-          <h1 className="font-heading text-5xl font-extrabold leading-[0.98] tracking-tight text-white sm:text-6xl lg:text-[4.25rem]">
-            O financeiro da sua empresa, finalmente em um lugar só.
+          <h1 className="font-heading text-5xl font-extrabold leading-[1.02] tracking-tight text-foreground sm:text-6xl lg:text-[4rem]">
+            O <span className="text-primary">financeiro</span> da sua empresa, finalmente em um lugar só.
           </h1>
-          <p className="mt-6 max-w-lg text-lg leading-relaxed text-white/65">
+          <p className="mt-6 max-w-lg text-lg leading-relaxed text-muted-foreground">
             Lançamentos, contas a pagar e a receber, DRE e fluxo de caixa que fecham sozinhos — e uma IA que lê
             extrato e recibo por você, sem nunca lançar nada sem a sua confirmação.
           </p>
           <div className="mt-9 flex flex-wrap items-center gap-4">
             <Link
               href="/assinar"
-              className="group inline-flex items-center gap-2 rounded-control bg-[#E2694B] px-5 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+              className="group inline-flex items-center gap-2 rounded-control bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
             >
               Testar {TRIAL_DIAS} dias grátis
               <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
             </Link>
-            <p className="text-sm text-white/45">Sem cartão salvo antes de decidir.</p>
+            <p className="text-sm text-muted-foreground">Cartão salvo agora, cobrança só depois do trial.</p>
           </div>
         </div>
 
@@ -187,19 +186,15 @@ function Precificacao() {
 
 function ChamadaFinal() {
   return (
-    <section className="relative overflow-hidden bg-gradient-to-br from-[#14181A] to-[#0F2620] py-24">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -left-24 top-1/2 size-96 -translate-y-1/2 rounded-full bg-gradient-to-br from-[#D8583A] to-[#A87C1F] opacity-20 blur-3xl"
-      />
-      <div className="relative mx-auto max-w-3xl px-6 text-center">
-        <h2 className="font-heading text-3xl font-bold tracking-tight text-white sm:text-4xl">
+    <section className="bg-primary py-24">
+      <div className="mx-auto max-w-3xl px-6 text-center">
+        <h2 className="font-heading text-3xl font-bold tracking-tight text-primary-foreground sm:text-4xl">
           Sua próxima virada de mês pode ser diferente.
         </h2>
-        <p className="mt-4 text-white/65">{TRIAL_DIAS} dias grátis, sem cartão salvo antes de decidir.</p>
+        <p className="mt-4 text-primary-foreground/80">{TRIAL_DIAS} dias grátis, cobrança só depois do trial.</p>
         <Link
           href="/assinar"
-          className="mt-8 inline-flex items-center gap-2 rounded-control bg-[#E2694B] px-6 py-3.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+          className="mt-8 inline-flex items-center gap-2 rounded-control bg-background px-6 py-3.5 text-sm font-semibold text-foreground transition-opacity hover:opacity-90"
         >
           Testar o Finanssi
           <ArrowRight className="size-4" />
@@ -213,7 +208,7 @@ function Rodape() {
   return (
     <footer className="border-t border-border py-10">
       <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 text-sm text-muted-foreground sm:flex-row">
-        <span className="font-heading font-semibold text-foreground">Finanssi</span>
+        <Logo className="h-6 w-auto" />
         <div className="flex items-center gap-6">
           <Link href="/termos" className="hover:text-foreground">
             Termos de Uso
