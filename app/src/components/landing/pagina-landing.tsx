@@ -1,40 +1,35 @@
 import Link from "next/link";
-import { ArrowRight, Check, ChartLineUp, ChatCircleDots, FileMagnifyingGlass, HandCoins, Receipt, UsersThree } from "@phosphor-icons/react/dist/ssr";
+import { ArrowRight, Check, HandCoins, Receipt, UsersThree } from "@phosphor-icons/react/dist/ssr";
 import { Button } from "@/components/ui/button";
 import { TRIAL_DIAS } from "@/lib/pagamentos/plano";
 import { PainelPreview } from "./painel-preview";
+import { VisualChatIA, VisualImportacaoIA, VisualRelatorios } from "./feature-visuals";
 
-const FUNCIONALIDADES = [
+const DESTAQUES = [
   {
-    icone: Receipt,
-    titulo: "Lançamentos, contas a pagar e a receber",
-    descricao: "Parcelamento, baixa parcial, renegociação e recorrência. É o ciclo financeiro completo, não uma planilha com fórmula quebrando.",
+    Visual: VisualImportacaoIA,
+    titulo: "A IA lê o documento, você só confirma",
+    descricao:
+      "Cole um extrato ou envie a foto de um recibo. A IA extrai data, valor e categoria e propõe o lançamento certo. Nada vira registro real sem você aprovar.",
   },
   {
-    icone: ChartLineUp,
-    titulo: "DRE, DFC e indicadores em tempo real",
-    descricao: "Relatório que fecha sozinho a partir do que já foi lançado, não uma exportação que alguém monta manualmente todo fim de mês.",
+    Visual: VisualRelatorios,
+    titulo: "Relatório que fecha sozinho",
+    descricao:
+      "DRE, DFC e indicadores calculados direto do que já foi lançado. Sem planilha auxiliar, sem exportação manual todo fim de mês.",
   },
   {
-    icone: FileMagnifyingGlass,
-    titulo: "Importação com IA",
-    descricao: "Extrato bancário, recibo e nota fiscal: a IA lê o documento e propõe o lançamento certo. Você confirma, ela nunca lança sozinha.",
+    Visual: VisualChatIA,
+    titulo: "Pergunte, em vez de procurar",
+    descricao:
+      "Quanto entrou em março, qual categoria mais cresceu, quanto falta pra bater a meta. O Chat IA responde com o número de verdade por trás.",
   },
-  {
-    icone: ChatCircleDots,
-    titulo: "Chat IA sobre as suas finanças",
-    descricao: "Pergunte quanto entrou em março, ou qual categoria mais cresceu no trimestre, e receba a resposta com o número de verdade por trás.",
-  },
-  {
-    icone: HandCoins,
-    titulo: "Portal do cliente",
-    descricao: "Seu cliente acompanha as próprias cobranças e recebimentos sem precisar te ligar pra saber se o boleto já caiu.",
-  },
-  {
-    icone: UsersThree,
-    titulo: "Equipe com papéis reais",
-    descricao: "Convide quem cuida do financeiro e defina o que cada um pode ver e fazer. Ninguém precisa dividir a senha de admin.",
-  },
+];
+
+const RECURSOS_ADICIONAIS = [
+  { icone: Receipt, texto: "Contas a pagar e a receber, com parcelamento e baixa parcial" },
+  { icone: HandCoins, texto: "Portal para o seu cliente acompanhar as próprias cobranças" },
+  { icone: UsersThree, texto: "Equipe com papéis reais, sem dividir senha de admin" },
 ];
 
 const INCLUSOS = ["Lançamento ilimitado", "Todos os relatórios", "Importação com IA", "Chat IA", "Cancele quando quiser"];
@@ -142,7 +137,7 @@ function FaixaConfianca() {
 
 function Funcionalidades() {
   return (
-    <section className="bg-card pb-24">
+    <section className="bg-card py-24">
       <div className="mx-auto max-w-6xl px-6">
         <div className="max-w-xl">
           <h2 className="font-heading text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
@@ -150,14 +145,25 @@ function Funcionalidades() {
           </h2>
         </div>
 
-        <div className="mt-14 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {FUNCIONALIDADES.map(({ icone: Icone, titulo, descricao }) => (
-            <div key={titulo} className="flex flex-col gap-4 rounded-2xl border border-border bg-background p-7">
-              <span className="flex size-10 items-center justify-center rounded-lg bg-primary/10">
-                <Icone className="size-5 text-primary" weight="bold" />
-              </span>
-              <h3 className="font-heading text-base font-bold tracking-tight text-foreground">{titulo}</h3>
-              <p className="text-sm leading-relaxed text-muted-foreground">{descricao}</p>
+        <div className="mt-16 flex flex-col gap-20">
+          {DESTAQUES.map(({ Visual, titulo, descricao }, i) => (
+            <div key={titulo} className="grid grid-cols-1 items-center gap-10 lg:grid-cols-2 lg:gap-16">
+              <div className={i % 2 === 1 ? "lg:order-2" : ""}>
+                <h3 className="font-heading text-2xl font-bold tracking-tight text-foreground">{titulo}</h3>
+                <p className="mt-3 max-w-md text-base leading-relaxed text-muted-foreground">{descricao}</p>
+              </div>
+              <div className={`flex justify-center ${i % 2 === 1 ? "lg:order-1 lg:justify-start" : "lg:justify-end"}`}>
+                <Visual />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-20 grid grid-cols-1 gap-6 border-t border-border pt-12 sm:grid-cols-3">
+          {RECURSOS_ADICIONAIS.map(({ icone: Icone, texto }) => (
+            <div key={texto} className="flex items-start gap-3">
+              <Icone className="mt-0.5 size-5 shrink-0 text-primary" weight="bold" />
+              <p className="text-sm leading-relaxed text-foreground">{texto}</p>
             </div>
           ))}
         </div>
