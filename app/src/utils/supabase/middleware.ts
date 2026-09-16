@@ -59,7 +59,11 @@ export async function updateSession(request: NextRequest) {
     request.nextUrl.pathname.startsWith("/api/webhooks") ||
     // Link público do orçamento comercial (cliente decide sem login) —
     // diferente de /previsionamento, que é autenticado.
-    request.nextUrl.pathname.startsWith("/orcamento/");
+    request.nextUrl.pathname.startsWith("/orcamento/") ||
+    // Termos/Privacidade — linkados a partir de /assinar, antes de existir
+    // sessão, e precisam continuar acessíveis depois de logado também.
+    request.nextUrl.pathname.startsWith("/termos") ||
+    request.nextUrl.pathname.startsWith("/privacidade");
 
   if (!user && !isPublicRoute) {
     const url = request.nextUrl.clone();
