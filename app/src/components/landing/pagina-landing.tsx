@@ -85,7 +85,7 @@ function Hero() {
         className="pointer-events-none absolute -bottom-40 left-1/3 size-96 rounded-full bg-[#0FA37E] opacity-[0.08] blur-3xl"
       />
 
-      <div className="relative mx-auto grid max-w-6xl gap-14 px-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+      <div className="relative mx-auto grid grid-cols-1 max-w-6xl gap-14 px-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
         <div>
           <p className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/15 px-3 py-1 text-xs font-medium text-white/70">
             ERP financeiro multi-empresa
@@ -139,7 +139,7 @@ function Funcionalidades() {
         </h2>
       </div>
 
-      <div className="mt-14 grid gap-px overflow-hidden rounded-2xl border border-border bg-border sm:grid-cols-2 lg:grid-cols-3">
+      <div className="mt-14 grid grid-cols-1 gap-px overflow-hidden rounded-2xl border border-border bg-border sm:grid-cols-2 lg:grid-cols-3">
         {FUNCIONALIDADES.map(({ icone: Icone, titulo, descricao }) => (
           <div key={titulo} className="flex flex-col gap-3 bg-background p-7">
             <Icone className="size-6 text-primary" weight="duotone" />
@@ -156,7 +156,7 @@ function Precificacao() {
   return (
     <section className="border-t border-border bg-card/40 py-24">
       <div className="mx-auto max-w-6xl px-6">
-        <div className="grid gap-10 lg:grid-cols-[1fr_auto] lg:items-center">
+        <div className="grid grid-cols-1 gap-10 lg:grid-cols-[1fr_auto] lg:items-center">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-primary">Preço</p>
             <h2 className="mt-3 font-heading text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
