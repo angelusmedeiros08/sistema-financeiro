@@ -15,7 +15,7 @@ export default function PaginaTermos() {
   return (
     <PaginaLegal titulo="Termos de Uso">
       <p className="text-sm text-muted-foreground">
-        Versão {TERMOS_VERSAO} — atualizado em {ATUALIZADO_EM}
+        Versão {TERMOS_VERSAO}, atualizado em {ATUALIZADO_EM}
       </p>
 
       <Secao titulo="1. Quem somos e o que é o Finanssi">
@@ -38,8 +38,8 @@ export default function PaginaTermos() {
           gratuito para assinaturas via cartão de crédito.
         </p>
         <p>
-          A cobrança é recorrente e processada pelo Asaas, nosso parceiro de processamento de pagamentos. Não
-          armazenamos dados do seu cartão — eles são coletados diretamente pelo ambiente seguro do Asaas.
+          A cobrança é recorrente e processada pelo Asaas, nosso parceiro de processamento de pagamentos. Os dados do
+          seu cartão são coletados diretamente pelo ambiente seguro do Asaas, e o Finanssi não os armazena.
         </p>
         <p>
           Você pode cancelar a assinatura a qualquer momento pela tela de Configurações &gt; Assinatura. O cancelamento
@@ -64,8 +64,8 @@ export default function PaginaTermos() {
         </p>
         <p>
           <strong className="text-foreground">A IA nunca executa uma ação financeira sozinha.</strong> Toda sugestão
-          gerada pela IA — seja um lançamento extraído de um extrato, uma proposta de categorização, ou qualquer outra
-          ação — é apresentada para sua conferência e só se torna um registro real depois da sua confirmação explícita.
+          gerada pela IA, seja um lançamento extraído de um extrato, uma proposta de categorização ou qualquer outra
+          ação, é apresentada para sua conferência e só se torna um registro real depois da sua confirmação explícita.
           Você é sempre responsável por revisar o que a IA sugere antes de aprovar.
         </p>
         <p>
@@ -76,7 +76,7 @@ export default function PaginaTermos() {
       <Secao titulo="5. Propriedade intelectual">
         <p>
           O software, marca, layout e demais elementos do Finanssi são de nossa propriedade ou licenciados a nós. Os
-          dados que você insere no sistema (lançamentos, cadastros, documentos importados) continuam sendo seus — não
+          dados que você insere no sistema (lançamentos, cadastros, documentos importados) continuam sendo seus. Não
           reivindicamos propriedade sobre o conteúdo financeiro da sua empresa.
         </p>
       </Secao>

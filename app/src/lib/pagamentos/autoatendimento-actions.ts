@@ -15,9 +15,9 @@ type Resultado = { erro: string };
 // Reativação (tenant cancelado) e upgrade de trial são o mesmo mecanismo por
 // baixo (spec 2026-09-09): gerar um Checkout novo pra um tenant que JÁ
 // existe, usando os dados de cliente já cadastrados no Asaas — nunca pede
-// nome/e-mail/CPF de novo, diferente do cadastro em /assinar. Sem trial em
-// jogo aqui (o tenant já é cliente), então os dois métodos de pagamento vão
-// juntos pro Checkout — quem escolhe é a pessoa, na página do Asaas.
+// nome/e-mail/CPF de novo, diferente do cadastro em /assinar. Só cartão de
+// crédito (decisão do usuário, 16/09/2026: assinatura do Finanssi não usa
+// mais Pix, cobrança recorrente automática exige cartão salvo).
 async function gerarCheckoutParaTenantAtual(params: { ignorarGateAssinatura: boolean; callbackBase: string }): Promise<Resultado | never> {
   const contexto = await obterUsuarioETenantAtual(params.ignorarGateAssinatura);
   if ("erro" in contexto) return { erro: contexto.erro };
@@ -45,7 +45,7 @@ async function gerarCheckoutParaTenantAtual(params: { ignorarGateAssinatura: boo
       valor: VALOR_PLANO_MENSAL,
       descricaoItem: DESCRICAO_PLANO,
       proximoVencimento: hojeIsoBrasil(),
-      formasPagamento: ["CREDIT_CARD", "PIX"],
+      formasPagamento: ["CREDIT_CARD"],
       nomeEmpresa: contexto.tenantNome,
       // Marca este checkout como "tenant existente" pro webhook não tentar
       // provisionar um tenant/usuário novo — ver api/webhooks/asaas/route.ts.

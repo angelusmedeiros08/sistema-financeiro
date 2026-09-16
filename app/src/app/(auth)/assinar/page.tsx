@@ -3,18 +3,17 @@
 import { useActionState, useState } from "react";
 import Link from "next/link";
 import { assinar } from "@/lib/pagamentos/assinatura-actions";
-import { TRIAL_DIAS } from "@/lib/pagamentos/plano";
+import { TRIAL_DIAS, VALOR_PLANO_MENSAL } from "@/lib/pagamentos/plano";
+import { formatarMoeda } from "@/lib/formatacao";
 import { AuthShell } from "@/components/layout/auth-shell";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 
 const estadoInicial = { erro: "" };
 
 export default function PaginaAssinar() {
-  const [formaPagamento, setFormaPagamento] = useState<"CREDIT_CARD" | "PIX">("CREDIT_CARD");
   const [aceitouTermos, setAceitouTermos] = useState(false);
   const [estado, formAction, pendente] = useActionState(async (_: typeof estadoInicial, formData: FormData) => {
     const resultado = await assinar(formData);
@@ -24,7 +23,18 @@ export default function PaginaAssinar() {
   }, estadoInicial);
 
   return (
-    <AuthShell titulo="Assinar o Finanssi" subtitulo={`${TRIAL_DIAS} dias grátis no cartão. Cobrança só depois do trial.`}>
+    <AuthShell titulo="Assinar o Finanssi" subtitulo={`${TRIAL_DIAS} dias grátis no cartão de crédito. Cobrança só depois do trial.`}>
+      <div className="mb-6 flex items-baseline justify-between rounded-xl border border-border bg-card p-4">
+        <div>
+          <p className="text-sm font-medium text-foreground">Assinatura Finanssi</p>
+          <p className="text-xs text-muted-foreground">Todos os recursos inclusos, sem módulo trancado.</p>
+        </div>
+        <p className="flex items-baseline gap-1">
+          <span className="font-heading text-xl font-bold tabular-nums text-foreground">{formatarMoeda(VALOR_PLANO_MENSAL)}</span>
+          <span className="text-xs text-muted-foreground">/mês</span>
+        </p>
+      </div>
+
       <form action={formAction} className="space-y-4">
         <div className="space-y-1.5">
           <Label htmlFor="nome_empresa">Nome da empresa</Label>
@@ -44,31 +54,6 @@ export default function PaginaAssinar() {
         <div className="space-y-1.5">
           <Label htmlFor="cpf_cnpj">CPF ou CNPJ</Label>
           <Input id="cpf_cnpj" name="cpf_cnpj" type="text" required placeholder="Só números ou com pontuação" />
-        </div>
-
-        <div className="space-y-1.5">
-          <Label>Forma de pagamento</Label>
-          <RadioGroup
-            name="forma_pagamento"
-            value={formaPagamento}
-            onValueChange={(v) => setFormaPagamento(v as "CREDIT_CARD" | "PIX")}
-            className="gap-2"
-          >
-            <label className="flex cursor-pointer items-start gap-2 rounded-xl border border-border p-3 text-sm has-[[data-checked]]:border-primary">
-              <RadioGroupItem value="CREDIT_CARD" id="forma_cartao" className="mt-0.5" />
-              <span>
-                <span className="block font-medium text-foreground">Cartão de crédito</span>
-                <span className="block text-muted-foreground">{TRIAL_DIAS} dias grátis, primeira cobrança só depois do trial.</span>
-              </span>
-            </label>
-            <label className="flex cursor-pointer items-start gap-2 rounded-xl border border-border p-3 text-sm has-[[data-checked]]:border-primary">
-              <RadioGroupItem value="PIX" id="forma_pix" className="mt-0.5" />
-              <span>
-                <span className="block font-medium text-foreground">Pix</span>
-                <span className="block text-muted-foreground">Sem trial, a primeira mensalidade é cobrada na hora.</span>
-              </span>
-            </label>
-          </RadioGroup>
         </div>
 
         <label className="flex cursor-pointer items-start gap-2 text-sm">

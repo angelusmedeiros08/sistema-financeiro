@@ -1,15 +1,14 @@
 import Link from "next/link";
 import { ArrowRight, ChartLineUp, ChatCircleDots, FileMagnifyingGlass, HandCoins, Receipt, UsersThree } from "@phosphor-icons/react/dist/ssr";
 import { Button } from "@/components/ui/button";
-import { formatarMoeda } from "@/lib/formatacao";
-import { TRIAL_DIAS, VALOR_PLANO_MENSAL } from "@/lib/pagamentos/plano";
+import { TRIAL_DIAS } from "@/lib/pagamentos/plano";
 import { PainelPreview } from "./painel-preview";
 
 const FUNCIONALIDADES = [
   {
     icone: Receipt,
     titulo: "Lançamentos, contas a pagar e a receber",
-    descricao: "Parcelamento, baixa parcial, renegociação e recorrência — o ciclo financeiro completo, não uma planilha com fórmula quebrando.",
+    descricao: "Parcelamento, baixa parcial, renegociação e recorrência. É o ciclo financeiro completo, não uma planilha com fórmula quebrando.",
   },
   {
     icone: ChartLineUp,
@@ -19,7 +18,7 @@ const FUNCIONALIDADES = [
   {
     icone: FileMagnifyingGlass,
     titulo: "Importação com IA",
-    descricao: "Extrato bancário, recibo, nota fiscal — a IA lê o documento e propõe o lançamento certo. Você confirma, ela nunca lança sozinha.",
+    descricao: "Extrato bancário, recibo e nota fiscal: a IA lê o documento e propõe o lançamento certo. Você confirma, ela nunca lança sozinha.",
   },
   {
     icone: ChatCircleDots,
@@ -34,7 +33,7 @@ const FUNCIONALIDADES = [
   {
     icone: UsersThree,
     titulo: "Equipe com papéis reais",
-    descricao: "Convide quem cuida do financeiro, defina o que cada um pode ver e fazer — sem dividir a mesma senha de admin.",
+    descricao: "Convide quem cuida do financeiro e defina o que cada um pode ver e fazer. Ninguém precisa dividir a senha de admin.",
   },
 ];
 
@@ -45,7 +44,6 @@ export function PaginaLanding() {
       <Hero />
       <FaixaConfianca />
       <Funcionalidades />
-      <Precificacao />
       <ChamadaFinal />
       <Rodape />
     </div>
@@ -64,9 +62,9 @@ function Logo({ className }: { className?: string }) {
 function Cabecalho() {
   return (
     <header className="sticky top-0 z-20 border-b border-border bg-background/90 backdrop-blur">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+      <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
         <Link href="/">
-          <Logo className="h-8 w-auto" />
+          <Logo className="h-11 w-auto" />
         </Link>
         <nav className="flex items-center gap-2">
           <Link href="/entrar" className="rounded-control px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
@@ -86,15 +84,12 @@ function Hero() {
     <section className="border-b border-border py-20 sm:py-28">
       <div className="mx-auto grid grid-cols-1 max-w-6xl gap-14 px-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
         <div>
-          <p className="mb-5 inline-flex items-center gap-2 rounded-full border border-border px-3 py-1 text-xs font-medium text-muted-foreground">
-            ERP financeiro multi-empresa
-          </p>
           <h1 className="font-heading text-5xl font-extrabold leading-[1.02] tracking-tight text-foreground sm:text-6xl lg:text-[4rem]">
             O <span className="text-primary">financeiro</span> da sua empresa, finalmente em um lugar só.
           </h1>
           <p className="mt-6 max-w-lg text-lg leading-relaxed text-muted-foreground">
-            Lançamentos, contas a pagar e a receber, DRE e fluxo de caixa que fecham sozinhos — e uma IA que lê
-            extrato e recibo por você, sem nunca lançar nada sem a sua confirmação.
+            Lançamentos, contas a pagar e a receber, DRE e fluxo de caixa que fecham sozinhos. Uma IA lê extrato e
+            recibo por você, e nunca lança nada sem a sua confirmação.
           </p>
           <div className="mt-9 flex flex-wrap items-center gap-4">
             <Link
@@ -121,7 +116,7 @@ function FaixaConfianca() {
     <section className="border-b border-border bg-card/40">
       <div className="mx-auto max-w-6xl px-6 py-5">
         <p className="text-center text-sm text-muted-foreground">
-          Feito pra escritórios e empresas que trocaram a planilha por um sistema — e não querem voltar.
+          Feito pra escritórios e empresas que trocaram a planilha por um sistema e não querem voltar.
         </p>
       </div>
     </section>
@@ -132,9 +127,8 @@ function Funcionalidades() {
   return (
     <section className="mx-auto max-w-6xl px-6 py-24">
       <div className="max-w-xl">
-        <p className="text-xs font-semibold uppercase tracking-wide text-primary">O que já está pronto</p>
-        <h2 className="mt-3 font-heading text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-          Não é um MVP com 3 telas. É o financeiro inteiro.
+        <h2 className="font-heading text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+          Não é um MVP com três telas. É o financeiro inteiro.
         </h2>
       </div>
 
@@ -151,39 +145,6 @@ function Funcionalidades() {
   );
 }
 
-function Precificacao() {
-  return (
-    <section className="border-t border-border bg-card/40 py-24">
-      <div className="mx-auto max-w-6xl px-6">
-        <div className="grid grid-cols-1 gap-10 lg:grid-cols-[1fr_auto] lg:items-center">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-primary">Preço</p>
-            <h2 className="mt-3 font-heading text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-              Um plano só. Sem módulo trancado atrás de upgrade.
-            </h2>
-            <p className="mt-4 max-w-md text-sm leading-relaxed text-muted-foreground">
-              Lançamento ilimitado, todos os relatórios, importação com IA e chat IA inclusos desde o primeiro dia.
-              Cancele quando quiser, sem multa.
-            </p>
-          </div>
-
-          <div className="w-full max-w-sm justify-self-start rounded-2xl border border-border bg-background p-7 shadow-card lg:justify-self-end">
-            <p className="text-sm text-muted-foreground">Assinatura Finanssi</p>
-            <p className="mt-2 flex items-baseline gap-1">
-              <span className="font-heading text-4xl font-bold tabular-nums text-foreground">{formatarMoeda(VALOR_PLANO_MENSAL)}</span>
-              <span className="text-sm text-muted-foreground">/mês</span>
-            </p>
-            <p className="mt-1 text-xs text-muted-foreground">{TRIAL_DIAS} dias grátis no cartão de crédito.</p>
-            <Button asChild size="lg" className="mt-6 w-full">
-              <Link href="/assinar">Começar agora</Link>
-            </Button>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
 function ChamadaFinal() {
   return (
     <section className="bg-primary py-24">
@@ -191,7 +152,7 @@ function ChamadaFinal() {
         <h2 className="font-heading text-3xl font-bold tracking-tight text-primary-foreground sm:text-4xl">
           Sua próxima virada de mês pode ser diferente.
         </h2>
-        <p className="mt-4 text-primary-foreground/80">{TRIAL_DIAS} dias grátis, cobrança só depois do trial.</p>
+        <p className="mt-4 text-primary-foreground/80">{TRIAL_DIAS} dias grátis. Cobrança só depois do trial.</p>
         <Link
           href="/assinar"
           className="mt-8 inline-flex items-center gap-2 rounded-control bg-background px-6 py-3.5 text-sm font-semibold text-foreground transition-opacity hover:opacity-90"
@@ -208,7 +169,7 @@ function Rodape() {
   return (
     <footer className="border-t border-border py-10">
       <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 text-sm text-muted-foreground sm:flex-row">
-        <Logo className="h-6 w-auto" />
+        <Logo className="h-9 w-auto" />
         <div className="flex items-center gap-6">
           <Link href="/termos" className="hover:text-foreground">
             Termos de Uso

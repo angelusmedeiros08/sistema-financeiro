@@ -31,7 +31,6 @@ export async function assinar(formData: FormData): Promise<ResultadoAssinar | ne
   const nomeResponsavel = String(formData.get("nome_responsavel") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const cpfCnpj = String(formData.get("cpf_cnpj") ?? "").trim();
-  const formaPagamento = String(formData.get("forma_pagamento") ?? "");
   // Checkbox HTML só manda o campo no FormData quando marcado — desmarcado,
   // a chave nem existe. `Checkbox` do Radix injeta um input nativo oculto
   // sincronizado com `checked`, então isso reflete o estado real do form.
@@ -39,9 +38,6 @@ export async function assinar(formData: FormData): Promise<ResultadoAssinar | ne
 
   if (!nomeEmpresa || !nomeResponsavel || !email) {
     return { erro: "Preencha todos os campos." };
-  }
-  if (formaPagamento !== "CREDIT_CARD" && formaPagamento !== "PIX") {
-    return { erro: "Escolha uma forma de pagamento." };
   }
   if (!validarCpfCnpj(cpfCnpj)) {
     return { erro: "CPF ou CNPJ inválido." };
@@ -78,11 +74,8 @@ export async function assinar(formData: FormData): Promise<ResultadoAssinar | ne
       callbackUrlCancelado: `${siteUrl}/assinar/retorno?status=cancelado`,
       valor: VALOR_PLANO_MENSAL,
       descricaoItem: DESCRICAO_PLANO,
-      // Cartão: cobra só depois do trial. Pix não tem trial nativo, cobra na
-      // primeira janela disponível (spec: trial é benefício exclusivo do
-      // caminho cartão).
-      proximoVencimento: formaPagamento === "CREDIT_CARD" ? dataISO(TRIAL_DIAS) : dataISO(0),
-      formasPagamento: [formaPagamento],
+      proximoVencimento: dataISO(TRIAL_DIAS),
+      formasPagamento: ["CREDIT_CARD"],
       nomeEmpresa,
     });
   } catch (erro) {

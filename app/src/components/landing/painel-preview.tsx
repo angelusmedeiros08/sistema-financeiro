@@ -3,8 +3,8 @@
 // app de verdade (tokens de cor, tabular-nums, badges +/-), não um mockup
 // genérico de "app fictício" com ícones soltos.
 const LANCAMENTOS_EXEMPLO = [
-  { descricao: "Recebimento — Cliente Vertex", valor: 12400, tipo: "RECEITA" as const },
-  { descricao: "Fornecedor — Gráfica União", valor: -1890, tipo: "DESPESA" as const },
+  { descricao: "Recebimento de Cliente Vertex", valor: 12400, tipo: "RECEITA" as const },
+  { descricao: "Pagamento a Gráfica União", valor: -1890, tipo: "DESPESA" as const },
   { descricao: "Folha de pagamento", valor: -18230, tipo: "DESPESA" as const },
 ];
 

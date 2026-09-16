@@ -17,7 +17,7 @@ export default function PaginaPrivacidade() {
   return (
     <PaginaLegal titulo="Política de Privacidade">
       <p className="text-sm text-muted-foreground">
-        Versão {TERMOS_VERSAO} — atualizado em {ATUALIZADO_EM}
+        Versão {TERMOS_VERSAO}, atualizado em {ATUALIZADO_EM}
       </p>
 
       <Secao titulo="1. Quais dados coletamos">
@@ -30,7 +30,7 @@ export default function PaginaPrivacidade() {
           </li>
           <li>
             Dados de pessoas cadastradas por você (clientes e fornecedores), incluindo nome, CPF ou CNPJ, contato e
-            endereço — dados que sua empresa é a controladora, e o Finanssi trata como operadora.
+            endereço. Sua empresa é a controladora desses dados, e o Finanssi trata como operadora.
           </li>
           <li>
             Conteúdo trocado com os recursos de Inteligência Artificial (Chat IA e Importação com IA), incluindo
@@ -41,7 +41,7 @@ export default function PaginaPrivacidade() {
 
       <Secao titulo="2. Finalidade e base legal">
         <p>
-          Tratamos esses dados para prestar o serviço contratado (execução de contrato, art. 7º, V, da LGPD) — ou seja,
+          Tratamos esses dados para prestar o serviço contratado (execução de contrato, art. 7º, V, da LGPD), ou seja,
           para que o Finanssi funcione como sua ferramenta de gestão financeira. Também tratamos dados de uso e
           técnicos por legítimo interesse (art. 7º, IX), para manter a segurança, prevenir fraude e melhorar o
           sistema.
@@ -55,21 +55,21 @@ export default function PaginaPrivacidade() {
         </p>
         <ul className="list-disc space-y-1 pl-5">
           <li>
-            <strong className="text-foreground">Supabase</strong> — banco de dados e hospedagem dos seus dados.
+            <strong className="text-foreground">Supabase</strong>: banco de dados e hospedagem dos seus dados.
           </li>
           <li>
-            <strong className="text-foreground">Vercel</strong> — hospedagem da aplicação.
+            <strong className="text-foreground">Vercel</strong>: hospedagem da aplicação.
           </li>
           <li>
-            <strong className="text-foreground">Brevo</strong> — envio de e-mails transacionais (convites, alertas,
+            <strong className="text-foreground">Brevo</strong>: envio de e-mails transacionais (convites, alertas,
             recuperação de senha).
           </li>
           <li>
-            <strong className="text-foreground">Asaas</strong> — processamento de pagamento da sua assinatura. Não
+            <strong className="text-foreground">Asaas</strong>: processamento de pagamento da sua assinatura. Não
             temos acesso aos dados do seu cartão.
           </li>
           <li>
-            <strong className="text-foreground">Anthropic</strong> — provedor de IA por trás do Chat IA e da
+            <strong className="text-foreground">Anthropic</strong>: provedor de IA por trás do Chat IA e da
             Importação com IA. Conteúdo enviado a esses recursos é processado para gerar a resposta ou extração
             solicitada.
           </li>
@@ -102,8 +102,8 @@ export default function PaginaPrivacidade() {
       <Secao titulo="5. Retenção de dados">
         <p>
           Mantemos seus dados enquanto sua conta estiver ativa. Se a assinatura for cancelada, seus dados não são
-          apagados automaticamente — ficam preservados (e inacessíveis) até uma eventual solicitação de exclusão ou
-          reativação da conta, respeitando também obrigações legais de guarda de dado financeiro/contábil.
+          apagados automaticamente. Ficam preservados, e inacessíveis, até uma eventual solicitação de exclusão ou
+          reativação da conta, respeitando também obrigações legais de guarda de dado financeiro e contábil.
         </p>
       </Secao>
 
