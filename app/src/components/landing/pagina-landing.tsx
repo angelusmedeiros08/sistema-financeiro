@@ -64,9 +64,9 @@ function Logo({ className }: { className?: string }) {
 function Cabecalho() {
   return (
     <header className="sticky top-0 z-20 border-b border-border bg-background/90 backdrop-blur">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
+      <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-2">
         <Link href="/">
-          <Logo className="h-11 w-auto" />
+          <Logo className="h-20 w-auto" />
         </Link>
         <nav className="flex items-center gap-2">
           <Link href="/entrar" className="rounded-control px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
@@ -204,7 +204,7 @@ function Rodape() {
   return (
     <footer className="border-t border-border py-10">
       <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 text-sm text-muted-foreground sm:flex-row">
-        <Logo className="h-9 w-auto" />
+        <Logo className="h-14 w-auto" />
         <div className="flex items-center gap-6">
           <Link href="/termos" className="hover:text-foreground">
             Termos de Uso
