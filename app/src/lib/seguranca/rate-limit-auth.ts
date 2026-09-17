@@ -39,6 +39,10 @@ export async function registrarTentativaAuth(params: {
   const desde = new Date(Date.now() - JANELA_MS).toISOString();
   const limite = LIMITES[params.finalidade];
 
+  // As 3 chamadas são independentes entre si (o insert não depende da
+  // contagem, e vice-versa) — rodar em paralelo em vez de esperar as
+  // contagens pra só então inserir economiza uma volta inteira de rede a
+  // cada tentativa de login, achado numa revisão de velocidade do login.
   const [porEmail, porIp] = await Promise.all([
     admin
       .from("tentativas_auth")
@@ -52,11 +56,10 @@ export async function registrarTentativaAuth(params: {
       .eq("finalidade", params.finalidade)
       .eq("ip", params.ip)
       .gte("criado_em", desde),
+    admin.from("tentativas_auth").insert({ finalidade: params.finalidade, email: params.email, ip: params.ip }),
   ]);
 
   const permitido = (porEmail.count ?? 0) < limite.porEmail && (porIp.count ?? 0) < limite.porIp;
-
-  await admin.from("tentativas_auth").insert({ finalidade: params.finalidade, email: params.email, ip: params.ip });
 
   return { permitido };
 }
