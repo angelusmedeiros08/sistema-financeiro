@@ -79,8 +79,13 @@ export async function entrar(formData: FormData): Promise<ResultadoAcao | never>
   const supabase = await createClient();
   const { error, data } = await supabase.auth.signInWithPassword({ email, password: senha });
 
+  // error.message cru é sempre inglês ("Invalid login credentials" etc.) —
+  // achado testando o login de verdade no navegador: a tela inteira é em
+  // português, menos esse erro. Mensagem genérica de propósito (mesmo
+  // raciocínio de cadastrar(): não differenciar "e-mail não existe" de
+  // "senha errada" evita enumeração de conta).
   if (error) {
-    return { erro: error.message };
+    return { erro: "E-mail ou senha incorretos." };
   }
 
   // Só quem tem mais de 1 vínculo ativo passa pela tela de escolha — com 1
