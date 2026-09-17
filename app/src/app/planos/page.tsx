@@ -1,11 +1,17 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Check, X } from "@phosphor-icons/react/dist/ssr";
+import { VALOR_PLANO_MENSAL } from "@/lib/pagamentos/plano";
 
 // Rascunho de apresentação dos 3 planos (estrutura fixada em 16/09/2026,
 // valores ainda não definidos com os sócios — ver memória do projeto).
 // Nunca indexar: preço de exemplo não pode aparecer pra ninguém como se
-// fosse real. Botões não navegam pra lugar nenhum de propósito — ainda não
-// existe checkout por tier, só o único plano hoje em /assinar.
+// fosse real.
+//
+// Só o card "Profissional" navega pra /assinar de verdade, porque o valor
+// dele já bate com o único plano que existe hoje (VALOR_PLANO_MENSAL) — os
+// outros dois são só ilustrativos, mandar alguém pro checkout cobrando um
+// valor diferente do que o card mostra seria enganoso.
 export const metadata: Metadata = {
   title: "Planos — Finanssi (rascunho)",
   robots: { index: false, follow: false },
@@ -18,11 +24,20 @@ type Plano = {
   comIA: boolean;
   destaque?: boolean;
   vagas: string;
+  disponivel?: boolean;
 };
 
 const PLANOS: Plano[] = [
   { nome: "Essencial", publico: "Sem IA, até 2 pessoas na equipe", valor: 97, comIA: false, vagas: "Até 2 pessoas na equipe" },
-  { nome: "Profissional", publico: "Com IA, até 5 pessoas na equipe", valor: 197, comIA: true, destaque: true, vagas: "Até 5 pessoas na equipe" },
+  {
+    nome: "Profissional",
+    publico: "Com IA, até 5 pessoas na equipe",
+    valor: VALOR_PLANO_MENSAL,
+    comIA: true,
+    destaque: true,
+    vagas: "Até 5 pessoas na equipe",
+    disponivel: true,
+  },
   { nome: "Escritório", publico: "Com IA, até 10 pessoas na equipe", valor: 347, comIA: true, vagas: "Até 10 pessoas na equipe" },
 ];
 
@@ -103,17 +118,23 @@ export default function PaginaPlanos() {
                 )}
               </ul>
 
-              <button
-                type="button"
-                disabled
-                className={`mt-6 h-11 w-full rounded-[10px] text-sm font-bold ${
-                  plano.destaque
-                    ? "bg-primary text-primary-foreground shadow-[0_10px_24px_-10px_rgba(216,88,58,0.6)]"
-                    : "border border-border bg-transparent text-foreground"
-                }`}
-              >
-                Começar
-              </button>
+              {plano.disponivel ? (
+                <Link
+                  href="/assinar"
+                  className="mt-6 flex h-11 w-full items-center justify-center rounded-[10px] bg-primary text-sm font-bold text-primary-foreground shadow-[0_10px_24px_-10px_rgba(216,88,58,0.6)] transition-opacity hover:opacity-90"
+                >
+                  Começar
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  disabled
+                  title="Valor ainda não confirmado"
+                  className="mt-6 h-11 w-full rounded-[10px] border border-border bg-transparent text-sm font-bold text-muted-foreground"
+                >
+                  Em breve
+                </button>
+              )}
             </div>
           ))}
         </div>

@@ -68,7 +68,7 @@ function Cabecalho() {
             Entrar
           </Link>
           <Button asChild size="sm">
-            <Link href="/assinar">Assinar</Link>
+            <Link href="/planos">Assinar</Link>
           </Button>
         </nav>
       </div>
@@ -90,7 +90,7 @@ function Hero() {
           </p>
           <div className="mt-9 flex flex-wrap items-center gap-4">
             <Link
-              href="/assinar"
+              href="/planos"
               className="group inline-flex items-center gap-2 rounded-control bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
             >
               Testar {TRIAL_DIAS} dias grátis
@@ -182,7 +182,7 @@ function ChamadaFinal() {
           </h2>
           <p className="mt-3 text-primary-foreground/80">{TRIAL_DIAS} dias grátis. Cobrança só depois do trial.</p>
           <Link
-            href="/assinar"
+            href="/planos"
             className="mt-7 inline-flex items-center gap-2 rounded-control bg-background px-6 py-3.5 text-sm font-semibold text-foreground transition-opacity hover:opacity-90"
           >
             Testar o Finanssi
