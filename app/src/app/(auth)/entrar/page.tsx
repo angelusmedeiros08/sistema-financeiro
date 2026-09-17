@@ -55,7 +55,7 @@ export default function PaginaEntrar() {
         <div className="space-y-1.5">
           <div className="flex items-center justify-between">
             <Label htmlFor="senha">Senha</Label>
-            <Link href="/esqueci-senha" className="text-xs text-muted-foreground underline underline-offset-4">
+            <Link href="/esqueci-senha" className="text-xs font-medium text-primary underline underline-offset-4">
               Esqueci minha senha
             </Link>
           </div>
