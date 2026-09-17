@@ -31,40 +31,40 @@ export default function PaginaAssinar() {
   }, estadoInicial);
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b border-border">
-        <div className="mx-auto flex max-w-5xl items-center px-6 py-4">
-          <Link href="/">
-            <Logo className="h-12 w-auto" />
-          </Link>
-        </div>
-      </header>
+    <div className="grid min-h-screen grid-cols-1 lg:grid-cols-2">
+      <div className="relative flex flex-col justify-between bg-primary px-8 py-10 lg:px-16 lg:py-14">
+        <Link href="/">
+          <img src="/logo/completo-escuro.png" alt="Finanssi" className="h-14 w-auto" />
+        </Link>
 
-      <div className="mx-auto grid max-w-5xl grid-cols-1 lg:grid-cols-2">
-        <div className="border-b border-border px-6 py-14 lg:border-b-0 lg:border-r lg:px-14 lg:py-20">
-          <h1 className="font-heading text-3xl font-extrabold leading-tight tracking-tight text-foreground sm:text-4xl">
+        <div className="my-10 lg:my-0">
+          <h1 className="font-heading text-3xl font-extrabold leading-tight tracking-tight text-primary-foreground sm:text-4xl">
             Organize o financeiro da sua empresa a partir de hoje.
           </h1>
-          <p className="mt-4 text-base leading-relaxed text-muted-foreground">
+          <p className="mt-4 max-w-sm text-base leading-relaxed text-primary-foreground/80">
             Lançamentos, relatórios e importação com IA, prontos pra usar em poucos minutos.
           </p>
 
           <ul className="mt-10 flex flex-col gap-4">
             {CONFIANCA.map((item) => (
-              <li key={item} className="flex items-start gap-2.5 text-sm text-foreground">
-                <Check className="mt-0.5 size-4 shrink-0 text-positivo-foreground" weight="bold" />
+              <li key={item} className="flex items-start gap-2.5 text-sm font-medium text-primary-foreground">
+                <span className="mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full bg-primary-foreground">
+                  <Check className="size-2.5 text-primary" weight="bold" />
+                </span>
                 {item}
               </li>
             ))}
           </ul>
-
-          <p className="mt-10 border-t border-border pt-6 text-sm text-muted-foreground">
-            <span className="font-heading text-lg font-bold text-foreground">{formatarMoeda(VALOR_PLANO_MENSAL)}</span> por mês
-            após o período de teste.
-          </p>
         </div>
 
-        <div className="px-6 py-14 lg:px-14 lg:py-20">
+        <p className="text-sm text-primary-foreground/80">
+          <span className="font-heading text-xl font-bold text-primary-foreground">{formatarMoeda(VALOR_PLANO_MENSAL)}</span> por
+          mês após o período de teste.
+        </p>
+      </div>
+
+      <div className="flex items-center justify-center bg-background px-6 py-14 lg:px-16">
+        <div className="w-full max-w-sm">
           <h2 className="font-heading text-xl font-bold tracking-tight text-foreground">Crie sua conta</h2>
 
           <form action={formAction} className="mt-6 space-y-4">
@@ -138,14 +138,5 @@ export default function PaginaAssinar() {
         </div>
       </div>
     </div>
-  );
-}
-
-function Logo({ className }: { className?: string }) {
-  return (
-    <>
-      <img src="/logo/completo-claro.png" alt="Finanssi" className={`${className} dark:hidden`} />
-      <img src="/logo/completo-escuro.png" alt="Finanssi" className={`hidden ${className} dark:block`} />
-    </>
   );
 }
