@@ -34,9 +34,12 @@ const RECURSOS_ADICIONAIS = [
 
 const INCLUSOS = ["Lançamento ilimitado", "Todos os relatórios", "Importação com IA", "Chat IA", "Cancele quando quiser"];
 
+// Landing page e login são a mesma experiência (quem visita "/" sem sessão
+// e quem entra em /entrar), sempre clara — mesmo tratamento e mesmo motivo
+// de .tema-claro-forcado que (auth)/layout.tsx aplica no resto do funil.
 export function PaginaLanding() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="tema-claro-forcado min-h-screen bg-background">
       <Cabecalho />
       <Hero />
       <FaixaConfianca />
@@ -48,12 +51,7 @@ export function PaginaLanding() {
 }
 
 function Logo({ className }: { className?: string }) {
-  return (
-    <>
-      <img src="/logo/completo-claro.png" alt="Finanssi" className={`${className} dark:hidden`} />
-      <img src="/logo/completo-escuro.png" alt="Finanssi" className={`hidden ${className} dark:block`} />
-    </>
-  );
+  return <img src="/logo/completo-claro.png" alt="Finanssi" className={className} />;
 }
 
 function Cabecalho() {

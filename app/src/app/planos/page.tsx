@@ -41,18 +41,14 @@ const PLANOS: Plano[] = [
   { nome: "Escritório", publico: "Com IA, até 10 pessoas na equipe", valor: 347, comIA: true, vagas: "Até 10 pessoas na equipe" },
 ];
 
+// Mesmo funil da landing/login, sempre claro (ver PaginaLanding).
 function Logo({ className }: { className?: string }) {
-  return (
-    <>
-      <img src="/logo/completo-claro.png" alt="Finanssi" className={`${className} dark:hidden`} />
-      <img src="/logo/completo-escuro.png" alt="Finanssi" className={`hidden ${className} dark:block`} />
-    </>
-  );
+  return <img src="/logo/completo-claro.png" alt="Finanssi" className={className} />;
 }
 
 export default function PaginaPlanos() {
   return (
-    <div className="min-h-screen bg-[color-mix(in_oklch,var(--background),var(--primary)_7%)] px-4 py-14 sm:py-20">
+    <div className="tema-claro-forcado min-h-screen bg-[color-mix(in_oklch,var(--background),var(--primary)_7%)] px-4 py-14 sm:py-20">
       <div className="mx-auto flex w-full max-w-5xl flex-col items-center">
         <Logo className="h-32 w-auto sm:h-40" />
         <p className="mt-5 text-sm font-medium text-muted-foreground">Assinatura Finanssi</p>
