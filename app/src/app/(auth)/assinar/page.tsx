@@ -20,6 +20,15 @@ const CONFIANCA = [
   "Cancele quando quiser, sem multa",
 ];
 
+function Logo({ className }: { className?: string }) {
+  return (
+    <>
+      <img src="/logo/completo-claro.png" alt="Finanssi" className={`${className} dark:hidden`} />
+      <img src="/logo/completo-escuro.png" alt="Finanssi" className={`hidden ${className} dark:block`} />
+    </>
+  );
+}
+
 export default function PaginaAssinar() {
   const [cpfCnpj, setCpfCnpj] = useState("");
   const [aceitouTermos, setAceitouTermos] = useState(false);
@@ -31,111 +40,115 @@ export default function PaginaAssinar() {
   }, estadoInicial);
 
   return (
-    <div className="grid min-h-screen grid-cols-1 lg:grid-cols-2">
-      <div className="relative flex flex-col justify-between bg-primary px-8 py-10 lg:px-16 lg:py-14">
-        <Link href="/" className="inline-block w-fit rounded-xl bg-background px-4 py-3 shadow-[0_8px_24px_-8px_rgba(0,0,0,0.35)]">
-          <img src="/logo/completo-claro.png" alt="Finanssi" className="h-11 w-auto" />
+    <div className="min-h-screen bg-[color-mix(in_oklch,var(--background),var(--primary)_7%)] px-4 py-14 sm:py-20">
+      <div className="mx-auto flex w-full max-w-4xl flex-col items-center">
+        <Link href="/">
+          <Logo className="h-14 w-auto" />
         </Link>
+        <p className="mt-4 text-sm font-medium text-muted-foreground">Assinatura Finanssi</p>
 
-        <div className="my-10 lg:my-0">
-          <h1 className="font-heading text-3xl font-extrabold leading-tight tracking-tight text-primary-foreground sm:text-4xl">
-            Organize o financeiro da sua empresa a partir de hoje.
-          </h1>
-          <p className="mt-4 max-w-sm text-base leading-relaxed text-primary-foreground/80">
-            Lançamentos, relatórios e importação com IA, prontos pra usar em poucos minutos.
-          </p>
-
-          <ul className="mt-10 flex flex-col gap-4">
-            {CONFIANCA.map((item) => (
-              <li key={item} className="flex items-start gap-2.5 text-sm font-medium text-primary-foreground">
-                <span className="mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full bg-primary-foreground">
-                  <Check className="size-2.5 text-primary" weight="bold" />
-                </span>
-                {item}
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        <p className="text-sm text-primary-foreground/80">
-          <span className="font-heading text-xl font-bold text-primary-foreground">{formatarMoeda(VALOR_PLANO_MENSAL)}</span> por
-          mês após o período de teste.
-        </p>
-      </div>
-
-      <div className="flex items-center justify-center bg-background px-6 py-14 lg:px-16">
-        <div className="w-full max-w-sm">
-          <h2 className="font-heading text-xl font-bold tracking-tight text-foreground">Crie sua conta</h2>
-
-          <form action={formAction} className="mt-6 space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="nome_empresa">Nome da empresa</Label>
-              <Input id="nome_empresa" name="nome_empresa" type="text" required />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="nome_responsavel">Seu nome</Label>
-              <Input id="nome_responsavel" name="nome_responsavel" type="text" required />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="email">E-mail</Label>
-              <Input id="email" name="email" type="email" required />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="cpf_cnpj">CPF ou CNPJ</Label>
-              <Input
-                id="cpf_cnpj"
-                name="cpf_cnpj"
-                type="text"
-                required
-                inputMode="numeric"
-                placeholder="000.000.000-00"
-                value={cpfCnpj}
-                onChange={(e) => setCpfCnpj(mascararCpfCnpj(e.target.value))}
-                maxLength={18}
-              />
-            </div>
-
-            <label className="flex cursor-pointer items-start gap-2 text-sm">
-              <Checkbox
-                name="aceite_termos"
-                checked={aceitouTermos}
-                onCheckedChange={(v) => setAceitouTermos(v === true)}
-                className="mt-0.5"
-              />
-              <span className="text-muted-foreground">
-                Li e aceito os{" "}
-                <Link href="/termos" target="_blank" className="font-medium text-foreground underline underline-offset-4">
-                  Termos de Uso
-                </Link>{" "}
-                e a{" "}
-                <Link href="/privacidade" target="_blank" className="font-medium text-foreground underline underline-offset-4">
-                  Política de Privacidade
-                </Link>
-                .
-              </span>
-            </label>
-
-            {estado.erro && <p className="text-sm text-destructive">{estado.erro}</p>}
-
-            <Button type="submit" disabled={pendente || !aceitouTermos} size="lg" className="w-full">
-              {pendente ? "Abrindo checkout..." : "Continuar para o pagamento"}
-            </Button>
-
-            <p className="text-center text-xs text-muted-foreground">
-              Você será redirecionado para o Checkout seguro do Asaas. Não coletamos dado de cartão neste site.
+        <div className="mt-10 grid w-full grid-cols-1 gap-6 lg:grid-cols-2">
+          <div className="rounded-2xl border border-border bg-card p-8 shadow-[0_20px_50px_-24px_rgba(26,29,31,0.35)] sm:p-10">
+            <span className="inline-block rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+              {TRIAL_DIAS} dias grátis
+            </span>
+            <h1 className="mt-4 font-heading text-2xl font-extrabold leading-tight tracking-tight text-foreground sm:text-[1.75rem]">
+              Organize o financeiro da sua empresa a partir de hoje.
+            </h1>
+            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+              Lançamentos, relatórios e importação com IA, prontos pra usar em poucos minutos.
             </p>
-          </form>
 
-          <p className="mt-6 text-center text-sm text-muted-foreground">
-            Já tem conta?{" "}
-            <Link href="/entrar" className="font-semibold text-foreground underline underline-offset-4">
-              Entrar
-            </Link>
-          </p>
+            <ul className="mt-8 flex flex-col gap-3.5 border-t border-border pt-6">
+              {CONFIANCA.map((item) => (
+                <li key={item} className="flex items-start gap-2.5 text-sm text-foreground">
+                  <span className="mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full bg-primary/15">
+                    <Check className="size-2.5 text-primary" weight="bold" />
+                  </span>
+                  {item}
+                </li>
+              ))}
+            </ul>
+
+            <p className="mt-8 flex items-baseline gap-1.5 border-t border-border pt-6">
+              <span className="font-heading text-2xl font-bold tabular-nums text-foreground">{formatarMoeda(VALOR_PLANO_MENSAL)}</span>
+              <span className="text-sm text-muted-foreground">por mês, após o período de teste</span>
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-border bg-card p-8 shadow-[0_20px_50px_-24px_rgba(26,29,31,0.35)] sm:p-10">
+            <h2 className="font-heading text-xl font-bold tracking-tight text-foreground">Crie sua conta</h2>
+
+            <form action={formAction} className="mt-6 space-y-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="nome_empresa">Nome da empresa</Label>
+                <Input id="nome_empresa" name="nome_empresa" type="text" required />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="nome_responsavel">Seu nome</Label>
+                <Input id="nome_responsavel" name="nome_responsavel" type="text" required />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="email">E-mail</Label>
+                <Input id="email" name="email" type="email" required />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="cpf_cnpj">CPF ou CNPJ</Label>
+                <Input
+                  id="cpf_cnpj"
+                  name="cpf_cnpj"
+                  type="text"
+                  required
+                  inputMode="numeric"
+                  placeholder="000.000.000-00"
+                  value={cpfCnpj}
+                  onChange={(e) => setCpfCnpj(mascararCpfCnpj(e.target.value))}
+                  maxLength={18}
+                />
+              </div>
+
+              <label className="flex cursor-pointer items-start gap-2 text-sm">
+                <Checkbox
+                  name="aceite_termos"
+                  checked={aceitouTermos}
+                  onCheckedChange={(v) => setAceitouTermos(v === true)}
+                  className="mt-0.5"
+                />
+                <span className="text-muted-foreground">
+                  Li e aceito os{" "}
+                  <Link href="/termos" target="_blank" className="font-medium text-foreground underline underline-offset-4">
+                    Termos de Uso
+                  </Link>{" "}
+                  e a{" "}
+                  <Link href="/privacidade" target="_blank" className="font-medium text-foreground underline underline-offset-4">
+                    Política de Privacidade
+                  </Link>
+                  .
+                </span>
+              </label>
+
+              {estado.erro && <p className="text-sm text-destructive">{estado.erro}</p>}
+
+              <Button type="submit" disabled={pendente || !aceitouTermos} size="lg" className="w-full">
+                {pendente ? "Abrindo checkout..." : "Continuar para o pagamento"}
+              </Button>
+
+              <p className="text-center text-xs text-muted-foreground">
+                Você será redirecionado para o Checkout seguro do Asaas. Não coletamos dado de cartão neste site.
+              </p>
+            </form>
+          </div>
         </div>
+
+        <p className="mt-8 text-sm text-muted-foreground">
+          Já tem conta?{" "}
+          <Link href="/entrar" className="font-semibold text-foreground underline underline-offset-4">
+            Entrar
+          </Link>
+        </p>
       </div>
     </div>
   );
