@@ -7,9 +7,6 @@ import { assinar } from "@/lib/pagamentos/assinatura-actions";
 import { TRIAL_DIAS, VALOR_PLANO_MENSAL } from "@/lib/pagamentos/plano";
 import { formatarMoeda } from "@/lib/formatacao";
 import { mascararCpfCnpj } from "@/lib/pagamentos/mascara-cpf-cnpj";
-import { hojeIsoBrasil } from "@/lib/data-brasil";
-import { somarDias } from "@/lib/relatorios/saldo-projetado";
-import { formatarDataIsoParaBR } from "@/lib/importacao/locale-br";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -17,7 +14,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 
 const estadoInicial = { erro: "" };
 
-const INCLUSOS = ["Lançamento ilimitado", "Todos os relatórios", "Importação com IA", "Chat IA sobre as finanças", "Cancele quando quiser"];
+const CONFIANCA = [
+  `${TRIAL_DIAS} dias grátis, cobrança só depois do trial`,
+  "Todos os recursos inclusos, sem módulo trancado",
+  "Cancele quando quiser, sem multa",
+];
 
 export default function PaginaAssinar() {
   const [cpfCnpj, setCpfCnpj] = useState("");
@@ -29,8 +30,6 @@ export default function PaginaAssinar() {
     return resultado ?? estadoInicial;
   }, estadoInicial);
 
-  const primeiraCobranca = formatarDataIsoParaBR(somarDias(hojeIsoBrasil(), TRIAL_DIAS));
-
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border">
@@ -41,47 +40,34 @@ export default function PaginaAssinar() {
         </div>
       </header>
 
-      <div className="mx-auto grid max-w-5xl grid-cols-1 lg:grid-cols-[1fr_1.1fr]">
-        <div className="border-b border-border px-6 py-10 lg:border-b-0 lg:border-r lg:px-10 lg:py-16">
-          <p className="text-xs font-semibold uppercase tracking-wide text-primary">Resumo da assinatura</p>
-          <h1 className="mt-2 font-heading text-2xl font-bold tracking-tight text-foreground">Assinatura Finanssi</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Todos os recursos do Finanssi, sem módulo trancado.</p>
-
-          <div className="mt-8 flex flex-col gap-3 border-t border-border pt-6 text-sm">
-            <div className="flex items-baseline justify-between">
-              <span className="text-muted-foreground">Assinatura Finanssi, mensal</span>
-              <span className="font-medium tabular-nums text-foreground">{formatarMoeda(VALOR_PLANO_MENSAL)}</span>
-            </div>
-            <div className="flex items-baseline justify-between">
-              <span className="text-muted-foreground">Período de teste</span>
-              <span className="font-medium text-positivo-foreground">{TRIAL_DIAS} dias grátis</span>
-            </div>
-          </div>
-
-          <div className="mt-4 flex items-baseline justify-between border-t border-border pt-4">
-            <span className="text-sm font-semibold text-foreground">Cobrado hoje</span>
-            <span className="font-heading text-2xl font-bold tabular-nums text-foreground">R$ 0,00</span>
-          </div>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Primeira cobrança de {formatarMoeda(VALOR_PLANO_MENSAL)} em {primeiraCobranca}, se você não cancelar antes.
+      <div className="mx-auto grid max-w-5xl grid-cols-1 lg:grid-cols-2">
+        <div className="border-b border-border px-6 py-14 lg:border-b-0 lg:border-r lg:px-14 lg:py-20">
+          <h1 className="font-heading text-3xl font-extrabold leading-tight tracking-tight text-foreground sm:text-4xl">
+            Organize o financeiro da sua empresa a partir de hoje.
+          </h1>
+          <p className="mt-4 text-base leading-relaxed text-muted-foreground">
+            Lançamentos, relatórios e importação com IA, prontos pra usar em poucos minutos.
           </p>
 
-          <ul className="mt-8 flex flex-col gap-2.5 border-t border-border pt-6">
-            {INCLUSOS.map((item) => (
-              <li key={item} className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Check className="size-4 shrink-0 text-positivo-foreground" weight="bold" />
+          <ul className="mt-10 flex flex-col gap-4">
+            {CONFIANCA.map((item) => (
+              <li key={item} className="flex items-start gap-2.5 text-sm text-foreground">
+                <Check className="mt-0.5 size-4 shrink-0 text-positivo-foreground" weight="bold" />
                 {item}
               </li>
             ))}
           </ul>
+
+          <p className="mt-10 border-t border-border pt-6 text-sm text-muted-foreground">
+            <span className="font-heading text-lg font-bold text-foreground">{formatarMoeda(VALOR_PLANO_MENSAL)}</span> por mês
+            após o período de teste.
+          </p>
         </div>
 
-        <div className="px-6 py-10 lg:px-10 lg:py-16">
-          <p className="text-xs font-semibold uppercase tracking-wide text-primary">Seus dados</p>
-          <h2 className="mt-2 font-heading text-2xl font-bold tracking-tight text-foreground">Assinar o Finanssi</h2>
-          <p className="mt-1 text-sm text-muted-foreground">Cartão salvo agora. A cobrança só acontece depois do trial.</p>
+        <div className="px-6 py-14 lg:px-14 lg:py-20">
+          <h2 className="font-heading text-xl font-bold tracking-tight text-foreground">Crie sua conta</h2>
 
-          <form action={formAction} className="mt-8 space-y-4">
+          <form action={formAction} className="mt-6 space-y-4">
             <div className="space-y-1.5">
               <Label htmlFor="nome_empresa">Nome da empresa</Label>
               <Input id="nome_empresa" name="nome_empresa" type="text" required />
