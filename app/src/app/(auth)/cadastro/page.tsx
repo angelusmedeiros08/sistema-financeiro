@@ -29,7 +29,7 @@ export default function PaginaCadastro() {
           {estado.sucesso}
         </p>
       ) : (
-        <form action={formAction} className="space-y-4">
+        <form action={formAction} className="space-y-6">
           <Campo label="Nome da empresa" name="nome_empresa" type="text" required />
           <Campo label="Seu nome" name="nome_usuario" type="text" required />
           <Campo label="E-mail" name="email" type="email" required />
@@ -37,7 +37,7 @@ export default function PaginaCadastro() {
 
           {estado.erro && <p className="text-sm text-destructive">{estado.erro}</p>}
 
-          <Button type="submit" disabled={pendente} className="w-full">
+          <Button type="submit" disabled={pendente} className="mt-4 h-10 w-full font-semibold">
             {pendente ? "Criando..." : "Criar conta"}
           </Button>
         </form>
@@ -45,7 +45,7 @@ export default function PaginaCadastro() {
 
       <p className="mt-6 text-center text-sm text-muted-foreground">
         Já tem conta?{" "}
-        <Link href="/entrar" className="font-semibold text-foreground underline underline-offset-4">
+        <Link href="/entrar" className="font-semibold text-primary">
           Entrar
         </Link>
       </p>
@@ -62,13 +62,14 @@ function Campo(props: {
 }) {
   return (
     <div className="space-y-1.5">
-      <Label htmlFor={props.name}>{props.label}</Label>
+      <Label htmlFor={props.name} className="font-normal">{props.label}</Label>
       <Input
         id={props.name}
         name={props.name}
         type={props.type}
         required={props.required}
         minLength={props.minLength}
+        className="h-10"
       />
     </div>
   );

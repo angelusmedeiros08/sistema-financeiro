@@ -26,7 +26,7 @@ export function AuthShell({
         <Logo className="mx-auto h-24 w-auto sm:h-28" />
 
         <div className="mt-9 text-center">
-          <h1 className="font-heading text-3xl font-extrabold leading-[1.1] tracking-tight text-foreground">{titulo}</h1>
+          <h1 className="font-heading text-2xl font-semibold leading-tight tracking-tight text-foreground">{titulo}</h1>
           <p className="mt-2 text-base text-muted-foreground">{subtitulo}</p>
         </div>
 

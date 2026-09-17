@@ -47,22 +47,22 @@ export default function PaginaEntrar() {
       <Suspense fallback={null}>
         <ErroDoLink />
       </Suspense>
-      <form action={formAction} className="space-y-4">
+      <form action={formAction} className="space-y-6">
         <div className="space-y-1.5">
-          <Label htmlFor="email">E-mail</Label>
-          <Input id="email" name="email" type="email" required />
+          <Label htmlFor="email" className="font-normal">E-mail</Label>
+          <Input id="email" name="email" type="email" required className="h-10" />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="senha">Senha</Label>
-          <Input id="senha" name="senha" type="password" required />
-          <Link href="/esqueci-senha" className="inline-block text-xs font-medium text-primary underline underline-offset-4">
+          <Label htmlFor="senha" className="font-normal">Senha</Label>
+          <Input id="senha" name="senha" type="password" required className="h-10" />
+          <Link href="/esqueci-senha" className="mt-1 inline-block text-sm text-primary">
             Esqueci minha senha
           </Link>
         </div>
 
         {estado.erro && <p className="text-sm text-destructive">{estado.erro}</p>}
 
-        <Button type="submit" disabled={pendente} className="w-full">
+        <Button type="submit" disabled={pendente} className="mt-4 h-10 w-full font-semibold">
           {pendente ? "Entrando..." : "Entrar"}
         </Button>
       </form>
@@ -70,7 +70,7 @@ export default function PaginaEntrar() {
       {CADASTRO_PUBLICO_ATIVO && (
         <p className="mt-6 text-center text-sm text-muted-foreground">
           Ainda não tem conta?{" "}
-          <Link href="/cadastro" className="font-semibold text-foreground underline underline-offset-4">
+          <Link href="/cadastro" className="font-semibold text-primary">
             Criar conta
           </Link>
         </p>
