@@ -63,7 +63,10 @@ export async function updateSession(request: NextRequest) {
     // Termos/Privacidade — linkados a partir de /assinar, antes de existir
     // sessão, e precisam continuar acessíveis depois de logado também.
     request.nextUrl.pathname.startsWith("/termos") ||
-    request.nextUrl.pathname.startsWith("/privacidade");
+    request.nextUrl.pathname.startsWith("/privacidade") ||
+    // Rascunho de planos (preço ainda não definido, robots:noindex na
+    // própria página) — pública pelo mesmo motivo de /assinar.
+    request.nextUrl.pathname.startsWith("/planos");
 
   if (!user && !isPublicRoute) {
     const url = request.nextUrl.clone();
