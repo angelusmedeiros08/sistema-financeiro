@@ -1,15 +1,34 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Check, ChartLineUp, ChatCircleDots, FileMagnifyingGlass } from "@phosphor-icons/react/dist/ssr";
 
 // Slides gerados com a gramática visual do próprio produto (mesmos tokens
 // de cor, tabular-nums) em vez de foto de banco de imagem — banco de
 // imagem cortava gente/gráfico de forma estranha dentro do object-cover
 // de uma coluna estreita e alta. Aqui é SVG/CSS, sempre bem enquadrado.
 const SLIDES = [
-  { Visual: SlideBarras, titulo: "Relatório que fecha sozinho", legenda: "DRE, DFC e indicadores calculados a partir do que já foi lançado." },
-  { Visual: SlideLinha, titulo: "Saldo em caixa, sempre em dia", legenda: "Acompanhe a evolução real da sua empresa, mês a mês." },
-  { Visual: SlideAnel, titulo: "Sua margem, sob controle", legenda: "Saiba exatamente quanto sobra depois de pagar as contas." },
+  {
+    Visual: SlideBarras,
+    icone: ChartLineUp,
+    titulo: "Relatório que fecha sozinho",
+    legenda: "DRE, DFC e indicadores calculados a partir do que já foi lançado.",
+    selo: "Todos os relatórios inclusos",
+  },
+  {
+    Visual: SlideLinha,
+    icone: FileMagnifyingGlass,
+    titulo: "A IA lê o documento, você só confirma",
+    legenda: "Extrato, recibo ou nota fiscal viram lançamento sem digitação manual.",
+    selo: "Importação com IA inclusa",
+  },
+  {
+    Visual: SlideAnel,
+    icone: ChatCircleDots,
+    titulo: "Pergunte, em vez de procurar",
+    legenda: "O Chat IA responde sobre suas finanças com o número de verdade por trás.",
+    selo: "Chat IA incluso",
+  },
 ];
 
 const INTERVALO_MS = 6000;
@@ -22,26 +41,45 @@ export function CarrosselAuth() {
     return () => clearInterval(id);
   }, []);
 
+  const slideAtual = SLIDES[indice];
+
   return (
-    <div className="relative hidden h-full w-full overflow-hidden bg-foreground lg:flex lg:flex-col lg:items-center lg:justify-center">
+    <div className="relative hidden h-full w-full flex-col overflow-hidden bg-foreground lg:flex">
       <div
         aria-hidden
-        className="pointer-events-none absolute -right-24 -top-24 size-[28rem] rounded-full bg-primary opacity-[0.12] blur-3xl"
+        className="pointer-events-none absolute -right-24 -top-24 size-[28rem] rounded-full bg-primary opacity-[0.14] blur-3xl"
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute -bottom-32 -left-24 size-[24rem] rounded-full bg-positivo opacity-[0.1] blur-3xl"
+        className="pointer-events-none absolute -bottom-32 -left-24 size-[24rem] rounded-full bg-positivo opacity-[0.12] blur-3xl"
       />
 
-      {SLIDES.map(({ Visual }, i) => (
-        <div key={i} className={`absolute inset-0 flex items-center justify-center px-14 transition-opacity duration-700 ease-in-out ${i === indice ? "opacity-100" : "opacity-0"}`}>
-          <Visual />
-        </div>
-      ))}
+      <div className="relative flex items-center justify-between px-10 pt-10">
+        <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3.5 py-1.5 text-xs font-medium text-white/80">
+          <Check className="size-3.5 text-positivo" weight="bold" />
+          Cartão salvo agora, cobrança só depois do trial
+        </span>
+      </div>
 
-      <div className="absolute inset-x-0 bottom-0 p-10">
-        <p className="font-heading text-2xl font-bold leading-snug text-white">{SLIDES[indice].titulo}</p>
-        <p className="mt-2 max-w-sm text-sm leading-relaxed text-white/60">{SLIDES[indice].legenda}</p>
+      <div className="relative flex flex-1 items-center justify-center px-14">
+        {SLIDES.map(({ Visual, icone: Icone, selo }, i) => (
+          <div key={i} className={`absolute flex items-center justify-center transition-opacity duration-700 ease-in-out ${i === indice ? "opacity-100" : "opacity-0"}`}>
+            <div className="relative pb-8 pr-8">
+              <Visual />
+              <div className="absolute -bottom-2 -right-2 flex items-center gap-2 rounded-xl border border-white/10 bg-[#1b2321] px-4 py-3 shadow-[0_16px_40px_-16px_rgba(0,0,0,0.6)]">
+                <span className="flex size-7 items-center justify-center rounded-full bg-primary/20">
+                  <Icone className="size-3.5 text-primary" weight="bold" />
+                </span>
+                <span className="text-xs font-semibold text-white">{selo}</span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="relative p-10">
+        <p className="font-heading text-2xl font-bold leading-snug text-white">{slideAtual.titulo}</p>
+        <p className="mt-2 max-w-sm text-sm leading-relaxed text-white/60">{slideAtual.legenda}</p>
 
         <div className="mt-6 flex gap-2">
           {SLIDES.map((_, i) => (
