@@ -43,9 +43,9 @@ export default function PaginaAssinar() {
     <div className="min-h-screen bg-[color-mix(in_oklch,var(--background),var(--primary)_7%)] px-4 py-14 sm:py-20">
       <div className="mx-auto flex w-full max-w-4xl flex-col items-center">
         <Link href="/">
-          <Logo className="h-14 w-auto" />
+          <Logo className="h-32 w-auto sm:h-40" />
         </Link>
-        <p className="mt-4 text-sm font-medium text-muted-foreground">Assinatura Finanssi</p>
+        <p className="mt-5 text-sm font-medium text-muted-foreground">Assinatura Finanssi</p>
 
         <div className="mt-10 grid w-full grid-cols-1 gap-6 lg:grid-cols-2">
           <div className="rounded-2xl border border-border bg-card p-8 shadow-[0_20px_50px_-24px_rgba(26,29,31,0.35)] sm:p-10">
