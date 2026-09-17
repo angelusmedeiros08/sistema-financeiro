@@ -85,9 +85,19 @@ export function StatCard({ label, valor, detalhe, variant, delta, serie, icon: I
           <span className="text-[11px] font-bold tracking-wider text-muted-foreground uppercase">{label}</span>
         </div>
         {typeof delta === "number" && (
-          <span className={cn("flex items-center gap-0.5 text-xs font-bold tabular-nums", corDelta)}>
+          // Sem rótulo nenhum, um "↑93,6%" solto ao lado de um valor em R$
+          // lê fácil como margem/proporção — achado em revisão de conteúdo:
+          // é variação sobre o mês anterior, não uma fração do valor ao
+          // lado. title dá o contexto sem brigar por espaço no card.
+          <span
+            className={cn("flex items-center gap-0.5 text-xs font-bold tabular-nums", corDelta)}
+            title={`${Math.abs(delta).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}% ${deltaPositivo ? "a mais" : "a menos"} que no mês anterior`}
+          >
             {deltaPositivo ? <ArrowUpRight size={13} weight="bold" /> : <ArrowDownRight size={13} weight="bold" />}
             {Math.abs(delta).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%
+            <span className="sr-only">
+              {deltaPositivo ? "a mais" : "a menos"} que no mês anterior
+            </span>
           </span>
         )}
       </div>

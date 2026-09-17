@@ -134,7 +134,9 @@ export default async function PaginaRelatoriosPontoEquilibrio({
           {margemDeSeguranca > 0 ? "+" : ""}
           {formatarMoeda(margemDeSeguranca)}
         </p>
-        <p className="text-xs text-muted-foreground">{formatarPercentual(margemDeSegurancaPercentual)} acima do ponto de equilíbrio</p>
+        <p className="text-xs text-muted-foreground">
+          {formatarPercentual(Math.abs(margemDeSegurancaPercentual))} {margemDeSeguranca >= 0 ? "acima do" : "abaixo do"} ponto de equilíbrio
+        </p>
       </div>
     </div>
   );
