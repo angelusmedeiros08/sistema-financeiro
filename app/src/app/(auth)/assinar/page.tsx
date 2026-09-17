@@ -33,8 +33,8 @@ export default function PaginaAssinar() {
   return (
     <div className="grid min-h-screen grid-cols-1 lg:grid-cols-2">
       <div className="relative flex flex-col justify-between bg-primary px-8 py-10 lg:px-16 lg:py-14">
-        <Link href="/">
-          <img src="/logo/completo-escuro.png" alt="Finanssi" className="h-14 w-auto" />
+        <Link href="/" className="inline-block w-fit rounded-xl bg-background px-4 py-3 shadow-[0_8px_24px_-8px_rgba(0,0,0,0.35)]">
+          <img src="/logo/completo-claro.png" alt="Finanssi" className="h-11 w-auto" />
         </Link>
 
         <div className="my-10 lg:my-0">
