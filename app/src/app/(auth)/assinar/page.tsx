@@ -20,13 +20,10 @@ const CONFIANCA = [
   "Cancele quando quiser, sem multa",
 ];
 
+// Checkout fica dentro do grupo (auth), sempre claro de propósito (ver
+// layout.tsx) — sem par claro/escuro, mesmo motivo do AuthShell.
 function Logo({ className }: { className?: string }) {
-  return (
-    <>
-      <img src="/logo/completo-claro.png" alt="Finanssi" className={`${className} dark:hidden`} />
-      <img src="/logo/completo-escuro.png" alt="Finanssi" className={`hidden ${className} dark:block`} />
-    </>
-  );
+  return <img src="/logo/completo-claro.png" alt="Finanssi" className={className} />;
 }
 
 export default function PaginaAssinar() {

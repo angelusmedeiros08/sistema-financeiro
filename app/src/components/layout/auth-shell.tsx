@@ -1,12 +1,9 @@
-import { ThemeToggle } from "./theme-toggle";
-
+// Login/cadastro/etc. é sempre claro, de propósito (a página inteira roda
+// dentro de .tema-claro-forcado, aplicado no layout do grupo (auth)) — por
+// isso a logo aqui é sempre a variante clara, sem o par claro/escuro que o
+// resto do app usa.
 function Logo({ className }: { className?: string }) {
-  return (
-    <>
-      <img src="/logo/completo-claro.png" alt="Finanssi" className={`${className} dark:hidden`} />
-      <img src="/logo/completo-escuro.png" alt="Finanssi" className={`hidden ${className} dark:block`} />
-    </>
-  );
+  return <img src="/logo/completo-claro.png" alt="Finanssi" className={className} />;
 }
 
 // Linha do login real da Conta Azul (login.contaazul.com): coluna única,
@@ -23,11 +20,7 @@ export function AuthShell({
   children: React.ReactNode;
 }) {
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-[color-mix(in_oklch,var(--background),var(--primary)_7%)] px-6 py-12">
-      <div className="absolute right-4 top-4">
-        <ThemeToggle />
-      </div>
-
+    <div className="flex min-h-screen items-center justify-center bg-[color-mix(in_oklch,var(--background),var(--primary)_7%)] px-6 py-12">
       <div className="w-full max-w-sm">
         <Logo className="mx-auto h-24 w-auto sm:h-28" />
 

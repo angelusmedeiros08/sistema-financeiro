@@ -12,8 +12,7 @@ export default function CarregandoAuth() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-[color-mix(in_oklch,var(--background),var(--primary)_7%)] px-6 py-12">
       <div className="w-full max-w-sm">
-        <img src="/logo/completo-claro.png" alt="Finanssi" className="mx-auto h-24 w-auto dark:hidden sm:h-28" />
-        <img src="/logo/completo-escuro.png" alt="Finanssi" className="mx-auto hidden h-24 w-auto dark:block sm:h-28" />
+        <img src="/logo/completo-claro.png" alt="Finanssi" className="mx-auto h-24 w-auto sm:h-28" />
 
         <div className="mt-9 flex flex-col items-center gap-2">
           <Skeleton className="h-7 w-32" />

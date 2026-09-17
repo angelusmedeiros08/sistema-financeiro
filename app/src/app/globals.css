@@ -154,6 +154,38 @@
   --sidebar-ring: #e2694b;
 }
 
+/* Tela de login/cadastro/etc. (grupo de rotas (auth)) é sempre clara, de
+   propósito — claro/escuro é preferência de quem já usa o sistema por
+   dentro, não faz sentido antes de entrar. Como o tema é uma classe global
+   em <html> (next-themes), reaplicar aqui os mesmos valores do :root claro
+   garante isso mesmo que a pessoa já tenha escolhido escuro antes (o valor
+   declarado direto no elemento sempre vence o herdado do ancestral). */
+.tema-claro-forcado {
+  --background: #f5f4f1;
+  --foreground: #1a1d1f;
+  --card: #ffffff;
+  --card-foreground: #1a1d1f;
+  --popover: #ffffff;
+  --popover-foreground: #1a1d1f;
+  --primary: #d8583a;
+  --primary-foreground: #ffffff;
+  --secondary: #ece9e4;
+  --secondary-foreground: #1a1d1f;
+  --muted: #ece9e4;
+  --muted-foreground: #716f68;
+  --accent: #f6e6de;
+  --accent-foreground: #a8412a;
+  --accent-gold: #a87c1f;
+  --positivo: #157f6b;
+  --positivo-foreground: #0f5f50;
+  --destructive: #b23a2e;
+  --destructive-foreground: #8a2e24;
+  --border: #e5e1d8;
+  --input: #e5e1d8;
+  --ring: #d8583a;
+  color-scheme: light;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
