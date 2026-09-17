@@ -1,42 +1,35 @@
 import { Skeleton } from "@/components/ui/skeleton";
 
 // Cobre as 9 rotas de autenticação de uma vez (route group loading.tsx vale
-// pra tudo dentro da pasta) — painel de marca é conteúdo estático real
-// (idêntico ao AuthShell, não depende de nenhum fetch), só o card à direita
-// vira skeleton. Silhueta genérica de propósito: diferenciar por rota
-// (ex. lista de empresas em escolher-empresa) é polimento que essa fatia
-// não precisa — o problema real era a tela branca sem marca nenhuma.
+// pra tudo dentro da pasta) — mesma casca do AuthShell real (logo grande
+// centralizada, fundo levemente laranja), só os campos viram skeleton.
+// Precisa ficar em sincronia manual com auth-shell.tsx sempre que ele mudar
+// de layout — encontrado como bug real: essa tela tinha ficado com o
+// design antigo (painel escuro com gradiente, só o nome em texto) depois
+// que o AuthShell foi todo refeito, e aparecia como um flash visual feio
+// logo após cadastro/login.
 export default function CarregandoAuth() {
   return (
-    <div className="flex min-h-screen">
-      <div className="relative hidden w-[42%] shrink-0 items-center justify-center overflow-hidden bg-gradient-to-br from-[#14181A] to-[#0F2620] px-10 py-10 text-sidebar-foreground lg:flex">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -right-24 -top-24 size-96 rounded-full bg-gradient-to-br from-[#D8583A] to-[#A87C1F] opacity-20 blur-3xl"
-        />
-        <span className="relative font-heading text-lg font-bold tracking-tight">Finanssi</span>
-      </div>
+    <div className="flex min-h-screen items-center justify-center bg-[color-mix(in_oklch,var(--background),var(--primary)_7%)] px-6 py-12">
+      <div className="w-full max-w-sm">
+        <img src="/logo/completo-claro.png" alt="Finanssi" className="mx-auto h-24 w-auto dark:hidden sm:h-28" />
+        <img src="/logo/completo-escuro.png" alt="Finanssi" className="mx-auto hidden h-24 w-auto dark:block sm:h-28" />
 
-      <div className="flex flex-1 items-center justify-center bg-background px-4 py-10">
-        <div className="w-full max-w-sm">
-          <div className="mb-8 lg:hidden">
-            <span className="font-heading text-lg font-bold tracking-tight text-foreground">Finanssi</span>
+        <div className="mt-9 flex flex-col items-center gap-2">
+          <Skeleton className="h-7 w-32" />
+          <Skeleton className="h-4 w-48" />
+        </div>
+
+        <div className="mt-9 space-y-6">
+          <div className="space-y-1.5">
+            <Skeleton className="h-3.5 w-16" />
+            <Skeleton className="h-10 w-full rounded-control" />
           </div>
-
-          <Skeleton className="mb-1.5 h-8 w-40" />
-          <Skeleton className="mb-8 h-4 w-56" />
-
-          <div className="space-y-4">
-            <div className="space-y-1.5">
-              <Skeleton className="h-3.5 w-16" />
-              <Skeleton className="h-9 w-full rounded-control" />
-            </div>
-            <div className="space-y-1.5">
-              <Skeleton className="h-3.5 w-16" />
-              <Skeleton className="h-9 w-full rounded-control" />
-            </div>
-            <Skeleton className="h-9 w-full rounded-control" />
+          <div className="space-y-1.5">
+            <Skeleton className="h-3.5 w-16" />
+            <Skeleton className="h-10 w-full rounded-control" />
           </div>
+          <Skeleton className="h-10 w-full rounded-control" />
         </div>
       </div>
     </div>
