@@ -1,3 +1,5 @@
+import { ThemeToggle } from "./theme-toggle";
+
 function Logo({ className }: { className?: string }) {
   return (
     <>
@@ -21,7 +23,11 @@ export function AuthShell({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[color-mix(in_oklch,var(--background),var(--primary)_7%)] px-6 py-12">
+    <div className="relative flex min-h-screen items-center justify-center bg-[color-mix(in_oklch,var(--background),var(--primary)_7%)] px-6 py-12">
+      <div className="absolute right-4 top-4">
+        <ThemeToggle />
+      </div>
+
       <div className="w-full max-w-sm">
         <Logo className="mx-auto h-24 w-auto sm:h-28" />
 
