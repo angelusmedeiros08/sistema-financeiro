@@ -19,15 +19,15 @@ export default function PaginaRedefinirSenha() {
 
   return (
     <AuthShell titulo="Nova senha" subtitulo="Escolha uma senha nova pra sua conta.">
-      <form action={formAction} className="space-y-4">
+      <form action={formAction} className="space-y-6">
         <div className="space-y-1.5">
-          <Label htmlFor="senha">Nova senha</Label>
-          <Input id="senha" name="senha" type="password" required minLength={8} />
+          <Label htmlFor="senha" className="font-normal">Nova senha</Label>
+          <Input id="senha" name="senha" type="password" required minLength={8} className="h-10 border-foreground/30" />
         </div>
 
         {estado.erro && <p className="text-sm text-destructive">{estado.erro}</p>}
 
-        <Button type="submit" disabled={pendente} className="w-full">
+        <Button type="submit" disabled={pendente} className="mt-4 h-10 w-full font-semibold">
           {pendente ? "Salvando..." : "Salvar nova senha"}
         </Button>
       </form>

@@ -28,7 +28,7 @@ export default function PaginaEsqueciSenha() {
     return (
       <AuthShell titulo="Verifique seu e-mail" subtitulo="Enviamos as instruções.">
         <p className="text-sm text-muted-foreground">{mensagem}</p>
-        <Link href="/entrar" className="mt-6 block text-center text-sm font-semibold text-foreground underline underline-offset-4">
+        <Link href="/entrar" className="mt-6 block text-center text-sm font-semibold text-primary">
           Voltar pro login
         </Link>
       </AuthShell>
@@ -37,20 +37,20 @@ export default function PaginaEsqueciSenha() {
 
   return (
     <AuthShell titulo="Esqueci minha senha" subtitulo="Informe seu e-mail e mandamos um link pra redefinir.">
-      <form action={formAction} className="space-y-4">
+      <form action={formAction} className="space-y-6">
         <div className="space-y-1.5">
-          <Label htmlFor="email">E-mail</Label>
-          <Input id="email" name="email" type="email" required />
+          <Label htmlFor="email" className="font-normal">E-mail</Label>
+          <Input id="email" name="email" type="email" required className="h-10 border-foreground/30" />
         </div>
 
         {erro && <p className="text-sm text-destructive">{erro}</p>}
 
-        <Button type="submit" disabled={pendente} className="w-full">
+        <Button type="submit" disabled={pendente} className="mt-4 h-10 w-full font-semibold">
           {pendente ? "Enviando..." : "Enviar link de recuperação"}
         </Button>
       </form>
 
-      <Link href="/entrar" className="mt-6 block text-center text-sm text-muted-foreground underline underline-offset-4">
+      <Link href="/entrar" className="mt-6 block text-center text-sm text-primary">
         Voltar pro login
       </Link>
     </AuthShell>

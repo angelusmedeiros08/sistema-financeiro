@@ -69,7 +69,7 @@ function Campo(props: {
         type={props.type}
         required={props.required}
         minLength={props.minLength}
-        className="h-10"
+        className="h-10 border-foreground/30"
       />
     </div>
   );

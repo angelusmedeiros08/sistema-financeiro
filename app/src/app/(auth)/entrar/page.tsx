@@ -50,11 +50,11 @@ export default function PaginaEntrar() {
       <form action={formAction} className="space-y-6">
         <div className="space-y-1.5">
           <Label htmlFor="email" className="font-normal">E-mail</Label>
-          <Input id="email" name="email" type="email" required className="h-10" />
+          <Input id="email" name="email" type="email" required className="h-10 border-foreground/30" />
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="senha" className="font-normal">Senha</Label>
-          <Input id="senha" name="senha" type="password" required className="h-10" />
+          <Input id="senha" name="senha" type="password" required className="h-10 border-foreground/30" />
           <Link href="/esqueci-senha" className="mt-1 inline-block text-sm text-primary">
             Esqueci minha senha
           </Link>
