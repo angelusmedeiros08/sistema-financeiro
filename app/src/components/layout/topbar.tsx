@@ -14,7 +14,6 @@ import { SidebarConteudo } from "./sidebar";
 import { ThemeToggle } from "./theme-toggle";
 import { CommandPaletteBusca } from "./command-palette-busca";
 import { NovoRegistroMenu } from "./novo-registro-menu";
-import { IconeTransmitir } from "./icone-transmitir";
 import { NotificacoesMenu } from "./notificacoes-menu";
 import { ChatDuvidasMenu } from "./chat-duvidas-menu";
 import { StatusPlano } from "./status-plano";
@@ -81,7 +80,6 @@ export function Topbar({
 
       <div className="flex items-center gap-1.5">
         <StatusPlano statusAssinatura={statusAssinatura} trialTerminaEm={trialTerminaEm} acessoAte={acessoAte} />
-        <IconeTransmitir />
         <NovoRegistroMenu />
         {/* key={tenantId}: força remontar o painel ao trocar de empresa no
             dropdown abaixo — sem isso o componente cliente continua com o
