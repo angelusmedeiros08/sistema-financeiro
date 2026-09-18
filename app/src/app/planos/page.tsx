@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Check, X } from "@phosphor-icons/react/dist/ssr";
 import { VALOR_PLANO_MENSAL } from "@/lib/pagamentos/plano";
+import { formatarMoeda } from "@/lib/formatacao";
 
 // Rascunho de apresentação dos 3 planos (estrutura fixada em 16/09/2026,
 // valores ainda não definidos com os sócios — ver memória do projeto).
@@ -83,7 +84,7 @@ export default function PaginaPlanos() {
               <p className="mt-1 min-h-[34px] text-sm text-muted-foreground">{plano.publico}</p>
 
               <p className="mt-4 flex items-baseline gap-1">
-                <span className="font-heading text-3xl font-extrabold tabular-nums tracking-tight text-foreground">R$ {plano.valor}</span>
+                <span className="font-heading text-3xl font-extrabold tabular-nums tracking-tight text-foreground">{formatarMoeda(plano.valor)}</span>
                 <span className="text-sm text-muted-foreground">/mês</span>
               </p>
 
