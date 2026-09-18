@@ -14,21 +14,69 @@ const MAX_ITERACOES_TOOL_USE = 8; // trava contra loop infinito de tool use (mod
 // as definições de ferramenta (26 de leitura + 3 de ação, ver
 // tools-leitura.ts/tools-acao.ts) são idênticas em toda chamada, de todo
 // tenant — nunca mudam por sessão nem por usuário. Sem cache, esse bloco
-// fixo (~2.500 tokens) é recobrado inteiro a US$2/MTok a cada uma das até
-// 8 iterações do loop, em toda mensagem. Marcando o breakpoint no ÚLTIMO
-// item do array de ferramentas, tudo que vem antes dele (system + todas as
-// ferramentas) vira um único bloco cacheável — as chamadas seguintes (desta
-// mesma iteração, da próxima mensagem, ou de OUTRO tenant, já que o
-// conteúdo é idêntico) pagam US$0,20/MTok de leitura em vez de US$2/MTok
-// cru, contanto que caiam dentro da janela de 5 min do cache efêmero — o
-// que cobre a maior parte do tráfego real do sistema, com muitos tenants
-// conversando ao longo do dia.
-const SYSTEM_COM_CACHE = (texto: string): Anthropic.TextBlockParam[] => [{ type: "text", text: texto, cache_control: { type: "ephemeral" } }];
+// fixo (medido em produção em ~9.400 tokens, bem mais que a estimativa
+// inicial de ~2.500 — achado em investigação de custo real, 17/09/2026) é
+// recobrado inteiro a US$2/MTok a cada uma das até 8 iterações do loop, em
+// toda mensagem. Marcando o breakpoint no ÚLTIMO item do array de
+// ferramentas, tudo que vem antes dele (system + todas as ferramentas) vira
+// um único bloco cacheável — as chamadas seguintes (desta mesma iteração,
+// da próxima mensagem, ou de OUTRO tenant, já que o conteúdo é idêntico)
+// pagam US$0,20/MTok de leitura em vez de US$2/MTok cru.
+//
+// ttl "1h" em vez do padrão "5m" (achado na mesma investigação): como esse
+// bloco nunca muda, vale pagar a escrita um pouco mais cara uma vez por
+// hora em vez de a cada 5 minutos de silêncio entre mensagens — cobre
+// muito mais do tráfego real (conversas com pausas de minutos entre
+// perguntas, comuns num chat de suporte financeiro) sem nenhum efeito na
+// resposta do modelo.
+const SYSTEM_COM_CACHE = (texto: string): Anthropic.TextBlockParam[] => [
+  { type: "text", text: texto, cache_control: { type: "ephemeral", ttl: "1h" } },
+];
 
 function toolsComCache(tools: Anthropic.Tool[]): Anthropic.Tool[] {
   if (tools.length === 0) return tools;
   const ultimo = tools[tools.length - 1];
-  return [...tools.slice(0, -1), { ...ultimo, cache_control: { type: "ephemeral" } }];
+  return [...tools.slice(0, -1), { ...ultimo, cache_control: { type: "ephemeral", ttl: "1h" } }];
+}
+
+// Marca cache_control no último bloco de conteúdo de UMA mensagem, sem
+// mutar a original (só usado dentro de mensagensComCache, que já devolve
+// cópia do array inteiro).
+function mensagemComCacheNoFinal(msg: Anthropic.MessageParam): Anthropic.MessageParam {
+  if (typeof msg.content === "string") {
+    return { ...msg, content: [{ type: "text", text: msg.content, cache_control: { type: "ephemeral" } }] };
+  }
+  if (msg.content.length === 0) return msg;
+  const ultimo = msg.content[msg.content.length - 1];
+  // thinking/redacted_thinking não aceitam cache_control (a API rejeita) —
+  // este loop nunca pede extended thinking, mas o tipo da união inclui os
+  // dois, então cobre o caso em vez de assumir que nunca acontece.
+  if (ultimo.type === "thinking" || ultimo.type === "redacted_thinking") return msg;
+  return { ...msg, content: [...msg.content.slice(0, -1), { ...ultimo, cache_control: { type: "ephemeral" } } as Anthropic.ContentBlockParam] };
+}
+
+// Achado na mesma investigação de custo (17/09/2026): system+tools já
+// tinham cache, mas o HISTÓRICO da conversa (as mensagens de usuário/
+// assistente/ferramenta em `mensagens`, que só crescem) nunca tinha — era
+// reenviado inteiro a US$2/MTok em toda mensagem nova, e de novo em cada
+// uma das até 8 iterações internas do loop dentro do MESMO turno. A API
+// permite até 4 marcadores de cache por chamada (já usamos 2 em system/
+// tools); usa os 2 restantes aqui:
+//   - `indiceFimHistorico` (fixo): fim de tudo que já existia antes desta
+//     execução do loop (histórico salvo + a mensagem nova do usuário) — como
+//     é exatamente o que a PRÓXIMA mensagem do usuário vai replayar do banco
+//     (ver route.ts), essa leitura de cache também beneficia o próximo
+//     turno inteiro, não só este.
+//   - último bloco do array (móvel, recalculado a cada chamada): cobre o
+//     que já foi gerado nas iterações ANTERIORES deste mesmo turno (tool
+//     use + resultado), pra turnos que precisam de várias chamadas internas
+//     não pagarem preço cheio de novo a cada uma.
+// Nunca muta `mensagens` — sempre recalculado do zero, então nunca acumula
+// marcador antigo (o que estouraria o teto de 4 da API depois de poucas
+// iterações).
+function mensagensComCache(mensagens: Anthropic.MessageParam[], indiceFimHistorico: number): Anthropic.MessageParam[] {
+  const ultimoIndice = mensagens.length - 1;
+  return mensagens.map((msg, i) => (i === ultimoIndice || i === indiceFimHistorico ? mensagemComCacheNoFinal(msg) : msg));
 }
 
 export type EventoLoopChat =
@@ -68,6 +116,9 @@ export async function executarLoopChat(params: {
 
   const client = new Anthropic();
   const mensagens: Anthropic.MessageParam[] = [...params.historico];
+  // Fim do histórico que já veio pronto (banco + mensagem nova do usuário),
+  // antes de qualquer tool use desta execução — ver mensagensComCache.
+  const indiceFimHistorico = mensagens.length - 1;
   const ferramentasExecutadas: FerramentaExecutada[] = [];
   let textoFinalAcumulado = "";
   const systemComCache = SYSTEM_COM_CACHE(montarPromptSistema());
@@ -80,7 +131,7 @@ export async function executarLoopChat(params: {
         model: MODELO,
         max_tokens: MAX_TOKENS,
         system: systemComCache,
-        messages: mensagens,
+        messages: mensagensComCache(mensagens, indiceFimHistorico),
         tools: toolsComCacheAtivo,
         // effort "medium" (achado em pesquisa de custo, 12/09/2026, dado
         // real da Anthropic): sem este campo o modelo roda no padrão "high",
