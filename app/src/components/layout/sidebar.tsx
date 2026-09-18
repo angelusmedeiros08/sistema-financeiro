@@ -392,8 +392,15 @@ export function SidebarConteudo({ emailUsuario, emSheet = false }: { emailUsuari
                               href={sub.href}
                               onClick={fecharPainel}
                               className={cn(
-                                "flex-1 rounded-lg px-2.5 py-2 text-sm font-semibold transition-colors",
-                                subAtivo ? "bg-muted text-foreground" : "text-foreground/75 hover:bg-muted hover:text-foreground",
+                                // border-l sempre presente (transparente quando
+                                // inativo) pra não empurrar o texto 3px ao
+                                // ativar — mesmo recurso do StatCard "hero" no
+                                // Painel (border-l-primary), aplicado aqui na
+                                // linha inteira em vez de um card.
+                                "flex-1 rounded-lg border-l-[3px] px-2.5 py-2 text-sm font-semibold transition-colors",
+                                subAtivo
+                                  ? "border-l-primary bg-muted text-foreground"
+                                  : "border-l-transparent text-foreground/75 hover:bg-muted hover:text-foreground",
                               )}
                             >
                               {sub.label}
@@ -413,8 +420,10 @@ export function SidebarConteudo({ emailUsuario, emSheet = false }: { emailUsuari
                     href={item.href}
                     onClick={emSheet ? undefined : fecharPainel}
                     className={cn(
-                      "flex flex-1 items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-semibold transition-colors",
-                      ativo ? "bg-muted text-foreground" : "text-foreground/75 hover:bg-muted hover:text-foreground",
+                      "flex flex-1 items-center gap-2.5 rounded-lg border-l-[3px] px-2.5 py-2 text-sm font-semibold transition-colors",
+                      ativo
+                        ? "border-l-primary bg-muted text-foreground"
+                        : "border-l-transparent text-foreground/75 hover:bg-muted hover:text-foreground",
                     )}
                   >
                     <Icon size={19} weight="bold" />
@@ -466,8 +475,14 @@ export function SidebarConteudo({ emailUsuario, emSheet = false }: { emailUsuari
         onFocus={aoFocar}
         onBlur={aoPerderFoco}
       >
-        {/* Rail: sempre visível, ícones apenas — fica no fluxo normal (nunca some), reserva o espaço fixo do layout. */}
-        <div className="flex h-full flex-col items-center gap-1 border-r border-border bg-card px-2 py-6 text-foreground">
+        {/* Rail: sempre visível, ícones apenas — fica no fluxo normal (nunca some), reserva o espaço fixo do layout.
+            shadow no lado direito (não embaixo) — mesma opacidade/tom do
+            --shadow-card que todo card do sistema já usa, só virado de lado
+            porque o rail separa do conteúdo à direita, não por cima
+            (achado em revisão de consistência: rail/topbar eram as únicas
+            peças de chrome ainda só com border reto, sem a sombra sutil que
+            o resto do app inteiro já usa). */}
+        <div className="flex h-full flex-col items-center gap-1 border-r border-border bg-card px-2 py-6 text-foreground shadow-[1px_0_2px_0_rgb(26,29,31,0.05)] dark:shadow-[1px_0_2px_0_rgb(0,0,0,0.4)]">
           {ITENS_NAV.map((item) => {
             const ativo = itemAtivo(item, pathname);
             const Icon = item.icon;
@@ -483,6 +498,22 @@ export function SidebarConteudo({ emailUsuario, emSheet = false }: { emailUsuari
                 </div>
               );
             }
+
+            // Barrinha de 3px colada na borda do rail quando o item está
+            // ativo — mesmo recurso visual do StatCard "hero" no Painel
+            // (border-l-primary), só que como indicador flutuante (não dá
+            // pra usar border-l direto num botão quadrado de 36px sem
+            // esmagar o ícone). -left-3 pousa exatamente na borda externa
+            // do rail (padding do container + centralização do botão).
+            const indicadorAtivo = (
+              <span
+                aria-hidden="true"
+                className={cn(
+                  "absolute -left-3 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-primary transition-opacity",
+                  ativo ? "opacity-100" : "opacity-0",
+                )}
+              />
+            );
 
             if (item.subItens) {
               return (
@@ -504,10 +535,15 @@ export function SidebarConteudo({ emailUsuario, emSheet = false }: { emailUsuari
                     setAberta(true);
                   }}
                   className={cn(
-                    "flex size-9 shrink-0 items-center justify-center rounded-lg transition-colors",
+                    "relative flex size-9 shrink-0 items-center justify-center rounded-lg transition-[background-color,color,box-shadow]",
+                    // Mesma sombra laranja suave que os cards de
+                    // "Qual empresa?" já usam no hover — reaproveitada aqui
+                    // em vez de inventar um novo tom.
+                    "hover:shadow-[0_10px_30px_-16px_rgba(216,88,58,0.35)]",
                     ativo ? "bg-muted text-foreground" : "text-foreground/75 hover:bg-muted hover:text-foreground",
                   )}
                 >
+                  {indicadorAtivo}
                   <span className="sr-only">{item.label}</span>
                   <Icon size={20} weight="bold" />
                 </button>
@@ -520,10 +556,12 @@ export function SidebarConteudo({ emailUsuario, emSheet = false }: { emailUsuari
                 href={item.href}
                 title={item.label}
                 className={cn(
-                  "flex size-9 shrink-0 items-center justify-center rounded-lg transition-colors",
+                  "relative flex size-9 shrink-0 items-center justify-center rounded-lg transition-[background-color,color,box-shadow]",
+                  "hover:shadow-[0_10px_30px_-16px_rgba(216,88,58,0.35)]",
                   ativo ? "bg-muted text-foreground" : "text-foreground/75 hover:bg-muted hover:text-foreground",
                 )}
               >
+                {indicadorAtivo}
                 <span className="sr-only">{item.label}</span>
                 <Icon size={20} weight="bold" />
               </Link>

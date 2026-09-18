@@ -43,7 +43,11 @@ export function Topbar({
 }) {
   const outrosTenants = tenantsDisponiveis.filter((t) => t.id !== tenantId);
   return (
-    <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-border bg-card px-4 lg:px-8">
+    // bg-card/90 + backdrop-blur: mesmo tratamento que o header da landing
+    // page já usa (bg-background/90 backdrop-blur) — a topbar do app logado
+    // era a única tela sem isso. shadow-card: mesma sombra sutil que todo
+    // card do sistema já tem, a topbar só tinha border reto.
+    <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-border bg-card/90 shadow-card backdrop-blur px-4 lg:px-8">
       <Sheet>
         <SheetTrigger asChild>
           <Button variant="ghost" size="icon" className="lg:hidden">
