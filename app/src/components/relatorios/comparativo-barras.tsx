@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { scaleBand, scaleLinear } from "@visx/scale";
 import { BarGroup } from "@visx/shape";
 import { Group } from "@visx/group";
@@ -28,7 +29,7 @@ const estiloTooltip = {
   boxShadow: "0 8px 20px rgba(0,0,0,0.2)",
 };
 
-type TooltipDado = { rotuloEixo: string; serie: SerieComparativo; valor: number };
+type TooltipDado = { rotuloEixo: string; serie: SerieComparativo; valor: number; href?: string };
 
 // Motor trocado de Recharts (BarChart) pra @visx/shape (BarGroup) —
 // mesmas barras agrupadas com pontas arredondadas, mesmo tooltip escuro,
@@ -41,6 +42,7 @@ function GraficoInterno({
   titulo,
   largura,
   altura,
+  hrefsPorChave,
 }: {
   dados: Record<string, number | string>[];
   eixoX: string;
@@ -49,7 +51,9 @@ function GraficoInterno({
   titulo: string;
   largura: number;
   altura: number;
+  hrefsPorChave?: Record<string, Partial<Record<string, string>>>;
 }) {
+  const router = useRouter();
   const seriesVisiveis = series.filter((s) => !ocultas.has(s.chave));
   const chaves = seriesVisiveis.map((s) => s.chave);
   const { tooltipData, tooltipLeft, tooltipTop, tooltipOpen, showTooltip, hideTooltip } = useTooltip<TooltipDado>();
@@ -104,6 +108,7 @@ function GraficoInterno({
                     const alturaReal = Math.abs(yZero - yValor);
                     const altura = bar.value === 0 ? 0 : Math.max(alturaReal, 2);
                     const y = bar.value >= 0 ? yZero - altura : yZero;
+                    const href = hrefsPorChave?.[dadosComChave[barGroup.index].rotuloEixo]?.[bar.key];
                     return (
                       <rect
                         key={bar.key}
@@ -113,18 +118,19 @@ function GraficoInterno({
                         height={altura}
                         fill={bar.color}
                         rx={3}
-                        style={{ transition: "opacity 0.15s ease" }}
+                        style={{ transition: "opacity 0.15s ease", cursor: href ? "pointer" : "default" }}
                         onMouseMove={(evento) => {
                           const coords = localPoint(evento) ?? { x: 0, y: 0 };
                           const serie = series.find((s) => s.chave === bar.key);
                           if (!serie) return;
                           showTooltip({
-                            tooltipData: { rotuloEixo: dadosComChave[barGroup.index].rotuloEixo, serie, valor: bar.value },
+                            tooltipData: { rotuloEixo: dadosComChave[barGroup.index].rotuloEixo, serie, valor: bar.value, href },
                             tooltipLeft: coords.x,
                             tooltipTop: coords.y,
                           });
                         }}
                         onMouseLeave={hideTooltip}
+                        onClick={() => href && router.push(href)}
                       />
                     );
                   })}
@@ -151,6 +157,7 @@ function GraficoInterno({
             <span className="text-white/70">{tooltipData.serie.nome}</span>
             <span className="ml-auto font-bold tabular-nums">{formatarMoeda(tooltipData.valor)}</span>
           </div>
+          {tooltipData.href && <div className="mt-1 text-[11px] text-white/40">Clique pra ver os lançamentos</div>}
         </TooltipInPortal>
       )}
     </div>
@@ -163,12 +170,18 @@ export function ComparativoBarras({
   series,
   titulo,
   altura = 300,
+  hrefsPorChave,
 }: {
   dados: Record<string, number | string>[];
   eixoX: string;
   series: SerieComparativo[];
   titulo?: string;
   altura?: number;
+  // eixoX-valor (ex.: "2026-09") -> chave da série (ex.: "entradas") -> href.
+  // Objeto simples (não função) de propósito: este componente é renderizado
+  // por Server Components, que não conseguem passar callback como prop
+  // (fronteira Server/Client) — ver mesmo raciocínio em tabela-eventos.tsx.
+  hrefsPorChave?: Record<string, Partial<Record<string, string>>>;
 }) {
   const [ocultas, setOcultas] = useState<Set<string>>(new Set());
   const [comoTabela, setComoTabela] = useState(false);
@@ -231,6 +244,7 @@ export function ComparativoBarras({
                   series={series}
                   ocultas={ocultas}
                   titulo={titulo ?? series.map((s) => s.nome).join(" vs. ")}
+                  hrefsPorChave={hrefsPorChave}
                   largura={width}
                   altura={altura}
                 />

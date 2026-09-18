@@ -88,6 +88,36 @@ export function limitesDoMes(chaveIso: string): { inicio: string; fim: string } 
   return { inicio, fim };
 }
 
+// Inverso de chaveGranularidade pras 5 granularidades — usado pelo
+// drill-down do Fluxo de caixa (gráfico e tabela de "Entradas × Saídas"),
+// que ao contrário do Painel/Comparativos (sempre por mês) deixa a pessoa
+// escolher a granularidade na tela.
+export function limitesGranularidade(chave: string, granularidade: Granularidade): { inicio: string; fim: string } {
+  switch (granularidade) {
+    case "dia":
+      return { inicio: chave, fim: chave };
+    case "semana": {
+      const [ano, mes, dia] = chave.split("-").map(Number);
+      const fimData = new Date(Date.UTC(ano, mes - 1, dia + 6));
+      return { inicio: chave, fim: fimData.toISOString().slice(0, 10) };
+    }
+    case "mes":
+      return limitesDoMes(chave);
+    case "trimestre": {
+      const [anoStr, trimestreStr] = chave.split("-T");
+      const ano = Number(anoStr);
+      const trimestre = Number(trimestreStr);
+      const inicio = new Date(Date.UTC(ano, (trimestre - 1) * 3, 1)).toISOString().slice(0, 10);
+      const fim = new Date(Date.UTC(ano, trimestre * 3, 0)).toISOString().slice(0, 10);
+      return { inicio, fim };
+    }
+    case "ano": {
+      const ano = Number(chave);
+      return { inicio: `${ano}-01-01`, fim: `${ano}-12-31` };
+    }
+  }
+}
+
 export function chaveGranularidade(dataIso: string, granularidade: Granularidade): string {
   const [ano, mes, dia] = dataIso.slice(0, 10).split("-").map(Number);
   switch (granularidade) {

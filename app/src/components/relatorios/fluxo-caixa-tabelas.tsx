@@ -40,7 +40,15 @@ const colunasDiario = helperDiario.columns([
   }),
 ]);
 
-export function FluxoDiarioTabela({ pontos }: { pontos: PontoFluxoCaixa[] }) {
+export function FluxoDiarioTabela({
+  pontos,
+  hrefsPorChave,
+}: {
+  pontos: PontoFluxoCaixa[];
+  // chave do ponto -> link pro movimento inteiro daquele período (sem
+  // filtro de tipo, mesma convenção do Saldo em caixa no Painel).
+  hrefsPorChave?: Record<string, string>;
+}) {
   return (
     <TabelaLista
       titulo="Entradas × Saídas por período"
@@ -48,6 +56,7 @@ export function FluxoDiarioTabela({ pontos }: { pontos: PontoFluxoCaixa[] }) {
       columns={colunasDiario}
       buscaPlaceholder="Buscar período…"
       textoVazio="Sem movimentação no período selecionado."
+      linkPara={hrefsPorChave ? (p) => hrefsPorChave[p.chave] : undefined}
     />
   );
 }
@@ -76,7 +85,16 @@ const colunasPR = helperPR.columns([
   }),
 ]);
 
-export function FluxoPrevistoRealizadoTabela({ pontos }: { pontos: PontoPrevistoRealizado[] }) {
+export function FluxoPrevistoRealizadoTabela({
+  pontos,
+  hrefsPorChave,
+}: {
+  pontos: PontoPrevistoRealizado[];
+  // Linha inteira aponta pro realizado (o que de fato aconteceu) — quem
+  // quer o previsto especificamente clica na barra correspondente no
+  // gráfico acima, que distingue previsto de realizado.
+  hrefsPorChave?: Record<string, string>;
+}) {
   return (
     <TabelaLista
       titulo="Vencimento previsto × Pagamento realizado"
@@ -84,6 +102,7 @@ export function FluxoPrevistoRealizadoTabela({ pontos }: { pontos: PontoPrevisto
       columns={colunasPR}
       buscaPlaceholder="Buscar período…"
       textoVazio="Sem movimentação no período selecionado."
+      linkPara={hrefsPorChave ? (p) => hrefsPorChave[p.chave] : undefined}
     />
   );
 }
