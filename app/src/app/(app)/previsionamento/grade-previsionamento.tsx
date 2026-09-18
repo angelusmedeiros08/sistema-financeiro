@@ -6,7 +6,7 @@ import type { LinhaGradePrevisionamento } from "@/lib/previsionamento/previsiona
 import { definirValorPrevisionamentoAction, copiarValorParaRestoDoAnoAction } from "@/lib/previsionamento/previsionamento-actions";
 import { cn } from "@/lib/utils";
 import { TabelaMatriz, criarColunaMatriz } from "@/components/tabela/tabela-matriz";
-import { parseNumeroBR } from "@/lib/formatacao";
+import { parseNumeroBR, formatarMoeda } from "@/lib/formatacao";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
@@ -128,7 +128,7 @@ export function GradePrevisionamento({ ano, linhas }: { ano: number; linhas: Lin
                         {status === "salvando" ? "salvando…" : status === "erro" ? "erro" : "salvo"}
                       </span>
                     )}
-                    <span className="whitespace-nowrap text-xs font-semibold tabular-nums text-muted-foreground">R$ {formatarEdicao(totalAno(linha.categoriaId)) || "0,00"}</span>
+                    <span className="whitespace-nowrap text-xs font-semibold tabular-nums text-muted-foreground">{formatarMoeda(totalAno(linha.categoriaId))}</span>
                     <CaretDown size={14} className="shrink-0 text-muted-foreground transition-transform group-open:rotate-180" />
                   </span>
                 </summary>
@@ -232,7 +232,7 @@ export function GradePrevisionamento({ ano, linhas }: { ano: number; linhas: Lin
         size: 90,
         meta: { numerica: true, totalizador: true },
         enableSorting: false,
-        cell: (info) => <span>R$ {formatarEdicao(info.getValue()) || "0,00"}</span>,
+        cell: (info) => <span>{formatarMoeda(info.getValue())}</span>,
       }),
       helper.display({
         id: "acao",
