@@ -13,6 +13,7 @@ import {
   Users,
   ClockCounterClockwise,
   Receipt,
+  Lifebuoy,
 } from "@phosphor-icons/react/dist/ssr";
 
 type IconeConfig = ComponentType<{ size?: number; weight?: "regular" | "bold" | "fill"; className?: string }>;
@@ -58,5 +59,9 @@ export const GRUPOS_CONFIGURACOES: {
   {
     rotulo: "Assinatura",
     itens: [{ href: "/configuracoes/assinatura", rotulo: "Assinatura", descricao: "Plano, cobrança e cancelamento.", icon: Receipt }],
+  },
+  {
+    rotulo: "Ajuda",
+    itens: [{ href: "/configuracoes/suporte", rotulo: "Suporte", descricao: "Fale com a gente.", icon: Lifebuoy }],
   },
 ] as const;
