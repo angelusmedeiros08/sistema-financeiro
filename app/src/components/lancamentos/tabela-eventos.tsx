@@ -6,7 +6,18 @@ import { TagCategoria } from "@/components/ui/tag-categoria";
 import { TabelaLista, criarColunaLista } from "@/components/tabela/tabela-lista";
 import { formatarMoeda } from "@/lib/formatacao";
 import { ROTULO_STATUS_PARCELA, COR_STATUS_PARCELA } from "@/lib/status-parcela";
+import { hojeIsoBrasil } from "@/lib/data-brasil";
 import { cn } from "@/lib/utils";
+
+// Mesmo critério de tabela-parcelas-abertas.tsx (Contas a Pagar/Receber) —
+// sem isso, a mesma parcela vencida aparecia como "Pendente" aqui
+// (Despesas/Receitas/Lançamentos/histórico da pessoa) e "Atrasado" lá,
+// dependendo só de qual tela a pessoa estava olhando (achado em releitura
+// tela por tela com dado real).
+function chaveStatusReal(status: string, dataVencimento: string): string {
+  const atrasada = (status === "PENDENTE" || status === "RENEGOCIADO") && dataVencimento < hojeIsoBrasil();
+  return atrasada ? "ATRASADO" : status;
+}
 
 type EventoLinha = {
   id: string;
@@ -68,9 +79,10 @@ const colunas = helper.columns([
     cell: ({ row }) => {
       const primeiraParcela = (row.original.parcelas ?? [])[0];
       if (!primeiraParcela) return <span className="text-muted-foreground">-</span>;
+      const chave = chaveStatusReal(primeiraParcela.status, primeiraParcela.data_vencimento);
       return (
-        <Badge className={cn("border-none font-semibold", COR_STATUS_PARCELA[primeiraParcela.status])}>
-          {ROTULO_STATUS_PARCELA[primeiraParcela.status] ?? primeiraParcela.status}
+        <Badge className={cn("border-none font-semibold", COR_STATUS_PARCELA[chave])}>
+          {ROTULO_STATUS_PARCELA[chave] ?? chave}
         </Badge>
       );
     },
