@@ -87,15 +87,23 @@ export async function enviarCobrancaCliente(params: {
   if ("erro" in config) return config;
   const { transportador, remetente } = config;
 
+  // agruparPorPessoa (disparar.ts) manda todas as parcelas do cliente de
+  // uma vez — texto no singular ("sua parcela") com uma lista de 2+ itens
+  // embaixo lia estranho (achado em revisão de conteúdo). Pluraliza pelo
+  // tamanho real da lista.
+  const plural = params.parcelas.length > 1;
+
   try {
     await transportador.sendMail({
       from: `"Finanssi" <${remetente}>`,
       to: params.email,
-      subject: "Lembrete: sua parcela vence em breve",
+      subject: plural ? "Lembrete: suas parcelas vencem em breve" : "Lembrete: sua parcela vence em breve",
       html: `
         <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
           <h2 style="color: #111827;">Olá, ${escaparHtml(params.nome)}</h2>
-          <p style="color: #374151; font-size: 14px;">Este é um lembrete de que a parcela abaixo vence em breve:</p>
+          <p style="color: #374151; font-size: 14px;">
+            ${plural ? "Este é um lembrete de que as parcelas abaixo vencem em breve:" : "Este é um lembrete de que a parcela abaixo vence em breve:"}
+          </p>
           <ul style="color: #374151; font-size: 14px;">${params.parcelas.map(linhaParcela).join("")}</ul>
         </div>
       `,
