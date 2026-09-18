@@ -62,10 +62,20 @@ function parseValor(bruto: string | undefined): string[] | "nenhuma" | null {
 // antes desta checagem). Um filtro por alfabeto não resolve — uma frase de
 // phishing inteira cabe em letras/espaços/vírgula. Em vez disso, valida
 // contra os padrões exatos que `montarHrefLancamentosSemDimensao` de fato
-// gera hoje (só 5 formatos, todos em `painel/page.tsx`) — qualquer outro
-// texto cai num rótulo genérico (achado em revisão de código).
+// gera hoje — qualquer outro texto cai num rótulo genérico (achado em
+// revisão de código).
+//
+// CHAVE_PERIODO cobre as 5 formas que `chave` assume conforme a
+// granularidade escolhida no Fluxo de caixa (regime.ts:
+// chaveGranularidade) — "2026", "2026-06", "2026-06-15", "2026-T3" — nunca
+// texto livre, só dígitos/traço no formato exato que o próprio sistema
+// gera (achado ao vivo: sem isso, os rótulos do Fluxo de caixa clicável
+// caíam todos no genérico, virando o non-sense "Lançamentos em Lançamentos").
 const MESES = "janeiro|fevereiro|março|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro";
-const ROTULO_SEGURO = new RegExp(`^(Todo o histórico|Recebido em (${MESES})|Pago em (${MESES})|Receitas de (${MESES})|Despesas de (${MESES}))$`);
+const CHAVE_PERIODO = String.raw`\d{4}(?:-\d{2}(?:-\d{2})?|-T[1-4])?`;
+const ROTULO_SEGURO = new RegExp(
+  `^(Todo o histórico|Recebido em (${MESES})|Pago em (${MESES})|Receitas de (${MESES})|Despesas de (${MESES})|(Entradas|Saídas|Movimento|Previsto|Realizado) em ${CHAVE_PERIODO})$`,
+);
 function rotuloSeguro(bruto: string): string {
   return ROTULO_SEGURO.test(bruto) ? bruto : "Lançamentos";
 }
