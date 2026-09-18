@@ -1,3 +1,17 @@
+import { hojeIsoBrasil } from "./data-brasil";
+
+// Fonte única do critério "está atrasada" — status persistido no banco
+// nunca muda pra ATRASADO sozinho (só PENDENTE/RECEBIDO_PARCIAL/QUITADO via
+// trigger), quem decide se uma parcela pendente já venceu é sempre a data de
+// hoje comparada com o vencimento, calculado na hora de mostrar. Acha real
+// em releitura tela por tela: cada tela que renderizava status de parcela
+// tinha sua própria cópia (ou nenhuma) desse cálculo, e a mesma parcela
+// aparecia "Pendente" numa tela e "Atrasado" em outra.
+export function chaveStatusReal(status: string, dataVencimento: string | null): string {
+  const atrasada = (status === "PENDENTE" || status === "RENEGOCIADO") && !!dataVencimento && dataVencimento < hojeIsoBrasil();
+  return atrasada ? "ATRASADO" : status;
+}
+
 export const ROTULO_STATUS_PARCELA: Record<string, string> = {
   PENDENTE: "Pendente",
   QUITADO: "Quitado",

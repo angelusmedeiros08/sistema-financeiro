@@ -224,6 +224,7 @@ export type EventoRecente = {
   tipo: "RECEITA" | "DESPESA";
   valor_total: number;
   status: string | null;
+  dataVencimento: string | null;
   dataCompetencia: string;
 };
 
@@ -238,7 +239,7 @@ export type EventoRecente = {
 async function obterEventosRecentes(supabase: Cliente, tenantId: string, pessoaId?: string): Promise<EventoRecente[]> {
   let query = supabase
     .from("eventos_financeiros")
-    .select("id, descricao, tipo, valor_total, data_competencia, parcelas(status)")
+    .select("id, descricao, tipo, valor_total, data_competencia, parcelas(status, data_vencimento)")
     .eq("tenant_id", tenantId)
     .is("estornado_em", null)
     .order("data_competencia", { ascending: false })
@@ -250,14 +251,18 @@ async function obterEventosRecentes(supabase: Cliente, tenantId: string, pessoaI
 
   const validos = (data ?? []).filter((e) => (e.parcelas ?? []).some((p) => p.status !== "CANCELADO"));
 
-  return validos.slice(0, 5).map((e) => ({
-    id: e.id,
-    descricao: e.descricao,
-    tipo: e.tipo,
-    valor_total: Number(e.valor_total),
-    status: e.parcelas?.find((p) => p.status !== "CANCELADO")?.status ?? e.parcelas?.[0]?.status ?? null,
-    dataCompetencia: e.data_competencia,
-  }));
+  return validos.slice(0, 5).map((e) => {
+    const parcelaValida = e.parcelas?.find((p) => p.status !== "CANCELADO") ?? e.parcelas?.[0] ?? null;
+    return {
+      id: e.id,
+      descricao: e.descricao,
+      tipo: e.tipo,
+      valor_total: Number(e.valor_total),
+      status: parcelaValida?.status ?? null,
+      dataVencimento: parcelaValida?.data_vencimento ?? null,
+      dataCompetencia: e.data_competencia,
+    };
+  });
 }
 
 // pessoaId filtra tudo que passa por eventos_financeiros/parcelas — usado

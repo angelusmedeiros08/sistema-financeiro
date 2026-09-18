@@ -15,7 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { formatarMoeda } from "@/lib/formatacao";
-import { ROTULO_STATUS_PARCELA, COR_STATUS_PARCELA } from "@/lib/status-parcela";
+import { ROTULO_STATUS_PARCELA, COR_STATUS_PARCELA, chaveStatusReal } from "@/lib/status-parcela";
 import { cn } from "@/lib/utils";
 import { estornarBaixaAction } from "@/lib/contabil/ciclo-vida-parcela-actions";
 import { notificarResultado } from "@/lib/feedback/notificar-resultado";
@@ -205,8 +205,8 @@ export function DetalheParcela({
           </div>
           <div className="text-right">
             <p className="text-2xl font-bold tabular-nums text-foreground">{formatarMoeda(parcela.valor)}</p>
-            <Badge className={cn("mt-1 border-none font-semibold", COR_STATUS_PARCELA[parcela.status])}>
-              {ROTULO_STATUS_PARCELA[parcela.status] ?? parcela.status}
+            <Badge className={cn("mt-1 border-none font-semibold", COR_STATUS_PARCELA[chaveStatusReal(parcela.status, parcela.data_vencimento)])}>
+              {ROTULO_STATUS_PARCELA[chaveStatusReal(parcela.status, parcela.data_vencimento)] ?? parcela.status}
             </Badge>
           </div>
         </div>

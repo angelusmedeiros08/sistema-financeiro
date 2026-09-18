@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { EstadoVazio } from "@/components/ui/estado-vazio";
 import { TabelaLista, criarColunaLista } from "@/components/tabela/tabela-lista";
 import { formatarMoeda } from "@/lib/formatacao";
-import { ROTULO_STATUS_PARCELA, COR_STATUS_PARCELA } from "@/lib/status-parcela";
+import { ROTULO_STATUS_PARCELA, COR_STATUS_PARCELA, chaveStatusReal } from "@/lib/status-parcela";
 import { notificarResultado } from "@/lib/feedback/notificar-resultado";
 import { cancelarParcelasEmLoteAction } from "@/lib/contabil/ciclo-vida-parcela-actions";
 import { cn } from "@/lib/utils";
@@ -158,9 +158,8 @@ export function TabelaParcelasAbertas({
     const baixas = parcela.baixas ?? [];
     const somaPaga = baixas.filter((b) => !b.estornado_em).reduce((acc, b) => acc + Number(b.valor_pago), 0);
     const saldoResidual = Number(parcela.valor) - somaPaga;
-    const atrasada = (parcela.status === "PENDENTE" || parcela.status === "RENEGOCIADO") && parcela.data_vencimento < hojeISO;
-    const chaveStatus = atrasada ? "ATRASADO" : parcela.status;
-    const diasEmAtraso = atrasada ? Math.round((Date.parse(hojeISO) - Date.parse(parcela.data_vencimento)) / 86_400_000) : 0;
+    const chaveStatus = chaveStatusReal(parcela.status, parcela.data_vencimento);
+    const diasEmAtraso = chaveStatus === "ATRASADO" ? Math.round((Date.parse(hojeISO) - Date.parse(parcela.data_vencimento)) / 86_400_000) : 0;
     return { ...parcela, saldoResidual, chaveStatus, diasEmAtraso };
   });
 

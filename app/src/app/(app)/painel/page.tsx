@@ -16,7 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatarMoeda } from "@/lib/formatacao";
 import { cn } from "@/lib/utils";
-import { ROTULO_STATUS_PARCELA, COR_STATUS_PARCELA } from "@/lib/status-parcela";
+import { ROTULO_STATUS_PARCELA, COR_STATUS_PARCELA, chaveStatusReal } from "@/lib/status-parcela";
 import { buscarIndicadoresRealizacao, buscarSerieIndicadoresRealizacao, mesAtual } from "@/lib/relatorios/indicadores-gauge";
 import { montarHrefLancamentosSemDimensao } from "@/lib/relatorios/drill-down";
 import { limitesDoMes } from "@/lib/relatorios/regime";
@@ -365,8 +365,8 @@ export default async function PaginaPainel({
                       </p>
                     </div>
                     {evento.status && (
-                      <Badge className={cn("border-none font-semibold", COR_STATUS_PARCELA[evento.status])}>
-                        {ROTULO_STATUS_PARCELA[evento.status] ?? evento.status}
+                      <Badge className={cn("border-none font-semibold", COR_STATUS_PARCELA[chaveStatusReal(evento.status, evento.dataVencimento)])}>
+                        {ROTULO_STATUS_PARCELA[chaveStatusReal(evento.status, evento.dataVencimento)] ?? evento.status}
                       </Badge>
                     )}
                     <span className="text-right text-sm font-semibold tabular-nums text-foreground">

@@ -14,7 +14,7 @@ import { CategoriaCombobox } from "@/components/formularios/categoria-combobox";
 import { RateioCategorias } from "@/components/formularios/rateio-categorias";
 import { parseNumeroBR, formatarMoeda } from "@/lib/formatacao";
 import { notificarResultado } from "@/lib/feedback/notificar-resultado";
-import { ROTULO_STATUS_PARCELA, COR_STATUS_PARCELA } from "@/lib/status-parcela";
+import { ROTULO_STATUS_PARCELA, COR_STATUS_PARCELA, chaveStatusReal } from "@/lib/status-parcela";
 import { cn } from "@/lib/utils";
 
 type Categoria = { id: string; nome: string };
@@ -215,8 +215,8 @@ export function EditarEventoFinanceiro({
                     {evento.parcelas.length > 1 ? `${p.numero}/${evento.parcelas.length}` : "Única"}
                   </span>
                   <span className="text-foreground">vence {new Date(p.dataVencimento + "T00:00:00").toLocaleDateString("pt-BR")}</span>
-                  <Badge className={cn("border-none font-semibold", COR_STATUS_PARCELA[p.status])}>
-                    {ROTULO_STATUS_PARCELA[p.status] ?? p.status}
+                  <Badge className={cn("border-none font-semibold", COR_STATUS_PARCELA[chaveStatusReal(p.status, p.dataVencimento)])}>
+                    {ROTULO_STATUS_PARCELA[chaveStatusReal(p.status, p.dataVencimento)] ?? p.status}
                   </Badge>
                 </div>
                 <div className="flex items-center gap-2">
